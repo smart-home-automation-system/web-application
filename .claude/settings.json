@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm start)",
+      "Bash(npm test:*)",
+      "Bash(npm ci)",
+      "Bash(npm install:*)",
+      "Bash(npx ng:*)",
+      "Bash(ng:*)",
+      "Bash(node:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push origin feature/:*)"
+    ]
+  }
+}

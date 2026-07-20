@@ -1,0 +1,7 @@
+{
+  "/home": {
+    "target": "http://localhost:6200",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
