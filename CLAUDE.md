@@ -55,8 +55,9 @@ src/app/
 
 ## Workflow (strict)
 
-1. Never commit to `main`. Every change goes on a `feature/<topic>` branch
-   (ticket-style names like `feature/HAS-123` when an issue exists).
+1. Never commit to `main`. Every change goes on a **`feature/HAS-<n>`** branch, where
+   `<n>` is the Jira task number (HAS project) — this is an org-wide rule. If no Jira
+   task covers the change, have one created first (`jira-backlog`) or ask the user.
 2. Definition of done for any change: production build passes, unit tests pass,
    `/code-review` of the own diff, and visual verification in a browser for UI changes
    (attach a screenshot to the PR).
