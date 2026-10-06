@@ -2,11 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [feature/**]
-  pull_request:
-    branches: [main]
-    types: [ opened ]
+    branches: [main, 'feature/**']
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -14,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
@@ -24,8 +25,63 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Lint
+        run: npm run lint
 
       - name: Unit tests
         run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Check the production bundle
+        run: npm run check:bundle
+
+      - name: Install the browser for the end-to-end tests
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests (mock API)
+        run: npm run e2e
+
+      # the container is the artifact that gets deployed, so its nginx configuration is tested
+      # here, in a real browser, and not for the first time on the cluster
+      - name: Build the image
+        run: docker build --build-arg APP_VERSION=0.0.0-ci --build-arg GIT_COMMIT=${{ github.sha }} -t web-application:ci .
+
+      - name: Smoke test of the image
+        run: |
+          docker run -d --name web-application --read-only --tmpfs /tmp -p 8080:8080 web-application:ci
+          for attempt in $(seq 1 20); do
+            curl -fs http://localhost:8080/healthz > /dev/null && break
+            sleep 1
+          done
+          IMAGE_URL=http://localhost:8080 EXPECTED_VERSION=0.0.0-ci npm run e2e
+
+      - name: Logs of the image
+        if: ${{ always() }}
+        run: docker logs web-application || true
+
+      - name: Upload screenshots and the test report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 14
+
+      - name: Discord notification -> success
+        uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1.16.0
+        if: ${{ success() }}
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: "CI web-application - success"
+      - name: Discord notification -> non-success
+        uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1.16.0
+        if: ${{ !success() }}
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: "CI web-application - failure"

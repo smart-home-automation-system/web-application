@@ -1,0 +1,17 @@
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 24px;
+  margin: 0;
+  font: var(--mat-sys-body-large);
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    overflow-wrap: anywhere;
+  }
+}
