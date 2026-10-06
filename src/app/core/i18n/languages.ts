@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import { Observable, defer, of } from 'rxjs';
 
 import { en } from '../../i18n/en';
 import { Messages } from '../../i18n/messages';
@@ -27,23 +28,27 @@ export function isLanguageCode(value: unknown): value is LanguageCode {
   return LANGUAGES.some((language) => language.code === value);
 }
 
-export type MessagesLoader = (language: LanguageCode) => Promise<Messages>;
+export type MessagesLoader = (language: LanguageCode) => Observable<Messages>;
 
 /**
- * Fetches the texts of a language. English is part of the main bundle - it is the default and
- * the fallback, so it must never be missing; any other language is a chunk of its own,
- * downloaded when somebody chooses it. A token, so a test can make the download fail.
+ * Where the texts of a language come from - the one place that decides it. A token, so a test
+ * can make a download fail.
  */
 export const MESSAGES_LOADER = new InjectionToken<MessagesLoader>('MESSAGES_LOADER', {
   providedIn: 'root',
   factory: () => loadMessages,
 });
 
-function loadMessages(language: LanguageCode): Promise<Messages> {
+/**
+ * English is part of the main bundle - it is the default and the fallback, so it must never be
+ * missing - and is answered at once, synchronously: the default language never costs a render.
+ * Any other language is a chunk of its own, downloaded when somebody chooses it.
+ */
+function loadMessages(language: LanguageCode): Observable<Messages> {
   switch (language) {
     case 'pl':
-      return import('../../i18n/pl').then((module) => module.pl);
+      return defer(() => import('../../i18n/pl').then((module) => module.pl));
     case 'en':
-      return Promise.resolve(en);
+      return of(en);
   }
 }

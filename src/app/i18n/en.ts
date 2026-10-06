@@ -61,8 +61,6 @@ export const en = {
     server: 'The service is not available right now (error {{ status }}).',
     invalidResponse: 'The server sent an answer the application does not understand.',
     refused: 'The request was refused (error {{ status }}).',
-    // what the backend said about a refused request; the backend answers in English only
-    backendMessage: '{{ message }}',
     unexpected: 'Something went wrong in the application.',
   },
   // labels of Angular Material's own controls
@@ -88,8 +86,6 @@ export const en = {
       nextMultiYear: 'Next 24 years',
       switchToMonthView: 'Choose date',
       switchToMultiYearView: 'Choose month and year',
-      startDate: 'Start date',
-      endDate: 'End date',
     },
   },
 };

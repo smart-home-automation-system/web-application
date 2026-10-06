@@ -11,7 +11,8 @@
     "test:coverage": "ng test --no-watch --coverage --coverage-reporters lcov --coverage-reporters text-summary",
     "lint": "ng lint",
     "e2e": "playwright test",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "check:i18n": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-i18n.mjs"
   },
   "private": true,
   "packageManager": "npm@11.16.0",

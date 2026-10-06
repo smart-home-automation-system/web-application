@@ -60,7 +60,6 @@ export const pl: Messages = {
     server: 'Usługa jest teraz niedostępna (błąd {{ status }}).',
     invalidResponse: 'Serwer przysłał odpowiedź, której aplikacja nie rozumie.',
     refused: 'Żądanie zostało odrzucone (błąd {{ status }}).',
-    backendMessage: '{{ message }}',
     unexpected: 'W aplikacji wystąpił błąd.',
   },
   material: {
@@ -85,8 +84,6 @@ export const pl: Messages = {
       nextMultiYear: 'Następne 24 lata',
       switchToMonthView: 'Wybierz datę',
       switchToMultiYearView: 'Wybierz miesiąc i rok',
-      startDate: 'Data początkowa',
-      endDate: 'Data końcowa',
     },
   },
 };

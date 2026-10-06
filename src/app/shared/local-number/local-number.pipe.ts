@@ -2,6 +2,9 @@ import { Pipe, PipeTransform, inject } from '@angular/core';
 
 import { numberFormat } from '../../core/i18n/intl-formats';
 import { LanguageStore } from '../../core/i18n/language-store';
+import { memoLast } from '../../core/i18n/memo-last';
+
+const NO_OPTIONS: Intl.NumberFormatOptions = {};
 
 /**
  * Shows a number the way the active language writes it: `21.5` in English, `21,5` in Polish.
@@ -16,10 +19,17 @@ import { LanguageStore } from '../../core/i18n/language-store';
 @Pipe({ name: 'localNumber', pure: false })
 export class LocalNumberPipe implements PipeTransform {
   private readonly locale = inject(LanguageStore).locale;
+  private readonly format = memoLast(
+    (value: number | null | undefined, locale: string, options: Intl.NumberFormatOptions) =>
+      value === null || value === undefined || !Number.isFinite(value)
+        ? '-'
+        : numberFormat(locale, options).format(value),
+  );
 
-  transform(value: number | null | undefined, options: Intl.NumberFormatOptions = {}): string {
-    return value === null || value === undefined || !Number.isFinite(value)
-      ? '-'
-      : numberFormat(this.locale(), options).format(value);
+  transform(
+    value: number | null | undefined,
+    options: Intl.NumberFormatOptions = NO_OPTIONS,
+  ): string {
+    return this.format(value, this.locale(), options);
   }
 }

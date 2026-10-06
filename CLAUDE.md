@@ -98,26 +98,38 @@ kept in `localStorage['smart-home.language']` (HAS-193 scopes it per profile).
   `t('overview.heating.switchedOn', { time: … })`; attributes too (`[attr.aria-label]="t(…)"`).
   Not the `transloco` pipe — one directive per template re-renders it on a language change.
 - **In code**: return the key, not the words — `MessageKey` for a label or a route title,
-  `TranslatableText` (`{ key, params }`) for a sentence with values; the template translates it
-  with `t(text.key, text.params)`. Code that needs the words themselves (the tab title, the
-  Material labels) reads `LanguageStore.language()` in an `effect` and calls
+  `DisplayText` for a sentence, shown with the `displayText` pipe
+  (`{{ describeApiError(error) | displayText }}`). Code that needs the words themselves (the tab
+  title, the Material labels) reads `LanguageStore.language()` in an `effect` and calls
   `TranslocoService.translate` — the signal changes only after the texts are in memory.
+- **Words from outside are never a translation parameter.** Transloco searches the text it has
+  just substituted for more placeholders: a backend message containing `{{ foo }}` loses it, and
+  one containing `{{ message }}` — its own parameter name — never returns, freezing the tab.
+  Text the application did not write (a backend message, later a device or member name inside a
+  sentence) is a `DisplayText` of the `literal` kind, printed as it is. Parameters are numbers
+  and text of our own making only (a formatted date, a translated word).
 - **Adding a text**: add the key to `en.ts`; the build then fails until `pl.ts` has it too
   (`pl` is typed with the keys of `en`). `translations.spec.ts` additionally checks that both
-  have the same placeholders and that nothing is left untranslated or empty. A missing
-  translation is logged and fails the browser tests.
+  have the same placeholders and that nothing is left untranslated or empty. Keys in TypeScript
+  are checked by the compiler (`MessageKey`); keys in templates are plain strings, so
+  `npm run check:i18n` reads every template and fails on a key that does not exist — a typo
+  would otherwise show only in the one view that has it.
 - **Dates and numbers follow the language, through three pipes** — never Angular's `date`,
   `number` or `percent`, which are tied to a fixed `LOCALE_ID`:
   `houseDateTime` (a backend `LocalDateTime`, shown as house wall-clock time), `localDateTime`
   (a real instant, shown in the browser zone) and `localNumber`. They are impure on purpose (the
-  language is not an argument) and cheap: formatters are cached in `core/i18n/intl-formats.ts`,
-  which is also what any other code uses instead of `new Intl.…`. English formats as `en-GB` —
-  24-hour clock, day before month.
+  language is not an argument) and cheap all the same: each remembers its last result
+  (`memoLast`), and formatters are cached in `core/i18n/intl-formats.ts`, which is also what any
+  other code uses instead of `new Intl.…`. English formats as `en-GB` — 24-hour clock, day
+  before month.
 - **Units**: write the symbol next to the number (`°C`, `%`), the same in both languages. Do not
   use the `unit` style of `Intl.NumberFormat` — in Polish it prints degrees Celsius as `st. C`.
 - **What the backend says stays in English**: a 4xx message is shown as sent (the backend speaks
   English only, by the org rule). Where a refusal has a `code`, map the code to a translated
   text of our own instead.
+- **A control is named by what is written on it.** An `aria-label` replaces the visible text in
+  the accessible name; where a button shows text (the `EN` of the language button) add the rest
+  as `.visually-hidden` text inside it instead, with `&ngsp;` so the words do not run together.
 - **Angular Material's own labels** (paginator, date picker) are translated in
   `core/i18n/material-intl.ts`, which also gives the date picker the locale. A Material control
   with built-in texts used for the first time (sort header, stepper) gets its `…Intl` class there.
@@ -182,6 +194,7 @@ up in a production build.
 - `npm start` — dev server against a gateway (API proxy); `npm run start:mock` — against the mock API
 - `npm run lint` — ESLint (sources, templates, e2e)
 - `npm test` — unit tests (Vitest; single run when non-interactive)
+- `npm run check:i18n` — every translation key used in a template exists
 - `npm run build` + `npm run check:bundle` — production build and its guard
 - `npm run e2e` — Playwright, desktop and phone projects; screenshots in `test-results/screenshots/`
 
@@ -190,7 +203,7 @@ up in a production build.
 1. Never commit to `main`. Every change goes on a **`feature/HAS-<n>`** branch, where
    `<n>` is the Jira task number (HAS project) — this is an org-wide rule. If no Jira
    task covers the change, have one created first (`jira-backlog`) or ask the user.
-2. Definition of done for any change: lint, unit tests, production build, bundle check and
+2. Definition of done for any change: lint, translation-key check, unit tests, production build, bundle check and
    the Playwright suite pass; `/code-review` of the own diff (and `/security-review` before a
    release), outcome recorded on the PR; visual verification in a browser for UI changes —
    desktop and phone width, light and dark — with screenshots attached to the PR.

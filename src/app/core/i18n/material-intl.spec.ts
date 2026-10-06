@@ -11,10 +11,18 @@ describe('labels of Angular Material controls', () => {
   describe('paginator', () => {
     it('starts in English', () => {
       const intl = TestBed.inject(MatPaginatorIntl);
-      TestBed.tick();
 
       expect(intl.itemsPerPageLabel).toBe('Items per page:');
       expect(intl.getRangeLabel(0, 10, 25)).toBe('1 – 10 of 25');
+    });
+
+    // a control created while Polish is active must not show English for its first render
+    it('is Polish from the start when it is created in Polish', async () => {
+      await useLanguage('pl');
+
+      const intl = TestBed.inject(MatPaginatorIntl);
+
+      expect(intl.itemsPerPageLabel).toBe('Pozycji na stronie:');
     });
 
     it('follows the language and tells the components on screen to re-read the labels', async () => {
@@ -32,6 +40,16 @@ describe('labels of Angular Material controls', () => {
       expect(changes).toBe(1);
     });
 
+    it('does not announce a change that did not happen', () => {
+      const intl = TestBed.inject(MatPaginatorIntl);
+      let changes = 0;
+      intl.changes.subscribe(() => changes++);
+
+      TestBed.tick();
+
+      expect(changes).toBe(0);
+    });
+
     it.each([
       [0, 10, 0, '0 of 0'],
       [0, 0, 25, '0 of 25'],
@@ -47,11 +65,11 @@ describe('labels of Angular Material controls', () => {
     it('follows the language, labels and calendar alike', async () => {
       const intl = TestBed.inject(MatDatepickerIntl);
       const adapter = TestBed.inject<DateAdapter<Date>>(DateAdapter);
-      TestBed.tick();
 
       expect(intl.openCalendarLabel).toBe('Open calendar');
       expect(adapter.getMonthNames('long')[0]).toBe('January');
 
+      TestBed.tick();
       await useLanguage('pl');
       TestBed.tick();
 
@@ -60,6 +78,17 @@ describe('labels of Angular Material controls', () => {
       expect(adapter.getMonthNames('long')[0]).toBe('styczeń');
       // the week starts on Monday in both locales this application uses
       expect(adapter.getFirstDayOfWeek()).toBe(1);
+    });
+
+    it('is Polish from the start when it is created in Polish', async () => {
+      await useLanguage('pl');
+
+      const intl = TestBed.inject(MatDatepickerIntl);
+
+      expect(intl.calendarLabel).toBe('Kalendarz');
+      expect(TestBed.inject<DateAdapter<Date>>(DateAdapter).getMonthNames('long')[11]).toBe(
+        'grudzień',
+      );
     });
   });
 });

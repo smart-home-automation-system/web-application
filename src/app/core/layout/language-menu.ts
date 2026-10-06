@@ -12,21 +12,21 @@ import { LanguageCode } from '../i18n/languages';
  * The language switch of the toolbar: a button showing the active language and a menu of the
  * available ones, each named in its own words so it can be found by somebody who cannot read
  * the current one.
+ *
+ * The button is named by its content - the code on screen plus a hidden "change language" - and
+ * not by an `aria-label`, which would replace the visible code: a screen reader then announces
+ * which language is active, and voice control finds the button by what is written on it.
  */
 @Component({
   selector: 'app-language-menu',
   imports: [MatButtonModule, MatIconModule, MatMenuModule, TranslocoDirective],
   template: `
     <ng-container *transloco="let t">
-      <button
-        matButton
-        type="button"
-        class="language-menu__trigger"
-        [matMenuTriggerFor]="menu"
-        [attr.aria-label]="t('language.change')"
-      >
+      <button matButton type="button" class="language-menu__trigger" [matMenuTriggerFor]="menu">
         <mat-icon>language</mat-icon>
         <span>{{ store.language().toUpperCase() }}</span>
+        <!-- &ngsp; keeps a space in front: the name must read "EN Change language", not "ENChange" -->
+        <span class="visually-hidden">&ngsp;{{ t('language.change') }}</span>
       </button>
       <mat-menu #menu="matMenu">
         @for (option of store.options; track option.code) {

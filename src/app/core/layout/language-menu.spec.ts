@@ -1,5 +1,7 @@
+import { Provider } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { of, throwError } from 'rxjs';
 
 import { provideI18nTesting } from '../../../testing/i18n';
 import { en } from '../../i18n/en';
@@ -11,7 +13,7 @@ describe('LanguageMenu', () => {
   let fixture: ComponentFixture<LanguageMenu>;
   const snackBar = { open: vi.fn() };
 
-  function create(providers: unknown[] = []): void {
+  function create(providers: Provider[] = []): void {
     snackBar.open.mockReset();
     TestBed.configureTestingModule({
       providers: [provideI18nTesting(), { provide: MatSnackBar, useValue: snackBar }, ...providers],
@@ -19,10 +21,24 @@ describe('LanguageMenu', () => {
     fixture = TestBed.createComponent(LanguageMenu);
   }
 
+  function trigger(): HTMLButtonElement {
+    return (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button')!;
+  }
+
+  /** What a screen reader announces for the button: it has no aria-label, so its content. */
+  function accessibleName(): string {
+    const button = trigger();
+    expect(button.getAttribute('aria-label')).toBeNull();
+    const content = button.cloneNode(true) as HTMLElement;
+    // icons are hidden from assistive technology
+    content.querySelectorAll('mat-icon').forEach((icon) => icon.remove());
+    return (content.textContent ?? '').replace(/s+/g, ' ').trim();
+  }
+
   /** Opens the menu and clicks the entry; the menu renders outside the component, in an overlay. */
   async function choose(name: string): Promise<void> {
     await fixture.whenStable();
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button')!.click();
+    trigger().click();
     await fixture.whenStable();
     const items = [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
     items.find((item) => item.textContent?.includes(name))!.click();
@@ -38,7 +54,7 @@ describe('LanguageMenu', () => {
   it('offers every language in its own words and marks the active one', async () => {
     create();
     await fixture.whenStable();
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button')!.click();
+    trigger().click();
     await fixture.whenStable();
 
     const items = [...document.querySelectorAll('[role="menuitemradio"]')].map((item) => ({
@@ -53,16 +69,24 @@ describe('LanguageMenu', () => {
     ]);
   });
 
+  // the visible "EN" has to be part of the name, or voice control cannot find the button and a
+  // screen reader never says which language is active
+  it('is named by the language on it, followed by what it does', async () => {
+    create();
+    await fixture.whenStable();
+
+    expect(accessibleName()).toBe('EN Change language');
+  });
+
   it('switches the language when another one is chosen', async () => {
     create();
 
     await choose('Polski');
     await vi.waitFor(() => expect(TestBed.inject(LanguageStore).language()).toBe('pl'));
+    await fixture.whenStable();
 
     expect(snackBar.open).not.toHaveBeenCalled();
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('button')?.getAttribute('aria-label'),
-    ).toBe('Zmień język');
+    expect(accessibleName()).toBe('PL Zmień język');
   });
 
   it('does nothing when the active language is chosen again', async () => {
@@ -80,7 +104,7 @@ describe('LanguageMenu', () => {
       {
         provide: MESSAGES_LOADER,
         useValue: (language: LanguageCode) =>
-          language === 'en' ? Promise.resolve(en) : Promise.reject(new Error('chunk is gone')),
+          language === 'en' ? of(en) : throwError(() => new Error('the chunk is gone')),
       },
     ]);
 

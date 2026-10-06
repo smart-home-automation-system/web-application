@@ -46,10 +46,9 @@
             }
           }
           @if (heating.error(); as error) {
-            @let message = describeApiError(error);
             <p class="tile__error" role="alert">
               <mat-icon>cloud_off</mat-icon>
-              <span>{{ t(message.key, message.params) }}</span>
+              <span>{{ describeApiError(error) | displayText }}</span>
             </p>
           }
         }

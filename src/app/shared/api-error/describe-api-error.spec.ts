@@ -6,16 +6,27 @@ describe('describeApiError', () => {
     expect(describeApiError(new ApiError('network', 0))).toEqual({ key: 'apiError.network' });
   });
 
-  it('shows what the backend said about a refused request', () => {
+  it('shows what the backend said about a refused request, as it came', () => {
     const error = new ApiError('client', 400, [
       { message: 'Name is too short.' },
       { message: 'Phone is not valid.' },
     ]);
 
     expect(describeApiError(error)).toEqual({
-      key: 'apiError.backendMessage',
-      params: { message: 'Name is too short. Phone is not valid.' },
+      literal: 'Name is too short. Phone is not valid.',
     });
+  });
+
+  // words from outside are never a translation, nor a parameter of one: they would be searched
+  // for placeholders
+  it('never passes the words of the backend through the translations', () => {
+    const error = new ApiError('client', 400, [{ message: 'Unknown room {{ message }}' }]);
+
+    const text = describeApiError(error);
+
+    expect(text.key).toBeUndefined();
+    expect(text.params).toBeUndefined();
+    expect(text.literal).toBe('Unknown room {{ message }}');
   });
 
   it('falls back to the status when a refused request carries no message', () => {

@@ -24,7 +24,10 @@ export async function startIn(page: Page, language: Language): Promise<void> {
 /**
  * `test` that fails when the page logs an error or throws: a broken import, a blocked resource
  * or a Content-Security-Policy violation shows up in the console long before it shows on screen.
- * A text without a translation counts too - it is logged as a warning and shown in English.
+ * A key that exists in no language counts too - a typo in a template: the development build
+ * logs it as a missing translation. (A key missing from Polish alone cannot happen: `pl.ts` is
+ * typed with the keys of `en.ts`. Keys of views these tests never open are checked statically,
+ * by `npm run check:i18n`.)
  */
 export const test = base.extend<{ consoleErrors: string[] }>({
   consoleErrors: [

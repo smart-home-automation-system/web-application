@@ -78,6 +78,7 @@ same ones, which the compiler and a unit test both check.
 | `npm run lint` | ESLint over the sources, templates and browser tests |
 | `npm test` | Unit tests (Vitest); `npm run test:coverage` writes `coverage/` for Sonar |
 | `npm run build` | Production build into `dist/` |
+| `npm run check:i18n` | Fails when a template uses a translation key that does not exist |
 | `npm run check:bundle` | Fails when the production build contains the mock API or loads anything from another origin |
 | `npm run e2e` | Browser tests against the mock API, in a desktop and a phone layout; screenshots land in `test-results/screenshots/` |
 
@@ -99,7 +100,8 @@ What the application relies on, in every call:
 - **Errors** come in the shared contract of `cholewa-commons` (`{"errors":[{"message", "code"}]}`).
   The status survives any body - none, HTML from a proxy, JSON of another shape - and what a
   failing service (5xx) says about itself is never shown on screen. The message of a refused
-  request (4xx) is shown as sent, in English, also when the interface is Polish.
+  request (4xx) is shown exactly as sent - in English, also when the interface is Polish, and
+  never run through the translations.
 - **Date-times** are `LocalDateTime` values: the wall-clock time of the house, without an offset.
   They are displayed exactly as sent and never converted to the zone of the browser, so a phone
   abroad on VPN still shows house time.

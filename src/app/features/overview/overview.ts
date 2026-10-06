@@ -7,6 +7,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { HeatingApi } from '../../data-access/heating/heating-api';
 import { describeApiError } from '../../shared/api-error/describe-api-error';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
+import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 
 /**
@@ -21,6 +22,7 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
     MatProgressBarModule,
     TranslocoDirective,
     DataFreshness,
+    DisplayTextPipe,
     HouseDateTimePipe,
   ],
   templateUrl: './overview.html',

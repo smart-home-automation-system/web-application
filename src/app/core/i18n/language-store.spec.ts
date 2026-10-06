@@ -1,19 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslocoService } from '@jsverse/transloco';
+import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
 
 import { provideI18nTesting } from '../../../testing/i18n';
 import { en } from '../../i18n/en';
+import { Messages } from '../../i18n/messages';
 import { pl } from '../../i18n/pl';
-import { LanguageStore } from './language-store';
-import { LanguageCode, MESSAGES_LOADER } from './languages';
+import { LanguageStore, RESTORE_TIMEOUT_MS } from './language-store';
+import { LanguageCode, MESSAGES_LOADER, MessagesLoader } from './languages';
 
 const STORAGE_KEY = 'smart-home.language';
 
 describe('LanguageStore', () => {
-  function create(stored?: string): LanguageStore {
-    TestBed.configureTestingModule({ providers: [provideI18nTesting()] });
-    if (stored !== undefined) {
-      localStorage.setItem(STORAGE_KEY, stored);
+  /** `polish` decides what a download of the Polish texts does; English is always at hand. */
+  function create(options: { stored?: string; polish?: () => Observable<Messages> } = {}) {
+    const loader: MessagesLoader = (language: LanguageCode) =>
+      language === 'en' ? of(en) : (options.polish ?? (() => of(pl)))();
+    TestBed.configureTestingModule({
+      providers: [provideI18nTesting(), { provide: MESSAGES_LOADER, useValue: loader }],
+    });
+    if (options.stored !== undefined) {
+      localStorage.setItem(STORAGE_KEY, options.stored);
     }
     return TestBed.inject(LanguageStore);
   }
@@ -22,13 +29,17 @@ describe('LanguageStore', () => {
     return TestBed.inject(TranslocoService).translate(key);
   }
 
+  beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => undefined));
+
   afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
     localStorage.removeItem(STORAGE_KEY);
     document.documentElement.lang = 'en';
   });
 
   it('starts in English, whatever the language of the browser', async () => {
-    const browserLanguage = vi.spyOn(navigator, 'language', 'get').mockReturnValue('pl-PL');
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('pl-PL');
 
     const store = create();
     await store.restore();
@@ -37,7 +48,12 @@ describe('LanguageStore', () => {
     expect(store.locale()).toBe('en-GB');
     expect(translate('nav.overview')).toBe('Overview');
     expect(document.documentElement.lang).toBe('en');
-    browserLanguage.mockRestore();
+  });
+
+  it('has the English texts ready the moment it exists, with nothing to wait for', () => {
+    create();
+
+    expect(translate('nav.about')).toBe('About');
   });
 
   it('translates at once after a switch, and tells the page which language it is in', async () => {
@@ -60,7 +76,7 @@ describe('LanguageStore', () => {
   });
 
   it('brings the chosen language back at the next start', async () => {
-    const store = create('pl');
+    const store = create({ stored: 'pl' });
 
     await store.restore();
 
@@ -69,7 +85,7 @@ describe('LanguageStore', () => {
   });
 
   it.each(['de', '', 'PL', '{"lang":"pl"}'])('ignores a stored value of "%s"', async (stored) => {
-    const store = create(stored);
+    const store = create({ stored });
 
     await store.restore();
 
@@ -77,7 +93,7 @@ describe('LanguageStore', () => {
   });
 
   it('switches back to English', async () => {
-    const store = create('pl');
+    const store = create({ stored: 'pl' });
     await store.restore();
 
     await store.select('en');
@@ -87,29 +103,22 @@ describe('LanguageStore', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe('en');
   });
 
-  describe('when the texts cannot be fetched', () => {
-    function createWithFailingDownload(stored?: string): LanguageStore {
-      TestBed.configureTestingModule({
-        providers: [
-          provideI18nTesting(),
-          {
-            provide: MESSAGES_LOADER,
-            useValue: (language: LanguageCode) =>
-              language === 'en' ? Promise.resolve(en) : Promise.reject(new Error('chunk is gone')),
-          },
-        ],
-      });
-      if (stored !== undefined) {
-        localStorage.setItem(STORAGE_KEY, stored);
-      }
-      return TestBed.inject(LanguageStore);
-    }
+  it('downloads the texts of a language once, however often it is chosen', async () => {
+    const polish = vi.fn(() => of(pl));
+    const store = create({ polish });
 
-    beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => undefined));
-    afterEach(() => vi.restoreAllMocks());
+    await store.select('pl');
+    await store.select('en');
+    await store.select('pl');
+
+    expect(polish).toHaveBeenCalledTimes(1);
+  });
+
+  describe('when the texts cannot be fetched', () => {
+    const failing = () => throwError(() => new Error('the chunk is gone'));
 
     it('stays in the current language and does not remember the failed choice', async () => {
-      const store = createWithFailingDownload();
+      const store = create({ polish: failing });
 
       expect(await store.select('pl')).toBe(false);
 
@@ -120,12 +129,90 @@ describe('LanguageStore', () => {
     });
 
     it('starts in English when the stored language cannot be loaded', async () => {
-      const store = createWithFailingDownload('pl');
+      const store = create({ stored: 'pl', polish: failing });
 
       await store.restore();
 
       expect(store.language()).toBe('en');
     });
+
+    // the failure must not be remembered: the connection may be back the next time
+    it('downloads again when the language is chosen once more', async () => {
+      let broken = true;
+      const polish = vi.fn(() => (broken ? failing() : of(pl)));
+      const store = create({ polish });
+      expect(await store.select('pl')).toBe(false);
+
+      broken = false;
+
+      expect(await store.select('pl')).toBe(true);
+      expect(store.language()).toBe('pl');
+      expect(translate('nav.overview')).toBe('Przegląd');
+      expect(polish).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('when the download of the stored language does not answer', () => {
+    it('lets the application start in English after a while', async () => {
+      vi.useFakeTimers();
+      const store = create({ stored: 'pl', polish: () => NEVER });
+      let started = false;
+
+      void store.restore().then(() => (started = true));
+      await vi.advanceTimersByTimeAsync(RESTORE_TIMEOUT_MS - 1);
+      expect(started).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(started).toBe(true);
+      expect(store.language()).toBe('en');
+    });
+
+    it('changes over when the texts arrive after all', async () => {
+      vi.useFakeTimers();
+      const download = new Subject<Messages>();
+      const store = create({ stored: 'pl', polish: () => download });
+      const restored = store.restore();
+      await vi.advanceTimersByTimeAsync(RESTORE_TIMEOUT_MS);
+      await restored;
+      expect(store.language()).toBe('en');
+
+      download.next(pl);
+      download.complete();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(store.language()).toBe('pl');
+      expect(translate('nav.overview')).toBe('Przegląd');
+    });
+
+    // the clock is frozen here: this resolves only because nothing waits for the timeout
+    it('does not wait at all when the texts are quick', async () => {
+      vi.useFakeTimers();
+      const store = create({ stored: 'pl' });
+
+      await store.restore();
+
+      expect(store.language()).toBe('pl');
+    });
+  });
+
+  // a slow download must not overrule what was chosen after it
+  it('keeps the later choice when an earlier download finishes last', async () => {
+    const download = new Subject<Messages>();
+    const store = create({ polish: () => download });
+
+    const polish = store.select('pl');
+    const english = store.select('en');
+    await english;
+    expect(store.language()).toBe('en');
+
+    download.next(pl);
+    download.complete();
+
+    expect(await polish).toBe(true);
+    expect(store.language()).toBe('en');
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
   });
 
   it('works without storage: the choice then lasts as long as the page', async () => {
@@ -137,14 +224,20 @@ describe('LanguageStore', () => {
     expect(await store.select('pl')).toBe(true);
 
     expect(store.language()).toBe('pl');
-    vi.restoreAllMocks();
   });
+});
 
-  it('serves the real Polish texts, not a copy made for the test', async () => {
-    const store = create();
+describe('the real loader of the texts', () => {
+  afterEach(() => localStorage.removeItem(STORAGE_KEY));
 
-    await store.select('pl');
+  it('serves the real Polish file, not a copy made for a test', async () => {
+    TestBed.configureTestingModule({ providers: [provideI18nTesting()] });
+    const store = TestBed.inject(LanguageStore);
 
-    expect(translate('overview.heating.title')).toBe(pl.overview.heating.title);
+    expect(await store.select('pl')).toBe(true);
+
+    expect(TestBed.inject(TranslocoService).translate('overview.heating.title')).toBe(
+      pl.overview.heating.title,
+    );
   });
 });

@@ -8,7 +8,6 @@ import {
   LANGUAGES,
   LanguageCode,
   LanguageOption,
-  MESSAGES_LOADER,
   isLanguageCode,
 } from './languages';
 
@@ -17,6 +16,13 @@ import {
  * the profiles (HAS-193) will scope it per household member on a shared screen.
  */
 const STORAGE_KEY = 'smart-home.language';
+
+/**
+ * How long the start of the application waits for the texts of the stored language. On a weak
+ * connection the download can take long or never answer; the application then starts in English
+ * and changes over when the texts arrive.
+ */
+export const RESTORE_TIMEOUT_MS = 3_000;
 
 /**
  * The language of the interface: which one is active, how to change it, and the locale that
@@ -29,9 +35,10 @@ const STORAGE_KEY = 'smart-home.language';
 @Injectable({ providedIn: 'root' })
 export class LanguageStore {
   private readonly transloco = inject(TranslocoService);
-  private readonly loadMessages = inject(MESSAGES_LOADER);
   private readonly document = inject(DOCUMENT);
   private readonly active = signal<LanguageCode>(DEFAULT_LANGUAGE);
+  /** Counts the choices, so that a slow download cannot overrule a later one. */
+  private choices = 0;
 
   readonly options: readonly LanguageOption[] = LANGUAGES;
   readonly language: Signal<LanguageCode> = this.active.asReadonly();
@@ -46,32 +53,46 @@ export class LanguageStore {
     this.activate(DEFAULT_LANGUAGE);
   }
 
-  /** Brings back the language chosen earlier; run once, before the application renders. */
+  /**
+   * Brings back the language chosen earlier; run once, before the application renders. Waits for
+   * its texts only so long - the application must start whatever the connection does.
+   */
   async restore(): Promise<void> {
     const stored = readStored();
-    if (stored !== undefined && stored !== this.active()) {
-      await this.select(stored);
+    if (stored === undefined || stored === this.active()) {
+      return;
     }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const patience = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, RESTORE_TIMEOUT_MS);
+    });
+    // the download is not abandoned: when it arrives later, the interface changes over
+    await Promise.race([this.select(stored), patience]);
+    clearTimeout(timer);
   }
 
   /**
    * Switches the interface to the language and remembers the choice. Answers false, leaving
    * everything as it was, when the texts cannot be fetched - a connection lost, or a new version
-   * deployed since this tab was opened.
+   * deployed since this tab was opened. Trying again later starts a fresh download.
+   *
+   * When another language is chosen before the texts of this one arrive, the later choice wins
+   * whichever download finishes first.
    */
   async select(language: LanguageCode): Promise<boolean> {
+    const choice = ++this.choices;
     try {
-      // the download first, on its own: its failure is the one thing that can go wrong here, and
-      // Transloco would answer it by quietly falling back to English
-      await this.loadMessages(language);
-      // then hand the texts to Transloco, which keeps them: every view finds them ready
+      // Transloco keeps the texts once loaded, so every view finds them ready; a failed load
+      // completes without a value, which is what makes this throw
       await firstValueFrom(this.transloco.load(language));
     } catch (error) {
       console.error(`Could not load the texts of "${language}"`, error);
       return false;
     }
-    this.activate(language);
-    store(language);
+    if (choice === this.choices) {
+      this.activate(language);
+      store(language);
+    }
     return true;
   }
 

@@ -150,9 +150,7 @@ describe('application routing', () => {
       expect(page().querySelector('.shell__skip-link')?.textContent?.trim()).toBe(
         'Przejdź do treści',
       );
-      expect(page().querySelector('.language-menu__trigger')?.getAttribute('aria-label')).toBe(
-        'Zmień język',
-      );
+      expect(page().querySelector('.language-menu__trigger')?.textContent).toContain('Zmień język');
     });
 
     it('shows the not-found page in Polish', async () => {

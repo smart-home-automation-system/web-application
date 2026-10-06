@@ -143,13 +143,14 @@ describe('Overview', () => {
     });
 
     it('shows what the backend said as it is: the backend speaks English only', async () => {
-      error.set(new ApiError('client', 400, [{ message: 'Name is too short.' }]));
+      error.set(new ApiError('client', 400, [{ message: 'Room {{ message }} is unknown.' }]));
       loading.set(false);
       stale.set(true);
 
       await useLanguage('pl');
 
-      expect(await text()).toContain('Name is too short.');
+      // word for word, braces included: the backend's text is not searched for placeholders
+      expect(await text()).toContain('Room {{ message }} is unknown.');
     });
 
     it('translates the label of the progress bar', async () => {
