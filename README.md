@@ -32,16 +32,22 @@ the whole house is managed, and for the phones of the household, where each memb
 own room. It is an Angular single-page application that talks only to `api-gateway-service`;
 it holds no data and no logic of its own beyond presentation.
 
-This release is the **application shell**: the layout and navigation, the foundation every
-dashboard is built on (API client, polling, error handling, house time), the mock API for
-development, and the delivery pipeline. The landing page shows a single read-only tile - the
-switch of the heating system - which proves the path from the screen to a backend service. The
-dashboards themselves arrive with the following tasks.
+So far it is the **application shell**: the layout and navigation, the foundation every
+dashboard is built on (API client, polling, error handling, house time, two languages), the mock
+API for development, and the delivery pipeline. The landing page shows a single read-only tile -
+the switch of the heating system - which proves the path from the screen to a backend service.
+The dashboards themselves arrive with the following tasks.
+
+The interface speaks **English and Polish**. English is the default on a first visit, whatever
+the language of the browser; Polish is chosen from the toolbar, changes the open page without a
+reload and is remembered in the browser. Dates and numbers follow the language (a 24-hour clock
+in both), and so do the labels a screen reader announces.
 
 | Layer | Choice |
 |---|---|
 | Framework | Angular 22 - standalone components, zoneless change detection, signals |
 | Components | Angular Material (Material Design 3), light and dark following the system |
+| Languages | Transloco, switched at runtime; English in the main bundle, Polish downloaded when chosen |
 | Fonts and icons | Roboto and Material Symbols, **self-hosted** - nothing is loaded from the internet |
 | Tests | Vitest (unit), Playwright (browser, desktop and phone layouts) |
 | Runtime | static files served by `nginx` (unprivileged image), behind the Kubernetes ingress |
@@ -63,6 +69,9 @@ this repository is public.
 The mock API can be switched into a failure mode, to look at the error states: in the browser
 console set `localStorage['mock-scenario']` to `offline` (no answer at all) or `server-error`
 (every call answers 502) and reload; remove the key to go back.
+
+Texts live in `src/app/i18n/` - `en.ts` is the source of the keys and `pl.ts` has to carry the
+same ones, which the compiler and a unit test both check.
 
 | Command | What it does |
 |---|---|
@@ -89,7 +98,8 @@ What the application relies on, in every call:
 
 - **Errors** come in the shared contract of `cholewa-commons` (`{"errors":[{"message", "code"}]}`).
   The status survives any body - none, HTML from a proxy, JSON of another shape - and what a
-  failing service (5xx) says about itself is never shown on screen.
+  failing service (5xx) says about itself is never shown on screen. The message of a refused
+  request (4xx) is shown as sent, in English, also when the interface is Polish.
 - **Date-times** are `LocalDateTime` values: the wall-clock time of the house, without an offset.
   They are displayed exactly as sent and never converted to the zone of the browser, so a phone
   abroad on VPN still shows house time.

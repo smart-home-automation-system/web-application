@@ -38,6 +38,38 @@ test.describe('container image', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'About' })).toBeVisible();
   });
 
+  // Polish is the one part of the application that is downloaded on demand: a chunk of its own,
+  // which the dev server never serves the way the image does
+  test('downloads the Polish texts when Polish is chosen, and keeps the choice', async ({
+    page,
+  }) => {
+    const chunks: { path: string; cacheControl: string | undefined }[] = [];
+    page.on('response', (response) => {
+      const path = new URL(response.url()).pathname;
+      if (/^\/chunk-.*\.js$/.test(path)) {
+        chunks.push({ path, cacheControl: response.headers()['cache-control'] });
+      }
+    });
+    await page.goto('/about');
+    await expect(page.getByRole('heading', { level: 1, name: 'About' })).toBeVisible();
+    const before = chunks.length;
+
+    await page.getByRole('button', { name: 'Change language' }).click();
+    await page.getByRole('menuitemradio', { name: 'Polski' }).click();
+
+    await expect(page.getByRole('heading', { level: 1, name: 'O aplikacji' })).toBeVisible();
+    const downloaded = chunks.slice(before);
+    expect(downloaded.length, 'a chunk was downloaded for the language').toBeGreaterThan(0);
+    for (const chunk of downloaded) {
+      expect(chunk.cacheControl, chunk.path).toContain('immutable');
+    }
+
+    await page.reload();
+
+    await expect(page.getByRole('heading', { level: 1, name: 'O aplikacji' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
+  });
+
   test('shows the stamped version, not the one of a local build', async ({ page }) => {
     await page.goto('/about');
 

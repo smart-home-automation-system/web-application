@@ -3,8 +3,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_NAME } from './app-title-strategy';
+import { LanguageMenu } from './language-menu';
 import { NAV_ITEMS } from './navigation';
 
 /**
@@ -21,6 +23,8 @@ import { NAV_ITEMS } from './navigation';
     MatToolbarModule,
     MatListModule,
     MatIconModule,
+    TranslocoDirective,
+    LanguageMenu,
   ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
