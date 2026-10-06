@@ -1,3 +1,5 @@
+import { dateTimeFormat } from '../i18n/intl-formats';
+
 /**
  * The backend sends `LocalDateTime` values: the wall-clock time of the house, without an offset
  * (`2026-10-05T12:30:15.123456`). They are shown exactly as sent - never converted to the zone
@@ -34,7 +36,10 @@ export function parseHouseDateTime(text: string | null | undefined): HouseDateTi
   return valid ? parsed : undefined;
 }
 
-const DEFAULT_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
+export const DEFAULT_DATE_TIME_FORMAT: Intl.DateTimeFormatOptions = {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+};
 
 /**
  * Formats the wall-clock value as it is. The trick: the fields are placed on the UTC timeline
@@ -43,11 +48,9 @@ const DEFAULT_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSt
 export function formatHouseDateTime(
   value: HouseDateTime,
   locale: string,
-  options: Intl.DateTimeFormatOptions = DEFAULT_FORMAT,
+  options: Intl.DateTimeFormatOptions = DEFAULT_DATE_TIME_FORMAT,
 ): string {
-  return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(
-    wallClockAsUtc(value),
-  );
+  return dateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(wallClockAsUtc(value));
 }
 
 function wallClockAsUtc(value: HouseDateTime): number {

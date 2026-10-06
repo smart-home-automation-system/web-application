@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { PollingResource } from '../../core/api/polling-resource';
 import { HeatingApi, HeatingStatus } from '../../data-access/heating/heating-api';
@@ -29,7 +30,10 @@ describe('Overview', () => {
     stale.set(false);
     lastUpdated.set(undefined);
     TestBed.configureTestingModule({
-      providers: [{ provide: HeatingApi, useValue: { watchStatus: () => resource } }],
+      providers: [
+        provideI18nTesting(),
+        { provide: HeatingApi, useValue: { watchStatus: () => resource } },
+      ],
     });
     fixture = TestBed.createComponent(Overview);
   });
@@ -53,16 +57,19 @@ describe('Overview', () => {
     const content = await text();
 
     expect(content).toContain('Enabled');
-    expect(content).toContain('Sep 28, 2026');
-    expect(content).toContain('6:45');
+    expect(content).toContain('Switched on: 28 Sept 2026, 06:45');
+    expect(content).toContain('Updated just now');
     expect(fixture.nativeElement.querySelector('mat-progress-bar')).toBeNull();
   });
 
   it('shows a disabled heating system', async () => {
-    value.set({ isHeatingEnabled: false });
+    value.set({ isHeatingEnabled: false, updatedAt: '2026-04-22T16:31:17.840868' });
     loading.set(false);
 
-    expect(await text()).toContain('Disabled');
+    const content = await text();
+
+    expect(content).toContain('Disabled');
+    expect(content).toContain('Switched off: 22 Apr 2026, 16:31');
   });
 
   it('leaves the time of the change out when the backend does not send it', async () => {
@@ -83,7 +90,7 @@ describe('Overview', () => {
 
     expect(content).toContain('Enabled');
     expect(content).toContain('cannot be reached');
-    expect(content).toContain('Out of date');
+    expect(content).toContain('Out of date - last update just now');
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeTruthy();
   });
 
@@ -94,7 +101,65 @@ describe('Overview', () => {
 
     const content = await text();
 
-    expect(content).toContain('502');
+    expect(content).toContain('(error 502)');
     expect(content).toContain('No data received');
+  });
+
+  it('shows the age of the data once it is worth a number', async () => {
+    value.set({ isHeatingEnabled: true });
+    loading.set(false);
+    lastUpdated.set(Date.now() - 3 * 60_000);
+
+    expect(await text()).toMatch(/Updated 3 min\.? ago/);
+  });
+
+  describe('in Polish', () => {
+    it('translates the tile, the date and the age of the data', async () => {
+      value.set({ isHeatingEnabled: true, updatedAt: '2026-09-28T06:45:12.840868' });
+      loading.set(false);
+      lastUpdated.set(Date.now() - 3 * 60_000);
+      await fixture.whenStable();
+
+      await useLanguage('pl');
+      const content = await text();
+
+      expect(content).toContain('Ogrzewanie');
+      expect(content).toContain('Włączone');
+      expect(content).toContain('Włączono: 28 wrz 2026, 06:45');
+      expect(content).toContain('Zaktualizowano 3 min temu');
+      expect(content).not.toContain('Heating');
+    });
+
+    it('translates a failure, with the status inside the sentence', async () => {
+      error.set(new ApiError('server', 502));
+      loading.set(false);
+      stale.set(true);
+
+      await useLanguage('pl');
+      const content = await text();
+
+      expect(content).toContain('Usługa jest teraz niedostępna (błąd 502).');
+      expect(content).toContain('Brak danych');
+    });
+
+    it('shows what the backend said as it is: the backend speaks English only', async () => {
+      error.set(new ApiError('client', 400, [{ message: 'Room {{ message }} is unknown.' }]));
+      loading.set(false);
+      stale.set(true);
+
+      await useLanguage('pl');
+
+      // word for word, braces included: the backend's text is not searched for placeholders
+      expect(await text()).toContain('Room {{ message }} is unknown.');
+    });
+
+    it('translates the label of the progress bar', async () => {
+      await useLanguage('pl');
+      await fixture.whenStable();
+
+      expect(
+        fixture.nativeElement.querySelector('mat-progress-bar')?.getAttribute('aria-label'),
+      ).toBe('Wczytywanie stanu ogrzewania');
+    });
   });
 });

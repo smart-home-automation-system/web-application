@@ -2,10 +2,12 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { HeatingApi } from '../../data-access/heating/heating-api';
 import { describeApiError } from '../../shared/api-error/describe-api-error';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
+import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 
 /**
@@ -14,7 +16,15 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
  */
 @Component({
   selector: 'app-overview',
-  imports: [MatCardModule, MatIconModule, MatProgressBarModule, DataFreshness, HouseDateTimePipe],
+  imports: [
+    MatCardModule,
+    MatIconModule,
+    MatProgressBarModule,
+    TranslocoDirective,
+    DataFreshness,
+    DisplayTextPipe,
+    HouseDateTimePipe,
+  ],
   templateUrl: './overview.html',
   styleUrl: './overview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

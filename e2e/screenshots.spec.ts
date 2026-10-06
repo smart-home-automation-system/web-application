@@ -1,40 +1,64 @@
-import { expect, test, useScenario } from './support';
+import { Language, expect, startIn, test, useScenario } from './support';
 
 /**
- * Not assertions but evidence: one picture per layout and colour scheme, written to
+ * Not assertions but evidence: one picture per layout, colour scheme and language, written to
  * `test-results/screenshots/` and attached to the pull request.
  */
-for (const scheme of ['light', 'dark'] as const) {
-  test.describe(`screenshots, ${scheme}`, () => {
-    test.use({ colorScheme: scheme });
+const TEXTS = {
+  en: { enabled: 'Enabled', notFound: 'Page not found' },
+  pl: { enabled: 'Włączone', notFound: 'Nie znaleziono strony' },
+} as const;
 
-    test('overview', async ({ page }, testInfo) => {
-      await page.goto('/');
-      await expect(page.getByText('Enabled')).toBeVisible();
-      await page.screenshot({ path: shot(testInfo.project.name, scheme, 'overview') });
-    });
+for (const language of ['en', 'pl'] as const) {
+  for (const scheme of ['light', 'dark'] as const) {
+    test.describe(`screenshots, ${language}, ${scheme}`, () => {
+      test.use({ colorScheme: scheme });
+      test.beforeEach(async ({ page }) => startIn(page, language));
 
-    test('overview, backend unreachable', async ({ page }, testInfo) => {
-      await useScenario(page, 'offline');
-      await page.goto('/');
-      await expect(page.getByRole('alert')).toBeVisible();
-      await page.screenshot({ path: shot(testInfo.project.name, scheme, 'overview-offline') });
-    });
+      test('overview', async ({ page }, testInfo) => {
+        await page.goto('/');
+        await expect(page.getByText(TEXTS[language].enabled)).toBeVisible();
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'overview') });
+      });
 
-    test('about', async ({ page }, testInfo) => {
-      await page.goto('/about');
-      await expect(page.getByTestId('app-version')).toBeVisible();
-      await page.screenshot({ path: shot(testInfo.project.name, scheme, 'about') });
-    });
+      test('overview, backend unreachable', async ({ page }, testInfo) => {
+        await useScenario(page, 'offline');
+        await page.goto('/');
+        await expect(page.getByRole('alert')).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
+        });
+      });
 
-    test('not found', async ({ page }, testInfo) => {
-      await page.goto('/no/such/page');
-      await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
-      await page.screenshot({ path: shot(testInfo.project.name, scheme, 'not-found') });
+      test('about', async ({ page }, testInfo) => {
+        await page.goto('/about');
+        await expect(page.getByTestId('app-version')).toBeVisible();
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'about') });
+      });
+
+      test('not found', async ({ page }, testInfo) => {
+        await page.goto('/no/such/page');
+        await expect(page.getByRole('heading', { name: TEXTS[language].notFound })).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'not-found'),
+        });
+      });
+
+      test('language menu', async ({ page }, testInfo) => {
+        await page.goto('/');
+        await expect(page.getByText(TEXTS[language].enabled)).toBeVisible();
+        await page.locator('.language-menu__trigger').click();
+        await expect(page.getByRole('menuitemradio', { name: 'Polski' })).toBeVisible();
+        // the menu fades in: wait until it is fully opaque
+        await expect(page.locator('.mat-mdc-menu-panel')).toHaveCSS('opacity', '1');
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'language-menu'),
+        });
+      });
     });
-  });
+  }
 }
 
-function shot(project: string, scheme: string, name: string): string {
-  return `test-results/screenshots/${project}-${scheme}-${name}.png`;
+function shot(project: string, scheme: string, language: Language, name: string): string {
+  return `test-results/screenshots/${project}-${scheme}-${language}-${name}.png`;
 }

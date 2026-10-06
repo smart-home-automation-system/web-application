@@ -10,7 +10,7 @@ test.describe('application shell', () => {
     const tile = page.locator('mat-card', { hasText: 'Heating system' });
     await expect(tile.getByText('Enabled')).toBeVisible();
     // house wall-clock time of the fixture, shown as sent whatever the zone of the browser
-    await expect(tile.getByText('Sep 28, 2026, 6:45 AM')).toBeVisible();
+    await expect(tile.getByText(/Switched on: 28 Sept? 2026, 06:45/)).toBeVisible();
     await expect(tile.getByText(/^Updated/)).toBeVisible();
   });
 

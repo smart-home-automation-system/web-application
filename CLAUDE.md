@@ -16,6 +16,8 @@ The plan this application is built from lives in Jira (HAS project, tasks labell
 - Roboto and Material Symbols are **self-hosted** (`@fontsource/roboto`,
   `@material-symbols/font-400`) — the application runs on a LAN and its CSP allows this origin
   only, so nothing may be loaded from a CDN
+- Two languages, switched at runtime: Transloco (`@jsverse/transloco`), English by default,
+  Polish on choice — see "Languages" below
 - Unit tests: Vitest (`ng test`); browser tests: Playwright (`e2e/`); no SSR
 - Runtime: static files in an `nginx-unprivileged` image
 
@@ -25,11 +27,13 @@ Folder layout (feature-based):
 
 ```
 src/app/
-  core/           # singletons: API client, polling, config, layout shell, time, build info
+  core/           # singletons: API client, polling, config, layout shell, i18n, time, build info
   shared/         # reusable presentational components, pipes, pure helpers
   data-access/    # one injectable class per backend domain (heating, water, boiler, …)
   features/       # routed features, lazy-loaded: overview, about, …
+  i18n/           # the texts: en.ts (source of the keys), pl.ts
 src/mocks/        # mock API: fixtures and handlers, never part of a production bundle
+src/testing/      # helpers for unit tests (i18n)
 e2e/              # Playwright tests
 ```
 
@@ -50,8 +54,8 @@ e2e/              # Playwright tests
 - **Errors**: every failed call is an `ApiError` (`core/api/api-error.ts`) with a `kind`
   (`network`, `server`, `client`, `invalid-response`, `unexpected`), the status and the backend
   messages with their `code`. Branch on `code` (`error.hasCode('…')`), never on message text.
-  Turn it into a sentence with `describeApiError`; what a failing service (5xx) says about itself
-  never goes on screen.
+  Turn it into a sentence with `describeApiError` (it returns a text to translate); what a failing
+  service (5xx) says about itself never goes on screen.
 - **Date-times from the backend are house wall-clock times** (`LocalDateTime`, no offset). Never
   `new Date(text)` and never Angular's `date` pipe on them — both shift the value into the
   browser zone. Display with the `houseDateTime` pipe. Computing the *age* of such a value needs
@@ -60,10 +64,10 @@ e2e/              # Playwright tests
 - **The API types are promises, not checks**: `ApiClient.get<T>` validates nothing. Model a field
   as optional wherever the backend may omit it (`@JsonInclude(NON_NULL)` is common there), and
   take the shape from a real answer of the gateway, not from the Java class name.
-- **Routes**: lazy-loaded with `loadComponent`, each with a `title`. **No route may start with
-  `home`** — the ingress sends `/home` to the API gateway (a test pins this). A new destination
-  goes into `NAV_ITEMS` (`core/layout/navigation.ts`) together with its route; the phone layout
-  shows them in a bottom bar that holds five.
+- **Routes**: lazy-loaded with `loadComponent`, each with a `title` — the **key** of its text,
+  not the text. **No route may start with `home`** — the ingress sends `/home` to the API gateway
+  (a test pins this). A new destination goes into `NAV_ITEMS` (`core/layout/navigation.ts`, label
+  as a key) together with its route; the phone layout shows them in a bottom bar that holds five.
 - **Layout**: the shell renders both navigations and CSS shows one (side list from 840 px, bottom
   bar below). Use the `--mat-sys-*` variables for every colour and font — never a literal — so
   themes can change them. Global building blocks (`.page-header`, `.message-page`) are in
@@ -79,6 +83,63 @@ e2e/              # Playwright tests
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
+
+## Languages
+
+English is the default — on a first visit always, whatever the language of the browser — and
+Polish can be chosen from the toolbar. The choice changes the open page without a reload and is
+kept in `localStorage['smart-home.language']` (HAS-193 scopes it per profile).
+
+- **No literal text in a template or in code that ends up on screen.** Every text is a key in
+  `src/app/i18n/en.ts` — the source of the keys — and `pl.ts`, grouped by the feature that owns
+  it. The only exceptions: the product name (`APP_NAME`) and the names of the languages, which
+  are shown in their own words.
+- **In a template**: wrap it in `<ng-container *transloco="let t">` and write `t('about.title')`,
+  `t('overview.heating.switchedOn', { time: … })`; attributes too (`[attr.aria-label]="t(…)"`).
+  Not the `transloco` pipe — one directive per template re-renders it on a language change.
+- **In code**: return the key, not the words — `MessageKey` for a label or a route title,
+  `DisplayText` for a sentence, shown with the `displayText` pipe
+  (`{{ describeApiError(error) | displayText }}`). Code that needs the words themselves (the tab
+  title, the Material labels) reads `LanguageStore.language()` in an `effect` and calls
+  `TranslocoService.translate` — the signal changes only after the texts are in memory.
+- **Words from outside are never a translation parameter.** Transloco searches the text it has
+  just substituted for more placeholders: a backend message containing `{{ foo }}` loses it, and
+  one containing `{{ message }}` — its own parameter name — never returns, freezing the tab.
+  Text the application did not write (a backend message, later a device or member name inside a
+  sentence) is a `DisplayText` of the `literal` kind, printed as it is. Parameters are numbers
+  and text of our own making only (a formatted date, a translated word).
+- **Adding a text**: add the key to `en.ts`; the build then fails until `pl.ts` has it too
+  (`pl` is typed with the keys of `en`). `translations.spec.ts` additionally checks that both
+  have the same placeholders and that nothing is left untranslated or empty. Keys in TypeScript
+  are checked by the compiler (`MessageKey`); keys in templates are plain strings, so
+  `npm run check:i18n` reads every template and fails on a key that does not exist — a typo
+  would otherwise show only in the one view that has it.
+- **Dates and numbers follow the language, through three pipes** — never Angular's `date`,
+  `number` or `percent`, which are tied to a fixed `LOCALE_ID`:
+  `houseDateTime` (a backend `LocalDateTime`, shown as house wall-clock time), `localDateTime`
+  (a real instant, shown in the browser zone) and `localNumber`. They are impure on purpose (the
+  language is not an argument) and cheap all the same: each remembers its last result
+  (`memoLast`), and formatters are cached in `core/i18n/intl-formats.ts`, which is also what any
+  other code uses instead of `new Intl.…`. English formats as `en-GB` — 24-hour clock, day
+  before month.
+- **Units**: write the symbol next to the number (`°C`, `%`), the same in both languages. Do not
+  use the `unit` style of `Intl.NumberFormat` — in Polish it prints degrees Celsius as `st. C`.
+- **What the backend says stays in English**: a 4xx message is shown as sent (the backend speaks
+  English only, by the org rule). Where a refusal has a `code`, map the code to a translated
+  text of our own instead.
+- **A control is named by what is written on it.** An `aria-label` replaces the visible text in
+  the accessible name; where a button shows text (the `EN` of the language button) add the rest
+  as `.visually-hidden` text inside it instead, with `&ngsp;` so the words do not run together.
+- **Angular Material's own labels** (paginator, date picker) are translated in
+  `core/i18n/material-intl.ts`, which also gives the date picker the locale. A Material control
+  with built-in texts used for the first time (sort header, stepper) gets its `…Intl` class there.
+- **Tests**: `provideI18nTesting()` in the providers of any unit test that renders a template —
+  it is the real i18n, so the test reads what a user reads — and `await useLanguage('pl')` to
+  switch (`src/testing/i18n.ts`). In Playwright: `startIn(page, 'pl')` (`e2e/support.ts`).
+  Verify a new view in both languages; Polish texts are longer and break layouts first.
+- **A third language**: an entry in `LANGUAGES` and a case in the loader
+  (`core/i18n/languages.ts`), plus its file. English is in the main bundle; every other language
+  is a chunk downloaded when chosen.
 
 ## Mock API
 
@@ -133,6 +194,7 @@ up in a production build.
 - `npm start` — dev server against a gateway (API proxy); `npm run start:mock` — against the mock API
 - `npm run lint` — ESLint (sources, templates, e2e)
 - `npm test` — unit tests (Vitest; single run when non-interactive)
+- `npm run check:i18n` — every translation key used in a template exists
 - `npm run build` + `npm run check:bundle` — production build and its guard
 - `npm run e2e` — Playwright, desktop and phone projects; screenshots in `test-results/screenshots/`
 
@@ -141,7 +203,7 @@ up in a production build.
 1. Never commit to `main`. Every change goes on a **`feature/HAS-<n>`** branch, where
    `<n>` is the Jira task number (HAS project) — this is an org-wide rule. If no Jira
    task covers the change, have one created first (`jira-backlog`) or ask the user.
-2. Definition of done for any change: lint, unit tests, production build, bundle check and
+2. Definition of done for any change: lint, translation-key check, unit tests, production build, bundle check and
    the Playwright suite pass; `/code-review` of the own diff (and `/security-review` before a
    release), outcome recorded on the PR; visual verification in a browser for UI changes —
    desktop and phone width, light and dark — with screenshots attached to the PR.

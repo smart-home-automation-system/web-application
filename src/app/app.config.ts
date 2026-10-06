@@ -11,6 +11,7 @@ import {
 
 import { routes } from './app.routes';
 import { mockApiInterceptors } from './core/api/mock-api';
+import { provideI18n } from './core/i18n/provide-i18n';
 import { AppTitleStrategy } from './core/layout/app-title-strategy';
 
 export const appConfig: ApplicationConfig = {
@@ -32,6 +33,7 @@ export const appConfig: ApplicationConfig = {
       }),
     ),
     provideHttpClient(withInterceptors([...mockApiInterceptors])),
+    ...provideI18n(),
     { provide: TitleStrategy, useClass: AppTitleStrategy },
     // icons are the self-hosted Material Symbols font, not the legacy Material Icons
     { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },

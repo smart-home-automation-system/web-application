@@ -1,6 +1,9 @@
+import { MessageKey } from '../../i18n/messages';
+
 export interface NavItem {
   readonly path: string;
-  readonly label: string;
+  /** Key of the label; the shell translates it. */
+  readonly label: MessageKey;
   /** Name of a Material Symbols icon. */
   readonly icon: string;
 }
@@ -10,6 +13,6 @@ export interface NavItem {
  * with its route. The phone layout shows them in a bottom bar, which holds five at most.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { path: '/overview', label: 'Overview', icon: 'dashboard' },
-  { path: '/about', label: 'About', icon: 'info' },
+  { path: '/overview', label: 'nav.overview', icon: 'dashboard' },
+  { path: '/about', label: 'nav.about', icon: 'info' },
 ];

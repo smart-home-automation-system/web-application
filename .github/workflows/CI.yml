@@ -28,6 +28,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check the translation keys used in templates
+        run: npm run check:i18n
+
       - name: Unit tests
         run: npm test
 

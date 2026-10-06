@@ -1,55 +1,58 @@
-<a class="shell__skip-link" href="#main-content" (click)="skipToContent($event, main)"
-  >Skip to content</a
->
+<ng-container *transloco="let t">
+  <a class="shell__skip-link" href="#main-content" (click)="skipToContent($event, main)">{{
+    t('app.skipToContent')
+  }}</a>
 
-<mat-toolbar class="shell__toolbar">
-  <a class="shell__brand" routerLink="/">
-    <mat-icon>home</mat-icon>
-    <span>{{ appName }}</span>
-  </a>
-  <span class="shell__spacer"></span>
-  <!-- Slot of the weather strip: outdoor temperature, humidity and the rest of the weather
-       station readings land here once a service provides them. -->
-  <div class="shell__weather" data-slot="weather"></div>
-</mat-toolbar>
-
-<div class="shell__body">
-  <nav class="shell__side-nav" aria-label="Main">
-    <mat-nav-list>
-      @for (item of navItems; track item.path) {
-        <a
-          mat-list-item
-          [routerLink]="item.path"
-          routerLinkActive
-          #link="routerLinkActive"
-          [activated]="link.isActive"
-          [attr.aria-current]="link.isActive ? 'page' : null"
-        >
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
-        </a>
-      }
-    </mat-nav-list>
-  </nav>
-
-  <main class="shell__content" id="main-content" tabindex="-1" #main>
-    <router-outlet />
-  </main>
-</div>
-
-<nav class="shell__bottom-nav" aria-label="Main">
-  @for (item of navItems; track item.path) {
-    <a
-      class="shell__bottom-link"
-      [routerLink]="item.path"
-      routerLinkActive="shell__bottom-link--active"
-      #link="routerLinkActive"
-      [attr.aria-current]="link.isActive ? 'page' : null"
-    >
-      <span class="shell__bottom-icon"
-        ><mat-icon>{{ item.icon }}</mat-icon></span
-      >
-      <span class="shell__bottom-label">{{ item.label }}</span>
+  <mat-toolbar class="shell__toolbar">
+    <a class="shell__brand" routerLink="/">
+      <mat-icon>home</mat-icon>
+      <span>{{ appName }}</span>
     </a>
-  }
-</nav>
+    <span class="shell__spacer"></span>
+    <!-- Slot of the weather strip: outdoor temperature, humidity and the rest of the weather
+         station readings land here once a service provides them. -->
+    <div class="shell__weather" data-slot="weather"></div>
+    <app-language-menu />
+  </mat-toolbar>
+
+  <div class="shell__body">
+    <nav class="shell__side-nav" [attr.aria-label]="t('nav.label')">
+      <mat-nav-list>
+        @for (item of navItems; track item.path) {
+          <a
+            mat-list-item
+            [routerLink]="item.path"
+            routerLinkActive
+            #link="routerLinkActive"
+            [activated]="link.isActive"
+            [attr.aria-current]="link.isActive ? 'page' : null"
+          >
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ t(item.label) }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    </nav>
+
+    <main class="shell__content" id="main-content" tabindex="-1" #main>
+      <router-outlet />
+    </main>
+  </div>
+
+  <nav class="shell__bottom-nav" [attr.aria-label]="t('nav.label')">
+    @for (item of navItems; track item.path) {
+      <a
+        class="shell__bottom-link"
+        [routerLink]="item.path"
+        routerLinkActive="shell__bottom-link--active"
+        #link="routerLinkActive"
+        [attr.aria-current]="link.isActive ? 'page' : null"
+      >
+        <span class="shell__bottom-icon"
+          ><mat-icon>{{ item.icon }}</mat-icon></span
+        >
+        <span class="shell__bottom-label">{{ t(item.label) }}</span>
+      </a>
+    }
+  </nav>
+</ng-container>
