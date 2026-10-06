@@ -47,6 +47,15 @@ describe('toApiError', () => {
     expect(error.messages).toEqual([]);
   });
 
+  // only a 4xx is a refused request: a redirect that reached the application is a proxy or a
+  // login page in front of the API, not an answer of the API
+  it.each([302, 304])('classifies a %i as an invalid response, not a refused request', (status) => {
+    const error = toApiError(new HttpErrorResponse({ status, error: null }));
+
+    expect(error.kind).toBe('invalid-response');
+    expect(error.status).toBe(status);
+  });
+
   it('classifies an unparsable 200 as an invalid response', () => {
     const error = toApiError(
       new HttpErrorResponse({ status: 200, error: { error: new SyntaxError(), text: '<html>' } }),

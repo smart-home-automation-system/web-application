@@ -24,10 +24,12 @@
             }}</mat-icon>
             {{ status.isHeatingEnabled ? 'Enabled' : 'Disabled' }}
           </p>
-          <p class="tile__detail">
-            Switched {{ status.isHeatingEnabled ? 'on' : 'off' }}:
-            {{ status.updatedAt | houseDateTime }}
-          </p>
+          @if (status.updatedAt) {
+            <p class="tile__detail">
+              Switched {{ status.isHeatingEnabled ? 'on' : 'off' }}:
+              {{ status.updatedAt | houseDateTime }}
+            </p>
+          }
         }
         @if (heating.error(); as error) {
           <p class="tile__error" role="alert">

@@ -22,13 +22,17 @@ describe('ApiClient', () => {
   it('prefixes the gateway base path', () => {
     api.get('/heating').subscribe();
 
-    http.expectOne('/home/heating').flush({});
+    const request = http.expectOne('/home/heating');
+    expect(request.request.method).toBe('GET');
+    request.flush({});
   });
 
   it('accepts a path without a leading slash', () => {
     api.get('water/status/active').subscribe();
 
-    http.expectOne('/home/water/status/active').flush({});
+    const request = http.expectOne('/home/water/status/active');
+    expect(request.request.url).toBe('/home/water/status/active');
+    request.flush({});
   });
 
   it('sends query parameters', () => {
@@ -59,6 +63,25 @@ describe('ApiClient', () => {
     expect(failure).toBeInstanceOf(ApiError);
     expect((failure as ApiError).kind).toBe('server');
     expect((failure as ApiError).status).toBe(502);
+  });
+
+  it('gives up on a call that gets no answer in time, and aborts it', () => {
+    vi.useFakeTimers();
+    try {
+      let failure: unknown;
+      api.get('/heating').subscribe({ error: (error: unknown) => (failure = error) });
+      const request = http.expectOne('/home/heating');
+
+      vi.advanceTimersByTime(9_999);
+      expect(failure).toBeUndefined();
+
+      vi.advanceTimersByTime(1);
+      expect(failure).toBeInstanceOf(ApiError);
+      expect((failure as ApiError).kind).toBe('network');
+      expect(request.cancelled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('turns a lost connection into a network ApiError', () => {

@@ -32,6 +32,15 @@ describe('routes', () => {
     expect(children.at(-1)?.path).toBe('**');
   });
 
+  // the error page is where a navigation ends when a lazy chunk cannot be downloaded any more -
+  // it would be unreachable exactly then if it were a lazy chunk itself
+  it('load the error page with the application, not on demand', () => {
+    const error = (routes[0].children ?? []).find((route) => route.path === 'error');
+
+    expect(error?.component).toBeDefined();
+    expect(error?.loadComponent).toBeUndefined();
+  });
+
   it('give every page a title', () => {
     const untitled = (routes[0].children ?? []).filter(
       (route) => !route.redirectTo && route.title === undefined,

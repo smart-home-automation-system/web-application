@@ -100,6 +100,26 @@ describe('pollingResource', () => {
     expect(load).toHaveBeenCalledTimes(3);
   });
 
+  it('survives a loader that throws before it returns its observable', () => {
+    let broken = true;
+    const resource = create<string>(() => {
+      if (broken) {
+        throw new TypeError('thrown while building the request');
+      }
+      return of('value');
+    });
+    vi.advanceTimersByTime(0);
+
+    expect(resource.loading()).toBe(false);
+    expect(resource.error()?.kind).toBe('unexpected');
+
+    broken = false;
+    vi.advanceTimersByTime(1_000);
+
+    expect(resource.value()).toBe('value');
+    expect(resource.error()).toBeUndefined();
+  });
+
   it('does not start a call while the previous one is still running', () => {
     const load = vi.fn(() => NEVER);
 

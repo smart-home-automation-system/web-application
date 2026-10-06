@@ -29,4 +29,14 @@ import { NAV_ITEMS } from './navigation';
 export class Shell {
   protected readonly appName = APP_NAME;
   protected readonly navItems = NAV_ITEMS;
+
+  /**
+   * Moves the keyboard focus past the navigation. Done in code because of `<base href="/">`:
+   * the browser resolves a bare `#main-content` against it, so following the link would load
+   * the start page instead of jumping within this one.
+   */
+  protected skipToContent(event: Event, main: HTMLElement): void {
+    event.preventDefault();
+    main.focus();
+  }
 }

@@ -44,6 +44,9 @@ e2e/              # Playwright tests
 - **Every polled view shows its freshness**: `<app-data-freshness>` with the resource's
   `lastUpdated` and `stale`. A value without its age reads as current when the backend has been
   down for an hour. On an error the last value stays on screen, marked stale, next to the message.
+- **Timeouts**: `ApiClient` fails a call that gets no answer within `requestTimeoutMs` (10 s) as a
+  `network` error and aborts it. A request that is accepted and never answered is the outage that
+  otherwise looks like "still loading" forever.
 - **Errors**: every failed call is an `ApiError` (`core/api/api-error.ts`) with a `kind`
   (`network`, `server`, `client`, `invalid-response`, `unexpected`), the status and the backend
   messages with their `code`. Branch on `code` (`error.hasCode('…')`), never on message text.
@@ -51,8 +54,9 @@ e2e/              # Playwright tests
   never goes on screen.
 - **Date-times from the backend are house wall-clock times** (`LocalDateTime`, no offset). Never
   `new Date(text)` and never Angular's `date` pipe on them — both shift the value into the
-  browser zone. Display with the `houseDateTime` pipe; compute an age with
-  `houseDateTimeToEpochMs` and the configured house zone.
+  browser zone. Display with the `houseDateTime` pipe. Computing the *age* of such a value needs
+  the zone of the house (an offset has to come from somewhere); that conversion does not exist
+  yet and is added, with tests around both DST changes, by the first view that shows one.
 - **The API types are promises, not checks**: `ApiClient.get<T>` validates nothing. Model a field
   as optional wherever the backend may omit it (`@JsonInclude(NON_NULL)` is common there), and
   take the shape from a real answer of the gateway, not from the Java class name.
@@ -117,6 +121,9 @@ up in a production build.
 - CI builds the image, starts it read-only and runs `e2e/image.spec.ts` against it in a real
   browser: the only test of nginx (CSP, SPA fallback, caching, `/healthz`). Locally:
   `IMAGE_URL=http://localhost:8080 npm run e2e`.
+- nginx marks as immutable only what the build names with a hash (`main-`, `chunk-`, `styles-`,
+  `polyfills-`, `scripts-`, `worker-` in the root, and all of `/media/`). A new kind of hashed
+  output needs its prefix added there, or it is served with `no-cache` (slow, never wrong).
 - Release → `release.yml` pushes `magikabdul/web-application:<tag>`; the manifest
   (`workshop/web-application.yaml`) is in `deployment-tools`. **Every task ends with a release
   and a deploy**, like the services.

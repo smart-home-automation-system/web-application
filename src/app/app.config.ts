@@ -21,7 +21,11 @@ export const appConfig: ApplicationConfig = {
       // a navigation that cannot complete - typically a lazy chunk that is gone after a
       // deploy - ends on the error page instead of a dead click
       withNavigationErrorHandler((error) => {
-        console.error('Navigation failed', error);
+        console.error('Navigation failed', error.error);
+        // the error page itself failing must not redirect to the error page again
+        if (error.url.startsWith('/error')) {
+          return;
+        }
         return new RedirectCommand(inject(Router).parseUrl('/error'), {
           skipLocationChange: true,
         });

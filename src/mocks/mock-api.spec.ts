@@ -46,9 +46,14 @@ describe('mock API', () => {
   });
 
   it('leaves calls outside the API alone', () => {
-    http.get('/assets/anything.json').subscribe();
+    let received: unknown;
+    http.get('/assets/anything.json').subscribe((body) => (received = body));
 
-    TestBed.inject(HttpTestingController).expectOne('/assets/anything.json').flush({});
+    TestBed.inject(HttpTestingController)
+      .expectOne('/assets/anything.json')
+      .flush({ from: 'the real backend' });
+
+    expect(received).toEqual({ from: 'the real backend' });
   });
 
   it('answers nothing in the offline scenario', async () => {

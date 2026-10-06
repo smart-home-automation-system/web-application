@@ -27,10 +27,9 @@ body {
   font: var(--mat-sys-body-medium);
 }
 
-// The icon font renders an icon from its name ("dashboard"); until the font has loaded that name
-// would be visible as text and push the layout around.
+// The icon font renders an icon from its name ("dashboard"). Its @font-face blocks rendering
+// until the font has loaded; should it fail to load, the name must not spill over the layout.
 .material-symbols-outlined {
-  font-display: block;
   overflow: hidden;
 }
 

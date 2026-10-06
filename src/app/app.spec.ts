@@ -55,6 +55,18 @@ describe('application routing', () => {
     expect(current).toEqual(['/about', '/about']);
   });
 
+  it('moves the focus to the content from the skip link, without leaving the page', async () => {
+    await harness.navigateByUrl('/about');
+    const link = page().querySelector<HTMLAnchorElement>('.shell__skip-link')!;
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+    link.dispatchEvent(click);
+
+    // not prevented, the browser would resolve "#main-content" against <base href="/">
+    expect(click.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(page().querySelector('main'));
+  });
+
   it('shows the not-found page for an unknown address', async () => {
     await harness.navigateByUrl('/no/such/page');
 

@@ -1,4 +1,6 @@
-<a class="shell__skip-link" href="#main-content">Skip to content</a>
+<a class="shell__skip-link" href="#main-content" (click)="skipToContent($event, main)"
+  >Skip to content</a
+>
 
 <mat-toolbar class="shell__toolbar">
   <a class="shell__brand" routerLink="/">
@@ -30,7 +32,7 @@
     </mat-nav-list>
   </nav>
 
-  <main class="shell__content" id="main-content" tabindex="-1">
+  <main class="shell__content" id="main-content" tabindex="-1" #main>
     <router-outlet />
   </main>
 </div>

@@ -27,7 +27,7 @@ const API_PREFIX = '/home/';
 console.info(`[${MARKER}] backend calls are answered from src/mocks, scenario: ${scenario()}`);
 
 const mockApiInterceptor: HttpInterceptorFn = (request, next) => {
-  const path = new URL(request.url, 'http://mock.invalid').pathname;
+  const path = new URL(request.url, 'https://mock.invalid').pathname;
   if (!path.startsWith(API_PREFIX)) {
     return next(request);
   }

@@ -3,26 +3,32 @@ name: release
 on:
   release:
     types: [ created ]
+  # A manual run rebuilds the image of an existing tag - it checks that tag out, so the image
+  # always holds the code the tag names (never the head of a branch under an old version).
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing git tag to build and push, e.g. 0.1.0'
+        required: true
+        type: string
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    env:
+      # through the environment, never interpolated into a script: a tag name is free text
+      GIT_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          ref: refs/tags/${{ env.GIT_TAG }}
 
-      - name: Get tag
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "GIT_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo 'latest')" >> $GITHUB_OUTPUT
-          fi
+      - name: Resolve the commit of the tag
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
@@ -37,7 +43,7 @@ jobs:
           images: magikabdul/web-application
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ steps.version.outputs.GIT_TAG }}
+            type=raw,value=${{ env.GIT_TAG }}
 
       # the application is built inside the image (multi-stage Dockerfile); the tag and the
       # commit are stamped into it and shown on the About page
@@ -47,7 +53,7 @@ jobs:
           context: .
           push: true
           build-args: |
-            APP_VERSION=${{ steps.version.outputs.GIT_TAG }}
-            GIT_COMMIT=${{ github.sha }}
+            APP_VERSION=${{ env.GIT_TAG }}
+            GIT_COMMIT=${{ steps.commit.outputs.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -34,6 +34,8 @@ export function parseHouseDateTime(text: string | null | undefined): HouseDateTi
   return valid ? parsed : undefined;
 }
 
+const DEFAULT_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
+
 /**
  * Formats the wall-clock value as it is. The trick: the fields are placed on the UTC timeline
  * and formatted in UTC, so no zone ever shifts them.
@@ -41,51 +43,13 @@ export function parseHouseDateTime(text: string | null | undefined): HouseDateTi
 export function formatHouseDateTime(
   value: HouseDateTime,
   locale: string,
-  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' },
+  options: Intl.DateTimeFormatOptions = DEFAULT_FORMAT,
 ): string {
   return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(
     wallClockAsUtc(value),
   );
 }
 
-/**
- * The point in time a house wall-clock value stands for, as epoch milliseconds - needed only to
- * compute an age. Inside the hour repeated when daylight saving time ends the later of the two
- * instants is returned; the hour skipped in spring does not occur in backend data.
- */
-export function houseDateTimeToEpochMs(value: HouseDateTime, houseTimeZone: string): number {
-  const asUtc = wallClockAsUtc(value);
-  // the offset depends on the instant, which is what is being looked for: guess with the
-  // offset at the wall-clock-as-UTC instant, then correct once with the offset at the guess
-  const guess = asUtc - offsetMs(asUtc, houseTimeZone);
-  return asUtc - offsetMs(guess, houseTimeZone);
-}
-
 function wallClockAsUtc(value: HouseDateTime): number {
   return Date.UTC(value.year, value.month - 1, value.day, value.hour, value.minute, value.second);
-}
-
-/** Offset of the zone from UTC at the given instant, in milliseconds (positive east of UTC). */
-function offsetMs(epochMs: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-  }).formatToParts(epochMs);
-  const field = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((part) => part.type === type)?.value);
-  const zoned = Date.UTC(
-    field('year'),
-    field('month') - 1,
-    field('day'),
-    field('hour'),
-    field('minute'),
-    field('second'),
-  );
-  return zoned - Math.floor(epochMs / 1000) * 1000;
 }

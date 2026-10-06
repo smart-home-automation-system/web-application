@@ -6,6 +6,7 @@ import {
   Observable,
   Subject,
   catchError,
+  defer,
   distinctUntilChanged,
   exhaustMap,
   fromEvent,
@@ -77,8 +78,9 @@ export function pollingResource<T>(
   type Outcome = { ok: true; value: T } | { ok: false; error: ApiError };
 
   // one attempt; a failure becomes a value, so it never ends the polling
+  // - not even when the loader throws before it returns its observable, hence defer
   const attempt = () =>
-    load().pipe(
+    defer(load).pipe(
       map((loaded): Outcome => ({ ok: true, value: loaded })),
       catchError((failure: unknown) => of<Outcome>({ ok: false, error: toApiError(failure) })),
     );

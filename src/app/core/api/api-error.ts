@@ -2,8 +2,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 /**
  * What went wrong, from the point of view of what the user can do about it:
- * - `network` - no answer at all (backend down, VPN off, connection lost),
- * - `invalid-response` - an answer that is not what the API sends (HTML instead of JSON),
+ * - `network` - no answer at all (backend down, VPN off, connection lost, or no answer in time),
+ * - `invalid-response` - an answer that is not what the API sends (HTML instead of JSON, a
+ *   redirect),
  * - `client` - a 4xx: the request was refused,
  * - `server` - a 5xx: the backend failed,
  * - `unexpected` - a failure outside HTTP (a bug on our side).
@@ -49,8 +50,15 @@ export function toApiError(error: unknown): ApiError {
   if (error.status >= 200 && error.status < 300) {
     return new ApiError('invalid-response', error.status, [], error);
   }
-  const kind: ApiErrorKind = error.status >= 500 ? 'server' : 'client';
-  return new ApiError(kind, error.status, decodeMessages(error.error), error);
+  if (error.status >= 500) {
+    return new ApiError('server', error.status, decodeMessages(error.error), error);
+  }
+  if (error.status >= 400) {
+    return new ApiError('client', error.status, decodeMessages(error.error), error);
+  }
+  // a 1xx or 3xx that reached the application: a redirect the browser could not follow (a login
+  // or captive page in front of the API) - not something the API itself answers
+  return new ApiError('invalid-response', error.status, [], error);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { Shell } from './core/layout/shell';
+import { ErrorPage } from './features/error/error-page';
 
 /**
  * No path here may start with `home`: the ingress sends everything under `/home` to
@@ -25,7 +26,8 @@ export const routes: Routes = [
       {
         path: 'error',
         title: 'Something went wrong',
-        loadComponent: () => import('./features/error/error-page').then((m) => m.ErrorPage),
+        // not lazy: this page is shown when a lazy chunk can no longer be downloaded
+        component: ErrorPage,
       },
       {
         path: '**',

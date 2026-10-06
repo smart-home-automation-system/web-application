@@ -65,6 +65,13 @@ describe('Overview', () => {
     expect(await text()).toContain('Disabled');
   });
 
+  it('leaves the time of the change out when the backend does not send it', async () => {
+    value.set({ isHeatingEnabled: true });
+    loading.set(false);
+
+    expect(await text()).not.toContain('Switched');
+  });
+
   it('explains a failure and keeps the last known state next to it', async () => {
     value.set({ isHeatingEnabled: true });
     error.set(new ApiError('network', 0));

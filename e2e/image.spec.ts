@@ -68,6 +68,29 @@ test.describe('container image', () => {
     expect(response.headers()['content-security-policy']).toBeTruthy();
   });
 
+  test('keeps the fonts for good too', async ({ page, request }) => {
+    await page.goto('/');
+    await expect(page.locator('.shell__toolbar mat-icon').first()).toBeVisible();
+    const font = await page.evaluate(() =>
+      performance
+        .getEntriesByType('resource')
+        .map((entry) => new URL(entry.name).pathname)
+        .find((path) => path.startsWith('/media/')),
+    );
+
+    const response = await request.get(font ?? '/media/missing');
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()['cache-control']).toContain('immutable');
+  });
+
+  test('does not pin an unhashed file in the browser', async ({ request }) => {
+    const response = await request.get('/favicon.ico');
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()['cache-control']).toBe('no-cache');
+  });
+
   test('answers 404 for a missing hashed file instead of index.html', async ({ request }) => {
     const response = await request.get('/chunk-AAAAAAAA.js');
 
@@ -81,10 +104,21 @@ test.describe('container image', () => {
     expect(await response.text()).toBe('ok\n');
   });
 
-  test('answers /home in the error contract when no gateway is routed', async ({ request }) => {
-    const response = await request.get('/home/heating');
+  for (const path of ['/home', '/home/heating']) {
+    test(`answers ${path} in the error contract when no gateway is routed`, async ({ request }) => {
+      const response = await request.get(path);
 
-    expect(response.status()).toBe(404);
-    expect((await response.json()).errors[0].message).toContain('not routed');
+      expect(response.status()).toBe(404);
+      expect((await response.json()).errors[0].message).toContain('not routed');
+    });
+  }
+
+  test('serves a path that merely starts with "home" as a page of the application', async ({
+    request,
+  }) => {
+    const response = await request.get('/homepage');
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('text/html');
   });
 });

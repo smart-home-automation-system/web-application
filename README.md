@@ -93,13 +93,17 @@ What the application relies on, in every call:
 - **Date-times** are `LocalDateTime` values: the wall-clock time of the house, without an offset.
   They are displayed exactly as sent and never converted to the zone of the browser, so a phone
   abroad on VPN still shows house time.
+- **Timeouts**: a call that gets no answer within 10 s is aborted and reported as a connection
+  failure, so a backend that accepts a request and never answers cannot leave a view loading
+  forever.
 - **Polling** stops while the browser tab is hidden and resumes at once when it is back; every
   view shows how old its data is and marks it once it can no longer be trusted.
 
 # Container image
 
 `release.yml` builds the image on every GitHub release and pushes it to Docker Hub as
-`magikabdul/web-application:<tag>` (and `latest`). The application is built inside the image;
+`magikabdul/web-application:<tag>` (and `latest`). A manual run takes an existing tag and
+rebuilds exactly that tag. The application is built inside the image;
 the release tag and the commit are stamped into it and shown on the **About** page.
 
 | | |
@@ -107,7 +111,7 @@ the release tag and the commit are stamped into it and shown on the **About** pa
 | Port | `8080` (the image runs as a non-root user and needs only `/tmp` writable) |
 | Health | `GET /healthz` - used by the Kubernetes probes |
 | Deep links | any path without a file falls back to `index.html`, so `/about` can be opened or reloaded directly |
-| Caching | files with a content hash in the name are immutable; `index.html` is revalidated on every load, which is how a new release reaches an open browser |
+| Caching | files the build names with a content hash are immutable; `index.html` is revalidated on every load, which is how a new release reaches an open browser |
 | Security headers | a `Content-Security-Policy` allowing this origin only, plus `nosniff`, `frame-ancestors 'none'` and a no-referrer policy |
 | Logs | one JSON object per request on stdout |
 
