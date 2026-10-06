@@ -10,12 +10,14 @@
 @use '@angular/material' as mat;
 
 $radius: 4px;
+// self-hosted, see angular.json
+$font: Roboto;
 
 // One step of the type scale, written out as every variable Material derives from it.
 @function _type($name, $weight, $size, $line-height, $tracking) {
   @return (
-    #{$name}: $weight #{$size} / #{$line-height} Roboto,
-    #{$name}-font: Roboto,
+    #{$name}: $weight #{$size} / #{$line-height} $font,
+    #{$name}-font: $font,
     #{$name}-weight: $weight,
     #{$name}-size: $size,
     #{$name}-line-height: $line-height,
@@ -103,7 +105,7 @@ $_shadows: (
   // no `color` here on purpose: every colour comes from `_seasons.scss`
   @include mat.theme(
     (
-      typography: Roboto,
+      typography: $font,
       density: 0,
     ),
     map.merge($_typography, $_shape)

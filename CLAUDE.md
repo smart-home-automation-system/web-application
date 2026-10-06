@@ -74,7 +74,8 @@ e2e/              # Playwright tests
 - **Layout**: the shell renders both navigations and CSS shows one (side list from 840 px, bottom
   bar below). Use the `--mat-sys-*` variables for every colour and font — never a literal — so
   themes can change them. Global building blocks (`.page-header`, `.message-page`) are in
-  `src/styles.scss`.- **Profiles, no login** (HAS-193): household-member profiles chosen by a personal link,
+  `src/styles.scss`.
+- **Profiles, no login** (HAS-193): household-member profiles chosen by a personal link,
   persisted in the browser; roles are UI-only until the gateway validates tokens.
 - **Future auth**: keep a single extension point — an HTTP interceptor + route guard in
   `core/` — so token auth (api-gateway + cholewa-security) can be added without touching

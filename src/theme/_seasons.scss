@@ -279,11 +279,12 @@ $_neutral: (
   --app-bar: light-dark(var(--app-bar-light), var(--app-bar-dark));
   --app-on-bar: #{$_white};
 
-  // Chart series, in the order they are handed out: the two accents, their lighter companions,
-  // and a neutral for "everything else".
+  // Chart series, in the order they are handed out: the two accents, a second shade of each,
+  // and a neutral for "everything else". All of them are colours `check:contrast` knows, so a
+  // line drawn in any of them stands out from paper (3:1) in every season and scheme.
   --app-chart-1: var(--mat-sys-primary);
   --app-chart-2: var(--mat-sys-secondary);
-  --app-chart-3: color-mix(in srgb, var(--mat-sys-primary) 55%, var(--mat-sys-surface));
-  --app-chart-4: color-mix(in srgb, var(--mat-sys-secondary) 55%, var(--mat-sys-surface));
+  --app-chart-3: var(--mat-sys-on-primary-container);
+  --app-chart-4: var(--mat-sys-on-tertiary-container);
   --app-chart-5: var(--mat-sys-outline);
 }

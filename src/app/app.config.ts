@@ -40,7 +40,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(withInterceptors([...mockApiInterceptors])),
     ...provideI18n(),
-    // the colours of the season are in place before the first page renders
+    // the colours of the season are in place before Angular renders the first page
     provideAppInitializer(() => {
       inject(ThemeStore);
     }),

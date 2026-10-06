@@ -96,7 +96,8 @@ $wide: 840px;
   }
 
   // the entry of the open page: tinted, with its icon and text in the dark shade of the tint
-  .mdc-list-item--activated {
+  // (a class of our own, set by the router - not one of Material's)
+  .shell__side-link--active {
     --mat-list-list-item-leading-icon-color: var(--mat-sys-on-secondary-container);
     --mat-list-list-item-hover-leading-icon-color: var(--mat-sys-on-secondary-container);
     --mat-list-list-item-label-text-color: var(--mat-sys-on-secondary-container);

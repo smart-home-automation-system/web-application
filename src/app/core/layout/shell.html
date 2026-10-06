@@ -22,7 +22,7 @@
           <a
             mat-list-item
             [routerLink]="item.path"
-            routerLinkActive
+            routerLinkActive="shell__side-link--active"
             #link="routerLinkActive"
             [activated]="link.isActive"
             [attr.aria-current]="link.isActive ? 'page' : null"

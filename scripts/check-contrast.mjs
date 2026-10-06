@@ -10,8 +10,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Node runs the TypeScript file directly: season.ts has no imports
+import { SEASONS } from '../src/app/core/theme/season.ts';
+
 const DIST = fileURLToPath(new URL('../dist/web-application/browser', import.meta.url));
-const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 const TEXT = 4.5;
 const NON_TEXT = 3;
 
@@ -58,6 +60,11 @@ const PAIRS = [
   ['outline', 'surface', NON_TEXT],
   ['outline', 'surface-container-high', NON_TEXT],
   ['on-surface-variant', 'surface', NON_TEXT],
+  // chart series (--app-chart-1 … -5 in _seasons.scss) as lines and bars on paper
+  ['primary', 'surface', NON_TEXT],
+  ['secondary', 'surface', NON_TEXT],
+  ['on-primary-container', 'surface', NON_TEXT],
+  ['on-tertiary-container', 'surface', NON_TEXT],
 ];
 
 function fail(message) {
@@ -143,7 +150,16 @@ let checked = 0;
 let lowest = Infinity;
 
 for (const season of SEASONS) {
-  const palette = { ...shared, ...colours(`html[data-season=${season}]`) };
+  const selector = `html[data-season=${season}]`;
+  const own = colours(selector);
+  // The rule of a season is laid over `html`, which carries the default season: a colour this
+  // script failed to read would silently be checked with the default's value instead.
+  const declared = [...block(selector).matchAll(/--mat-sys-[a-z0-9-]+:/g)].length;
+  const read = Object.keys(own).filter((name) => name !== 'bar').length;
+  if (read !== declared || !own['bar']) {
+    fail(`${selector}: read ${read} of ${declared} colours and the app bar - the check is blind.`);
+  }
+  const palette = { ...shared, ...own };
   for (const scheme of ['light', 'dark']) {
     for (const [foreground, background, minimum] of PAIRS) {
       if (!palette[foreground] || !palette[background]) {

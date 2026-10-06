@@ -18,6 +18,9 @@ const STORAGE_KEY = 'smart-home.theme';
  */
 const AFTER_MIDNIGHT_MS = 1_000;
 
+/** The longest the calendar goes unread while the application is open. */
+const LOOK_AGAIN_MS = 3_600_000;
+
 /**
  * The colours of the application. They follow the season - worked out from the clock of the
  * browser - and the light / dark setting of the system; either can be overridden, which is meant
@@ -29,8 +32,15 @@ const AFTER_MIDNIGHT_MS = 1_000;
  * `color-scheme` (how the browser draws its own parts - scroll bars, form controls) and
  * `theme-color` (the status bar of a phone, which should continue the app bar).
  *
- * A dashboard stays open for weeks, so the season is looked at again when the day changes and
- * whenever the tab comes back into view - a sleeping device runs no timers.
+ * A dashboard stays open for weeks, so the season is looked at again when the day changes, at
+ * least once an hour, and whenever the tab comes back into view - a sleeping device runs no
+ * timers.
+ *
+ * Until Angular has started there is nothing to set the attributes: the page is then painted
+ * in the default season and the scheme of the system. With an overridden scheme that shows as
+ * a brief flash of the other one on every load - accepted for a preview setting: avoiding it takes a
+ * second, render-blocking script file ahead of the application (the Content-Security-Policy
+ * allows no inline one), with its own copy of the validation here.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeStore {
@@ -39,7 +49,9 @@ export class ThemeStore {
   private readonly systemDark = signal(false);
   private readonly chosenSeason = signal<SeasonChoice>('auto');
   private readonly chosenScheme = signal<SchemeChoice>('system');
-  private midnightTimer: ReturnType<typeof setTimeout> | undefined;
+  private calendarTimer: ReturnType<typeof setTimeout> | undefined;
+  /** What `apply` painted last. */
+  private applied: string | undefined;
 
   /** The season by the calendar, whatever is chosen. */
   readonly calendarSeason: Signal<Season> = this.calendar.asReadonly();
@@ -67,16 +79,21 @@ export class ThemeStore {
   );
 
   constructor() {
+    this.readChoices();
+    this.watchSystemScheme();
+    this.watchCalendar();
+    this.watchOtherTabs();
+
+    // once right now, so the first page Angular renders already has its colours, and then on
+    // every change
+    this.apply();
+    effect(() => this.apply());
+  }
+
+  private readChoices(): void {
     const stored = readStored();
     this.chosenSeason.set(stored.season);
     this.chosenScheme.set(stored.scheme);
-
-    this.watchSystemScheme();
-    this.watchCalendar();
-
-    // once right now, so the first paint already has its colours, and then on every change
-    this.apply();
-    effect(() => this.apply());
   }
 
   chooseSeason(choice: SeasonChoice): void {
@@ -100,8 +117,17 @@ export class ThemeStore {
     const root = this.document.documentElement;
     const choice = this.chosenScheme();
     const scheme = this.scheme();
+    const season = this.season();
 
-    root.setAttribute('data-season', this.season());
+    // reading the app bar colour below makes the browser recalculate its styles: only when
+    // something has actually changed
+    const state = `${season} ${choice} ${scheme}`;
+    if (state === this.applied) {
+      return;
+    }
+    this.applied = state;
+
+    root.setAttribute('data-season', season);
     if (choice === 'system') {
       root.removeAttribute('data-color-scheme');
     } else {
@@ -147,11 +173,13 @@ export class ThemeStore {
   private watchCalendar(): void {
     const look = () => {
       this.calendar.set(seasonOf(new Date()));
-      // set again on every look: after a sleep the old timer would fire at the wrong moment
-      clearTimeout(this.midnightTimer);
-      this.midnightTimer = setTimeout(
+      // Set again on every look, for midnight - but never further away than an hour. A device
+      // that slept with the page in view sends no visibility event when it wakes, and its timers
+      // carry on where they stopped: a single timer set for midnight could then be a day late.
+      clearTimeout(this.calendarTimer);
+      this.calendarTimer = setTimeout(
         look,
-        millisecondsUntilTomorrow(new Date()) + AFTER_MIDNIGHT_MS,
+        Math.min(millisecondsUntilTomorrow(new Date()) + AFTER_MIDNIGHT_MS, LOOK_AGAIN_MS),
       );
     };
     const onVisibility = () => {
@@ -162,9 +190,26 @@ export class ThemeStore {
     look();
     this.document.addEventListener('visibilitychange', onVisibility);
     inject(DestroyRef).onDestroy(() => {
-      clearTimeout(this.midnightTimer);
+      clearTimeout(this.calendarTimer);
       this.document.removeEventListener('visibilitychange', onVisibility);
     });
+  }
+
+  /**
+   * A choice made in another tab, or in the installed application next to the browser, arrives
+   * here too. Without it this tab would keep the old colours and, at its next choice, write its
+   * stale half back over the newer one.
+   */
+  private watchOtherTabs(): void {
+    const view = this.document.defaultView;
+    const onStorage = (event: StorageEvent) => {
+      // a null key is "everything was cleared"
+      if (event.key === STORAGE_KEY || event.key === null) {
+        this.readChoices();
+      }
+    };
+    view?.addEventListener('storage', onStorage);
+    inject(DestroyRef).onDestroy(() => view?.removeEventListener('storage', onStorage));
   }
 
   private store(): void {

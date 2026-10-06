@@ -21,8 +21,7 @@ export async function startIn(page: Page, language: Language): Promise<void> {
   }, language);
 }
 
-export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
-export const SEASONS: readonly Season[] = ['spring', 'summer', 'autumn', 'winter'];
+export { SEASONS, type Season } from '../src/app/core/theme/season';
 
 /**
  * Starts the application with a season and a colour scheme chosen, as if somebody had picked

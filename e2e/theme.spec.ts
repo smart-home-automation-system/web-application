@@ -167,6 +167,9 @@ test.describe('screenshots of the eight variants', () => {
           `test-results/screenshots/${testInfo.project.name}-theme-${season}-${scheme}-${name}.png`;
 
         await page.goto('/overview');
+        // the picture must be of the variant its name says
+        await expect(html(page)).toHaveAttribute('data-season', season);
+        await expect(html(page)).toHaveAttribute('data-color-scheme', scheme);
         await expect(page.getByText('Enabled')).toBeVisible();
         await page.screenshot({ path: shot('overview') });
 

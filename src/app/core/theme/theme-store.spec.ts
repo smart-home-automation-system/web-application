@@ -104,6 +104,19 @@ describe('ThemeStore', () => {
       expect(store.season()).toBe('summer');
     });
 
+    // a wall tablet that slept with the page in view: no visibility event on waking, and the
+    // timer that was running carries on where it stopped
+    it('catches up within the hour when nothing announces the wake-up', () => {
+      vi.setSystemTime(new Date(2026, 5, 21, 20));
+      const store = create();
+      expect(store.season()).toBe('spring');
+
+      vi.setSystemTime(new Date(2026, 5, 25, 8));
+      vi.advanceTimersByTime(3_600_000);
+
+      expect(store.season()).toBe('summer');
+    });
+
     it('leaves a season chosen by hand alone', () => {
       vi.setSystemTime(new Date(2026, 8, 22, 23, 59, 50));
       const store = create();
@@ -206,6 +219,57 @@ describe('ThemeStore', () => {
 
       expect(store.seasonChoice()).toBe('summer');
       expect(store.schemeChoice()).toBe('system');
+    });
+
+    describe('in another tab', () => {
+      function otherTabStores(value: string | null): void {
+        if (value === null) {
+          localStorage.removeItem(STORAGE_KEY);
+        } else {
+          localStorage.setItem(STORAGE_KEY, value);
+        }
+        window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: value }));
+      }
+
+      it('arrives here too', () => {
+        const store = create();
+
+        otherTabStores('{"season":"spring","scheme":"dark"}');
+        TestBed.tick();
+
+        expect(store.season()).toBe('spring');
+        expect(root.getAttribute('data-color-scheme')).toBe('dark');
+      });
+
+      // each tab writes both halves: without the update, this one would write its stale season
+      it('is not overwritten by the next choice made here', () => {
+        const store = create();
+        otherTabStores('{"season":"spring","scheme":"system"}');
+
+        store.chooseScheme('dark');
+
+        expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual({
+          season: 'spring',
+          scheme: 'dark',
+        });
+      });
+
+      it('is followed back to automatic', () => {
+        const store = create('{"season":"spring","scheme":"dark"}');
+
+        otherTabStores(null);
+
+        expect(store.overridden()).toBe(false);
+      });
+
+      it('ignores what is stored under other keys', () => {
+        const store = create();
+        localStorage.setItem(STORAGE_KEY, '{"season":"spring","scheme":"dark"}');
+
+        window.dispatchEvent(new StorageEvent('storage', { key: 'smart-home.language' }));
+
+        expect(store.seasonChoice()).toBe('auto');
+      });
     });
 
     it('works without storage: the choice then lasts as long as the page', () => {
