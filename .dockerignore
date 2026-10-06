@@ -1,0 +1,13 @@
+.git
+.github
+.angular
+.claude
+.idea
+.vscode
+node_modules
+dist
+coverage
+e2e
+test-results
+playwright-report
+*.md

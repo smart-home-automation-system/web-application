@@ -1,0 +1,17 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+:host(.freshness--stale) {
+  color: var(--mat-sys-error);
+}
+
+.freshness__icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}

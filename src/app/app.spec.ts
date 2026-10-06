@@ -1,24 +1,69 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { App } from './app';
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 
-describe('App', () => {
+import { routes } from './app.routes';
+
+describe('application routing', () => {
+  let harness: RouterTestingHarness;
+
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [App],
-    }).compileComponents();
+    TestBed.configureTestingModule({
+      providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()],
+    });
+    harness = await RouterTestingHarness.create();
   });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+  function page(): HTMLElement {
+    return harness.routeNativeElement as HTMLElement;
+  }
+
+  it('opens the overview at the root address, inside the shell', async () => {
+    await harness.navigateByUrl('/');
+    // the overview starts polling a moment after it is created
+    const http = TestBed.inject(HttpTestingController);
+    (await vi.waitFor(() => http.expectOne('/home/heating'))).flush({ isHeatingEnabled: false });
+
+    expect(page().querySelector('.shell__toolbar')?.textContent).toContain('Smart Home');
+    expect(page().querySelector('h1')?.textContent).toContain('Overview');
   });
 
-  it('should render the app name and construction notice', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Smart Home');
-    expect(compiled.querySelector('.landing__status')?.textContent).toContain('Under construction');
+  it('lists every destination in both navigations', async () => {
+    await harness.navigateByUrl('/about');
+
+    const side = [...page().querySelectorAll('.shell__side-nav a')].map((a) =>
+      a.querySelector('.mat-mdc-list-item-title')?.textContent?.trim(),
+    );
+    const bottom = [...page().querySelectorAll('.shell__bottom-nav a')].map((a) =>
+      a.querySelector('.shell__bottom-label')?.textContent?.trim(),
+    );
+
+    expect(side).toEqual(['Overview', 'About']);
+    expect(bottom).toEqual(['Overview', 'About']);
+  });
+
+  it('marks the current destination', async () => {
+    await harness.navigateByUrl('/about');
+    harness.detectChanges();
+
+    const current = [...page().querySelectorAll('[aria-current="page"]')].map((a) =>
+      a.getAttribute('href'),
+    );
+
+    expect(current).toEqual(['/about', '/about']);
+  });
+
+  it('shows the not-found page for an unknown address', async () => {
+    await harness.navigateByUrl('/no/such/page');
+
+    expect(page().querySelector('h1')?.textContent).toContain('Page not found');
+  });
+
+  it('shows the running version on the about page', async () => {
+    await harness.navigateByUrl('/about');
+
+    expect(page().querySelector('[data-testid="app-version"]')?.textContent).toBe('0.0.0-dev');
   });
 });

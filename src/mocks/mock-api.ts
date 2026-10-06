@@ -1,0 +1,78 @@
+import {
+  HttpErrorResponse,
+  HttpEvent,
+  HttpInterceptorFn,
+  HttpRequest,
+  HttpResponse,
+} from '@angular/common/http';
+import { Observable, delay, of, switchMap, throwError, timer } from 'rxjs';
+
+import { MOCK_HANDLERS, MockReply } from './handlers';
+
+/**
+ * Mock API: answers every `/home/**` call from fixtures, without a backend. It replaces
+ * `src/app/core/api/mock-api.ts` in the `mock` build configuration only (`npm run start:mock`).
+ *
+ * A scenario switches the whole API into a failure mode, so error states can be looked at and
+ * tested: set `localStorage['mock-scenario']` to `offline` (no answer at all) or `server-error`
+ * (every call answers 502) and reload.
+ */
+export type MockScenario = 'default' | 'offline' | 'server-error';
+
+// check-bundle.mjs looks for this text: it must never show up in a production bundle
+const MARKER = 'smart-home-mock-api-enabled';
+const LATENCY_MS = 150;
+const API_PREFIX = '/home/';
+
+console.info(`[${MARKER}] backend calls are answered from src/mocks, scenario: ${scenario()}`);
+
+const mockApiInterceptor: HttpInterceptorFn = (request, next) => {
+  const path = new URL(request.url, 'http://mock.invalid').pathname;
+  if (!path.startsWith(API_PREFIX)) {
+    return next(request);
+  }
+  switch (scenario()) {
+    case 'offline':
+      return fail(request, 0, new ProgressEvent('error'));
+    case 'server-error':
+      return fail(request, 502, {
+        errors: [{ message: 'Mock scenario: the service behind the gateway is failing' }],
+      });
+    default:
+      return answer(request, path);
+  }
+};
+
+export const mockApiInterceptors: readonly HttpInterceptorFn[] = [mockApiInterceptor];
+
+function answer(request: HttpRequest<unknown>, path: string): Observable<HttpEvent<unknown>> {
+  const handler = MOCK_HANDLERS.find(
+    (candidate) => candidate.method === request.method && candidate.path === path,
+  );
+  // the same answer the gateway gives for a path nobody serves
+  const reply: MockReply = handler?.reply(request) ?? {
+    status: 404,
+    body: { errors: [{ message: `No static resource for request '${path}'.` }] },
+  };
+  if (reply.status >= 400) {
+    return fail(request, reply.status, reply.body);
+  }
+  return of(new HttpResponse({ status: reply.status, body: reply.body, url: request.url })).pipe(
+    delay(LATENCY_MS),
+  );
+}
+
+function fail(request: HttpRequest<unknown>, status: number, error: unknown): Observable<never> {
+  return timer(LATENCY_MS).pipe(
+    switchMap(() => throwError(() => new HttpErrorResponse({ status, error, url: request.url }))),
+  );
+}
+
+function scenario(): MockScenario {
+  try {
+    const stored = localStorage.getItem('mock-scenario');
+    return stored === 'offline' || stored === 'server-error' ? stored : 'default';
+  } catch {
+    return 'default';
+  }
+}
