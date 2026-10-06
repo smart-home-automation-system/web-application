@@ -1,0 +1,68 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatRadioModule } from '@angular/material/radio';
+import { TranslocoDirective } from '@jsverse/transloco';
+
+import { SEASONS, Season } from '../../core/theme/season';
+import { SchemeChoice, SeasonChoice, ThemeStore } from '../../core/theme/theme-store';
+import { MessageKey } from '../../i18n/messages';
+
+interface SchemeOption {
+  readonly value: SchemeChoice;
+  readonly label: MessageKey;
+  /** Name of a Material Symbols icon. */
+  readonly icon: string;
+}
+
+const SCHEME_OPTIONS: readonly SchemeOption[] = [
+  { value: 'system', label: 'settings.appearance.schemeSystem', icon: 'brightness_auto' },
+  { value: 'light', label: 'settings.appearance.schemeLight', icon: 'light_mode' },
+  { value: 'dark', label: 'settings.appearance.schemeDark', icon: 'dark_mode' },
+];
+
+const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
+  spring: 'season.spring',
+  summer: 'season.summer',
+  autumn: 'season.autumn',
+  winter: 'season.winter',
+};
+
+/**
+ * Settings of this browser. So far the appearance: the colours follow the season and the system
+ * by themselves, and this page lets somebody look at the other variants.
+ *
+ * Meant for the administrator; until the household profiles exist (HAS-193) there is nobody to
+ * tell apart, so the page is open to everyone - it changes only the browser it is opened in.
+ */
+@Component({
+  selector: 'app-settings',
+  imports: [
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatCardModule,
+    MatIconModule,
+    MatRadioModule,
+    TranslocoDirective,
+  ],
+  templateUrl: './settings.html',
+  styleUrl: './settings.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class Settings {
+  protected readonly theme = inject(ThemeStore);
+  protected readonly schemeOptions = SCHEME_OPTIONS;
+  protected readonly seasons = SEASONS;
+  protected readonly seasonLabels = SEASON_LABELS;
+  protected readonly chartSeries = [1, 2, 3, 4, 5];
+
+  protected chooseScheme(choice: SchemeChoice): void {
+    this.theme.chooseScheme(choice);
+  }
+
+  protected chooseSeason(choice: SeasonChoice): void {
+    this.theme.chooseSeason(choice);
+  }
+}

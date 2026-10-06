@@ -1,30 +1,50 @@
-// Angular Material theme (Material 3). `mat.theme()` defines the `--mat-sys-*` CSS variables
-// every component and every style of this application is built from - never hard-code a colour
-// or a font, use a variable. https://material.angular.dev/guide/system-variables
-@use '@angular/material' as mat;
+// The theme. Two partials define the `--mat-sys-*` CSS variables every Angular Material
+// component and every style of this application is built from - never hard-code a colour or a
+// font, use a variable (https://material.angular.dev/guide/system-variables):
+//
+//   theme/_mui.scss      the look - type scale, corners, shadows, component details (MUI style)
+//   theme/_seasons.scss  the colours - one set per season, each for the light and the dark scheme
+//
+// <html> carries two attributes, both set by `ThemeStore`: `data-season` picks the colours, and
+// `data-color-scheme` - present only when somebody overrode the system setting - the scheme.
+@use 'sass:map';
+@use './theme/mui';
+@use './theme/seasons';
 
 html {
   height: 100%;
   // follow the light / dark setting of the system
   color-scheme: light dark;
-  @include mat.theme(
-    (
-      color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-      ),
-      typography: Roboto,
-      density: 0,
-    )
-  );
+
+  @include mui.system;
+  @include seasons.neutral-colours;
+  @include seasons.season-colours(seasons.$default-season);
+  @include seasons.derived-colours;
 }
+
+html[data-color-scheme='light'] {
+  color-scheme: light;
+}
+
+html[data-color-scheme='dark'] {
+  color-scheme: dark;
+}
+
+@each $season in map.keys(seasons.$seasons) {
+  html[data-season='#{$season}'] {
+    @include seasons.season-colours($season);
+  }
+}
+
+@include mui.components;
 
 body {
   margin: 0;
   height: 100%;
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background-color: var(--mat-sys-background);
+  color: var(--mat-sys-on-background);
   font: var(--mat-sys-body-medium);
+  letter-spacing: var(--mat-sys-body-medium-tracking);
 }
 
 // The icon font renders an icon from its name ("dashboard"). Its @font-face blocks rendering
@@ -54,12 +74,14 @@ body {
   h1 {
     margin: 0;
     font: var(--mat-sys-headline-medium);
+    letter-spacing: var(--mat-sys-headline-medium-tracking);
   }
 
   p {
     margin: 4px 0 0;
     max-width: 65ch;
     font: var(--mat-sys-body-large);
+    letter-spacing: var(--mat-sys-body-large-tracking);
     color: var(--mat-sys-on-surface-variant);
   }
 }
@@ -77,16 +99,20 @@ body {
   h1 {
     margin: 0;
     font: var(--mat-sys-headline-medium);
+    letter-spacing: var(--mat-sys-headline-medium-tracking);
   }
 
   p {
     margin: 0 0 16px;
     font: var(--mat-sys-body-large);
+    letter-spacing: var(--mat-sys-body-large-tracking);
     color: var(--mat-sys-on-surface-variant);
   }
 }
 
-.message-page__icon {
+// with `.mat-icon`: Material's own 24px box is declared later and would otherwise win, clipping
+// the large glyph
+.mat-icon.message-page__icon {
   width: 64px;
   height: 64px;
   font-size: 64px;

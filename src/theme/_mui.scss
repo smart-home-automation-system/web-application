@@ -1,0 +1,208 @@
+// The look of the application: Angular Material components dressed as MUI
+// (https://mui.com/material-ui) - 4 px corners, shadows instead of tinted surfaces, upper-case
+// buttons, a coloured app bar. Angular Material ships Material Design 3 (pills, tonal surfaces);
+// MUI is the Material Design 2 look, and this file is the whole difference: values for the
+// `--mat-sys-*` variables and for a handful of component variables. No component is restyled by
+// selector except where Material offers no variable (the shadow of a filled button).
+//
+// Colours are not here - see `_seasons.scss`.
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+$radius: 4px;
+
+// One step of the type scale, written out as every variable Material derives from it.
+@function _type($name, $weight, $size, $line-height, $tracking) {
+  @return (
+    #{$name}: $weight #{$size} / #{$line-height} Roboto,
+    #{$name}-font: Roboto,
+    #{$name}-weight: $weight,
+    #{$name}-size: $size,
+    #{$name}-line-height: $line-height,
+    #{$name}-tracking: $tracking
+  );
+}
+
+// MUI's type scale under Material's names: h4, h5, h6, subtitle1, subtitle2, body1, body2,
+// caption, button.
+$_typography: map.merge(
+  _type(headline-medium, 400, 2.125rem, 2.625rem, 0.00735em),
+  _type(headline-small, 400, 1.5rem, 2rem, 0)
+);
+$_typography: map.merge($_typography, _type(title-large, 500, 1.25rem, 2rem, 0.0075em));
+$_typography: map.merge($_typography, _type(title-medium, 400, 1rem, 1.75rem, 0.00938em));
+$_typography: map.merge($_typography, _type(title-small, 500, 0.875rem, 1.375rem, 0.00714em));
+$_typography: map.merge($_typography, _type(body-large, 400, 1rem, 1.5rem, 0.00938em));
+$_typography: map.merge($_typography, _type(body-medium, 400, 0.875rem, 1.25rem, 0.01071em));
+$_typography: map.merge($_typography, _type(body-small, 400, 0.75rem, 1.25rem, 0.03333em));
+$_typography: map.merge($_typography, _type(label-large, 500, 0.875rem, 1.5rem, 0.02857em));
+
+// Everything gets the same small radius. `corner-full` stays: it is what keeps round things
+// round (radio buttons, switches, badges) - the buttons, which use it too, are set below.
+$_shape: (
+  corner-extra-small: $radius,
+  corner-extra-small-top: $radius $radius 0 0,
+  corner-small: $radius,
+  corner-medium: $radius,
+  corner-large: $radius,
+  corner-large-top: $radius $radius 0 0,
+  corner-large-start: $radius 0 0 $radius,
+  corner-large-end: 0 $radius $radius 0,
+  corner-extra-large: $radius,
+  corner-extra-large-top: $radius $radius 0 0,
+);
+
+// The shadow of an elevation: MUI's `theme.shadows`, which are Material Design 2's.
+$_umbra: rgb(0 0 0 / 20%);
+$_penumbra: rgb(0 0 0 / 14%);
+$_ambient: rgb(0 0 0 / 12%);
+$_shadows: (
+  1: (
+    0 2px 1px -1px $_umbra,
+    0 1px 1px 0 $_penumbra,
+    0 1px 3px 0 $_ambient,
+  ),
+  2: (
+    0 3px 1px -2px $_umbra,
+    0 2px 2px 0 $_penumbra,
+    0 1px 5px 0 $_ambient,
+  ),
+  3: (
+    0 3px 3px -2px $_umbra,
+    0 3px 4px 0 $_penumbra,
+    0 1px 8px 0 $_ambient,
+  ),
+  4: (
+    0 2px 4px -1px $_umbra,
+    0 4px 5px 0 $_penumbra,
+    0 1px 10px 0 $_ambient,
+  ),
+  6: (
+    0 3px 5px -1px $_umbra,
+    0 6px 10px 0 $_penumbra,
+    0 1px 18px 0 $_ambient,
+  ),
+  8: (
+    0 5px 5px -3px $_umbra,
+    0 8px 10px 1px $_penumbra,
+    0 3px 14px 2px $_ambient,
+  ),
+  12: (
+    0 7px 8px -4px $_umbra,
+    0 12px 17px 2px $_penumbra,
+    0 5px 22px 4px $_ambient,
+  ),
+);
+
+@function shadow($elevation) {
+  @return map.get($_shadows, $elevation);
+}
+
+// Typography, shape, shadows and the component variables. Include it on <html>.
+@mixin system {
+  // no `color` here on purpose: every colour comes from `_seasons.scss`
+  @include mat.theme(
+    (
+      typography: Roboto,
+      density: 0,
+    ),
+    map.merge($_typography, $_shape)
+  );
+
+  // `mat.theme` defines the shadows only together with its own colours
+  --mat-sys-level0: none;
+  --mat-sys-level1: #{shadow(1)};
+  --mat-sys-level2: #{shadow(3)};
+  --mat-sys-level3: #{shadow(6)};
+  --mat-sys-level4: #{shadow(8)};
+  --mat-sys-level5: #{shadow(12)};
+
+  @include mat.button-overrides(
+    (
+      filled-container-shape: $radius,
+      outlined-container-shape: $radius,
+      protected-container-shape: $radius,
+      text-container-shape: $radius,
+      tonal-container-shape: $radius,
+      filled-container-height: 36px,
+      outlined-container-height: 36px,
+      protected-container-height: 36px,
+      text-container-height: 36px,
+      tonal-container-height: 36px,
+      filled-horizontal-padding: 16px,
+      outlined-horizontal-padding: 16px,
+      protected-horizontal-padding: 16px,
+      tonal-horizontal-padding: 16px,
+      text-horizontal-padding: 8px,
+      text-with-icon-horizontal-padding: 8px,
+      filled-icon-offset: -4px,
+      outlined-icon-offset: -4px,
+      protected-icon-offset: -4px,
+      tonal-icon-offset: -4px,
+      text-icon-offset: 0,
+      filled-label-text-transform: uppercase,
+      outlined-label-text-transform: uppercase,
+      protected-label-text-transform: uppercase,
+      text-label-text-transform: uppercase,
+      tonal-label-text-transform: uppercase,
+      outlined-outline-color: color-mix(in srgb, var(--mat-sys-primary) 50%, transparent),
+    )
+  );
+
+  @include mat.toolbar-overrides(
+    (
+      container-background-color: var(--app-bar),
+      container-text-color: var(--app-on-bar),
+    )
+  );
+
+  @include mat.card-overrides(
+    (
+      subtitle-text-color: var(--mat-sys-on-surface-variant),
+      subtitle-text-size: 0.875rem,
+      subtitle-text-line-height: 1.25rem,
+      subtitle-text-tracking: 0.01071em,
+    )
+  );
+
+  @include mat.list-overrides(
+    (
+      active-indicator-shape: $radius,
+      list-item-container-shape: $radius,
+    )
+  );
+
+  @include mat.menu-overrides(
+    (
+      container-elevation-shadow: var(--mat-sys-level4),
+      item-label-text-size: 1rem,
+      item-label-text-weight: 400,
+      item-label-text-line-height: 1.5rem,
+      item-label-text-tracking: 0.00938em,
+    )
+  );
+
+  @include mat.progress-bar-overrides(
+    (
+      track-color: color-mix(in srgb, var(--mat-sys-primary) 38%, var(--mat-sys-surface)),
+    )
+  );
+}
+
+// What no variable reaches. Include it at the top level of the stylesheet.
+@mixin components {
+  // MUI's "contained" button casts a shadow that grows under the pointer; Material's filled
+  // button is flat.
+  .mat-mdc-unelevated-button:not(:disabled, .mat-mdc-button-disabled) {
+    box-shadow: #{shadow(2)};
+    transition: box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      box-shadow: #{shadow(4)};
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+}

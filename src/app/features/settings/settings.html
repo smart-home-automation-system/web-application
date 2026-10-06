@@ -1,0 +1,88 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('settings.title') }}</h1>
+    <p>{{ t('settings.lead') }}</p>
+  </header>
+
+  <div class="cards">
+    <mat-card class="appearance">
+      <mat-card-header>
+        <mat-card-title>{{ t('settings.appearance.title') }}</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p class="hint">{{ t('settings.appearance.hint') }}</p>
+
+        <h2 class="field-label" id="settings-scheme">{{ t('settings.appearance.scheme') }}</h2>
+        <mat-button-toggle-group
+          class="scheme"
+          aria-labelledby="settings-scheme"
+          hideSingleSelectionIndicator
+          [value]="theme.schemeChoice()"
+          (change)="chooseScheme($event.value)"
+        >
+          @for (option of schemeOptions; track option.value) {
+            <mat-button-toggle [value]="option.value">
+              <mat-icon>{{ option.icon }}</mat-icon>
+              {{ t(option.label) }}
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+
+        <h2 class="field-label" id="settings-season">{{ t('settings.appearance.season') }}</h2>
+        <mat-radio-group
+          class="season"
+          aria-labelledby="settings-season"
+          [value]="theme.seasonChoice()"
+          (change)="chooseSeason($event.value)"
+        >
+          <mat-radio-button value="auto">
+            {{ t('settings.appearance.seasonAuto') }}
+            <span class="season__now">{{
+              t('settings.appearance.seasonNow', {
+                season: t(seasonLabels[theme.calendarSeason()]),
+              })
+            }}</span>
+          </mat-radio-button>
+          @for (season of seasons; track season) {
+            <mat-radio-button [value]="season">{{ t(seasonLabels[season]) }}</mat-radio-button>
+          }
+        </mat-radio-group>
+      </mat-card-content>
+
+      <mat-card-actions>
+        <button
+          matButton="outlined"
+          type="button"
+          [disabled]="!theme.overridden()"
+          (click)="theme.reset()"
+        >
+          <mat-icon>restart_alt</mat-icon>
+          {{ t('settings.appearance.reset') }}
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+    <mat-card class="palette">
+      <mat-card-header>
+        <mat-card-title>{{ t('settings.palette.title') }}</mat-card-title>
+        <mat-card-subtitle>{{ t('settings.palette.lead') }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <dl class="swatches" data-testid="palette">
+          <dt>{{ t('settings.palette.primary') }}</dt>
+          <dd><span class="swatch swatch--primary"></span></dd>
+          <dt>{{ t('settings.palette.secondary') }}</dt>
+          <dd><span class="swatch swatch--secondary"></span></dd>
+          <dt>{{ t('settings.palette.charts') }}</dt>
+          <dd>
+            @for (series of chartSeries; track series) {
+              <span class="swatch" [style.background]="'var(--app-chart-' + series + ')'"></span>
+            }
+          </dd>
+        </dl>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</ng-container>

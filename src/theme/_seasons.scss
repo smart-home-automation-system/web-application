@@ -1,0 +1,289 @@
+// The colours of the application: one neutral set, and four seasonal ones laid over it.
+//
+// Every value lands in a `--mat-sys-*` variable (what Angular Material and all styles of this
+// application read) as `light-dark(<light>, <dark>)`, so a single declaration serves both colour
+// schemes and the browser picks by `color-scheme`. The season is chosen by the attribute
+// `data-season` on <html>, which `ThemeStore` sets.
+//
+// The look follows MUI (https://mui.com/material-ui): white "paper" on a light grey page, one
+// strong primary colour and a secondary accent, each with a lighter shade for the dark scheme.
+//
+// `npm run check:contrast` reads these values back from the production build and fails when a
+// text / background pair drops below WCAG AA - change a colour here and run it.
+@use 'sass:color';
+@use 'sass:list';
+@use 'sass:map';
+@use 'sass:math';
+
+// Per season: (light scheme, dark scheme). The dark-scheme shade is the lighter one - it sits on
+// a dark surface. `bar-dark` is the app bar in the dark scheme: a deep shade that keeps white text.
+$seasons: (
+  spring: (
+    primary: (
+      #2e7d32,
+      #81c784,
+    ),
+    secondary: (
+      #c2185b,
+      #f48fb1,
+    ),
+    bar-dark: #1b5e20,
+  ),
+  summer: (
+    primary: (
+      #00707d,
+      #4dd0e1,
+    ),
+    secondary: (
+      #b84a00,
+      #ffb74d,
+    ),
+    bar-dark: #00525c,
+  ),
+  autumn: (
+    primary: (
+      #bf360c,
+      #ffab91,
+    ),
+    secondary: (
+      #6d4c41,
+      #ffd54f,
+    ),
+    bar-dark: #8f2a0a,
+  ),
+  winter: (
+    primary: (
+      #1565c0,
+      #90caf9,
+    ),
+    secondary: (
+      #546e7a,
+      #b0bec5,
+    ),
+    bar-dark: #0d47a1,
+  ),
+);
+
+// What a page shows before `ThemeStore` has set the attribute (and in unit tests).
+$default-season: winter;
+
+$_white: #ffffff;
+$_black: #000000;
+$_paper-dark: #1e1e1e;
+// text on a light-shade colour in the dark scheme
+$_ink: #121212;
+
+// Colours that do not change with the season: (light scheme, dark scheme).
+$_neutral: (
+  background: (
+    #f5f5f5,
+    #121212,
+  ),
+  on-background: (
+    #212121,
+    #ffffff,
+  ),
+  surface: (
+    $_white,
+    $_paper-dark,
+  ),
+  surface-dim: (
+    #eeeeee,
+    #121212,
+  ),
+  surface-bright: (
+    $_white,
+    #383838,
+  ),
+  // "paper" at rising elevation: in the light scheme the shadow tells the levels apart, in the
+  // dark scheme the surface gets lighter, as in MUI
+  surface-container-lowest: (
+      $_white,
+      #121212,
+    ),
+  surface-container-low: (
+    $_white,
+    $_paper-dark,
+  ),
+  surface-container: (
+    $_white,
+    #2a2a2a,
+  ),
+  surface-container-high: (
+    $_white,
+    #333333,
+  ),
+  surface-container-highest: (
+    #eeeeee,
+    #383838,
+  ),
+  surface-variant: (
+    #eeeeee,
+    #383838,
+  ),
+  on-surface: (
+    #212121,
+    #ffffff,
+  ),
+  on-surface-variant: (
+    #5f5f5f,
+    #b3b3b3,
+  ),
+  outline: (
+    #757575,
+    #9e9e9e,
+  ),
+  outline-variant: (
+    #e0e0e0,
+    #3d3d3d,
+  ),
+  inverse-surface: (
+    #323232,
+    #fafafa,
+  ),
+  inverse-on-surface: (
+    $_white,
+    #212121,
+  ),
+  error: (
+    #d32f2f,
+    #ef9a9a,
+  ),
+  on-error: (
+    $_white,
+    $_ink,
+  ),
+  error-container: (
+    #fdeded,
+    #2a1515,
+  ),
+  on-error-container: (
+    #5f2120,
+    #f4c7c7,
+  ),
+  shadow: (
+    $_black,
+    $_black,
+  ),
+  scrim: (
+    $_black,
+    $_black,
+  ),
+  // two raw palette tones a few Material components read directly
+  neutral10: (
+      #212121,
+      #212121,
+    ),
+  neutral-variant20: (
+    #333333,
+    #333333,
+  ),
+);
+
+// A mix of two colours, rounded to whole channels so that it is written as plain hex.
+@function _mix($colour, $other, $weight) {
+  $mixed: color.mix($colour, $other, $weight);
+
+  @return rgb(
+    math.round(color.channel($mixed, 'red', $space: rgb)),
+    math.round(color.channel($mixed, 'green', $space: rgb)),
+    math.round(color.channel($mixed, 'blue', $space: rgb))
+  );
+}
+
+// A tint of the colour over paper: the background of something selected or highlighted.
+@function _container($colour, $paper, $weight) {
+  @return _mix($colour, $paper, $weight);
+}
+
+// The seasonal colours of one accent (primary, secondary, tertiary) as (light, dark) pairs.
+@function _accent($name, $shades) {
+  $light: list.nth($shades, 1);
+  $dark: list.nth($shades, 2);
+  $container: (_container($light, $_white, 12%), _container($dark, $_paper-dark, 16%));
+  $on-container: (_mix($light, $_black, 70%), _mix($dark, $_white, 80%));
+
+  @return (
+    #{$name}: ($light, $dark),
+    on-#{$name}: ($_white, $_ink),
+    #{$name}-container: $container,
+    on-#{$name}-container: $on-container,
+    #{$name}-fixed: $container,
+    #{$name}-fixed-dim: $container,
+    on-#{$name}-fixed: $on-container,
+    on-#{$name}-fixed-variant: $on-container
+  );
+}
+
+@function _season-colours($season) {
+  $definition: map.get($seasons, $season);
+  $primary: map.get($definition, primary);
+  $secondary: map.get($definition, secondary);
+  $colours: map.merge(_accent(primary, $primary), _accent(tertiary, $secondary));
+
+  // Material uses the "secondary container" for whatever is selected - the active navigation
+  // entry, a pressed toggle. In MUI that is a tint of the primary colour, so the container pair
+  // comes from the primary and only the plain secondary is the accent.
+  $colours: map.merge(
+    $colours,
+    (
+      secondary: $secondary,
+      on-secondary: (
+        $_white,
+        $_ink,
+      ),
+      secondary-container: map.get($colours, primary-container),
+      on-secondary-container: map.get($colours, on-primary-container),
+      secondary-fixed: map.get($colours, primary-container),
+      secondary-fixed-dim: map.get($colours, primary-container),
+      on-secondary-fixed: map.get($colours, on-primary-container),
+      on-secondary-fixed-variant: map.get($colours, on-primary-container),
+      surface-tint: $primary,
+      // the primary as it reads on the inverse surface (a snack bar): the shade of the other scheme
+      inverse-primary: (
+          list.nth($primary, 2),
+          list.nth($primary, 1),
+        ),
+    )
+  );
+
+  @return $colours;
+}
+
+@mixin _emit($colours) {
+  @each $name, $pair in $colours {
+    --mat-sys-#{$name}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
+  }
+}
+
+// The colours every season shares.
+@mixin neutral-colours {
+  @include _emit($_neutral);
+}
+
+// The colours of one season, plus the application's own variables built on them.
+@mixin season-colours($season) {
+  $definition: map.get($seasons, $season);
+
+  @include _emit(_season-colours($season));
+
+  // The app bar. Both shades are also given on their own: `ThemeStore` copies the one in use
+  // into <meta name="theme-color">, where `light-dark()` is not understood.
+  --app-bar-light: #{list.nth(map.get($definition, primary), 1)};
+  --app-bar-dark: #{map.get($definition, bar-dark)};
+}
+
+// Variables that are the same expression in every season, because they are derived from the
+// seasonal ones above.
+@mixin derived-colours {
+  --app-bar: light-dark(var(--app-bar-light), var(--app-bar-dark));
+  --app-on-bar: #{$_white};
+
+  // Chart series, in the order they are handed out: the two accents, their lighter companions,
+  // and a neutral for "everything else".
+  --app-chart-1: var(--mat-sys-primary);
+  --app-chart-2: var(--mat-sys-secondary);
+  --app-chart-3: color-mix(in srgb, var(--mat-sys-primary) 55%, var(--mat-sys-surface));
+  --app-chart-4: color-mix(in srgb, var(--mat-sys-secondary) 55%, var(--mat-sys-surface));
+  --app-chart-5: var(--mat-sys-outline);
+}

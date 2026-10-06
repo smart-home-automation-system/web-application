@@ -15,6 +15,11 @@ const pages: Page[] = [
     loadComponent: () => import('./features/overview/overview').then((m) => m.Overview),
   },
   {
+    path: 'settings',
+    title: 'nav.settings',
+    loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
+  },
+  {
     path: 'about',
     title: 'nav.about',
     loadComponent: () => import('./features/about/about').then((m) => m.About),

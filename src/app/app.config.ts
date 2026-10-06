@@ -1,5 +1,10 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, inject, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 import {
   RedirectCommand,
@@ -13,6 +18,7 @@ import { routes } from './app.routes';
 import { mockApiInterceptors } from './core/api/mock-api';
 import { provideI18n } from './core/i18n/provide-i18n';
 import { AppTitleStrategy } from './core/layout/app-title-strategy';
+import { ThemeStore } from './core/theme/theme-store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -34,6 +40,10 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(withInterceptors([...mockApiInterceptors])),
     ...provideI18n(),
+    // the colours of the season are in place before the first page renders
+    provideAppInitializer(() => {
+      inject(ThemeStore);
+    }),
     { provide: TitleStrategy, useClass: AppTitleStrategy },
     // icons are the self-hosted Material Symbols font, not the legacy Material Icons
     { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
