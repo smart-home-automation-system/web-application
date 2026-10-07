@@ -239,6 +239,15 @@ describe('profiles in the application', () => {
       await vi.waitFor(() => expect(url()).toBe('/room'));
     });
 
+    it('opens the own link of the member remembered while the registry is away', async () => {
+      await start(BORYS);
+      await harness.navigateByUrl('/u/borys');
+
+      await registryFails(503);
+
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+    });
+
     it('opens the member of the link followed last', async () => {
       await start();
       await harness.navigateByUrl('/u/Borys');
@@ -331,6 +340,21 @@ describe('profiles in the application', () => {
   });
 
   describe('a profile that changes under an open page', () => {
+    // the guard let the administrator through; the profile changed before the page arrived
+    it('leaves a page of the administrator that was on its way when the role changed', async () => {
+      await start({ ...BORYS, role: 'admin' });
+      await harness.navigateByUrl('/room');
+      const router = TestBed.inject(Router);
+
+      const navigation = router.navigateByUrl('/about');
+      void TestBed.inject(ProfileStore).refresh();
+      (await vi.waitFor(() => http.expectOne('/home/household'))).flush(HOUSEHOLD);
+      await navigation;
+      await settle();
+
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+    });
+
     it('leaves the page of the administrator when the registry says resident', async () => {
       await start({ ...BORYS, role: 'admin' });
       await harness.navigateByUrl('/about');

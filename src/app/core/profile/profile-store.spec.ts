@@ -109,6 +109,17 @@ describe('ProfileStore', () => {
       expect(store.error()?.kind).toBe('network');
     });
 
+    // the link a member opens the application with has to work while the backend is away
+    it('opens the link of the member already remembered while the registry is away', async () => {
+      registry = () => throwError(() => new ApiError('network', 0));
+      const store = create({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+
+      expect(await store.open('borys')).toBe('opened');
+      expect(await store.open('Aurelia')).toBe('unavailable');
+
+      expect(store.profile()?.name).toBe('Borys');
+    });
+
     it('replaces the profile of somebody else', async () => {
       const store = create({ name: 'Borys', role: 'resident', rooms: ['loft'] });
 
@@ -214,6 +225,40 @@ describe('ProfileStore', () => {
     expect(await store.open('Borys')).toBe('opened');
 
     expect(store.profile()?.name).toBe('Borys');
+  });
+
+  describe('when the page comes back into view', () => {
+    function comeBack(state: DocumentVisibilityState): void {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+      document.dispatchEvent(new Event('visibilitychange'));
+    }
+
+    it('asks the registry again and takes over what changed', async () => {
+      const members = vi.fn(() => of(HOUSEHOLD));
+      registry = members;
+      const store = create({ name: 'Borys', role: 'admin', rooms: [] });
+
+      comeBack('visible');
+      await vi.waitFor(() => expect(store.profile()?.role).toBe('resident'));
+
+      expect(members).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks nothing when the page is hidden, or nobody has a profile', () => {
+      const members = vi.fn(() => of(HOUSEHOLD));
+      registry = members;
+      const store = create({ name: 'Borys', role: 'resident', rooms: [] });
+
+      comeBack('hidden');
+      expect(members).not.toHaveBeenCalled();
+
+      TestBed.resetTestingModule();
+      localStorage.removeItem(STORAGE_KEY);
+      create();
+      comeBack('visible');
+      expect(members).not.toHaveBeenCalled();
+      expect(store.profile()?.name).toBe('Borys');
+    });
   });
 
   describe('in step with other tabs', () => {

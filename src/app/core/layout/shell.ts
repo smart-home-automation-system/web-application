@@ -6,11 +6,13 @@ import {
   inject,
   untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { filter } from 'rxjs';
 
 import { PROFILES_PATH, accessOf, redirectFor } from '../profile/access';
 import { ProfileStore } from '../profile/profile-store';
@@ -59,9 +61,15 @@ export class Shell {
     // The guard judged the open page by the profile of that moment. A profile can change under
     // an open page - the registry answers with another role, the member is switched off, another
     // tab opens somebody else's link - so the same rule is asked again, and a page its viewer
-    // may no longer see is left.
+    // may no longer see is left. It is asked at the end of every navigation too: a profile that
+    // changes while a page is on its way was judged by the guard before the change, and by this
+    // check on the page being left.
+    const arrived = toSignal(
+      this.router.events.pipe(filter((event) => event instanceof NavigationEnd)),
+    );
     effect(() => {
       const profile = this.profile();
+      arrived();
       untracked(() => {
         const target = redirectFor(accessOf(this.router.routerState.snapshot.root), profile);
         if (target !== undefined) {

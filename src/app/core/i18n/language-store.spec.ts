@@ -311,6 +311,35 @@ describe('LanguageStore, with household profiles', () => {
     expect(document.documentElement.lang).toBe('pl');
   });
 
+  // the application can change hands while the texts are on their way
+  it('remembers a choice for who made it when somebody else takes over before it arrives', async () => {
+    const download = new Subject<Messages>();
+    owner.set('Aurelia');
+    TestBed.configureTestingModule({
+      providers: [
+        provideI18nTesting(),
+        { provide: LANGUAGE_OWNER, useValue: owner },
+        {
+          provide: MESSAGES_LOADER,
+          useValue: (language: LanguageCode) => (language === 'en' ? of(en) : download),
+        },
+      ],
+    });
+    const store = TestBed.inject(LanguageStore);
+    await settle();
+
+    const chosen = store.select('pl');
+    owner.set('Borys');
+    await settle();
+    download.next(pl);
+    download.complete();
+    await chosen;
+
+    expect(store.language()).toBe('en');
+    expect(localStorage.getItem(`${STORAGE_KEY}.Aurelia`)).toBe('pl');
+    expect(localStorage.getItem(`${STORAGE_KEY}.Borys`)).toBeNull();
+  });
+
   it('keeps the language on screen when the next member chose the same', async () => {
     const store = create({ device: 'pl' });
     await store.restore();

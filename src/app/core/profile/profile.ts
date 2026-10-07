@@ -16,12 +16,13 @@ export interface Profile {
 
 /**
  * The profiles of an answer of the registry: its active members, in the order sent. Entries
- * that are not a member are skipped; a role that is not `admin` - missing, or one this version
- * does not know - is a resident, the role that reaches the least.
+ * that are not a member are skipped. Whatever is unclear is read the way that reaches the least:
+ * a member is active only when the registry says `true` - not when the field is missing or is
+ * anything else - and a role that is not `admin` is a resident.
  */
 export function toProfiles(members: readonly HouseholdMember[]): Profile[] {
   return members.flatMap((member: unknown): Profile[] => {
-    if (!isRecord(member) || member['active'] === false) {
+    if (!isRecord(member) || member['active'] !== true) {
       return [];
     }
     const name = member['name'];
@@ -44,7 +45,11 @@ export function parseProfile(value: unknown): Profile | undefined {
   return { name, role, rooms: toRooms(rooms) };
 }
 
-/** A link is typed by hand as often as it is tapped: the name in it matches whatever its case. */
+/**
+ * A link is typed by hand as often as it is tapped: the name in it matches whatever its case.
+ * Folded without regard to the language of the browser - a Turkish one lowers "I" to a dotless
+ * "ı", and the same link has to open the same profile on every device.
+ */
 export function sameName(left: string, right: string): boolean {
   return normalise(left) === normalise(right);
 }
@@ -62,7 +67,7 @@ export function sameProfile(left: Profile | undefined, right: Profile | undefine
 }
 
 function normalise(name: string): string {
-  return name.trim().normalize('NFC').toLocaleLowerCase();
+  return name.trim().normalize('NFC').toLowerCase();
 }
 
 function toRole(value: unknown): MemberRole {

@@ -12,7 +12,7 @@ import { ApiClient } from '../../core/api/api-client';
  */
 export interface HouseholdMember {
   readonly name: string;
-  /** A deactivated member stays in the registry with `false`. */
+  /** A deactivated member stays in the registry with `false`; only `true` counts as active. */
   readonly active?: boolean;
   /** `admin` or `resident`. */
   readonly role?: string;

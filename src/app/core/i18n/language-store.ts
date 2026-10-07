@@ -111,6 +111,8 @@ export class LanguageStore {
   /** `remember` is false when the language is not being chosen but brought back. */
   private async change(language: LanguageCode, remember: boolean): Promise<boolean> {
     const choice = ++this.choices;
+    // whose choice this is - read now: the application can change hands before the texts arrive
+    const owner = this.owner();
     try {
       // Transloco keeps the texts once loaded, so every view finds them ready; a failed load
       // completes without a value, which is what makes this throw
@@ -120,9 +122,12 @@ export class LanguageStore {
       return false;
     }
     if (choice === this.choices) {
-      this.activate(language);
+      // the interface belongs to whoever uses the application now; the choice, to who made it
+      if (owner === this.owner()) {
+        this.activate(language);
+      }
       if (remember) {
-        store(keyOf(this.owner()), language);
+        store(keyOf(owner), language);
       }
     }
     return true;

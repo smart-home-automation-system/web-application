@@ -48,6 +48,7 @@ export class ProfileStore {
 
   constructor() {
     this.watchOtherTabs();
+    this.askAgainOnReturn();
   }
 
   /**
@@ -63,11 +64,14 @@ export class ProfileStore {
 
   /**
    * Opens the profile of a member, by the name a personal link carries. The registry is asked
-   * first, so only somebody who is in it, and active, gets a profile.
+   * first, so only somebody who is in it, and active, gets a profile. The one exception is the
+   * member this browser already remembers: their own link - the bookmark they open the
+   * application with - works while the registry is away, like the rest of the application.
    */
   async open(member: string): Promise<OpenResult> {
     if (!(await this.refresh())) {
-      return 'unavailable';
+      const current = this.active();
+      return current !== undefined && sameName(current.name, member) ? 'opened' : 'unavailable';
     }
     const found = this.registry()?.find((candidate) => sameName(candidate.name, member));
     if (found === undefined) {
@@ -117,6 +121,23 @@ export class ProfileStore {
     } catch {
       // nothing to do
     }
+  }
+
+  /**
+   * A page can stay open for weeks - a phone brings the application back from the background
+   * without loading it again. Whenever it comes back into view the registry is asked again, so
+   * a role changed there, or a start that found the backend away, is caught up with.
+   */
+  private askAgainOnReturn(): void {
+    const onVisibility = () => {
+      if (this.document.visibilityState === 'visible' && this.active() !== undefined) {
+        void this.refresh();
+      }
+    };
+    this.document.addEventListener('visibilitychange', onVisibility);
+    inject(DestroyRef).onDestroy(() =>
+      this.document.removeEventListener('visibilitychange', onVisibility),
+    );
   }
 
   /** A profile opened or lost in another tab of this browser is the profile of this one too. */

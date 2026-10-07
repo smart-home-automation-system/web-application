@@ -193,6 +193,12 @@ $panel-width: 220px;
   vertical-align: bottom;
 }
 
+// Without the bottom bar - a resident's phone, the profile picker - nothing else keeps the end of
+// the page clear of the home indicator of an iPhone.
+:host:not(:has(.shell__bottom-nav)) .shell__content {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
 .shell__content {
   grid-area: content;
   min-width: 0;

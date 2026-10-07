@@ -25,6 +25,17 @@ describe('toProfiles', () => {
     expect(toProfiles([{ name: 'Emil', active: false, role: 'admin' }])).toEqual([]);
   });
 
+  // unclear means not active: a registry that stops sending the field must not bring back
+  // everybody who was switched off
+  it.each([undefined, null, 'true', 'false', 0, 1])(
+    'leaves out a member whose "active" is %o',
+    (active) => {
+      const member = { name: 'Emil', active, role: 'resident' } as unknown as HouseholdMember;
+
+      expect(toProfiles([member])).toEqual([]);
+    },
+  );
+
   // the role that reaches the least: a value this version does not know must not open everything
   it.each([undefined, 'owner', 'ADMIN', '', 7])('reads a role of %o as a resident', (role) => {
     const member = { name: 'Borys', active: true, role } as unknown as HouseholdMember;
@@ -37,8 +48,8 @@ describe('toProfiles', () => {
       null,
       'Aurelia',
       { active: true, role: 'admin' },
-      { name: '  ', role: 'admin' },
-      { name: 'Celina', rooms: ['bedroom', null, '', 4] },
+      { name: '  ', active: true, role: 'admin' },
+      { name: 'Celina', active: true, rooms: ['bedroom', null, '', 4] },
     ] as unknown as HouseholdMember[];
 
     expect(toProfiles(answer)).toEqual([{ name: 'Celina', role: 'resident', rooms: ['bedroom'] }]);
@@ -71,6 +82,15 @@ describe('sameName', () => {
   it('matches a name typed in another case, or with spaces around it', () => {
     expect(sameName('Aurelia', 'aurelia')).toBe(true);
     expect(sameName('Łucja', ' łucja ')).toBe(true);
+  });
+
+  // "I".toLocaleLowerCase() is a dotless "ı" in a Turkish browser
+  it('does not depend on the language of the browser', () => {
+    const lower = vi.spyOn(String.prototype, 'toLocaleLowerCase');
+
+    expect(sameName('Iga', 'iga')).toBe(true);
+    expect(lower).not.toHaveBeenCalled();
+    lower.mockRestore();
   });
 
   it('tells different names apart', () => {
