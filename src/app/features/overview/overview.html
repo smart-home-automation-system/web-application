@@ -7,7 +7,7 @@
   <section class="tiles" [attr.aria-label]="t('overview.systems')">
     <mat-card appearance="outlined" class="tile tile--heating card--domain">
       <mat-card-header>
-        <mat-icon mat-card-avatar class="domain-badge">mode_heat</mat-icon>
+        <div mat-card-avatar class="domain-badge"><mat-icon>mode_heat</mat-icon></div>
         <mat-card-title>{{ t('overview.heating.title') }}</mat-card-title>
         <mat-card-subtitle>
           <app-data-freshness [lastUpdated]="heating.lastUpdated()" [stale]="heating.stale()" />

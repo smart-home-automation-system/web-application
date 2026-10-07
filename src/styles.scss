@@ -137,7 +137,8 @@ body {
 }
 
 // The round badge of a domain card (Material's avatar keeps it round): the icon of the domain on
-// its colour.
+// its colour. It is an element *wrapping* the icon, never the `<mat-icon>` itself: Material's
+// `.mat-icon { display }` comes after this file and would take the centring away (it did).
 .domain-badge {
   display: flex;
   align-items: center;

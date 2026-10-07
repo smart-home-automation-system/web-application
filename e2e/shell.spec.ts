@@ -14,6 +14,27 @@ test.describe('application shell', () => {
     await expect(tile.getByText(/^Updated/)).toBeVisible();
   });
 
+  test('centres the icon in the badge of the heating tile', async ({ page }) => {
+    await page.goto('/');
+
+    const badge = page.locator('.domain-badge');
+    const icon = badge.locator('mat-icon');
+    await expect(icon).toBeVisible();
+    const [box, glyph] = await Promise.all([badge.boundingBox(), icon.boundingBox()]);
+    if (!box || !glyph) throw new Error('the badge and its icon must be on screen');
+
+    // 0.4.0 shipped it in the top-left corner: a Material rule of equal specificity, appended
+    // after the stylesheet, took the centring away from the badge
+    const centre = (b: { x: number; y: number; width: number; height: number }) => [
+      b.x + b.width / 2,
+      b.y + b.height / 2,
+    ];
+    const [bx, by] = centre(box);
+    const [gx, gy] = centre(glyph);
+    expect(Math.abs(gx - bx)).toBeLessThanOrEqual(1);
+    expect(Math.abs(gy - by)).toBeLessThanOrEqual(1);
+  });
+
   test('shows one navigation, matching the width of the screen', async ({ page }, testInfo) => {
     await page.goto('/');
 

@@ -11,9 +11,28 @@ $panel-width: 272px;
     'panel'
     'content'
     'bottom';
+  // the frame follows the dynamic viewport, so the bottom bar stays above the toolbar of a phone
   height: 100dvh;
-  background-color: var(--mat-sys-background);
-  background-image: var(--app-glow);
+  // the glow below is a child of this stacking context, so it stays behind the panel and the page
+  isolation: isolate;
+
+  // The glow is painted on a layer of its own, fixed to the screen and as tall as the viewport
+  // with the browser toolbar hidden: the gradients are sized in `vh` and placed in % of the
+  // height, and painted on the frame they resized and moved every time the toolbar of iOS
+  // Safari slid in or out - the whole background jumped. On this layer only the content follows
+  // the toolbar, as in every application.
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100lvh;
+    z-index: -1;
+    background-color: var(--mat-sys-background);
+    background-image: var(--app-glow);
+  }
 
   @media (min-width: $wide) {
     grid-template-columns: $panel-width 1fr;

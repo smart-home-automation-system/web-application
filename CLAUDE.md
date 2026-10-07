@@ -123,11 +123,17 @@ season. Both are nothing but values of CSS variables, in two files:
   translucent colour a card is actually painted with is `--app-glass` (`--app-glass-panel` for
   the navigation, `--app-glass-edge` for the line along an edge), blurred by `--app-glass-blur`.
   The glow behind everything is `--app-glow`, radial gradients of the season's two colours,
-  painted by the shell. A later task lays a photo of the view under that glow (HAS-209).
+  painted by the shell on a layer **fixed to the screen and `100lvh` tall** — not on the frame,
+  which follows the dynamic viewport of a phone: painted there, the gradients (sized in `vh`,
+  placed in % of the height) resized and moved every time the toolbar of iOS Safari slid in or
+  out (0.4.0). A later task lays a photo of the view under that glow (HAS-209) — on the same
+  layer, for the same reason.
 - **A domain card** (a tile about heating, hot water, the boiler room or the household) carries
   `card--domain` plus a class of its own setting `--app-domain` (`.tile--heating
   { --app-domain: var(--app-domain-heating) }`): the colour runs along its top edge and tints it;
-  its avatar icon is a `domain-badge`. Both blocks live in `src/styles.scss`. The domain colour
+  its avatar is a `domain-badge` — a `<div mat-card-avatar>` *wrapping* the `<mat-icon>`, never
+  the icon itself (Material's `.mat-icon { display }` beat the badge's `display: flex` in 0.4.0
+  and the icon sat in the corner). Both blocks live in `src/styles.scss`. The domain colour
   is for the card and its badge, never for text — text on glass stays `on-surface`.
 - **Two attributes of `<html>`** select what is painted, both set by `ThemeStore`
   (`core/theme/`): `data-season` (always) and `data-color-scheme` (only while the system setting
