@@ -106,8 +106,12 @@ season. Both are nothing but values of CSS variables, in two files:
   styles are appended **after** this stylesheet, so a rule of equal specificity on one of its
   classes silently loses (`.mat-mdc-card { border }` did) — prefer the variable, or an appearance
   that has one: every card is `appearance="outlined"`, because only the outlined card has an edge
-  to colour. A Material component used for the first time gets its overrides there, in the same
-  task. `--mat-sys-corner-full` is deliberately left alone: it keeps round things round.
+  to colour. When a Material element has to be laid out by a class of ours (centred, sized),
+  **wrap it in a plain element and style the wrapper** (the `domain-badge` around its
+  `<mat-icon>`); a selector carrying Material's own class (`.mat-icon.message-page__icon`) is
+  the fallback for a property of the Material element itself, such as the size of an icon. A
+  Material component used for the first time gets its overrides there, in the same task.
+  `--mat-sys-corner-full` is deliberately left alone: it keeps round things round.
 - **`src/theme/_seasons.scss` — the colours.** A neutral set (the deep page and its pale
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer

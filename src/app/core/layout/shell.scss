@@ -13,7 +13,9 @@ $panel-width: 272px;
     'bottom';
   // the frame follows the dynamic viewport, so the bottom bar stays above the toolbar of a phone
   height: 100dvh;
-  // the glow below is a child of this stacking context, so it stays behind the panel and the page
+  // The glow below has `z-index: -1`; this stacking context is what keeps it inside the shell,
+  // behind the panel and the page. Without it the layer falls to the root stacking context and
+  // is painted *under* the background of <body> - the glow is gone and no test notices.
   isolation: isolate;
 
   // The glow is painted on a layer of its own, fixed to the screen and as tall as the viewport
@@ -24,9 +26,7 @@ $panel-width: 272px;
   &::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
+    inset: 0 0 auto;
     height: 100vh;
     height: 100lvh;
     z-index: -1;

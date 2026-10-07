@@ -17,22 +17,28 @@ test.describe('application shell', () => {
   test('centres the icon in the badge of the heating tile', async ({ page }) => {
     await page.goto('/');
 
-    const badge = page.locator('.domain-badge');
-    const icon = badge.locator('mat-icon');
-    await expect(icon).toBeVisible();
-    const [box, glyph] = await Promise.all([badge.boundingBox(), icon.boundingBox()]);
-    if (!box || !glyph) throw new Error('the badge and its icon must be on screen');
+    const tile = page.locator('mat-card', { hasText: 'Heating system' });
+    const badge = tile.locator('.domain-badge');
+    await expect(badge.locator('mat-icon')).toBeVisible();
 
-    // 0.4.0 shipped it in the top-left corner: a Material rule of equal specificity, appended
-    // after the stylesheet, took the centring away from the badge
-    const centre = (b: { x: number; y: number; width: number; height: number }) => [
-      b.x + b.width / 2,
-      b.y + b.height / 2,
-    ];
-    const [bx, by] = centre(box);
-    const [gx, gy] = centre(glyph);
-    expect(Math.abs(gx - bx)).toBeLessThanOrEqual(1);
-    expect(Math.abs(gy - by)).toBeLessThanOrEqual(1);
+    // The glyph itself (the text of the icon), not the 24 px box of <mat-icon>: an icon can be
+    // centred as an element and still draw its glyph off centre. 0.4.0 shipped the glyph in the
+    // top-left corner - a Material rule of equal specificity, appended after the stylesheet,
+    // took the centring away from the badge.
+    const offset = await badge.evaluate((element) => {
+      const icon = element.querySelector('mat-icon');
+      if (!icon) throw new Error('the badge must hold its icon');
+      const range = document.createRange();
+      range.selectNodeContents(icon);
+      const box = element.getBoundingClientRect();
+      const glyph = range.getBoundingClientRect();
+      return {
+        x: glyph.x + glyph.width / 2 - (box.x + box.width / 2),
+        y: glyph.y + glyph.height / 2 - (box.y + box.height / 2),
+      };
+    });
+    expect(Math.abs(offset.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(offset.y)).toBeLessThanOrEqual(1);
   });
 
   test('shows one navigation, matching the width of the screen', async ({ page }, testInfo) => {
