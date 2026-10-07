@@ -12,6 +12,8 @@
 @use './theme/zorza';
 @use './theme/seasons';
 
+@include zorza.fonts;
+
 html {
   height: 100%;
   // follow the light / dark setting of the system
@@ -122,9 +124,11 @@ body {
 
 // A card about one domain of the house (heating, water, the boiler room, the household): the
 // domain's colour along its top edge and a tinted wash below it. `--app-domain` is set by the
-// card's own class: `.card--domain-heating { --app-domain: var(--app-domain-heating) }`.
-.card--domain {
-  border-top: 3px solid var(--app-domain) !important;
+// card's own class, next to its feature: `.tile--heating { --app-domain: var(--app-domain-heating) }`.
+// (With Material's own class in the selector, because Material's card styles come after this
+// file and would otherwise take the edge back.)
+.mat-mdc-card.card--domain {
+  border-top: 3px solid var(--app-domain);
   background-image: linear-gradient(
     160deg,
     color-mix(in srgb, var(--app-domain) 18%, transparent),
@@ -132,12 +136,12 @@ body {
   );
 }
 
-// The round badge of a domain card: the icon of the domain on its colour.
+// The round badge of a domain card (Material's avatar keeps it round): the icon of the domain on
+// its colour.
 .domain-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--mat-sys-corner-small);
   background: var(--app-domain);
   color: var(--app-on-domain);
   box-shadow: 0 8px 20px color-mix(in srgb, var(--app-domain) 45%, transparent);

@@ -153,8 +153,8 @@ $_neutral: (
     #f1f2fb,
   ),
   on-surface-variant: (
-    #555b78,
-    #aeb3cc,
+    #4a506b,
+    #b8bdd4,
   ),
   outline: (
     #6f758f,
@@ -292,7 +292,7 @@ $_neutral: (
   // the navigation panel.
   --app-glass: light-dark(rgb(255 255 255 / 72%), rgb(28 31 56 / 58%));
   --app-glass-edge: light-dark(rgb(255 255 255 / 90%), rgb(255 255 255 / 10%));
-  --app-glass-panel: light-dark(rgb(255 255 255 / 55%), rgb(13 15 29 / 55%));
+  --app-glass-panel: light-dark(rgb(255 255 255 / 70%), rgb(13 15 29 / 55%));
 
   // The domains, and the colour of an icon or text on a domain colour.
   @each $name, $pair in $domains {
@@ -306,7 +306,7 @@ $_neutral: (
   --app-bar-light: #{$_page-light};
   --app-bar-dark: #{$_page-dark};
   --app-bar: light-dark(var(--app-bar-light), var(--app-bar-dark));
-  --app-on-bar: light-dark(#161a2e, #f1f2fb);
+  --app-on-bar: var(--mat-sys-on-background);
 }
 
 // The colours of one season.
@@ -317,21 +317,23 @@ $_neutral: (
 // Variables that are the same expression in every season, because they are derived from the
 // seasonal ones above.
 @mixin derived-colours {
-  // The glow of the page: the two colours of the season, soft and wide, behind everything.
+  // The glow of the page: the two colours of the season, soft and wide, behind everything. The
+  // strengths are what `check:contrast` assumes under the panel (30 %), the page text (25 %)
+  // and the cards (20 %) - raise one here and raise it there.
   --app-glow:
     radial-gradient(
       70vw 45vh at 8% 0%,
-      color-mix(in srgb, var(--mat-sys-primary) 45%, transparent),
+      color-mix(in srgb, var(--mat-sys-primary) 30%, transparent),
       transparent 65%
     ),
     radial-gradient(
       55vw 40vh at 95% 10%,
-      color-mix(in srgb, var(--mat-sys-secondary) 35%, transparent),
+      color-mix(in srgb, var(--mat-sys-secondary) 25%, transparent),
       transparent 65%
     ),
     radial-gradient(
       60vw 45vh at 60% 110%,
-      color-mix(in srgb, var(--mat-sys-primary) 28%, transparent),
+      color-mix(in srgb, var(--mat-sys-primary) 20%, transparent),
       transparent 65%
     );
 

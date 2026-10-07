@@ -19,7 +19,9 @@ The plan this application is built from lives in Jira (HAS project, tasks labell
   below
 - Plus Jakarta Sans and Material Symbols are **self-hosted**
   (`@fontsource-variable/plus-jakarta-sans`, `@material-symbols/font-400`) — the application runs
-  on a LAN and its CSP allows this origin only, so nothing may be loaded from a CDN
+  on a LAN and its CSP allows this origin only, so nothing may be loaded from a CDN. The font
+  faces are declared in `_zorza.scss` (latin and latin-ext only), not through the package's
+  stylesheet, which would ship Cyrillic and Vietnamese files too
 - Two languages, switched at runtime: Transloco (`@jsverse/transloco`), English by default,
   Polish on choice — see "Languages" below
 - Unit tests: Vitest (`ng test`); browser tests: Playwright (`e2e/`); no SSR
@@ -99,10 +101,13 @@ season. Both are nothing but values of CSS variables, in two files:
   and the details of single components (glass cards, the tinted navigation entry, the segmented
   control), given as values of `--mat-sys-*` and of component variables through Material's
   `*-overrides` mixins. **Restyle a component there, through its variables** — a selector
-  reaching into Material's DOM is the last resort (two exist, in `components`: the blur and edge
-  of a card, and the gradient of a filled button) and breaks on an upgrade. A Material component
-  used for the first time gets its overrides there, in the same task. `--mat-sys-corner-full` is
-  deliberately left alone: it keeps round things round.
+  reaching into Material's DOM is the last resort (two exist, in `components`: the blur of a
+  card, and the gradient of a filled button) and breaks on an upgrade. Material's own component
+  styles are appended **after** this stylesheet, so a rule of equal specificity on one of its
+  classes silently loses (`.mat-mdc-card { border }` did) — prefer the variable, or an appearance
+  that has one: every card is `appearance="outlined"`, because only the outlined card has an edge
+  to colour. A Material component used for the first time gets its overrides there, in the same
+  task. `--mat-sys-corner-full` is deliberately left alone: it keeps round things round.
 - **`src/theme/_seasons.scss` — the colours.** A neutral set (the deep page and its pale
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer

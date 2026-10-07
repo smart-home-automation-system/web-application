@@ -8,9 +8,74 @@
 @use 'sass:map';
 @use '@angular/material' as mat;
 
-// self-hosted, see angular.json; the variable font carries every weight in one file
+// The typeface, self-hosted: the variable font carries every weight in one file per subset. Only
+// the two subsets the household can need (latin, latin-ext for Polish) - the package's own
+// stylesheet would ship Cyrillic and Vietnamese files too. The ranges are the package's.
 $font-family: 'Plus Jakarta Sans Variable';
 $font: $font-family, system-ui, sans-serif;
+$_font-files: '../../node_modules/@fontsource-variable/plus-jakarta-sans/files';
+
+@mixin _face($subset, $unicode-range) {
+  @font-face {
+    font-family: $font-family;
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 800;
+    src: url('#{$_font-files}/plus-jakarta-sans-#{$subset}-wght-normal.woff2')
+      format('woff2-variations');
+    unicode-range: $unicode-range;
+  }
+}
+
+// The font faces. Include it at the top level of the stylesheet.
+@mixin fonts {
+  @include _face(
+    latin,
+    (
+      U+0000-00FF,
+      U+0131,
+      U+0152-0153,
+      U+02BB-02BC,
+      U+02C6,
+      U+02DA,
+      U+02DC,
+      U+0304,
+      U+0308,
+      U+0329,
+      U+2000-206F,
+      U+20AC,
+      U+2122,
+      U+2191,
+      U+2193,
+      U+2212,
+      U+2215,
+      U+FEFF,
+      U+FFFD
+    )
+  );
+  @include _face(
+    latin-ext,
+    (
+      U+0100-02BA,
+      U+02BD-02C5,
+      U+02C7-02CC,
+      U+02CE-02D7,
+      U+02DD-02FF,
+      U+0304,
+      U+0308,
+      U+0329,
+      U+1D00-1DBF,
+      U+1E00-1E9F,
+      U+1EF2-1EFF,
+      U+2020,
+      U+20A0-20AB,
+      U+20AD-20C0,
+      U+2113,
+      U+2C60-2C7F,
+      U+A720-A7FF
+    )
+  );
+}
 
 // one radius per role
 $radius-card: 24px;
@@ -77,9 +142,13 @@ $_shadows: (
 // Typography, shape, shadows and the component variables. Include it on <html>.
 @mixin system {
   // no `color` here on purpose: every colour comes from `_seasons.scss`
+  // the same stack with its fallbacks for every step, also those `$_typography` does not set
   @include mat.theme(
     (
-      typography: $font-family,
+      typography: (
+        plain-family: $font,
+        brand-family: $font,
+      ),
       density: 0,
     ),
     map.merge($_typography, $_shape)
@@ -120,15 +189,18 @@ $_shadows: (
     )
   );
 
-  // A card is a sheet of glass: translucent, blurred (in `components`), edged with a lighter line.
+  // A card is a sheet of glass: translucent, blurred (in `components`), edged with a lighter
+  // line. Every card is `appearance="outlined"` - the elevated appearance has no edge at all
+  // (Material paints it with `border-width: 0`, which no variable reaches).
   @include mat.card-overrides(
     (
+      outlined-container-color: var(--app-glass),
+      outlined-container-shape: $radius-card,
+      outlined-container-elevation: var(--mat-sys-level2),
+      outlined-outline-color: var(--app-glass-edge),
       elevated-container-color: var(--app-glass),
       elevated-container-shape: $radius-card,
       elevated-container-elevation: var(--mat-sys-level2),
-      outlined-container-color: var(--app-glass),
-      outlined-container-shape: $radius-card,
-      outlined-outline-color: var(--app-glass-edge),
       title-text-weight: 600,
       subtitle-text-color: var(--mat-sys-on-surface-variant),
       subtitle-text-size: 0.875rem,
@@ -190,9 +262,8 @@ $_shadows: (
 
 // What no variable reaches. Include it at the top level of the stylesheet.
 @mixin components {
-  // The glass itself: no variable blurs what lies behind a card or draws its edge.
+  // The glass itself: no variable blurs what lies behind a card.
   .mat-mdc-card {
-    border: 1px solid var(--app-glass-edge);
     backdrop-filter: blur(var(--app-glass-blur));
   }
 

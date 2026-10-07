@@ -34,7 +34,6 @@
               }
             ],
             "styles": [
-              "@fontsource-variable/plus-jakarta-sans/index.css",
               "@material-symbols/font-400/outlined.css",
               "src/styles.scss"
             ]

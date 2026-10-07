@@ -14,7 +14,6 @@ $panel-width: 272px;
   height: 100dvh;
   background-color: var(--mat-sys-background);
   background-image: var(--app-glow);
-  background-attachment: fixed;
 
   @media (min-width: $wide) {
     grid-template-columns: $panel-width 1fr;

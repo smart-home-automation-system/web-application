@@ -9,7 +9,7 @@ import { LanguageStore } from '../i18n/language-store';
 import { LanguageCode } from '../i18n/languages';
 
 /**
- * The language switch of the toolbar: a button showing the active language and a menu of the
+ * The language switch of the panel: a button showing the active language and a menu of the
  * available ones, each named in its own words so it can be found by somebody who cannot read
  * the current one.
  *

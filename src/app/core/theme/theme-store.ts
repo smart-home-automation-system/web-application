@@ -30,7 +30,7 @@ const LOOK_AGAIN_MS = 3_600_000;
  * paint, through two attributes of `<html>`: `data-season`, always, and `data-color-scheme`,
  * present only while the system setting is overridden. It also keeps two `<meta>` tags in step:
  * `color-scheme` (how the browser draws its own parts - scroll bars, form controls) and
- * `theme-color` (the status bar of a phone, which should continue the app bar).
+ * `theme-color` (the status bar of a phone, which should continue the page).
  *
  * A dashboard stays open for weeks, so the season is looked at again when the day changes, at
  * least once an hour, and whenever the tab comes back into view - a sleeping device runs no
@@ -119,7 +119,7 @@ export class ThemeStore {
     const scheme = this.scheme();
     const season = this.season();
 
-    // reading the app bar colour below makes the browser recalculate its styles: only when
+    // reading the page colour below makes the browser recalculate its styles: only when
     // something has actually changed
     const state = `${season} ${choice} ${scheme}`;
     if (state === this.applied) {
@@ -135,7 +135,7 @@ export class ThemeStore {
     }
     this.meta('color-scheme').content = choice === 'system' ? 'light dark' : choice;
 
-    // The colour of the app bar, read back from the styles: it exists once per scheme as a plain
+    // The colour of the page, read back from the styles: it exists once per scheme as a plain
     // value because a <meta> understands neither variables nor light-dark(). Empty where no
     // stylesheet is loaded (unit tests) - the tag is then left alone.
     const bar = this.document.defaultView
