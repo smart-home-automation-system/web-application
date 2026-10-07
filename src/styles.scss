@@ -19,6 +19,10 @@ html {
   // follow the light / dark setting of the system
   color-scheme: light dark;
 
+  // The whole type scale is in rem; the root is a step below the browser's 16 px - the owner
+  // found the scale too large on the monitor and on the phone alike (2026-10-07).
+  font-size: 14px;
+
   @include zorza.system;
   @include seasons.neutral-colours;
   @include seasons.season-colours(seasons.$default-season);
@@ -71,21 +75,17 @@ body {
 
 // ---- Page building blocks shared by every feature ----
 
+// The title of a page, nothing more: a lead sentence under it, and a sheet of glass behind it
+// over a photo, were both found to waste the room (owner, 2026-10-07). So the title is the one
+// text that lies directly on a photo - in `on-background`, which `check:contrast` lays over the
+// darkest and the lightest patch of every photo.
 .page-header {
-  margin: 0 0 24px;
+  margin: 0 0 16px;
 
   h1 {
     margin: 0;
     font: var(--mat-sys-headline-medium);
     letter-spacing: var(--mat-sys-headline-medium-tracking);
-  }
-
-  p {
-    margin: 4px 0 0;
-    max-width: 65ch;
-    font: var(--mat-sys-body-large);
-    letter-spacing: var(--mat-sys-body-large-tracking);
-    color: var(--mat-sys-on-surface-variant);
   }
 }
 

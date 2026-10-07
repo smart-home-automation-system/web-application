@@ -1,7 +1,7 @@
 // Below this width the panel on the left becomes a bar on top and the navigation moves to the
 // bottom (Material "expanded" window class starts at 840px).
 $wide: 840px;
-$panel-width: 272px;
+$panel-width: 220px;
 
 // The frame: the glow of the season behind everything, the panel and the page on top of it.
 :host {
@@ -22,7 +22,8 @@ $panel-width: 272px;
   // with the browser toolbar hidden: the gradients are sized in `vh` and placed in % of the
   // height, and painted on the frame they resized and moved every time the toolbar of iOS
   // Safari slid in or out - the whole background jumped. On this layer only the content follows
-  // the toolbar, as in every application.
+  // the toolbar, as in every application. The layer paints the gradients alone: the page colour
+  // under them is the body's, and the photo of the view (`app-view-background`) lies between.
   &::before {
     content: '';
     position: fixed;
@@ -30,8 +31,14 @@ $panel-width: 272px;
     height: 100vh;
     height: 100lvh;
     z-index: -1;
-    background-color: var(--mat-sys-background);
     background-image: var(--app-glow);
+  }
+
+  // Over a photo (an image in the background layer) the glow is half as strong: the photo gives
+  // the view its mood, and the text on the page keeps its contrast (`check:contrast` assumes
+  // this half - GLOW_OVER_PHOTO).
+  &:has(app-view-background img)::before {
+    opacity: 0.5;
   }
 
   @media (min-width: $wide) {
@@ -74,8 +81,8 @@ $panel-width: 272px;
   @media (min-width: $wide) {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
-    padding: 24px 16px calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    gap: 12px;
+    padding: 16px 12px calc(12px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
     overflow-y: auto;
     border-bottom: 0;
     border-right: 1px solid var(--app-glass-edge);
@@ -159,7 +166,7 @@ $panel-width: 272px;
   outline: none;
 
   @media (min-width: $wide) {
-    padding: 32px 40px 40px;
+    padding: 20px 28px 28px;
   }
 }
 

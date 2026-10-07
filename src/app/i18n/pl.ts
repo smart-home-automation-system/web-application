@@ -20,7 +20,6 @@ export const pl: Messages = {
   },
   overview: {
     title: 'Przegląd',
-    lead: 'Stan domu w jednym miejscu. Kolejne kafle pojawią się razem z następnymi panelami.',
     systems: 'Systemy domu',
     heating: {
       title: 'Ogrzewanie',
@@ -33,7 +32,6 @@ export const pl: Messages = {
   },
   settings: {
     title: 'Ustawienia',
-    lead: 'Wygląd aplikacji w tej przeglądarce.',
     appearance: {
       title: 'Wygląd',
       hint: 'Kolory same podążają za porą roku oraz jasnym lub ciemnym trybem urządzenia. Wybór dokonany tutaj służy do podglądu i jest pamiętany tylko w tej przeglądarce.',
@@ -45,6 +43,11 @@ export const pl: Messages = {
       seasonAuto: 'Automatycznie',
       seasonNow: 'Według kalendarza, teraz: {{ season }}',
       reset: 'Wróć do automatycznych',
+      photos: 'Zdjęcia pod widokami',
+      photosOn: 'Pokazywane',
+      photosOff: 'Ukryte',
+      photosHint:
+        'Każdy widok ma pod szkłem zdjęcie swojego miejsca. Wyłącz je na urządzeniu, które rysuje je powoli.',
     },
     palette: {
       title: 'Paleta',
@@ -69,7 +72,6 @@ export const pl: Messages = {
   },
   about: {
     title: 'O aplikacji',
-    lead: 'Wersja aplikacji działająca w tej przeglądarce.',
     version: 'Wersja',
     commit: 'Commit',
     built: 'Zbudowano',

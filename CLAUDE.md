@@ -97,7 +97,9 @@ The components are Angular Material; the look is "Zorza" (aurora), and the colou
 season. Both are nothing but values of CSS variables, in two files:
 
 - **`src/theme/_zorza.scss` — the look.** The type scale (Plus Jakarta Sans, heavy tight
-  headings), one radius per role (24 px cards, 14 px controls, pill buttons), soft wide shadows
+  headings, two steps smaller than Material's since HAS-209 — the owner reads the dashboard on a
+  2560 px monitor and found 2 rem headlines and 1 rem body text too large), one radius per role
+  (12 px cards, 10 px controls, pill buttons), soft wide shadows
   and the details of single components (glass cards, the tinted navigation entry, the segmented
   control), given as values of `--mat-sys-*` and of component variables through Material's
   `*-overrides` mixins. **Restyle a component there, through its variables** — a selector
@@ -130,15 +132,19 @@ season. Both are nothing but values of CSS variables, in two files:
   painted by the shell on a layer **fixed to the screen and `100lvh` tall** — not on the frame,
   which follows the dynamic viewport of a phone: painted there, the gradients (sized in `vh`,
   placed in % of the height) resized and moved every time the toolbar of iOS Safari slid in or
-  out (0.4.0). A later task lays a photo of the view under that glow (HAS-209) — on the same
-  layer, for the same reason.
+  out (0.4.0). The photo of the view (see "Backgrounds") lies one layer below it, of the same
+  shape for the same reason, and halves the glow.
 - **A domain card** (a tile about heating, hot water, the boiler room or the household) carries
   `card--domain` plus a class of its own setting `--app-domain` (`.tile--heating
   { --app-domain: var(--app-domain-heating) }`): the colour runs along its top edge and tints it;
   its avatar is a `domain-badge` — a `<div mat-card-avatar>` *wrapping* the `<mat-icon>`, never
   the icon itself (Material's `.mat-icon { display }` beat the badge's `display: flex` in 0.4.0
   and the icon sat in the corner). Both blocks live in `src/styles.scss`. The domain colour
-  is for the card and its badge, never for text — text on glass stays `on-surface`.
+  is for the card and its badge, never for text — text on glass stays `on-surface` /
+  `on-surface-variant`. **A status in the season's colour is `on-primary-container`, an error
+  is `on-error-container`** (on an `error-container` strip where it is a sentence): the plain
+  `primary` and `error` do not reach 4.5:1 on glass over a photo, and the check only knows the
+  container shades as text on glass.
 - **Two attributes of `<html>`** select what is painted, both set by `ThemeStore`
   (`core/theme/`): `data-season` (always) and `data-color-scheme` (only while the system setting
   is overridden). The season comes from the browser clock (`seasonOf`: 21 Mar / 22 Jun / 23 Sep
@@ -166,6 +172,48 @@ season. Both are nothing but values of CSS variables, in two files:
   not depend on the day it runs) and starts in a variant with `startWithTheme(page, …)`. In a
   unit test `ThemeStore` works without styles and without `matchMedia`; stub the latter to test
   the system scheme.
+
+## Backgrounds
+
+Each view can have a real photo of its place behind the glass (HAS-209): the Overview a house
+with its garden, later a kitchen, a garage, the boiler room. The photo is the mood of the view;
+the text never depends on it.
+
+- **A route names its photo** in `data.background` (`app.routes.ts`), by a name from
+  `BACKGROUNDS` (`core/background/backgrounds.ts`); a route without one shows the plain glow.
+  `ViewBackground` (`core/layout/`) in the shell reads the name after every navigation and
+  renders the `<img>` with both sizes (`srcset`, `sizes="100vw"`) on a layer fixed to the screen
+  under the glow — `z-index: -2` in the shell's stacking context, `100lvh` tall for the same
+  reason as the glow. A new photo fades in over the old one (`@starting-style`); with
+  `prefers-reduced-motion` it is swapped at once.
+- **The haze** (`view-background.scss`) lays the page colour over the photo — `--app-haze-top`
+  / `-bottom` / `-tint` in `_seasons.scss`: 45 → 60 % in the light scheme, 66 → 82 % plus a 10 %
+  tint of the primary in the dark one, and the glow is painted at half strength over a photo;
+  the glass of the cards is 70 % white / 42 % navy with an 8 px blur, the panel 92 % / 55 % —
+  the owner wanted the photo clearly visible and the cards see-through (2026-10-07), and these
+  are the thinnest values at which every text pair holds 4.5:1 (the blur is free: the check
+  assumes an unblurred patch).
+  Those numbers are **what `check:contrast` assumes** (`HAZE_TOP`, `HAZE_TINT`,
+  `GLOW_OVER_PHOTO`): it lays the darkest and the lightest patch of every photo under the haze,
+  the glow, the glass and the panel, and checks the text on the glass and the panel. **The only
+  text on the bare photo is the title of the page** (`.page-header h1`, `on-background`), and it
+  lies at the top — so the sidecar also holds the extremes of the **top 25 % of the frame**
+  (`top`), which is what the title is checked over; the light haze is 45 % rather than thinner
+  because of exactly that pair (dark title over the dusk sky). A view that puts text anywhere
+  else than in a card or the title gives it glass, or the check is blind to it; a title lower
+  than the top band of the photo is not covered either. The owner chose the thin haze and the
+  bare title over the lead sentences and the glass behind the title (2026-10-07), both of which
+  were tried and found to waste the room.
+- **Adding a photo**: generate the source (Superdesign, `npx --yes @superdesign/cli@latest
+  generate-image`; the owner logs in once and confirms the quote), run
+  `node scripts/make-background.mjs <source> <name>` — it writes `public/backgrounds/<name>-2560.webp`
+  (at most 400 kB), `-1280.webp` and `<name>.json` (the two patches) — add the name to
+  `BACKGROUNDS`, name it in the route, and record the prompt and the model in
+  `public/backgrounds/README.md`. The files are not hashed, so nginx serves them `no-cache`: a
+  regenerated photo under the same name reaches every browser after a revalidation.
+- **The switch**: `BackgroundStore` (`core/background/`) — photos on by default, off on the
+  Settings page for a device that is slow to blur them, kept in
+  `localStorage['smart-home.background']` only while off, synced between tabs like the theme.
 
 ## Languages
 

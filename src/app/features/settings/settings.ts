@@ -4,8 +4,10 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { BackgroundStore } from '../../core/background/background-store';
 import { SEASONS, Season } from '../../core/theme/season';
 import { SchemeChoice, SeasonChoice, ThemeStore } from '../../core/theme/theme-store';
 import { MessageKey } from '../../i18n/messages';
@@ -32,7 +34,8 @@ const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
 
 /**
  * Settings of this browser. So far the appearance: the colours follow the season and the system
- * by themselves, and this page lets somebody look at the other variants.
+ * by themselves, and this page lets somebody look at the other variants; the photos behind the
+ * views can be switched off here for a slow device.
  *
  * Meant for the administrator; until the household profiles exist (HAS-193) there is nobody to
  * tell apart, so the page is open to everyone - it changes only the browser it is opened in.
@@ -45,6 +48,7 @@ const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
     MatCardModule,
     MatIconModule,
     MatRadioModule,
+    MatSlideToggleModule,
     TranslocoDirective,
   ],
   templateUrl: './settings.html',
@@ -53,6 +57,7 @@ const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
 })
 export class Settings {
   protected readonly theme = inject(ThemeStore);
+  protected readonly background = inject(BackgroundStore);
   protected readonly schemeOptions = SCHEME_OPTIONS;
   protected readonly seasons = SEASONS;
   protected readonly seasonLabels = SEASON_LABELS;

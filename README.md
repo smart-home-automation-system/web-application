@@ -50,9 +50,12 @@ and a dark variant that follows the setting of the device. The season is taken f
 the browser (it starts on 21 March, 22 June, 23 September and 22 December) and changes by itself
 at midnight, also in a dashboard that is never reloaded. Each domain of the house — heating, hot
 water, the boiler room, the household — keeps a colour of its own all year, so a card is known by
-its colour before it is read. The **Settings** page can show any season and either scheme for
-preview; the choice stays in that browser. All eight variants are checked for WCAG AA contrast
-on every build.
+its colour before it is read. Behind the glass of a view lies a **photo of its place** — the
+Overview a house with its garden — under a haze of the page colour, so the photo gives the view
+its mood and never competes with the text; a slow device can switch the photos off in the
+Settings. The **Settings** page can also show any season and either scheme for preview; the
+choices stay in that browser. All eight variants are checked for WCAG AA contrast on every
+build, the text over the photos included.
 
 | Layer | Choice |
 |---|---|

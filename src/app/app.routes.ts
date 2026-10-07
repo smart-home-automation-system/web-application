@@ -1,17 +1,23 @@
 import { Route, Routes } from '@angular/router';
 
+import { BackgroundName } from './core/background/backgrounds';
 import { Shell } from './core/layout/shell';
 import { ErrorPage } from './features/error/error-page';
 import { MessageKey } from './i18n/messages';
 
-/** A page of the application: its `title` is the key of the text shown in the browser tab. */
-type Page = Route & { title?: MessageKey };
+/**
+ * A page of the application: its `title` is the key of the text shown in the browser tab, and
+ * `data.background` names the photo behind it (`core/background/backgrounds.ts`); without one
+ * the page shows the plain glow.
+ */
+type Page = Route & { title?: MessageKey; data?: { background?: BackgroundName } };
 
 const pages: Page[] = [
   { path: '', pathMatch: 'full', redirectTo: 'overview' },
   {
     path: 'overview',
     title: 'nav.overview',
+    data: { background: 'home' },
     loadComponent: () => import('./features/overview/overview').then((m) => m.Overview),
   },
   {

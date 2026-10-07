@@ -1,7 +1,6 @@
 <ng-container *transloco="let t">
   <header class="page-header">
     <h1>{{ t('settings.title') }}</h1>
-    <p>{{ t('settings.lead') }}</p>
   </header>
 
   <div class="cards">
@@ -48,6 +47,17 @@
             <mat-radio-button [value]="season">{{ t(seasonLabels[season]) }}</mat-radio-button>
           }
         </mat-radio-group>
+
+        <h2 class="field-label" id="settings-photos">{{ t('settings.appearance.photos') }}</h2>
+        <mat-slide-toggle
+          class="photos"
+          aria-labelledby="settings-photos"
+          [checked]="background.photos()"
+          (change)="background.showPhotos($event.checked)"
+        >
+          {{ t(background.photos() ? 'settings.appearance.photosOn' : 'settings.appearance.photosOff') }}
+        </mat-slide-toggle>
+        <p class="hint hint--below">{{ t('settings.appearance.photosHint') }}</p>
       </mat-card-content>
 
       <mat-card-actions>

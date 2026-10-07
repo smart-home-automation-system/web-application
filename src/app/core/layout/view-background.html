@@ -1,0 +1,13 @@
+@for (layer of layers(); track layer.key) {
+  <img
+    class="view-background__photo"
+    [srcset]="layer.srcset"
+    sizes="100vw"
+    alt=""
+    decoding="async"
+    fetchpriority="high"
+    [attr.data-background]="layer.name"
+    (transitionend)="settle(layer.key)"
+  />
+}
+<div class="view-background__haze"></div>

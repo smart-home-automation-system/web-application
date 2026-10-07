@@ -6,8 +6,10 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+// the shade of the error colour made for tinted backgrounds (see check-contrast.mjs: the plain
+// error red does not reach 4.5:1 on glass over a photo)
 :host(.freshness--stale) {
-  color: var(--mat-sys-error);
+  color: var(--mat-sys-on-error-container);
 }
 
 .freshness__icon {

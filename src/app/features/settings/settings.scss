@@ -44,6 +44,12 @@ mat-card-content {
   color: var(--mat-sys-on-surface-variant);
 }
 
+.hint--below {
+  margin: 8px 0 0;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+}
+
 mat-card-actions {
   padding: 8px 16px 16px;
 }
