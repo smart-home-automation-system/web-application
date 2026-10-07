@@ -1,6 +1,7 @@
 import { Injectable, Signal, signal } from '@angular/core';
 
-import { isRecord, readJson, watchKey, writeJson } from '../storage/browser-storage';
+import { readJson, watchKey, writeJson } from '../storage/browser-storage';
+import { isRecord } from '../util/is-record';
 
 /** Where the choice is kept. One key for the whole browser, like the theme. */
 const STORAGE_KEY = 'smart-home.background';

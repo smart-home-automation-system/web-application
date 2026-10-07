@@ -1,4 +1,4 @@
-import { isRecord } from '../storage/browser-storage';
+import { isRecord } from '../util/is-record';
 
 export type MemberRole = 'admin' | 'resident';
 
@@ -19,10 +19,14 @@ export interface Profile {
  * members only, so everybody in it has a profile. Nothing checks an answer at runtime: entries
  * that are not a profile are skipped, and a role that is not `admin` - missing, or one this
  * version does not know - is a resident, the role that reaches the least.
+ *
+ * The answer carries no `active`, and none is expected. Should one ever arrive as `false` -
+ * the full registry answering under this address, a field added later - that member gets no
+ * profile: the one way this could be wrong is the way that must not open anything.
  */
 export function toProfiles(members: readonly unknown[]): Profile[] {
   return members.flatMap((member): Profile[] => {
-    if (!isRecord(member)) {
+    if (!isRecord(member) || member['active'] === false) {
       return [];
     }
     const name = member['name'];

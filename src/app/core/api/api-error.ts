@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-import { isRecord } from '../storage/browser-storage';
+import { isRecord } from '../util/is-record';
 
 /**
  * What went wrong, from the point of view of what the user can do about it:

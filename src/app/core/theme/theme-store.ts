@@ -1,7 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { DestroyRef, Injectable, Signal, computed, effect, inject, signal } from '@angular/core';
 
-import { isRecord, readJson, watchKey, writeJson } from '../storage/browser-storage';
+import { readJson, watchKey, writeJson } from '../storage/browser-storage';
+import { isRecord } from '../util/is-record';
 import { Season, isSeason, millisecondsUntilTomorrow, seasonOf } from './season';
 
 export type ColorScheme = 'light' | 'dark';

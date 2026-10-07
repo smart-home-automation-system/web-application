@@ -70,8 +70,3 @@ export function watchKey(key: string, onChange: () => void): void {
   view?.addEventListener('storage', onStorage);
   inject(DestroyRef).onDestroy(() => view?.removeEventListener('storage', onStorage));
 }
-
-/** True for anything with properties to look at - what a checked read of JSON starts with. */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}

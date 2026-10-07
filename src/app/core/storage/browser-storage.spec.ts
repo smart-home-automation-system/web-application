@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
-import { isRecord, readJson, readText, watchKey, writeJson, writeText } from './browser-storage';
+import { isRecord } from '../util/is-record';
+import { readJson, readText, watchKey, writeJson, writeText } from './browser-storage';
 
 const KEY = 'smart-home.test';
 

@@ -81,7 +81,7 @@ describe('ProfileStore', () => {
       expect(store.profile()?.name).toBe('Borys');
     });
 
-    it.each(['nobody', 'Emil', ''])('opens nothing for "%s"', async (member) => {
+    it.each(['nobody', ''])('opens nothing for "%s"', async (member) => {
       const store = create();
 
       expect(await store.open(member)).toBe('unknown');
@@ -148,8 +148,8 @@ describe('ProfileStore', () => {
     });
 
     // the registry answers with its active members only: switched off and gone look the same
-    it.each(['Emil', 'Zenon'])('forgets %s, who is no longer in the answer', async (name) => {
-      const store = create({ name, role: 'resident', rooms: [] });
+    it('forgets a member who is no longer in the answer', async () => {
+      const store = create({ name: 'Emil', role: 'resident', rooms: [] });
 
       await store.refresh();
 

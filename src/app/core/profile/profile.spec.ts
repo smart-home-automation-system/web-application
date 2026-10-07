@@ -21,6 +21,18 @@ describe('toProfiles', () => {
     ]);
   });
 
+  // not part of the answer - but if the full registry ever answered under this address, the
+  // members it marks as switched off must not get a profile back
+  it('leaves out an entry that says it is not active, and takes one that says nothing', () => {
+    const answer = [
+      { name: 'Emil', active: false, role: 'admin' },
+      { name: 'Borys', active: true, role: 'resident' },
+      { name: 'Celina', role: 'resident' },
+    ];
+
+    expect(toProfiles(answer).map((profile) => profile.name)).toEqual(['Borys', 'Celina']);
+  });
+
   // the role that reaches the least: a value this version does not know must not open everything
   it.each([undefined, 'owner', 'ADMIN', '', 7])('reads a role of %o as a resident', (role) => {
     const member = { name: 'Borys', role } as unknown as HouseholdProfile;
