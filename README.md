@@ -83,6 +83,10 @@ picker** with the active members; each entry is that member's personal link.
 | `admin` | Every page. The name in the panel leads to the picker, to look at the application as somebody else; the own link leads back. |
 | `resident` | The "My room" page only. Every other address - typed by hand included - leads there, and other profiles are not offered. |
 
+A resident's profile is left only by opening another personal link. Where there is no address
+bar to type one into - the application installed on the home screen of a phone - a profile
+chosen by mistake is undone by clearing the data of the site (accepted by the owner, 2026-10-07).
+
 The role and the rooms come from the household registry (`database-service`), never from this
 application: they are read when a profile is opened, remembered with it, and read again at every
 start, so a change in the registry takes effect with the next visit - also under an open page. A
