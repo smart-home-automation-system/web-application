@@ -10,4 +10,7 @@ coverage
 e2e
 test-results
 playwright-report
+test-results-image
+playwright-report-image
+screenshots
 *.md

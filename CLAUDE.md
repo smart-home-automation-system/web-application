@@ -227,6 +227,14 @@ up in a production build.
 - CI builds the image, starts it read-only and runs `e2e/image.spec.ts` against it in a real
   browser: the only test of nginx (CSP, SPA fallback, caching, `/healthz`). Locally:
   `IMAGE_URL=http://localhost:8080 npm run e2e`.
+- **Playwright empties its output folder at the start of every run**, and CI runs it twice. So
+  the two kinds of run write side by side (`test-results` / `playwright-report` for the mock
+  API, `test-results-image` / `playwright-report-image` for the image), and the screenshots go
+  to `screenshots/`, which no run empties by itself (`e2e/global-setup.ts` clears it before the
+  run that takes them). A screenshot is always written through `screenshotPath()`
+  (`e2e/support.ts`), never to a path of its own. CI uploads them as the artifact
+  `screenshots` and fails when there are none - **that artifact is what a PR links to**; check
+  that it holds pictures before writing that it does.
 - nginx marks as immutable only what the build names with a hash (`main-`, `chunk-`, `styles-`,
   `polyfills-`, `scripts-`, `worker-` in the root, and all of `/media/`). A new kind of hashed
   output needs its prefix added there, or it is served with `no-cache` (slow, never wrong).
@@ -242,7 +250,7 @@ up in a production build.
 - `npm run check:i18n` — every translation key used in a template exists
 - `npm run build` + `npm run check:bundle` — production build and its guard
 - `npm run check:contrast` — WCAG AA contrast of the theme, read from the production build
-- `npm run e2e` — Playwright, desktop and phone projects; screenshots in `test-results/screenshots/`
+- `npm run e2e` — Playwright, desktop and phone projects; screenshots in `screenshots/`
 
 ## Workflow (strict)
 

@@ -67,14 +67,27 @@ jobs:
         if: ${{ always() }}
         run: docker logs web-application || true
 
-      - name: Upload screenshots and the test report
+      # The screenshots are the evidence a pull request points to, so they are an artifact of
+      # their own and a run that has none to upload fails: they were once deleted before the
+      # upload, which only warned, and nobody noticed for three pull requests.
+      - name: Upload the screenshots
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload the test reports and traces
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: e2e-results
           path: |
             test-results/
+            test-results-image/
             playwright-report/
+            playwright-report-image/
           retention-days: 14
 
       - name: Discord notification -> success

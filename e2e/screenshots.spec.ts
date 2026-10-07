@@ -1,8 +1,8 @@
-import { Language, expect, startIn, test, useScenario } from './support';
+import { Language, expect, screenshotPath, startIn, test, useScenario } from './support';
 
 /**
  * Not assertions but evidence: one picture per layout, colour scheme and language, written to
- * `test-results/screenshots/` and attached to the pull request.
+ * `screenshots/` and attached to the pull request.
  */
 const TEXTS = {
   en: { enabled: 'Enabled', notFound: 'Page not found' },
@@ -69,5 +69,5 @@ for (const language of ['en', 'pl'] as const) {
 }
 
 function shot(project: string, scheme: string, language: Language, name: string): string {
-  return `test-results/screenshots/${project}-${scheme}-${language}-${name}.png`;
+  return screenshotPath(project, `${scheme}-${language}-${name}`);
 }

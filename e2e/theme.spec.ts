@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 
-import { SEASONS, Season, expect, startIn, startWithTheme, test } from './support';
+import { SEASONS, Season, expect, screenshotPath, startIn, startWithTheme, test } from './support';
 
 /** A day well inside each season. */
 const A_DAY_IN: Record<Season, string> = {
@@ -156,7 +156,7 @@ test.describe('appearance settings', () => {
 
 /**
  * Evidence, not assertions: the eight variants - four seasons, light and dark - on the two pages
- * that show the most of the theme, written to `test-results/screenshots/`.
+ * that show the most of the theme, written to `screenshots/`.
  */
 test.describe('screenshots of the eight variants', () => {
   for (const season of SEASONS) {
@@ -164,7 +164,7 @@ test.describe('screenshots of the eight variants', () => {
       test(`${season}, ${scheme}`, async ({ page }, testInfo) => {
         await startWithTheme(page, { season, scheme });
         const shot = (name: string) =>
-          `test-results/screenshots/${testInfo.project.name}-theme-${season}-${scheme}-${name}.png`;
+          screenshotPath(testInfo.project.name, `theme-${season}-${scheme}-${name}`);
 
         await page.goto('/overview');
         // the picture must be of the variant its name says
