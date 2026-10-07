@@ -188,6 +188,9 @@ $_shadows: (
       text-with-icon-horizontal-padding: 12px,
       outlined-outline-color: color-mix(in srgb, var(--mat-sys-on-surface) 22%, transparent),
       outlined-label-text-color: var(--mat-sys-on-surface),
+      // the shade of the primary made for tinted backgrounds: a text button sits on glass, where
+      // the plain primary does not reach 4.5:1 over a photo (check-contrast.mjs)
+      text-label-text-color: var(--mat-sys-on-primary-container),
     )
   );
 
@@ -254,8 +257,8 @@ $_shadows: (
   @include mat.slide-toggle-overrides(
     (
       label-text-font: $font,
-      label-text-size: 1rem,
-      label-text-line-height: 1.5rem,
+      label-text-size: 0.875rem,
+      label-text-line-height: 1.25rem,
       label-text-weight: 500,
       label-text-tracking: 0,
       selected-track-color: var(--mat-sys-primary),

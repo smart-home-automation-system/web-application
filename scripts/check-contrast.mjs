@@ -12,11 +12,12 @@
 // and the strongest glow that can lie under each kind of text.
 //
 //   npm run build && npm run check:contrast
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Node runs the TypeScript file directly: season.ts has no imports
+// Node runs the TypeScript files directly: neither has an import
+import { BACKGROUNDS } from '../src/app/core/background/backgrounds.ts';
 import { SEASONS } from '../src/app/core/theme/season.ts';
 
 const DIST = fileURLToPath(new URL('../dist/web-application/browser', import.meta.url));
@@ -117,6 +118,21 @@ const photos = readdirSync(PHOTOS)
     name: name.slice(0, -'.json'.length),
     ...JSON.parse(readFileSync(join(PHOTOS, name), 'utf8')),
   }));
+// Every name the application knows has its two files and its sidecar, and every sidecar is a
+// name the application knows - otherwise a view would render a broken image, or a photo would
+// be checked that nothing shows.
+for (const name of BACKGROUNDS) {
+  for (const file of [`${name}-1280.webp`, `${name}-2560.webp`, `${name}.json`]) {
+    if (!existsSync(join(PHOTOS, file))) {
+      fail(`BACKGROUNDS names "${name}" but public/backgrounds/${file} is missing - run make-background.mjs.`);
+    }
+  }
+}
+for (const { name } of photos) {
+  if (!BACKGROUNDS.includes(name)) {
+    fail(`public/backgrounds/${name}.json belongs to no name in BACKGROUNDS (core/background/backgrounds.ts).`);
+  }
+}
 const PHOTO_PAIRS = photos.flatMap(({ name }) =>
   ['darkest', 'lightest'].flatMap((patch) => {
     const under = `photo-${name}-${patch}`;

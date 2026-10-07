@@ -32,12 +32,19 @@ $panel-width: 220px;
     height: 100lvh;
     z-index: -1;
     background-image: var(--app-glow);
+    // in step with the fade of a photo (view-background.scss)
+    transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
-  // Over a photo (an image in the background layer) the glow is half as strong: the photo gives
-  // the view its mood, and the text on the page keeps its contrast (`check:contrast` assumes
-  // this half - GLOW_OVER_PHOTO).
-  &:has(app-view-background img)::before {
+  // Over a photo that is on screen the glow is half as strong: the photo gives the view its
+  // mood, and the text on the page keeps its contrast (`check:contrast` assumes this half -
+  // GLOW_OVER_PHOTO). Keyed to the photo being shown, so it dims as the photo fades in and
+  // returns as it fades out.
+  &:has(.view-background__photo--shown)::before {
     opacity: 0.5;
   }
 

@@ -134,6 +134,16 @@ test.describe('container image', () => {
     expect(response.headers()['cache-control']).toBe('no-cache');
   });
 
+  // the sidecar and the notes next to the photos are inputs of the build, not of the browser
+  for (const path of ['/backgrounds/home.json', '/backgrounds/README.md']) {
+    test(`does not serve ${path}`, async ({ request }) => {
+      const response = await request.get(path);
+
+      // the SPA fallback answers with the page, never with the file
+      expect(response.headers()['content-type']).toContain('text/html');
+    });
+  }
+
   test('does not pin an unhashed file in the browser', async ({ request }) => {
     const response = await request.get('/favicon.ico');
 

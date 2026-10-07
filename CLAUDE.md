@@ -97,9 +97,11 @@ The components are Angular Material; the look is "Zorza" (aurora), and the colou
 season. Both are nothing but values of CSS variables, in two files:
 
 - **`src/theme/_zorza.scss` — the look.** The type scale (Plus Jakarta Sans, heavy tight
-  headings, two steps smaller than Material's since HAS-209 — the owner reads the dashboard on a
-  2560 px monitor and found 2 rem headlines and 1 rem body text too large), one radius per role
-  (12 px cards, 10 px controls, pill buttons), soft wide shadows
+  headings, two steps smaller than Material's **and on a 14 px root** (`styles.scss`) since
+  HAS-209 — the owner asked for each reduction after seeing the previous one on the live page,
+  on a 2560 px monitor and on an emulated phone; body text is 10.5 px, which the owner judges on
+  the real iPhone after the deploy), one radius per role (12 px cards, 10 px controls, pill
+  buttons), soft wide shadows
   and the details of single components (glass cards, the tinted navigation entry, the segmented
   control), given as values of `--mat-sys-*` and of component variables through Material's
   `*-overrides` mixins. **Restyle a component there, through its variables** — a selector
@@ -142,9 +144,11 @@ season. Both are nothing but values of CSS variables, in two files:
   and the icon sat in the corner). Both blocks live in `src/styles.scss`. The domain colour
   is for the card and its badge, never for text — text on glass stays `on-surface` /
   `on-surface-variant`. **A status in the season's colour is `on-primary-container`, an error
-  is `on-error-container`** (on an `error-container` strip where it is a sentence): the plain
-  `primary` and `error` do not reach 4.5:1 on glass over a photo, and the check only knows the
-  container shades as text on glass.
+  is `on-error-container`** (on an `error-container` strip where it is a sentence), and a text
+  button's label is `on-primary-container` through the button overrides: the plain `primary`
+  and `error` do not reach 4.5:1 on glass over a photo, and the check only knows the container
+  shades as text on glass — a component that paints `primary` or `error` text on a card
+  (Material's `mat-error`, say) gets an override to the container shade when it is first used.
 - **Two attributes of `<html>`** select what is painted, both set by `ThemeStore`
   (`core/theme/`): `data-season` (always) and `data-color-scheme` (only while the system setting
   is overridden). The season comes from the browser clock (`seasonOf`: 21 Mar / 22 Jun / 23 Sep
@@ -184,8 +188,12 @@ the text never depends on it.
   `ViewBackground` (`core/layout/`) in the shell reads the name after every navigation and
   renders the `<img>` with both sizes (`srcset`, `sizes="100vw"`) on a layer fixed to the screen
   under the glow — `z-index: -2` in the shell's stacking context, `100lvh` tall for the same
-  reason as the glow. A new photo fades in over the old one (`@starting-style`); with
-  `prefers-reduced-motion` it is swapped at once.
+  reason as the glow. A new photo is transparent until its file has arrived (the `load` event —
+  a fade keyed to insertion ends before a slow link has delivered the picture), then fades in
+  over the old one, which goes when that fade ends; a photo no longer wanted fades out. The glow
+  dims to half in step with it (`:has(.view-background__photo--shown)`). With
+  `prefers-reduced-motion` there is no fade. `check:contrast` also verifies that every name in
+  `BACKGROUNDS` has its two files and its sidecar, and every sidecar a name.
 - **The haze** (`view-background.scss`) lays the page colour over the photo — `--app-haze-top`
   / `-bottom` / `-tint` in `_seasons.scss`: 45 → 60 % in the light scheme, 66 → 82 % plus a 10 %
   tint of the primary in the dark one, and the glow is painted at half strength over a photo;
@@ -210,7 +218,11 @@ the text never depends on it.
   (at most 400 kB), `-1280.webp` and `<name>.json` (the two patches) — add the name to
   `BACKGROUNDS`, name it in the route, and record the prompt and the model in
   `public/backgrounds/README.md`. The files are not hashed, so nginx serves them `no-cache`: a
-  regenerated photo under the same name reaches every browser after a revalidation.
+  regenerated photo under the same name reaches every browser after a revalidation. The sidecar
+  and the README stay out of the build (`ignore` of the assets entry in `angular.json`; the
+  image test checks it). The two scripts (`make-background.mjs`, `make-icons.mjs`) are run on a
+  developer machine only; `sharp`, their one dependency, is a devDependency that CI installs
+  and never runs.
 - **The switch**: `BackgroundStore` (`core/background/`) — photos on by default, off on the
   Settings page for a device that is slow to blur them, kept in
   `localStorage['smart-home.background']` only while off, synced between tabs like the theme.

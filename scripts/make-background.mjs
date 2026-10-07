@@ -6,7 +6,7 @@
 //   node scripts/make-background.mjs <source.png|jpg> <name>
 //
 // The 2560 file stays under BUDGET: the quality is lowered until it does.
-import { mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,8 +25,13 @@ if (!source || !/^[a-z][a-z0-9-]*$/.test(name ?? '')) {
 }
 
 mkdirSync(OUT, { recursive: true });
+// `.rotate()` applies the EXIF orientation, but `metadata()` reports the stored size: a photo
+// shot in portrait (orientation 5-8) has its width and height the other way round.
+const stored = await sharp(source).metadata();
+const sideways = (stored.orientation ?? 1) >= 5;
+const width = sideways ? stored.height : stored.width;
+const height = sideways ? stored.width : stored.height;
 const image = sharp(source).rotate();
-const { width, height } = await image.metadata();
 if (width < WIDTHS[0]) {
   console.warn(`${source} is ${width} px wide; the 2560 variant will be upscaled.`);
 }
@@ -35,18 +40,20 @@ const sizes = {};
 for (const target of WIDTHS) {
   const file = join(OUT, `${name}-${target}.webp`);
   let quality;
+  let encoded;
   for (quality of QUALITIES) {
-    await image
+    encoded = await image
       .clone()
       .resize({ width: target, height: Math.round(target / ASPECT), fit: 'cover' })
       .webp({ quality, effort: 6 })
-      .toFile(file);
-    if (target !== WIDTHS[0] || statSync(file).size <= BUDGET) {
+      .toBuffer();
+    if (target !== WIDTHS[0] || encoded.length <= BUDGET) {
       break;
     }
   }
-  sizes[target] = { bytes: statSync(file).size, quality };
-  console.log(`${file}: ${Math.round(sizes[target].bytes / 1024)} kB at quality ${quality}`);
+  writeFileSync(file, encoded);
+  sizes[target] = { bytes: encoded.length, quality };
+  console.log(`${file}: ${Math.round(encoded.length / 1024)} kB at quality ${quality}`);
 }
 if (sizes[WIDTHS[0]].bytes > BUDGET) {
   console.error(`The ${WIDTHS[0]} variant does not fit ${BUDGET / 1024} kB even at quality ${QUALITIES.at(-1)}.`);
