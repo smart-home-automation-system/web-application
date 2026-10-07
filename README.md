@@ -33,14 +33,19 @@ own room. It is an Angular single-page application that talks only to `api-gatew
 it holds no data and no logic of its own beyond presentation.
 
 So far it is the **application shell**: the layout and navigation, the foundation every
-dashboard is built on (API client, polling, error handling, house time, two languages), the mock
-API for development, and the delivery pipeline. The landing page shows a single read-only tile -
-the switch of the heating system - which proves the path from the screen to a backend service.
-The dashboards themselves arrive with the following tasks.
+dashboard is built on (API client, polling, error handling, house time, two languages, the
+profiles of the household), the mock API for development, and the delivery pipeline. The landing
+page shows a single read-only tile - the switch of the heating system - which proves the path
+from the screen to a backend service. The dashboards themselves arrive with the following tasks.
+
+Everybody in the household has a **profile**, opened by a personal link and remembered in the
+browser: the administrator gets the whole application, a resident their own page - see
+[Profiles](#profiles), including what a profile is not.
 
 The interface speaks **English and Polish**. English is the default on a first visit, whatever
 the language of the browser; Polish is chosen from the toolbar, changes the open page without a
-reload and is remembered in the browser. Dates and numbers follow the language (a 24-hour clock
+reload and is remembered in the browser - for the household member who chose it, so a screen that
+changes hands follows whoever uses it. Dates and numbers follow the language (a 24-hour clock
 in both), and so do the labels a screen reader announces.
 
 The look is **"Zorza"** (aurora): a deep page glowing softly in the two colours of the season,
@@ -65,6 +70,40 @@ build, the text over the photos included.
 | Fonts and icons | Plus Jakarta Sans and Material Symbols, **self-hosted** - nothing is loaded from the internet |
 | Tests | Vitest (unit), Playwright (browser, desktop and phone layouts) |
 | Runtime | static files served by `nginx` (unprivileged image), behind the Kubernetes ingress |
+
+# Profiles
+
+There is no login. A member of the household opens the application with a **personal link**,
+`/u/<name>` - the name as it stands in the household registry, in any case - and the browser
+remembers them from then on. Without a remembered profile the application shows a **profile
+picker** with the active members; each entry is that member's personal link.
+
+| Role | What the interface offers |
+|---|---|
+| `admin` | Every page. The name in the panel leads to the picker, to look at the application as somebody else; the own link leads back. |
+| `resident` | The "My room" page only. Every other address - typed by hand included - leads there, and other profiles are not offered. |
+
+A resident's profile is left only by opening another personal link. Where there is no address
+bar to type one into - the application installed on the home screen of a phone - a profile
+chosen by mistake is undone by clearing the data of the site (accepted by the owner, 2026-10-07).
+
+The role and the rooms come from the household registry (`database-service`), never from this
+application: they are read when a profile is opened, remembered with it, and read again at every
+start, so a change in the registry takes effect with the next visit - also under an open page. A
+member who is switched off or removed there loses the profile; a link that names such a member,
+or nobody, ends on a message that says so. While the backend is away the application keeps
+working as the member it remembers.
+
+> **This is not access control.** A profile is a name, and anybody who can reach the application
+> can open anybody's link - the administrator's too - or call the API directly: nothing behind
+> the gateway is authenticated. The roles keep each member's view simple and keep a resident from
+> changing something by accident; they protect nothing from somebody who means to. What protects
+> the house is that the application is reachable on the home network and over VPN only. Real
+> separation is phase 2: a token in the personal link, validated by the gateway. The code keeps
+> one place for it (`src/app/core/profile/`), so no feature changes when it comes.
+
+In the mock API the household is Aurelia (administrator), Borys, Celina and Damian (residents
+with one room, two rooms and none) and Emil, who is switched off: `/u/aurelia`, `/u/borys`.
 
 # Run locally
 
@@ -109,6 +148,7 @@ Endpoints used today:
 | Method | Path | Used for |
 |---|---|---|
 | `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile), polled every 30 s |
+| `GET` | `/home/household` | The household registry: the name, role and rooms of every active member (profiles). Asked at every start, by the profile picker and when a personal link is opened; the phone numbers and devices it also carries are not read |
 
 What the application relies on, in every call:
 

@@ -1,5 +1,14 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import {
+  Injectable,
+  InjectionToken,
+  Signal,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 
@@ -12,10 +21,20 @@ import {
 } from './languages';
 
 /**
- * Where the choice is kept. One key for the whole browser today; a phone is one person's, and
- * the profiles (HAS-193) will scope it per household member on a shared screen.
+ * Where the choice is kept: under this key what was chosen while nobody had a profile - the
+ * language of the device - and under `<key>.<member>` what a household member chose.
  */
 const STORAGE_KEY = 'smart-home.language';
+
+/**
+ * Whose choice the language is: the name of the active household member, `undefined` while
+ * there is none. The application binds it to the profile (`app.config.ts`); by itself the
+ * interface has one language for the whole browser, which is all a unit test needs.
+ */
+export const LANGUAGE_OWNER = new InjectionToken<Signal<string | undefined>>('LANGUAGE_OWNER', {
+  providedIn: 'root',
+  factory: () => signal(undefined).asReadonly(),
+});
 
 /**
  * How long the start of the application waits for the texts of the stored language. On a weak
@@ -29,6 +48,10 @@ export const RESTORE_TIMEOUT_MS = 3_000;
  * dates and numbers follow. English unless somebody chose otherwise - the language of the
  * browser is deliberately not consulted.
  *
+ * The choice belongs to the household member using the application: on a screen that changes
+ * hands the interface follows the profile. A member who never chose gets the language of the
+ * device, so a browser that spoke Polish before the profiles existed still does.
+ *
  * `language` and `locale` change only after the texts of the new language are in memory, so
  * anything that reads them can translate at once.
  */
@@ -36,6 +59,7 @@ export const RESTORE_TIMEOUT_MS = 3_000;
 export class LanguageStore {
   private readonly transloco = inject(TranslocoService);
   private readonly document = inject(DOCUMENT);
+  private readonly owner = inject(LANGUAGE_OWNER);
   private readonly active = signal<LanguageCode>(DEFAULT_LANGUAGE);
   /** Counts the choices, so that a slow download cannot overrule a later one. */
   private choices = 0;
@@ -51,6 +75,7 @@ export class LanguageStore {
     // the default language is ready before anything renders, with nothing to wait for
     this.transloco.load(DEFAULT_LANGUAGE).subscribe();
     this.activate(DEFAULT_LANGUAGE);
+    this.followOwner();
   }
 
   /**
@@ -58,8 +83,8 @@ export class LanguageStore {
    * its texts only so long - the application must start whatever the connection does.
    */
   async restore(): Promise<void> {
-    const stored = readStored();
-    if (stored === undefined || stored === this.active()) {
+    const stored = this.chosen();
+    if (stored === this.active()) {
       return;
     }
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -67,7 +92,7 @@ export class LanguageStore {
       timer = setTimeout(resolve, RESTORE_TIMEOUT_MS);
     });
     // the download is not abandoned: when it arrives later, the interface changes over
-    await Promise.race([this.select(stored), patience]);
+    await Promise.race([this.change(stored, false), patience]);
     clearTimeout(timer);
   }
 
@@ -79,8 +104,15 @@ export class LanguageStore {
    * When another language is chosen before the texts of this one arrive, the later choice wins
    * whichever download finishes first.
    */
-  async select(language: LanguageCode): Promise<boolean> {
+  select(language: LanguageCode): Promise<boolean> {
+    return this.change(language, true);
+  }
+
+  /** `remember` is false when the language is not being chosen but brought back. */
+  private async change(language: LanguageCode, remember: boolean): Promise<boolean> {
     const choice = ++this.choices;
+    // whose choice this is - read now: the application can change hands before the texts arrive
+    const owner = this.owner();
     try {
       // Transloco keeps the texts once loaded, so every view finds them ready; a failed load
       // completes without a value, which is what makes this throw
@@ -90,10 +122,43 @@ export class LanguageStore {
       return false;
     }
     if (choice === this.choices) {
-      this.activate(language);
-      store(language);
+      // the interface belongs to whoever uses the application now; the choice, to who made it
+      if (owner === this.owner()) {
+        this.activate(language);
+      }
+      if (remember) {
+        store(keyOf(owner), language);
+      }
     }
     return true;
+  }
+
+  /** What the member using the application chose; failing that, the language of the device. */
+  private chosen(): LanguageCode {
+    const owner = this.owner();
+    return (
+      (owner === undefined ? undefined : readStored(keyOf(owner))) ??
+      readStored(STORAGE_KEY) ??
+      DEFAULT_LANGUAGE
+    );
+  }
+
+  /** When the application changes hands, the interface changes to the language of the new member. */
+  private followOwner(): void {
+    let known = untracked(this.owner);
+    effect(() => {
+      const owner = this.owner();
+      if (owner === known) {
+        return;
+      }
+      known = owner;
+      untracked(() => {
+        const language = this.chosen();
+        if (language !== this.active()) {
+          void this.change(language, false);
+        }
+      });
+    });
   }
 
   private activate(language: LanguageCode): void {
@@ -106,18 +171,22 @@ export class LanguageStore {
 
 // storage can be unavailable (private mode, blocked site data): the choice then lasts a session
 
-function readStored(): LanguageCode | undefined {
+function keyOf(owner: string | undefined): string {
+  return owner === undefined ? STORAGE_KEY : `${STORAGE_KEY}.${owner}`;
+}
+
+function readStored(key: string): LanguageCode | undefined {
   try {
-    const value = localStorage.getItem(STORAGE_KEY);
+    const value = localStorage.getItem(key);
     return isLanguageCode(value) ? value : undefined;
   } catch {
     return undefined;
   }
 }
 
-function store(language: LanguageCode): void {
+function store(key: string, language: LanguageCode): void {
   try {
-    localStorage.setItem(STORAGE_KEY, language);
+    localStorage.setItem(key, language);
   } catch {
     // nothing to do
   }

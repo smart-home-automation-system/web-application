@@ -1,6 +1,7 @@
 import { HttpRequest } from '@angular/common/http';
 
 import { HEATING_STATUS } from './heating.fixtures';
+import { HOUSEHOLD } from './household.fixtures';
 
 export interface MockReply {
   readonly status: number;
@@ -20,4 +21,5 @@ export interface MockHandler {
  */
 export const MOCK_HANDLERS: readonly MockHandler[] = [
   { method: 'GET', path: '/home/heating', reply: () => ({ status: 200, body: HEATING_STATUS }) },
+  { method: 'GET', path: '/home/household', reply: () => ({ status: 200, body: HOUSEHOLD }) },
 ];

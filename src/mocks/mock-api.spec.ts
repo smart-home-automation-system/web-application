@@ -9,6 +9,7 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
 import { HEATING_STATUS } from './heating.fixtures';
+import { HOUSEHOLD } from './household.fixtures';
 import { mockApiInterceptors } from './mock-api';
 
 describe('mock API', () => {
@@ -36,6 +37,10 @@ describe('mock API', () => {
 
   it('answers a known endpoint from its fixture', async () => {
     expect(await firstValueFrom(http.get('/home/heating'))).toEqual(HEATING_STATUS);
+  });
+
+  it('answers the household registry from its fixture', async () => {
+    expect(await firstValueFrom(http.get('/home/household'))).toEqual(HOUSEHOLD);
   });
 
   it('answers an unknown endpoint like the gateway does: 404 in the error contract', async () => {

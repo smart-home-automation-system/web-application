@@ -2,15 +2,21 @@ import { Route, Routes } from '@angular/router';
 
 import { BackgroundName } from './core/background/backgrounds';
 import { Shell } from './core/layout/shell';
+import { Access } from './core/profile/access';
+import { profileGuard } from './core/profile/profile-guard';
 import { ErrorPage } from './features/error/error-page';
 import { MessageKey } from './i18n/messages';
 
 /**
  * A page of the application: its `title` is the key of the text shown in the browser tab, and
  * `data.background` names the photo behind it (`core/background/backgrounds.ts`); without one
- * the page shows the plain glow.
+ * the page shows the plain glow. `data.access` says who may open it (`core/profile/access.ts`):
+ * **a page that does not say is the administrator's alone**.
  */
-type Page = Route & { title?: MessageKey; data?: { background?: BackgroundName } };
+type Page = Route & {
+  title?: MessageKey;
+  data?: { background?: BackgroundName; access?: Access };
+};
 
 const pages: Page[] = [
   { path: '', pathMatch: 'full', redirectTo: 'overview' },
@@ -19,6 +25,12 @@ const pages: Page[] = [
     title: 'nav.overview',
     data: { background: 'home' },
     loadComponent: () => import('./features/overview/overview').then((m) => m.Overview),
+  },
+  {
+    path: 'room',
+    title: 'nav.myRoom',
+    data: { access: 'member' },
+    loadComponent: () => import('./features/my-room/my-room').then((m) => m.MyRoom),
   },
   {
     path: 'settings',
@@ -31,8 +43,23 @@ const pages: Page[] = [
     loadComponent: () => import('./features/about/about').then((m) => m.About),
   },
   {
+    path: 'profiles',
+    title: 'profiles.title',
+    data: { access: 'chooser' },
+    loadComponent: () => import('./features/profiles/profiles').then((m) => m.Profiles),
+  },
+  {
+    // the personal link of a household member: opens their profile in this browser
+    path: 'u/:member',
+    title: 'personalLink.title',
+    data: { access: 'anyone' },
+    loadComponent: () =>
+      import('./features/personal-link/personal-link').then((m) => m.PersonalLink),
+  },
+  {
     path: 'error',
     title: 'errorPage.title',
+    data: { access: 'anyone' },
     // not lazy: this page is shown when a lazy chunk can no longer be downloaded
     component: ErrorPage,
   },
@@ -47,4 +74,6 @@ const pages: Page[] = [
  * No path here may start with `home`: the ingress sends everything under `/home` to
  * `api-gateway-service`, so such a page would never reach this application.
  */
-export const routes: Routes = [{ path: '', component: Shell, children: pages }];
+export const routes: Routes = [
+  { path: '', component: Shell, canActivateChild: [profileGuard], children: pages },
+];

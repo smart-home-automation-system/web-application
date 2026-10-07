@@ -12,6 +12,7 @@ export const en = {
   nav: {
     label: 'Main navigation',
     overview: 'Overview',
+    myRoom: 'My room',
     settings: 'Settings',
     about: 'About',
   },
@@ -30,6 +31,33 @@ export const en = {
       switchedOff: 'Switched off: {{ time }}',
       loading: 'Loading the heating status',
     },
+  },
+  profiles: {
+    title: 'Choose your profile',
+    members: 'Household members',
+    loading: 'Loading the household members',
+    empty: 'Nobody is registered in the household yet.',
+    retry: 'Try again',
+    switch: 'Switch profile',
+    role: {
+      admin: 'Administrator',
+      resident: 'Resident',
+    },
+  },
+  personalLink: {
+    title: 'Personal link',
+    opening: 'Opening your profile',
+    unknownTitle: 'This link does not open a profile',
+    unknownText:
+      'Nobody in the household is registered under this name, or the profile has been switched off. Ask the administrator for a current link.',
+    unavailableTitle: 'The profile could not be opened',
+    continue: 'Go to the application',
+  },
+  myRoom: {
+    title: 'My room',
+    rooms: 'Your rooms',
+    noRooms:
+      'No room is assigned to your profile yet. Rooms are assigned by the administrator of the household.',
   },
   settings: {
     title: 'Settings',

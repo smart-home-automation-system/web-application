@@ -21,6 +21,36 @@ export async function startIn(page: Page, language: Language): Promise<void> {
   }, language);
 }
 
+/**
+ * Members of the mock household (`src/mocks/household.fixtures.ts`), as the browser remembers a
+ * profile: the administrator, and residents with one room, two rooms and none.
+ */
+export const PROFILES = {
+  admin: { name: 'Aurelia', role: 'admin', rooms: ['office', 'living room'] },
+  resident: { name: 'Borys', role: 'resident', rooms: ['loft'] },
+  'resident-two-rooms': { name: 'Celina', role: 'resident', rooms: ['bedroom', 'wardrobe'] },
+  'resident-no-room': { name: 'Damian', role: 'resident', rooms: [] },
+  // two the registry no longer agrees with: a member switched off since, and a resident whom
+  // this browser still remembers as the administrator
+  'switched-off': { name: 'Emil', role: 'resident', rooms: ['garage'] },
+  demoted: { name: 'Borys', role: 'admin', rooms: ['loft'] },
+} as const;
+
+export type ProfileName = keyof typeof PROFILES;
+
+/**
+ * Starts the application as a household member, as if their personal link had been opened on an
+ * earlier visit. Like `startIn`, it touches only the first load.
+ */
+export async function startAs(page: Page, profile: ProfileName): Promise<void> {
+  await page.addInitScript((value) => {
+    if (sessionStorage.getItem('e2e-profile-set') === null) {
+      localStorage.setItem('smart-home.profile', JSON.stringify(value));
+      sessionStorage.setItem('e2e-profile-set', 'yes');
+    }
+  }, PROFILES[profile]);
+}
+
 export { SEASONS, type Season } from '../src/app/core/theme/season';
 
 /**
@@ -53,14 +83,34 @@ export async function startWithTheme(
 }
 
 /**
- * `test` that fails when the page logs an error or throws: a broken import, a blocked resource
+ * `test` with two additions.
+ *
+ * **Every test starts as the administrator**, who reaches the whole application - which is what
+ * a test of a view wants. A test about the profiles themselves says who it starts as:
+ * `test.use({ profile: 'resident' })`, or `'none'` for a browser nobody has chosen a profile in.
+ *
+ * **It fails when the page logs an error or throws**: a broken import, a blocked resource
  * or a Content-Security-Policy violation shows up in the console long before it shows on screen.
  * A key that exists in no language counts too - a typo in a template: the development build
  * logs it as a missing translation. (A key missing from Polish alone cannot happen: `pl.ts` is
  * typed with the keys of `en.ts`. Keys of views these tests never open are checked statically,
  * by `npm run check:i18n`.)
  */
-export const test = base.extend<{ consoleErrors: string[] }>({
+export const test = base.extend<{
+  profile: ProfileName | 'none';
+  startingProfile: void;
+  consoleErrors: string[];
+}>({
+  profile: ['admin', { option: true }],
+  startingProfile: [
+    async ({ page, profile }, use) => {
+      if (profile !== 'none') {
+        await startAs(page, profile);
+      }
+      await use();
+    },
+    { auto: true },
+  ],
   consoleErrors: [
     async ({ page }, use) => {
       const errors: string[] = [];

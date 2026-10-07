@@ -5,8 +5,18 @@ import { Language, expect, screenshotPath, startIn, test, useScenario } from './
  * `screenshots/` and attached to the pull request.
  */
 const TEXTS = {
-  en: { enabled: 'Enabled', notFound: 'Page not found' },
-  pl: { enabled: 'Włączone', notFound: 'Nie znaleziono strony' },
+  en: {
+    enabled: 'Enabled',
+    notFound: 'Page not found',
+    myRoom: 'My room',
+    noProfile: 'This link does not open a profile',
+  },
+  pl: {
+    enabled: 'Włączone',
+    notFound: 'Nie znaleziono strony',
+    myRoom: 'Mój pokój',
+    noProfile: 'Ten link nie otwiera żadnego profilu',
+  },
 } as const;
 
 for (const language of ['en', 'pl'] as const) {
@@ -50,6 +60,38 @@ for (const language of ['en', 'pl'] as const) {
         await expect(page.getByRole('heading', { name: TEXTS[language].notFound })).toBeVisible();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'not-found'),
+        });
+      });
+
+      test.describe('without a profile', () => {
+        test.use({ profile: 'none' });
+
+        test('profile picker', async ({ page }, testInfo) => {
+          await page.goto('/');
+          await expect(page.getByRole('link', { name: /Aurelia/ })).toBeVisible();
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'profiles'),
+          });
+        });
+
+        test('personal link that opens nobody', async ({ page }, testInfo) => {
+          await page.goto('/u/nobody');
+          await expect(
+            page.getByRole('heading', { name: TEXTS[language].noProfile }),
+          ).toBeVisible();
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'personal-link-unknown'),
+          });
+        });
+      });
+
+      test.describe('as a resident', () => {
+        test.use({ profile: 'resident-two-rooms' });
+
+        test('my room', async ({ page }, testInfo) => {
+          await page.goto('/');
+          await expect(page.getByRole('heading', { name: TEXTS[language].myRoom })).toBeVisible();
+          await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'my-room') });
         });
       });
 

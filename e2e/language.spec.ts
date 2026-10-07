@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 
-import { expect, startIn, test } from './support';
+import { expect, startAs, startIn, test } from './support';
 
 async function choose(page: Page, currentLabel: string, language: string): Promise<void> {
   await page.getByRole('button', { name: currentLabel }).click();
@@ -11,6 +11,8 @@ test.describe('language', () => {
   test('is English on a first visit, whatever the language of the browser', async ({ browser }) => {
     const context = await browser.newContext({ locale: 'pl-PL' });
     const page = await context.newPage();
+    // a context of its own: the profile every other test starts with is not in it
+    await startAs(page, 'admin');
 
     await page.goto('/');
 

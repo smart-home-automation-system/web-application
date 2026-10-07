@@ -12,7 +12,13 @@ import { AppTitleStrategy } from './core/layout/app-title-strategy';
 describe('application routing', () => {
   let harness: RouterTestingHarness;
 
+  // as the administrator, who reaches every page; the profiles have a test of their own
+  // (features/profile-pages.spec.ts)
   beforeEach(async () => {
+    localStorage.setItem(
+      'smart-home.profile',
+      JSON.stringify({ name: 'Aurelia', role: 'admin', rooms: [] }),
+    );
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
@@ -24,6 +30,8 @@ describe('application routing', () => {
     });
     harness = await RouterTestingHarness.create();
   });
+
+  afterEach(() => localStorage.removeItem('smart-home.profile'));
 
   function page(): HTMLElement {
     return harness.routeNativeElement as HTMLElement;
@@ -60,8 +68,8 @@ describe('application routing', () => {
     await harness.navigateByUrl('/about');
 
     expect(navigationLabels()).toEqual({
-      side: ['Overview', 'Settings', 'About'],
-      bottom: ['Overview', 'Settings', 'About'],
+      side: ['Overview', 'My room', 'Settings', 'About'],
+      bottom: ['Overview', 'My room', 'Settings', 'About'],
     });
   });
 
@@ -121,8 +129,8 @@ describe('application routing', () => {
       expect(page().querySelector('app-about')).toBe(content);
       expect(page().querySelector('h1')?.textContent).toContain('O aplikacji');
       expect(navigationLabels()).toEqual({
-        side: ['Przegląd', 'Ustawienia', 'O aplikacji'],
-        bottom: ['Przegląd', 'Ustawienia', 'O aplikacji'],
+        side: ['Przegląd', 'Mój pokój', 'Ustawienia', 'O aplikacji'],
+        bottom: ['Przegląd', 'Mój pokój', 'Ustawienia', 'O aplikacji'],
       });
       expect(page().querySelector('[data-testid="app-built"]')?.textContent).toContain(
         'build lokalny',
@@ -159,7 +167,9 @@ describe('application routing', () => {
       await harness.navigateByUrl('/no/such/page');
 
       expect(page().querySelector('h1')?.textContent).toContain('Nie znaleziono strony');
-      expect(page().querySelector('a[matButton]')?.textContent).toContain('Przejdź do przeglądu');
+      expect(page().querySelector('app-not-found a[matButton]')?.textContent).toContain(
+        'Przejdź do przeglądu',
+      );
     });
   });
 

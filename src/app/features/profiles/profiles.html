@@ -1,0 +1,57 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('profiles.title') }}</h1>
+  </header>
+
+  @if (store.members(); as members) {
+    @if (members.length > 0) {
+      <ul class="members" [attr.aria-label]="t('profiles.members')">
+        @for (member of members; track member.name) {
+          <li>
+            <!-- the name is the member's own: printed as it is, never through the translations -->
+            <a class="member" [routerLink]="['/u', member.name]">
+              <mat-card appearance="outlined" class="member__card card--domain">
+                <mat-card-header>
+                  <div mat-card-avatar class="domain-badge">
+                    <mat-icon>{{ roleIcons[member.role] }}</mat-icon>
+                  </div>
+                  <mat-card-title>{{ member.name }}</mat-card-title>
+                  <mat-card-subtitle>{{ t(roleLabels[member.role]) }}</mat-card-subtitle>
+                </mat-card-header>
+              </mat-card>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <mat-card appearance="outlined" class="notice">
+        <mat-card-content>
+          <p class="notice__text">{{ t('profiles.empty') }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+  } @else if (store.loading()) {
+    <mat-card appearance="outlined" class="notice">
+      <mat-card-content>
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('profiles.loading')" />
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (store.error(); as error) {
+    <mat-card appearance="outlined" class="notice">
+      <mat-card-content>
+        <p class="notice__error" role="alert">
+          <mat-icon>cloud_off</mat-icon>
+          <span>{{ describeApiError(error) | displayText }}</span>
+        </p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button matButton="outlined" type="button" [disabled]="store.loading()" (click)="retry()">
+          <mat-icon>refresh</mat-icon>
+          {{ t('profiles.retry') }}
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</ng-container>
