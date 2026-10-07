@@ -14,11 +14,25 @@ const imageUrl = process.env['IMAGE_URL'];
 
 export default defineConfig({
   testDir: 'e2e',
-  outputDir: 'test-results',
+  // Playwright empties its output folder and its report folder when a run starts. CI runs the
+  // image test after the tests against the mock API, so it gets folders of its own, inside the
+  // others - otherwise it would delete the screenshots and the report of the run before it.
+  outputDir: imageUrl ? 'test-results/image' : 'test-results',
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,
-  reporter: process.env['CI'] ? [['list'], ['html', { open: 'never' }]] : 'list',
+  reporter: process.env['CI']
+    ? [
+        ['list'],
+        [
+          'html',
+          {
+            open: 'never',
+            outputFolder: imageUrl ? 'playwright-report/image' : 'playwright-report',
+          },
+        ],
+      ]
+    : 'list',
   use: {
     baseURL: imageUrl ?? `http://localhost:${MOCK_PORT}`,
     trace: 'retain-on-failure',
