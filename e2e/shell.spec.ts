@@ -20,6 +20,8 @@ test.describe('application shell', () => {
     const tile = page.locator('mat-card', { hasText: 'Heating system' });
     const badge = tile.locator('.domain-badge');
     await expect(badge.locator('mat-icon')).toBeVisible();
+    // until the icon font is in, the icon is its name as text - wider than any box
+    await page.evaluate(() => document.fonts.load('24px "Material Symbols Outlined"'));
 
     // The glyph itself (the text of the icon), not the 24 px box of <mat-icon>: an icon can be
     // centred as an element and still draw its glyph off centre. 0.4.0 shipped the glyph in the

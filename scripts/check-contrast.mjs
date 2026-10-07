@@ -12,11 +12,12 @@
 // and the strongest glow that can lie under each kind of text.
 //
 //   npm run build && npm run check:contrast
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Node runs the TypeScript file directly: season.ts has no imports
+// Node runs the TypeScript files directly: neither has an import
+import { BACKGROUNDS } from '../src/app/core/background/backgrounds.ts';
 import { SEASONS } from '../src/app/core/theme/season.ts';
 
 const DIST = fileURLToPath(new URL('../dist/web-application/browser', import.meta.url));
@@ -32,18 +33,29 @@ const GLOW_UNDER_PAGE_TEXT = 0.25;
 const GLOW_UNDER_CARDS = 0.2;
 // the wash of a domain card (`.card--domain` in styles.scss)
 const DOMAIN_WASH = 0.18;
+// A view with a photo (`view-background.scss`): the haze lays the page colour over the photo,
+// thinnest at the top (HAZE_TOP - the bottom is thicker, so the top is the worst case), then a
+// tint of the primary, and the glow is painted at half strength over a photo (shell.scss).
+// Keep in step with the stylesheet.
+const HAZE_TOP = { light: 0.45, dark: 0.66 };
+const HAZE_TINT = { light: 0, dark: 0.1 };
+const GLOW_OVER_PHOTO = 0.5;
+// the darkest and the lightest patch of every photo, written by make-background.mjs
+const PHOTOS = fileURLToPath(new URL('../public/backgrounds', import.meta.url));
 
 // [foreground, background, minimum ratio]
 const PAIRS = [
   // text straight on the page, next to the strongest glow it can meet
   ['on-background', 'page-glow', TEXT],
   ['on-surface-variant', 'page-glow', TEXT],
-  // text on glass: plain and over the glow; the primary as a status, an error
+  // text on glass: plain and over the glow. A status or an error on glass is written in the
+  // "container" shade of its colour (on-primary-container, on-error-container) - the plain
+  // primary and error do not reach 4.5:1 on glass over a photo, so nothing uses them as text there
   ...['glass', 'glass-glow'].flatMap((background) => [
     ['on-surface', background, TEXT],
     ['on-surface-variant', background, TEXT],
-    ['primary', background, TEXT],
-    ['error', background, TEXT],
+    ['on-primary-container', background, TEXT],
+    ['on-error-container', background, TEXT],
     ['outline', background, NON_TEXT],
   ]),
   // the navigation panel, which sits where the glow is strongest
@@ -98,6 +110,48 @@ const PAIRS = [
   ]),
 ];
 
+// The same text over a photo: the page, the glass and the panel are composited again over the
+// darkest and the lightest patch of every photo (`photo-<name>-<darkest|lightest>-<page|glass|panel>`).
+const photos = readdirSync(PHOTOS)
+  .filter((name) => name.endsWith('.json'))
+  .map((name) => ({
+    name: name.slice(0, -'.json'.length),
+    ...JSON.parse(readFileSync(join(PHOTOS, name), 'utf8')),
+  }));
+// Every name the application knows has its two files and its sidecar, and every sidecar is a
+// name the application knows - otherwise a view would render a broken image, or a photo would
+// be checked that nothing shows.
+for (const name of BACKGROUNDS) {
+  for (const file of [`${name}-1280.webp`, `${name}-2560.webp`, `${name}.json`]) {
+    if (!existsSync(join(PHOTOS, file))) {
+      fail(`BACKGROUNDS names "${name}" but public/backgrounds/${file} is missing - run make-background.mjs.`);
+    }
+  }
+}
+for (const { name } of photos) {
+  if (!BACKGROUNDS.includes(name)) {
+    fail(`public/backgrounds/${name}.json belongs to no name in BACKGROUNDS (core/background/backgrounds.ts).`);
+  }
+}
+const PHOTO_PAIRS = photos.flatMap(({ name }) =>
+  ['darkest', 'lightest'].flatMap((patch) => {
+    const under = `photo-${name}-${patch}`;
+    // the title of the page is the one text on the bare photo (styles.scss), and it lies at the
+    // top, so it is checked over the top band of the picture; everything else sits on glass or
+    // on the panel, anywhere in the frame
+    return [
+      ['on-background', `${under}-top-page`, TEXT],
+      ['on-surface', `${under}-glass`, TEXT],
+      ['on-surface-variant', `${under}-glass`, TEXT],
+      ['on-primary-container', `${under}-glass`, TEXT],
+      ['on-error-container', `${under}-glass`, TEXT],
+      ['on-surface', `${under}-panel`, TEXT],
+      ['on-surface-variant', `${under}-panel`, TEXT],
+      ['primary', `${under}-panel`, TEXT],
+    ];
+  }),
+);
+
 function fail(message) {
   console.error(message);
   process.exit(1);
@@ -111,13 +165,21 @@ try {
   fail(`No stylesheet found in ${DIST} - run "npm run build" first.`);
 }
 
-/** The declarations of the first rule with exactly this selector. */
+/**
+ * The declarations of the rule with exactly this selector that carries the theme - the one
+ * declaring `--mat-sys-*` variables (the same selector also opens smaller rules, such as the root
+ * font size of a wide screen inside a media query).
+ */
 function block(selector) {
-  const start = css.indexOf(`${selector}{`);
-  if (start < 0) {
-    fail(`The stylesheet has no rule "${selector}" - has the theme moved?`);
+  let start = css.indexOf(`${selector}{`);
+  while (start >= 0) {
+    const declarations = css.slice(start + selector.length + 1, css.indexOf('}', start));
+    if (declarations.includes('--mat-sys-')) {
+      return declarations;
+    }
+    start = css.indexOf(`${selector}{`, start + 1);
   }
-  return css.slice(start + selector.length + 1, css.indexOf('}', start));
+  fail(`The stylesheet has no rule "${selector}" with the theme - has it moved?`);
 }
 
 // one colour, as the build may write it: #rgb, #rrggbb, #rrggbbaa, rgb(r, g, b),
@@ -208,6 +270,28 @@ function composited(palette, translucent, scheme) {
       derived['glass-glow'],
     );
   }
+  for (const photo of photos) {
+    for (const patch of ['darkest', 'lightest']) {
+      const under = parse(photo[patch], `${photo.name}.json ${patch}`).slice(0, 3);
+      // the haze, the tint, then the (halved) glow - what the page is over a photo
+      const hazed = tint(primary, HAZE_TINT[scheme], tint(page, HAZE_TOP[scheme], under));
+      const name = `photo-${photo.name}-${patch}`;
+      const top = parse(photo.top[patch], `${photo.name}.json top.${patch}`).slice(0, 3);
+      derived[`${name}-top-page`] = tint(
+        primary,
+        GLOW_UNDER_PAGE_TEXT * GLOW_OVER_PHOTO,
+        tint(primary, HAZE_TINT[scheme], tint(page, HAZE_TOP[scheme], top)),
+      );
+      derived[`${name}-glass`] = over(
+        glass,
+        tint(primary, GLOW_UNDER_CARDS * GLOW_OVER_PHOTO, hazed),
+      );
+      derived[`${name}-panel`] = over(
+        panel,
+        tint(primary, GLOW_UNDER_PANEL * GLOW_OVER_PHOTO, hazed),
+      );
+    }
+  }
   return derived;
 }
 
@@ -249,7 +333,7 @@ for (const season of SEASONS) {
   for (const scheme of ['light', 'dark']) {
     const backgrounds = composited(palette, shared.translucent, scheme);
     const colour = (name) => backgrounds[name] ?? palette[name]?.[scheme];
-    for (const [foreground, background, minimum] of PAIRS) {
+    for (const [foreground, background, minimum] of [...PAIRS, ...PHOTO_PAIRS]) {
       if (!colour(foreground) || !colour(background)) {
         fail(`The stylesheet does not define "${foreground}" or "${background}" for ${season}.`);
       }
@@ -274,5 +358,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  `Contrast OK (${checked} pairs over ${SEASONS.length} seasons x light and dark; lowest text contrast ${lowest.toFixed(2)}:1, ${lowestPair}).`,
+  `Contrast OK (${checked} pairs over ${SEASONS.length} seasons x light and dark, ${photos.length} photo(s); lowest text contrast ${lowest.toFixed(2)}:1, ${lowestPair}).`,
 );

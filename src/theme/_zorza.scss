@@ -77,10 +77,10 @@ $_font-files: '../../node_modules/@fontsource-variable/plus-jakarta-sans/files';
   );
 }
 
-// one radius per role
-$radius-card: 24px;
-$radius-control: 14px;
-$radius-menu: 16px;
+// one radius per role (the owner wanted the cards much less rounded than the 24 px of 0.4.0)
+$radius-card: 12px;
+$radius-control: 10px;
+$radius-menu: 12px;
 $radius-pill: 999px;
 
 // One step of the type scale, written out as every variable Material derives from it.
@@ -95,18 +95,20 @@ $radius-pill: 999px;
   );
 }
 
-// Headings heavy and tight, body text light and open.
+// Headings heavy and tight, body text light and open. The scale is a step smaller than
+// Material's: a dashboard is read at arm's length on a large monitor, and the owner found the
+// first scale (2 rem headlines, 1 rem body) too large there (HAS-209).
 $_typography: map.merge(
-  _type(headline-medium, 700, 2rem, 2.5rem, -0.02em),
-  _type(headline-small, 700, 1.5rem, 2rem, -0.01em)
+  _type(headline-medium, 700, 1.375rem, 1.75rem, -0.02em),
+  _type(headline-small, 700, 1.125rem, 1.5rem, -0.01em)
 );
-$_typography: map.merge($_typography, _type(title-large, 600, 1.25rem, 1.75rem, 0));
-$_typography: map.merge($_typography, _type(title-medium, 600, 1rem, 1.5rem, 0));
-$_typography: map.merge($_typography, _type(title-small, 600, 0.875rem, 1.25rem, 0));
-$_typography: map.merge($_typography, _type(body-large, 400, 1rem, 1.5rem, 0));
-$_typography: map.merge($_typography, _type(body-medium, 400, 0.875rem, 1.25rem, 0));
-$_typography: map.merge($_typography, _type(body-small, 400, 0.75rem, 1rem, 0));
-$_typography: map.merge($_typography, _type(label-large, 600, 0.875rem, 1.25rem, 0.01em));
+$_typography: map.merge($_typography, _type(title-large, 600, 1rem, 1.375rem, 0));
+$_typography: map.merge($_typography, _type(title-medium, 600, 0.875rem, 1.25rem, 0));
+$_typography: map.merge($_typography, _type(title-small, 600, 0.75rem, 1rem, 0));
+$_typography: map.merge($_typography, _type(body-large, 400, 0.875rem, 1.25rem, 0));
+$_typography: map.merge($_typography, _type(body-medium, 400, 0.75rem, 1.0625rem, 0));
+$_typography: map.merge($_typography, _type(body-small, 400, 0.6875rem, 0.9375rem, 0));
+$_typography: map.merge($_typography, _type(label-large, 600, 0.75rem, 1.0625rem, 0.01em));
 
 // Cards are the large round things, controls the medium ones, menus in between. `corner-full`
 // stays: it is what keeps round things round (radio buttons, switches, badges).
@@ -119,8 +121,8 @@ $_shape: (
   corner-large-top: $radius-card $radius-card 0 0,
   corner-large-start: $radius-card 0 0 $radius-card,
   corner-large-end: 0 $radius-card $radius-card 0,
-  corner-extra-large: 28px,
-  corner-extra-large-top: 28px 28px 0 0,
+  corner-extra-large: 16px,
+  corner-extra-large-top: 16px 16px 0 0,
 );
 
 // Elevation is a soft, wide shadow: a glass card floats over the glow rather than sits on paper.
@@ -163,7 +165,7 @@ $_shadows: (
   --mat-sys-level5: #{shadow(5)};
 
   // how much of what lies behind a glass surface blurs through it
-  --app-glass-blur: 18px;
+  --app-glass-blur: 8px;
 
   // Buttons are pills; the filled one gets its gradient and glow in `components`.
   @include mat.button-overrides(
@@ -186,6 +188,9 @@ $_shadows: (
       text-with-icon-horizontal-padding: 12px,
       outlined-outline-color: color-mix(in srgb, var(--mat-sys-on-surface) 22%, transparent),
       outlined-label-text-color: var(--mat-sys-on-surface),
+      // the shade of the primary made for tinted backgrounds: a text button sits on glass, where
+      // the plain primary does not reach 4.5:1 over a photo (check-contrast.mjs)
+      text-label-text-color: var(--mat-sys-on-primary-container),
     )
   );
 
@@ -215,7 +220,7 @@ $_shadows: (
       active-indicator-shape: $radius-control,
       active-indicator-color: color-mix(in srgb, var(--mat-sys-primary) 22%, transparent),
       list-item-container-shape: $radius-control,
-      list-item-one-line-container-height: 48px,
+      list-item-one-line-container-height: 40px,
       list-item-label-text-weight: 500,
       list-item-leading-icon-color: var(--mat-sys-on-surface-variant),
     )
@@ -244,6 +249,22 @@ $_shadows: (
       selected-state-background-color: color-mix(in srgb, var(--mat-sys-primary) 22%, transparent),
       selected-state-text-color: var(--mat-sys-on-surface),
       label-text-weight: 600,
+    )
+  );
+
+  // A switch (the photos on the Settings page): its label in the body type, the track in the
+  // season's primary colour when on and a line of outline when off.
+  @include mat.slide-toggle-overrides(
+    (
+      label-text-font: $font,
+      label-text-size: 0.875rem,
+      label-text-line-height: 1.25rem,
+      label-text-weight: 500,
+      label-text-tracking: 0,
+      selected-track-color: var(--mat-sys-primary),
+      selected-handle-color: var(--mat-sys-on-primary),
+      unselected-track-color: var(--mat-sys-surface-container-highest),
+      track-outline-color: var(--mat-sys-outline),
     )
   );
 

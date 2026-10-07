@@ -1,0 +1,22 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "files": {
+    "home-2560.webp": {
+      "bytes": 206216,
+      "quality": 82
+    },
+    "home-1280.webp": {
+      "bytes": 58874,
+      "quality": 82
+    }
+  },
+  "darkest": "#050c06",
+  "lightest": "#f9dfac",
+  "top": {
+    "darkest": "#01469b",
+    "lightest": "#0468c7"
+  }
+}

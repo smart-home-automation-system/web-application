@@ -1,7 +1,7 @@
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
 }
 
 // the heating tile is a card of the heating domain: its colour on the edge and the badge
@@ -9,8 +9,13 @@
   --app-domain: var(--app-domain-heating);
 }
 
+// tighter than Material's 16 px all round: the tiles are read, not touched
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
 mat-card-content {
-  padding-top: 16px;
+  padding: 8px 12px 12px;
 }
 
 .tile__state {
@@ -23,8 +28,10 @@ mat-card-content {
   color: var(--mat-sys-on-surface-variant);
 }
 
+// the shade of the primary made for tinted backgrounds: the plain primary does not reach 4.5:1
+// on glass over the darkest patch of a photo
 .tile__state--on {
-  color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary-container);
 }
 
 .tile__detail {
@@ -33,11 +40,16 @@ mat-card-content {
   color: var(--mat-sys-on-surface-variant);
 }
 
+// on its own tinted strip, whose text colour is made for it - the error red alone does not reach
+// 4.5:1 on glass over a bright patch of a photo
 .tile__error {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
   font: var(--mat-sys-body-medium);
-  color: var(--mat-sys-error);
+  color: var(--mat-sys-on-error-container);
 }

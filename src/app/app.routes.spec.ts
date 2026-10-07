@@ -41,6 +41,14 @@ describe('routes', () => {
     expect(error?.loadComponent).toBeUndefined();
   });
 
+  // `data` has an index signature, so a misspelled key would type-check and the view would
+  // silently show the plain glow
+  it('name the photo of the overview under the key the background layer reads', () => {
+    const overview = (routes[0].children ?? []).find((route) => route.path === 'overview');
+
+    expect(overview?.data).toEqual({ background: 'home' });
+  });
+
   it('give every page a title', () => {
     const untitled = (routes[0].children ?? []).filter(
       (route) => !route.redirectTo && route.title === undefined,

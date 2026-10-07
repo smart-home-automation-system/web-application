@@ -12,7 +12,6 @@ import { LocalDateTimePipe } from '../../shared/local-date-time/local-date-time.
     <ng-container *transloco="let t">
       <header class="page-header">
         <h1>{{ t('about.title') }}</h1>
-        <p>{{ t('about.lead') }}</p>
       </header>
 
       <dl class="facts">

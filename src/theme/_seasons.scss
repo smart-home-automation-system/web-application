@@ -290,9 +290,18 @@ $_neutral: (
   // The glass: what a card is made of (translucent - see `--mat-sys-surface` for the opaque
   // colour it reads as over the plain page), the strip along its edge, and the thicker glass of
   // the navigation panel.
-  --app-glass: light-dark(rgb(255 255 255 / 72%), rgb(28 31 56 / 58%));
+  --app-glass: light-dark(rgb(255 255 255 / 70%), rgb(28 31 56 / 42%));
   --app-glass-edge: light-dark(rgb(255 255 255 / 90%), rgb(255 255 255 / 10%));
-  --app-glass-panel: light-dark(rgb(255 255 255 / 70%), rgb(13 15 29 / 55%));
+  --app-glass-panel: light-dark(rgb(255 255 255 / 92%), rgb(13 15 29 / 55%));
+
+  // The haze over the photo of a view (`view-background.scss`): the page colour, thinner at
+  // the top than at the bottom, and in the dark scheme a tint of the season on top - in the
+  // light scheme the tint would only darken a pale page under dark text, so there is none.
+  // These strengths are what `check:contrast` lays the darkest and the lightest patch of a
+  // photo under (HAZE_TOP, HAZE_TINT) - change one here and change it there.
+  --app-haze-top: light-dark(#{rgba($_page-light, 0.45)}, #{rgba($_page-dark, 0.66)});
+  --app-haze-bottom: light-dark(#{rgba($_page-light, 0.6)}, #{rgba($_page-dark, 0.82)});
+  --app-haze-tint: light-dark(transparent, color-mix(in srgb, var(--mat-sys-primary) 10%, transparent));
 
   // The domains, and the colour of an icon or text on a domain colour.
   @each $name, $pair in $domains {

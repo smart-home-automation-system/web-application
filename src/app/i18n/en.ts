@@ -21,7 +21,6 @@ export const en = {
   },
   overview: {
     title: 'Overview',
-    lead: 'The state of the house at a glance. More tiles arrive with the next dashboards.',
     systems: 'House systems',
     heating: {
       title: 'Heating system',
@@ -34,7 +33,6 @@ export const en = {
   },
   settings: {
     title: 'Settings',
-    lead: 'How the application looks in this browser.',
     appearance: {
       title: 'Appearance',
       hint: 'The colours follow the season and the light or dark setting of the device by themselves. A choice made here is for preview and is kept in this browser only.',
@@ -46,6 +44,11 @@ export const en = {
       seasonAuto: 'Automatic',
       seasonNow: 'By the calendar, now: {{ season }}',
       reset: 'Back to automatic',
+      photos: 'Photos behind the views',
+      photosOn: 'Shown',
+      photosOff: 'Hidden',
+      photosHint:
+        'Each view has a photo of its place behind the glass. Switch them off on a device that is slow to draw them.',
     },
     palette: {
       title: 'Palette',
@@ -72,7 +75,6 @@ export const en = {
   },
   about: {
     title: 'About',
-    lead: 'The build of the application running in this browser.',
     version: 'Version',
     commit: 'Commit',
     built: 'Built',

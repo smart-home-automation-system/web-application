@@ -116,6 +116,34 @@ test.describe('container image', () => {
     expect(response.headers()['cache-control']).toContain('immutable');
   });
 
+  test('serves the photo of the overview, which the browser revalidates', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/');
+    const photo = page.locator('app-view-background img[data-background="home"]');
+    await expect(photo).toHaveCount(1);
+    const src = await photo.evaluate((img: HTMLImageElement) => new URL(img.currentSrc).pathname);
+    expect(src).toMatch(/^\/backgrounds\/home-(1280|2560)\.webp$/);
+
+    const response = await request.get(src);
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toBe('image/webp');
+    // not hashed, so not pinned: a regenerated photo under the same name reaches the browser
+    expect(response.headers()['cache-control']).toBe('no-cache');
+  });
+
+  // the sidecar and the notes next to the photos are inputs of the build, not of the browser
+  for (const path of ['/backgrounds/home.json', '/backgrounds/README.md']) {
+    test(`does not serve ${path}`, async ({ request }) => {
+      const response = await request.get(path);
+
+      // the SPA fallback answers with the page, never with the file
+      expect(response.headers()['content-type']).toContain('text/html');
+    });
+  }
+
   test('does not pin an unhashed file in the browser', async ({ request }) => {
     const response = await request.get('/favicon.ico');
 
