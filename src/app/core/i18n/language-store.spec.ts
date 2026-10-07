@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { TranslocoService } from '@jsverse/transloco';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
@@ -6,7 +7,7 @@ import { provideI18nTesting } from '../../../testing/i18n';
 import { en } from '../../i18n/en';
 import { Messages } from '../../i18n/messages';
 import { pl } from '../../i18n/pl';
-import { LanguageStore, RESTORE_TIMEOUT_MS } from './language-store';
+import { LANGUAGE_OWNER, LanguageStore, RESTORE_TIMEOUT_MS } from './language-store';
 import { LanguageCode, MESSAGES_LOADER, MessagesLoader } from './languages';
 
 const STORAGE_KEY = 'smart-home.language';
@@ -222,6 +223,101 @@ describe('LanguageStore', () => {
     });
 
     expect(await store.select('pl')).toBe(true);
+
+    expect(store.language()).toBe('pl');
+  });
+});
+
+describe('LanguageStore, with household profiles', () => {
+  const owner = signal<string | undefined>(undefined);
+
+  /** `stored` is what the browser remembers: the language of the device, and of members. */
+  function create(stored: { device?: string; members?: Record<string, string> } = {}) {
+    TestBed.configureTestingModule({
+      providers: [provideI18nTesting(), { provide: LANGUAGE_OWNER, useValue: owner }],
+    });
+    if (stored.device !== undefined) {
+      localStorage.setItem(STORAGE_KEY, stored.device);
+    }
+    for (const [member, language] of Object.entries(stored.members ?? {})) {
+      localStorage.setItem(`${STORAGE_KEY}.${member}`, language);
+    }
+    return TestBed.inject(LanguageStore);
+  }
+
+  /** The store follows a change of the profile through an effect, and then loads the texts. */
+  async function settle(): Promise<void> {
+    TestBed.tick();
+    await Promise.resolve();
+    await Promise.resolve();
+  }
+
+  beforeEach(() => owner.set(undefined));
+
+  afterEach(() => {
+    for (const key of [STORAGE_KEY, `${STORAGE_KEY}.Aurelia`, `${STORAGE_KEY}.Borys`]) {
+      localStorage.removeItem(key);
+    }
+    document.documentElement.lang = 'en';
+  });
+
+  it('remembers the choice for the member who made it, not for the device', async () => {
+    owner.set('Aurelia');
+    const store = create();
+
+    await store.select('pl');
+
+    expect(localStorage.getItem(`${STORAGE_KEY}.Aurelia`)).toBe('pl');
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it('starts in the language of the member remembered', async () => {
+    owner.set('Aurelia');
+    const store = create({ device: 'en', members: { Aurelia: 'pl' } });
+
+    await store.restore();
+
+    expect(store.language()).toBe('pl');
+  });
+
+  // a browser that spoke Polish before the profiles existed still does
+  it('gives a member who never chose the language of the device', async () => {
+    owner.set('Borys');
+    const store = create({ device: 'pl' });
+
+    await store.restore();
+
+    expect(store.language()).toBe('pl');
+    expect(localStorage.getItem(`${STORAGE_KEY}.Borys`)).toBeNull();
+  });
+
+  it('changes to the language of the member who takes over, and back', async () => {
+    owner.set('Aurelia');
+    const store = create({ members: { Aurelia: 'pl' } });
+    await store.restore();
+    await settle();
+
+    owner.set('Borys');
+    await settle();
+
+    expect(store.language()).toBe('en');
+    // brought back, not chosen: nothing is written for the member
+    expect(localStorage.getItem(`${STORAGE_KEY}.Borys`)).toBeNull();
+
+    owner.set('Aurelia');
+    await settle();
+
+    expect(store.language()).toBe('pl');
+    expect(document.documentElement.lang).toBe('pl');
+  });
+
+  it('keeps the language on screen when the next member chose the same', async () => {
+    const store = create({ device: 'pl' });
+    await store.restore();
+    await settle();
+
+    owner.set('Borys');
+    await settle();
 
     expect(store.language()).toBe('pl');
   });

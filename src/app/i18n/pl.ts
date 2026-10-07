@@ -11,6 +11,7 @@ export const pl: Messages = {
   nav: {
     label: 'Nawigacja główna',
     overview: 'Przegląd',
+    myRoom: 'Mój pokój',
     settings: 'Ustawienia',
     about: 'O aplikacji',
   },
@@ -29,6 +30,33 @@ export const pl: Messages = {
       switchedOff: 'Wyłączono: {{ time }}',
       loading: 'Wczytywanie stanu ogrzewania',
     },
+  },
+  profiles: {
+    title: 'Wybierz swój profil',
+    members: 'Domownicy',
+    loading: 'Wczytywanie domowników',
+    empty: 'W rejestrze domowników nie ma jeszcze nikogo.',
+    retry: 'Spróbuj ponownie',
+    switch: 'Zmień profil',
+    role: {
+      admin: 'Administrator',
+      resident: 'Domownik',
+    },
+  },
+  personalLink: {
+    title: 'Link osobisty',
+    opening: 'Otwieranie profilu',
+    unknownTitle: 'Ten link nie otwiera żadnego profilu',
+    unknownText:
+      'Nikt z domowników nie jest zarejestrowany pod tym imieniem albo profil został wyłączony. Poproś administratora o aktualny link.',
+    unavailableTitle: 'Nie udało się otworzyć profilu',
+    continue: 'Przejdź do aplikacji',
+  },
+  myRoom: {
+    title: 'Mój pokój',
+    rooms: 'Twoje pokoje',
+    noRooms:
+      'Do twojego profilu nie przypisano jeszcze żadnego pokoju. Pokoje przypisuje administrator domu.',
   },
   settings: {
     title: 'Ustawienia',

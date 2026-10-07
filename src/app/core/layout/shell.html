@@ -18,7 +18,7 @@
 
     <nav class="shell__side-nav" [attr.aria-label]="t('nav.label')">
       <mat-nav-list>
-        @for (item of navItems; track item.path) {
+        @for (item of navItems(); track item.path) {
           <a
             mat-list-item
             [routerLink]="item.path"
@@ -39,6 +39,23 @@
     <div class="shell__weather" data-slot="weather"></div>
 
     <div class="shell__panel-foot">
+      <!-- Who is using the application. The name is the member's own - printed as it is, never
+           through the translations. An administrator can go on to the picker and look at the
+           application as somebody else; a resident is not offered other profiles. -->
+      @if (profile(); as active) {
+        @if (active.role === 'admin') {
+          <a matButton class="shell__profile" [routerLink]="profilesPath">
+            <mat-icon>account_circle</mat-icon>
+            <span class="shell__profile-name">{{ active.name }}</span>
+            <span class="visually-hidden">&ngsp;{{ t('profiles.switch') }}</span>
+          </a>
+        } @else {
+          <span class="shell__profile shell__profile--fixed">
+            <mat-icon>account_circle</mat-icon>
+            <span class="shell__profile-name">{{ active.name }}</span>
+          </span>
+        }
+      }
       <app-language-menu />
     </div>
   </aside>
@@ -47,20 +64,23 @@
     <router-outlet />
   </main>
 
-  <nav class="shell__bottom-nav" [attr.aria-label]="t('nav.label')">
-    @for (item of navItems; track item.path) {
-      <a
-        class="shell__bottom-link"
-        [routerLink]="item.path"
-        routerLinkActive="shell__bottom-link--active"
-        #link="routerLinkActive"
-        [attr.aria-current]="link.isActive ? 'page' : null"
-      >
-        <span class="shell__bottom-icon"
-          ><mat-icon>{{ item.icon }}</mat-icon></span
+  <!-- a bar with a single destination leads nowhere: a resident's phone keeps the room for the page -->
+  @if (navItems().length > 1) {
+    <nav class="shell__bottom-nav" [attr.aria-label]="t('nav.label')">
+      @for (item of navItems(); track item.path) {
+        <a
+          class="shell__bottom-link"
+          [routerLink]="item.path"
+          routerLinkActive="shell__bottom-link--active"
+          #link="routerLinkActive"
+          [attr.aria-current]="link.isActive ? 'page' : null"
         >
-        <span class="shell__bottom-label">{{ t(item.label) }}</span>
-      </a>
-    }
-  </nav>
+          <span class="shell__bottom-icon"
+            ><mat-icon>{{ item.icon }}</mat-icon></span
+          >
+          <span class="shell__bottom-label">{{ t(item.label) }}</span>
+        </a>
+      }
+    </nav>
+  }
 </ng-container>

@@ -8,8 +8,34 @@ import { expect, test } from '@playwright/test';
  * What is tested is nginx: that the application starts under the Content-Security-Policy, that
  * deep links fall back to index.html, that caching and security headers are in place and that the
  * version was stamped into the build.
+ *
+ * Every page starts as an administrator remembered by the browser - without a backend there is
+ * no registry to choose a profile from, and a remembered profile is exactly what survives that.
  */
 test.describe('container image', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'smart-home.profile',
+        JSON.stringify({ name: 'Aurelia', role: 'admin', rooms: [] }),
+      ),
+    );
+  });
+
+  test('asks who is using the application when nobody is remembered', async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.goto('/about');
+
+    await expect(page).toHaveURL(/\/profiles$/);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Choose your profile' }),
+    ).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText('The API gateway is not routed');
+    await context.close();
+  });
+
   test('starts under the Content-Security-Policy and renders the shell', async ({ page }) => {
     const violations: string[] = [];
     page.on('console', (message) => {

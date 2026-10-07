@@ -1,6 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   ApplicationConfig,
+  computed,
   inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
@@ -17,7 +18,10 @@ import {
 import { routes } from './app.routes';
 import { mockApiInterceptors } from './core/api/mock-api';
 import { provideI18n } from './core/i18n/provide-i18n';
+import { LANGUAGE_OWNER } from './core/i18n/language-store';
 import { AppTitleStrategy } from './core/layout/app-title-strategy';
+import { profileInterceptor } from './core/profile/profile-interceptor';
+import { ProfileStore } from './core/profile/profile-store';
 import { ThemeStore } from './core/theme/theme-store';
 
 export const appConfig: ApplicationConfig = {
@@ -38,8 +42,21 @@ export const appConfig: ApplicationConfig = {
         });
       }),
     ),
-    provideHttpClient(withInterceptors([...mockApiInterceptors])),
+    provideHttpClient(withInterceptors([profileInterceptor, ...mockApiInterceptors])),
+    // the language is the choice of whoever uses the application: of the active profile
+    {
+      provide: LANGUAGE_OWNER,
+      useFactory: () => {
+        const profile = inject(ProfileStore).profile;
+        return computed(() => profile()?.name);
+      },
+    },
     ...provideI18n(),
+    // The application starts as whoever was remembered and does not wait for this: the registry
+    // is asked on the side, and a role that changed there takes effect when it answers.
+    provideAppInitializer(() => {
+      void inject(ProfileStore).refresh();
+    }),
     // the colours of the season are in place before Angular renders the first page
     provideAppInitializer(() => {
       inject(ThemeStore);

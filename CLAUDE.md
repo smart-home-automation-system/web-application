@@ -79,17 +79,54 @@ e2e/              # Playwright tests
   bar below). Use the `--mat-sys-*` variables for every colour and font — never a literal — so
   themes can change them. Global building blocks (`.page-header`, `.message-page`) are in
   `src/styles.scss`.
-- **Profiles, no login** (HAS-193): household-member profiles chosen by a personal link,
-  persisted in the browser; roles are UI-only until the gateway validates tokens.
-- **Future auth**: keep a single extension point — an HTTP interceptor + route guard in
-  `core/` — so token auth (api-gateway + cholewa-security) can be added without touching
-  features.
+- **Profiles, no login** — see "Profiles" below. A feature learns who uses the application
+  from `ProfileStore.profile()` (name, role, rooms) and from nowhere else.
+- **Who may open a page is `data.access` of its route** (`core/profile/access.ts`): `member`
+  for every household member, `anyone` / `chooser` for the pages around the profiles — and
+  **a route that says nothing is the administrator's alone**, so a new page is closed to
+  residents until somebody decides otherwise. Its `NAV_ITEMS` entry carries the same value (a
+  test compares them), and `app.routes.spec.ts` lists every page open to others: add to that
+  list deliberately.
 - **State**: signals. Component-local state stays in the component; cross-feature state
   lives in small injectable stores (`core/` or the owning feature).
 - Modern Angular only: `input()`/`output()`/`inject()`, built-in control flow
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
+
+## Profiles
+
+Household members without a login (HAS-193): a personal link `/u/<member>` opens a profile, the
+browser remembers it, and the role decides what the interface offers. **It is navigation, not
+access control** — the README says so plainly, and nothing here may be described as security.
+
+- **Everything lives in `core/profile/`.** `ProfileStore` holds the active `Profile` (name,
+  role, rooms) in `localStorage['smart-home.profile']` — with role and rooms, so the application
+  starts as the same person without waiting for the backend, and keeps working while it is away.
+  `refresh()` asks the registry (`GET /home/household`, `HouseholdApi`) and reconciles: new role
+  or rooms replace the remembered ones, a member gone or switched off loses the profile, a
+  failed call changes nothing. It runs at every start (not awaited), in the picker and inside
+  `open(member)`, which is what a personal link calls.
+- **One rule, asked in three places**: `redirectFor(access, profile)` answers where somebody is
+  sent instead of a page, or `undefined`. `profileGuard` (`canActivateChild` of the shell
+  route) asks it on navigation; the shell asks it to list the navigation entries, and again in an
+  effect whenever the profile changes — the registry answering with another role, another tab
+  opening somebody else's link — so a page its viewer may no longer see is left. Do not add a
+  second rule next to it.
+- **A resident** reaches `/room` and the pages open to `anyone`; everything else, the picker
+  included, redirects to `/room`. A role the application does not know reads as `resident`, the
+  one that reaches the least. **The administrator** reaches everything; the name in the panel
+  leads to the picker.
+- **A member's name is text from outside**: printed as it is (interpolation), never a
+  translation parameter, and the name in a link's address is never put on screen at all.
+- **Phase 2** (a token in the link, validated by the gateway) changes `ProfileStore.open()`,
+  `profileInterceptor` — today a pass-through, registered in `app.config.ts` — and
+  `profileGuard`. Nothing outside `core/profile/` may depend on the profile being a name.
+- **Tests**: Playwright starts every test as the administrator (`e2e/support.ts`);
+  `test.use({ profile: 'resident' })` or `'none'` chooses otherwise, and `startAs(page, …)`
+  does it for a page of another context. A unit test that renders the shell puts a profile into
+  `localStorage['smart-home.profile']` first, or every address leads to the picker. The image
+  test has no backend, so it starts with a remembered profile too.
 
 ## Theme
 
@@ -231,7 +268,11 @@ the text never depends on it.
 
 English is the default — on a first visit always, whatever the language of the browser — and
 Polish can be chosen from the toolbar. The choice changes the open page without a reload and is
-kept in `localStorage['smart-home.language']` (HAS-193 scopes it per profile).
+kept in the browser **per household member**: `localStorage['smart-home.language.<member>']`
+for the active profile, `localStorage['smart-home.language']` while there is none — which is
+also what a member who never chose falls back to. `LanguageStore` knows the member only as
+`LANGUAGE_OWNER`, a signal that `app.config.ts` binds to the profile, so the i18n has no
+dependency on the profiles (or on HTTP) and a unit test gets one language for the browser.
 
 - **No literal text in a template or in code that ends up on screen.** Every text is a key in
   `src/app/i18n/en.ts` — the source of the keys — and `pl.ts`, grouped by the feature that owns

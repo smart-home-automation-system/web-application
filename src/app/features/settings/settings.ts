@@ -37,8 +37,8 @@ const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
  * by themselves, and this page lets somebody look at the other variants; the photos behind the
  * views can be switched off here for a slow device.
  *
- * Meant for the administrator; until the household profiles exist (HAS-193) there is nobody to
- * tell apart, so the page is open to everyone - it changes only the browser it is opened in.
+ * The administrator's page (its route says nothing about access, which means exactly that); it
+ * changes only the browser it is opened in.
  */
 @Component({
   selector: 'app-settings',

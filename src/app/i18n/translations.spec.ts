@@ -53,7 +53,7 @@ describe('translations', () => {
 
   // an untranslated text is usually a copy of the English one; these are the same on purpose
   it('are translated: Polish differs from English except where it is meant to be the same', () => {
-    const sameOnPurpose = ['about.commit'];
+    const sameOnPurpose = ['about.commit', 'profiles.role.admin'];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),
     );

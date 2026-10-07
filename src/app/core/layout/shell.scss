@@ -155,13 +155,42 @@ $panel-width: 220px;
 
 .shell__panel-foot {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  min-width: 0;
 
   @media (min-width: $wide) {
+    flex-wrap: wrap;
     justify-content: flex-start;
     padding-top: 8px;
     border-top: 1px solid var(--app-glass-edge);
   }
+}
+
+// Who is using the application: a button for the administrator (it leads to the picker), plain
+// text for a resident. A long name gives way to the brand and the language instead of pushing
+// them off a narrow bar.
+.shell__profile {
+  min-width: 0;
+}
+
+.shell__profile--fixed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-large);
+  letter-spacing: var(--mat-sys-label-large-tracking);
+}
+
+.shell__profile-name {
+  display: inline-block;
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 .shell__content {

@@ -2,6 +2,7 @@ import { Route } from '@angular/router';
 
 import { routes } from './app.routes';
 import { NAV_ITEMS } from './core/layout/navigation';
+import { profileGuard } from './core/profile/profile-guard';
 
 function allPaths(list: readonly Route[], prefix = ''): string[] {
   return list.flatMap((route) => {
@@ -47,6 +48,37 @@ describe('routes', () => {
     const overview = (routes[0].children ?? []).find((route) => route.path === 'overview');
 
     expect(overview?.data).toEqual({ background: 'home' });
+  });
+
+  it('put every page behind the guard of the profiles', () => {
+    expect(routes).toHaveLength(1);
+    expect(routes[0].canActivateChild).toEqual([profileGuard]);
+  });
+
+  // A page that says nothing is the administrator's. This list is everything somebody else can
+  // open: adding to it is a decision, and the test is where it is written down.
+  it('open to others than the administrator exactly the pages meant for them', () => {
+    const open = (routes[0].children ?? [])
+      .filter((route) => route.data?.['access'] !== undefined)
+      .map((route) => [route.path, route.data?.['access']]);
+
+    expect(open).toEqual([
+      ['room', 'member'],
+      ['profiles', 'chooser'],
+      ['u/:member', 'anyone'],
+      ['error', 'anyone'],
+    ]);
+  });
+
+  // the navigation must not offer what the guard turns away, nor hide what it lets through
+  it('offer every navigation entry to exactly those who may open its page', () => {
+    const children = routes[0].children ?? [];
+
+    for (const item of NAV_ITEMS) {
+      const route = children.find((candidate) => `/${candidate.path}` === item.path);
+
+      expect(route?.data?.['access'] ?? 'admin', item.path).toBe(item.access);
+    }
   });
 
   it('give every page a title', () => {
