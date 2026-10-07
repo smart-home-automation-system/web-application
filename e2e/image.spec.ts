@@ -21,7 +21,7 @@ test.describe('container image', () => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
-    await expect(page.locator('.shell__toolbar mat-icon').first()).toBeVisible();
+    await expect(page.locator('.shell__brand mat-icon').first()).toBeVisible();
     // nginx answers /home itself, in the error contract: a refused request, not garbage
     await expect(page.getByRole('alert')).toContainText('The API gateway is not routed');
     const iconFont = await page.evaluate(() =>
@@ -102,7 +102,7 @@ test.describe('container image', () => {
 
   test('keeps the fonts for good too', async ({ page, request }) => {
     await page.goto('/');
-    await expect(page.locator('.shell__toolbar mat-icon').first()).toBeVisible();
+    await expect(page.locator('.shell__brand mat-icon').first()).toBeVisible();
     const font = await page.evaluate(() =>
       performance
         .getEntriesByType('resource')

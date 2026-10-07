@@ -81,6 +81,18 @@
               <span class="swatch" [style.background]="'var(--app-chart-' + series + ')'"></span>
             }
           </dd>
+          <dt>{{ t('settings.palette.domains') }}</dt>
+          <dd class="domains">
+            @for (domain of domains; track domain.name) {
+              <span class="domain">
+                <span
+                  class="swatch"
+                  [style.background]="'var(--app-domain-' + domain.name + ')'"
+                ></span>
+                {{ t(domain.label) }}
+              </span>
+            }
+          </dd>
         </dl>
       </mat-card-content>
     </mat-card>

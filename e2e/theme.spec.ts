@@ -12,11 +12,16 @@ const A_DAY_IN: Record<Season, string> = {
 
 const html = (page: Page) => page.locator('html');
 
-/** The background of the app bar as the browser paints it: `rgb(r, g, b)`. */
-async function barColour(page: Page): Promise<string> {
+/** The primary colour of the season as the browser paints the brand icon: `rgb(r, g, b)`. */
+async function seasonColour(page: Page): Promise<string> {
   return page
-    .locator('.shell__toolbar')
-    .evaluate((bar) => getComputedStyle(bar).backgroundColor.replace(/\s/g, ''));
+    .locator('.shell__brand-icon')
+    .evaluate((icon) => getComputedStyle(icon).color.replace(/\s/g, ''));
+}
+
+/** The colour of the page as the browser paints it: `rgb(r, g, b)`. */
+async function pageColour(page: Page): Promise<string> {
+  return page.evaluate(() => getComputedStyle(document.body).backgroundColor.replace(/\s/g, ''));
 }
 
 /** `#rrggbb` as the `rgb(r,g,b)` a computed style reports. */
@@ -36,7 +41,7 @@ test.describe('seasonal colours', () => {
     });
   }
 
-  test('differ between the seasons, and the status bar of a phone continues the app bar', async ({
+  test('differ between the seasons, and the status bar of a phone continues the page', async ({
     page,
   }) => {
     const colours = new Set<string>();
@@ -45,11 +50,10 @@ test.describe('seasonal colours', () => {
       await page.goto('/');
       await expect(html(page)).toHaveAttribute('data-season', season);
 
-      const bar = await barColour(page);
       const themeColour = await page.locator('meta[name="theme-color"]').getAttribute('content');
 
-      expect(rgb(themeColour ?? ''), `theme-color in ${season}`).toBe(bar);
-      colours.add(bar);
+      expect(rgb(themeColour ?? ''), `theme-color in ${season}`).toBe(await pageColour(page));
+      colours.add(await seasonColour(page));
     }
 
     expect(colours.size).toBe(SEASONS.length);
@@ -94,12 +98,12 @@ test.describe('appearance settings', () => {
 
   test('preview another season and keep it over a reload', async ({ page }) => {
     await page.goto('/settings');
-    const autumnBar = await barColour(page);
+    const autumn = await seasonColour(page);
 
     await page.getByRole('radio', { name: 'Winter' }).check();
 
     await expect(html(page)).toHaveAttribute('data-season', 'winter');
-    expect(await barColour(page)).not.toBe(autumnBar);
+    expect(await seasonColour(page)).not.toBe(autumn);
 
     await page.reload();
 

@@ -54,8 +54,15 @@ const PAIRS = [
   // the snack bar
   ['inverse-on-surface', 'inverse-surface', TEXT],
   ['inverse-primary', 'inverse-surface', TEXT],
-  // the app bar
+  // the status bar of a phone, which continues the page
   ['on-bar', 'bar', TEXT],
+  // the domains (--app-domain-* in _seasons.scss): an icon on the domain colour, and the colour
+  // itself as a badge, an edge or a line on glass and on the page
+  ...['heating', 'water', 'boiler', 'household'].flatMap((domain) => [
+    ['on-domain', `domain-${domain}`, TEXT],
+    [`domain-${domain}`, 'surface', NON_TEXT],
+    [`domain-${domain}`, 'background', NON_TEXT],
+  ]),
   // outlines of controls: radio buttons, toggles, inputs
   ['outline', 'surface', NON_TEXT],
   ['outline', 'surface-container-high', NON_TEXT],
@@ -105,13 +112,18 @@ function hex(value, where) {
   return [0, 2, 4].map((i) => parseInt(digits.slice(i, i + 2), 16));
 }
 
-/** name -> { light: [r, g, b], dark: [r, g, b] } for the colours declared in the rule. */
+/**
+ * name -> { light: [r, g, b], dark: [r, g, b] } for the colours declared in the rule: Material's
+ * (`--mat-sys-*`) and the application's own (`--app-*`), both written as `light-dark()` of two
+ * opaque colours. The glass is translucent and is skipped here on purpose: what it reads as over
+ * the plain page is `--mat-sys-surface`, which is what the pairs check.
+ */
 function colours(selector) {
   const declarations = block(selector);
   const found = {};
   for (const [, name, light, dark] of declarations.matchAll(
     new RegExp(
-      String.raw`--mat-sys-([a-z0-9-]+):\s*light-dark\(\s*(${COLOUR})\s*,\s*(${COLOUR})\s*\)`,
+      String.raw`--(?:mat-sys|app)-([a-z0-9-]+):\s*light-dark\(\s*(${COLOUR})\s*,\s*(${COLOUR})\s*\)`,
       'g',
     ),
   )) {
@@ -123,10 +135,6 @@ function colours(selector) {
   const bar = (scheme) => new RegExp(`--app-bar-${scheme}:\\s*([^;}]+)`).exec(declarations)?.[1];
   if (bar('light') && bar('dark')) {
     found['bar'] = { light: hex(bar('light'), 'bar'), dark: hex(bar('dark'), 'bar') };
-  }
-  const onBar = /--app-on-bar:\s*([^;}]+)/.exec(declarations)?.[1];
-  if (onBar) {
-    found['on-bar'] = { light: hex(onBar, 'on-bar'), dark: hex(onBar, 'on-bar') };
   }
   return found;
 }
@@ -145,9 +153,13 @@ function contrast(a, b) {
 }
 
 const shared = colours('html');
+if (!shared['bar'] || !shared['on-bar']) {
+  fail('html: the colour of the status bar was not read - the check is blind.');
+}
 const problems = [];
 let checked = 0;
 let lowest = Infinity;
+let lowestPair = '';
 
 for (const season of SEASONS) {
   const selector = `html[data-season=${season}]`;
@@ -155,9 +167,9 @@ for (const season of SEASONS) {
   // The rule of a season is laid over `html`, which carries the default season: a colour this
   // script failed to read would silently be checked with the default's value instead.
   const declared = [...block(selector).matchAll(/--mat-sys-[a-z0-9-]+:/g)].length;
-  const read = Object.keys(own).filter((name) => name !== 'bar').length;
-  if (read !== declared || !own['bar']) {
-    fail(`${selector}: read ${read} of ${declared} colours and the app bar - the check is blind.`);
+  const read = Object.keys(own).length;
+  if (read !== declared) {
+    fail(`${selector}: read ${read} of ${declared} colours - the check is blind.`);
   }
   const palette = { ...shared, ...own };
   for (const scheme of ['light', 'dark']) {
@@ -167,8 +179,9 @@ for (const season of SEASONS) {
       }
       const ratio = contrast(palette[foreground][scheme], palette[background][scheme]);
       checked++;
-      if (minimum === TEXT) {
-        lowest = Math.min(lowest, ratio);
+      if (minimum === TEXT && ratio < lowest) {
+        lowest = ratio;
+        lowestPair = `${foreground} on ${background}, ${season} ${scheme}`;
       }
       if (ratio < minimum) {
         problems.push(
@@ -185,5 +198,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  `Contrast OK (${checked} pairs over ${SEASONS.length} seasons x light and dark; lowest text contrast ${lowest.toFixed(2)}:1).`,
+  `Contrast OK (${checked} pairs over ${SEASONS.length} seasons x light and dark; lowest text contrast ${lowest.toFixed(2)}:1, ${lowestPair}).`,
 );

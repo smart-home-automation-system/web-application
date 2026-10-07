@@ -52,7 +52,7 @@ describe('application routing', () => {
     const http = TestBed.inject(HttpTestingController);
     (await vi.waitFor(() => http.expectOne('/home/heating'))).flush({ isHeatingEnabled: false });
 
-    expect(page().querySelector('.shell__toolbar')?.textContent).toContain('Smart Home');
+    expect(page().querySelector('.shell__brand')?.textContent).toContain('Smart Home');
     expect(page().querySelector('h1')?.textContent).toContain('Overview');
   });
 

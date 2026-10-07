@@ -1,0 +1,214 @@
+// The look of the application: "Zorza" (aurora) - a deep navy page with soft glows in the colours
+// of the season, cards of frosted glass, a colour per domain, the navigation in a panel on the left.
+// Angular Material ships Material Design 3 (pills, tonal surfaces); this file is the whole
+// difference: values for the `--mat-sys-*` variables and for a handful of component variables. A
+// selector reaches into Material's DOM only where no variable exists (see `components`).
+//
+// Colours are not here - see `_seasons.scss`.
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+// self-hosted, see angular.json; the variable font carries every weight in one file
+$font-family: 'Plus Jakarta Sans Variable';
+$font: $font-family, system-ui, sans-serif;
+
+// one radius per role
+$radius-card: 24px;
+$radius-control: 14px;
+$radius-menu: 16px;
+$radius-pill: 999px;
+
+// One step of the type scale, written out as every variable Material derives from it.
+@function _type($name, $weight, $size, $line-height, $tracking) {
+  @return (
+    #{$name}: $weight #{$size} / #{$line-height} $font,
+    #{$name}-font: $font,
+    #{$name}-weight: $weight,
+    #{$name}-size: $size,
+    #{$name}-line-height: $line-height,
+    #{$name}-tracking: $tracking
+  );
+}
+
+// Headings heavy and tight, body text light and open.
+$_typography: map.merge(
+  _type(headline-medium, 700, 2rem, 2.5rem, -0.02em),
+  _type(headline-small, 700, 1.5rem, 2rem, -0.01em)
+);
+$_typography: map.merge($_typography, _type(title-large, 600, 1.25rem, 1.75rem, 0));
+$_typography: map.merge($_typography, _type(title-medium, 600, 1rem, 1.5rem, 0));
+$_typography: map.merge($_typography, _type(title-small, 600, 0.875rem, 1.25rem, 0));
+$_typography: map.merge($_typography, _type(body-large, 400, 1rem, 1.5rem, 0));
+$_typography: map.merge($_typography, _type(body-medium, 400, 0.875rem, 1.25rem, 0));
+$_typography: map.merge($_typography, _type(body-small, 400, 0.75rem, 1rem, 0));
+$_typography: map.merge($_typography, _type(label-large, 600, 0.875rem, 1.25rem, 0.01em));
+
+// Cards are the large round things, controls the medium ones, menus in between. `corner-full`
+// stays: it is what keeps round things round (radio buttons, switches, badges).
+$_shape: (
+  corner-extra-small: 8px,
+  corner-extra-small-top: 8px 8px 0 0,
+  corner-small: $radius-control,
+  corner-medium: $radius-menu,
+  corner-large: $radius-card,
+  corner-large-top: $radius-card $radius-card 0 0,
+  corner-large-start: $radius-card 0 0 $radius-card,
+  corner-large-end: 0 $radius-card $radius-card 0,
+  corner-extra-large: 28px,
+  corner-extra-large-top: 28px 28px 0 0,
+);
+
+// Elevation is a soft, wide shadow: a glass card floats over the glow rather than sits on paper.
+// The colour is a `light-dark()` pair, so the stylesheet needs no second copy for the dark scheme.
+$_shadow-light: rgb(50 60 110 / 12%);
+$_shadow-dark: rgb(0 0 0 / 40%);
+$_shadows: (
+  1: 0 6px 18px light-dark($_shadow-light, $_shadow-dark),
+  2: 0 12px 32px light-dark($_shadow-light, $_shadow-dark),
+  3: 0 20px 50px light-dark($_shadow-light, $_shadow-dark),
+  4: 0 24px 60px light-dark($_shadow-light, $_shadow-dark),
+  5: 0 32px 80px light-dark($_shadow-light, $_shadow-dark),
+);
+
+@function shadow($elevation) {
+  @return map.get($_shadows, $elevation);
+}
+
+// Typography, shape, shadows and the component variables. Include it on <html>.
+@mixin system {
+  // no `color` here on purpose: every colour comes from `_seasons.scss`
+  @include mat.theme(
+    (
+      typography: $font-family,
+      density: 0,
+    ),
+    map.merge($_typography, $_shape)
+  );
+
+  // `mat.theme` defines the shadows only together with its own colours
+  --mat-sys-level0: none;
+  --mat-sys-level1: #{shadow(1)};
+  --mat-sys-level2: #{shadow(2)};
+  --mat-sys-level3: #{shadow(3)};
+  --mat-sys-level4: #{shadow(4)};
+  --mat-sys-level5: #{shadow(5)};
+
+  // how much of what lies behind a glass surface blurs through it
+  --app-glass-blur: 18px;
+
+  // Buttons are pills; the filled one gets its gradient and glow in `components`.
+  @include mat.button-overrides(
+    (
+      filled-container-shape: $radius-pill,
+      outlined-container-shape: $radius-pill,
+      protected-container-shape: $radius-pill,
+      text-container-shape: $radius-pill,
+      tonal-container-shape: $radius-pill,
+      filled-container-height: 40px,
+      outlined-container-height: 40px,
+      protected-container-height: 40px,
+      text-container-height: 40px,
+      tonal-container-height: 40px,
+      filled-horizontal-padding: 20px,
+      outlined-horizontal-padding: 20px,
+      protected-horizontal-padding: 20px,
+      tonal-horizontal-padding: 20px,
+      text-horizontal-padding: 12px,
+      text-with-icon-horizontal-padding: 12px,
+      outlined-outline-color: color-mix(in srgb, var(--mat-sys-on-surface) 22%, transparent),
+      outlined-label-text-color: var(--mat-sys-on-surface),
+    )
+  );
+
+  // A card is a sheet of glass: translucent, blurred (in `components`), edged with a lighter line.
+  @include mat.card-overrides(
+    (
+      elevated-container-color: var(--app-glass),
+      elevated-container-shape: $radius-card,
+      elevated-container-elevation: var(--mat-sys-level2),
+      outlined-container-color: var(--app-glass),
+      outlined-container-shape: $radius-card,
+      outlined-outline-color: var(--app-glass-edge),
+      title-text-weight: 600,
+      subtitle-text-color: var(--mat-sys-on-surface-variant),
+      subtitle-text-size: 0.875rem,
+      subtitle-text-line-height: 1.25rem,
+      subtitle-text-tracking: 0,
+    )
+  );
+
+  // The navigation list: rounded entries, the open one tinted with the season.
+  @include mat.list-overrides(
+    (
+      active-indicator-shape: $radius-control,
+      active-indicator-color: color-mix(in srgb, var(--mat-sys-primary) 22%, transparent),
+      list-item-container-shape: $radius-control,
+      list-item-one-line-container-height: 48px,
+      list-item-label-text-weight: 500,
+      list-item-leading-icon-color: var(--mat-sys-on-surface-variant),
+    )
+  );
+
+  @include mat.menu-overrides(
+    (
+      container-shape: $radius-menu,
+      container-color: var(--mat-sys-surface-container-high),
+      container-elevation-shadow: var(--mat-sys-level4),
+      item-label-text-size: 1rem,
+      item-label-text-weight: 500,
+      item-label-text-line-height: 1.5rem,
+      item-label-text-tracking: 0,
+    )
+  );
+
+  // A segmented control (the colour scheme on the Settings page): a pill of glass.
+  @include mat.button-toggle-overrides(
+    (
+      shape: $radius-pill,
+      height: 40px,
+      background-color: var(--app-glass),
+      divider-color: var(--app-glass-edge),
+      text-color: var(--mat-sys-on-surface-variant),
+      selected-state-background-color: color-mix(in srgb, var(--mat-sys-primary) 22%, transparent),
+      selected-state-text-color: var(--mat-sys-on-surface),
+      label-text-weight: 600,
+    )
+  );
+
+  @include mat.progress-bar-overrides(
+    (
+      track-color: color-mix(in srgb, var(--mat-sys-primary) 30%, transparent),
+    )
+  );
+
+  @include mat.snack-bar-overrides(
+    (
+      container-shape: $radius-control,
+    )
+  );
+}
+
+// What no variable reaches. Include it at the top level of the stylesheet.
+@mixin components {
+  // The glass itself: no variable blurs what lies behind a card or draws its edge.
+  .mat-mdc-card {
+    border: 1px solid var(--app-glass-edge);
+    backdrop-filter: blur(var(--app-glass-blur));
+  }
+
+  // The filled button runs from the primary to the secondary colour and glows; Material's own
+  // is one flat colour.
+  .mat-mdc-unelevated-button:not(:disabled, .mat-mdc-button-disabled) {
+    background: linear-gradient(135deg, var(--mat-sys-primary), var(--mat-sys-secondary));
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--mat-sys-primary) 45%, transparent);
+    transition: box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      box-shadow: 0 14px 36px color-mix(in srgb, var(--mat-sys-primary) 60%, transparent);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+}

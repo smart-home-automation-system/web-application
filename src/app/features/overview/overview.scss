@@ -1,15 +1,12 @@
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 20px;
 }
 
-.tile__avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--mat-sys-primary-container);
-  color: var(--mat-sys-on-primary-container);
+// the heating tile is a card of the heating domain: its colour on the edge and the badge
+.tile--heating {
+  --app-domain: var(--app-domain-heating);
 }
 
 mat-card-content {
@@ -22,6 +19,7 @@ mat-card-content {
   gap: 8px;
   margin: 0;
   font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
   color: var(--mat-sys-on-surface-variant);
 }
 
