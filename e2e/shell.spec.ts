@@ -14,6 +14,33 @@ test.describe('application shell', () => {
     await expect(tile.getByText(/^Updated/)).toBeVisible();
   });
 
+  test('centres the icon in the badge of the heating tile', async ({ page }) => {
+    await page.goto('/');
+
+    const tile = page.locator('mat-card', { hasText: 'Heating system' });
+    const badge = tile.locator('.domain-badge');
+    await expect(badge.locator('mat-icon')).toBeVisible();
+
+    // The glyph itself (the text of the icon), not the 24 px box of <mat-icon>: an icon can be
+    // centred as an element and still draw its glyph off centre. 0.4.0 shipped the glyph in the
+    // top-left corner - a Material rule of equal specificity, appended after the stylesheet,
+    // took the centring away from the badge.
+    const offset = await badge.evaluate((element) => {
+      const icon = element.querySelector('mat-icon');
+      if (!icon) throw new Error('the badge must hold its icon');
+      const range = document.createRange();
+      range.selectNodeContents(icon);
+      const box = element.getBoundingClientRect();
+      const glyph = range.getBoundingClientRect();
+      return {
+        x: glyph.x + glyph.width / 2 - (box.x + box.width / 2),
+        y: glyph.y + glyph.height / 2 - (box.y + box.height / 2),
+      };
+    });
+    expect(Math.abs(offset.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(offset.y)).toBeLessThanOrEqual(1);
+  });
+
   test('shows one navigation, matching the width of the screen', async ({ page }, testInfo) => {
     await page.goto('/');
 

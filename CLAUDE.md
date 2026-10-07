@@ -106,8 +106,12 @@ season. Both are nothing but values of CSS variables, in two files:
   styles are appended **after** this stylesheet, so a rule of equal specificity on one of its
   classes silently loses (`.mat-mdc-card { border }` did) — prefer the variable, or an appearance
   that has one: every card is `appearance="outlined"`, because only the outlined card has an edge
-  to colour. A Material component used for the first time gets its overrides there, in the same
-  task. `--mat-sys-corner-full` is deliberately left alone: it keeps round things round.
+  to colour. When a Material element has to be laid out by a class of ours (centred, sized),
+  **wrap it in a plain element and style the wrapper** (the `domain-badge` around its
+  `<mat-icon>`); a selector carrying Material's own class (`.mat-icon.message-page__icon`) is
+  the fallback for a property of the Material element itself, such as the size of an icon. A
+  Material component used for the first time gets its overrides there, in the same task.
+  `--mat-sys-corner-full` is deliberately left alone: it keeps round things round.
 - **`src/theme/_seasons.scss` — the colours.** A neutral set (the deep page and its pale
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
@@ -123,11 +127,17 @@ season. Both are nothing but values of CSS variables, in two files:
   translucent colour a card is actually painted with is `--app-glass` (`--app-glass-panel` for
   the navigation, `--app-glass-edge` for the line along an edge), blurred by `--app-glass-blur`.
   The glow behind everything is `--app-glow`, radial gradients of the season's two colours,
-  painted by the shell. A later task lays a photo of the view under that glow (HAS-209).
+  painted by the shell on a layer **fixed to the screen and `100lvh` tall** — not on the frame,
+  which follows the dynamic viewport of a phone: painted there, the gradients (sized in `vh`,
+  placed in % of the height) resized and moved every time the toolbar of iOS Safari slid in or
+  out (0.4.0). A later task lays a photo of the view under that glow (HAS-209) — on the same
+  layer, for the same reason.
 - **A domain card** (a tile about heating, hot water, the boiler room or the household) carries
   `card--domain` plus a class of its own setting `--app-domain` (`.tile--heating
   { --app-domain: var(--app-domain-heating) }`): the colour runs along its top edge and tints it;
-  its avatar icon is a `domain-badge`. Both blocks live in `src/styles.scss`. The domain colour
+  its avatar is a `domain-badge` — a `<div mat-card-avatar>` *wrapping* the `<mat-icon>`, never
+  the icon itself (Material's `.mat-icon { display }` beat the badge's `display: flex` in 0.4.0
+  and the icon sat in the corner). Both blocks live in `src/styles.scss`. The domain colour
   is for the card and its badge, never for text — text on glass stays `on-surface`.
 - **Two attributes of `<html>`** select what is painted, both set by `ThemeStore`
   (`core/theme/`): `data-season` (always) and `data-color-scheme` (only while the system setting
