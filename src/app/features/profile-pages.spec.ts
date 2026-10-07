@@ -12,10 +12,9 @@ import { Profile } from '../core/profile/profile';
 const STORAGE_KEY = 'smart-home.profile';
 
 const HOUSEHOLD = [
-  { name: 'Aurelia', active: true, role: 'admin', rooms: ['office'] },
-  { name: 'Borys', active: true, role: 'resident', rooms: ['loft'] },
-  { name: 'Celina', active: true, role: 'resident' },
-  { name: 'Emil', active: false, role: 'resident' },
+  { name: 'Aurelia', role: 'admin', rooms: ['office'] },
+  { name: 'Borys', role: 'resident', rooms: ['loft'] },
+  { name: 'Celina', role: 'resident' },
 ];
 
 const AURELIA: Profile = { name: 'Aurelia', role: 'admin', rooms: ['office'] };
@@ -60,12 +59,12 @@ describe('profiles in the application', () => {
 
   /** Answers the question to the registry that is on its way. */
   async function registryAnswers(body: object[] = HOUSEHOLD): Promise<void> {
-    (await vi.waitFor(() => http.expectOne('/home/household'))).flush(body);
+    (await vi.waitFor(() => http.expectOne('/home/household/profiles'))).flush(body);
     await settle();
   }
 
   async function registryFails(status = 502): Promise<void> {
-    (await vi.waitFor(() => http.expectOne('/home/household'))).flush(
+    (await vi.waitFor(() => http.expectOne('/home/household/profiles'))).flush(
       { errors: [{ message: 'The registry said something private' }] },
       { status, statusText: 'Failed' },
     );
@@ -348,7 +347,7 @@ describe('profiles in the application', () => {
 
       const navigation = router.navigateByUrl('/about');
       void TestBed.inject(ProfileStore).refresh();
-      (await vi.waitFor(() => http.expectOne('/home/household'))).flush(HOUSEHOLD);
+      (await vi.waitFor(() => http.expectOne('/home/household/profiles'))).flush(HOUSEHOLD);
       await navigation;
       await settle();
 

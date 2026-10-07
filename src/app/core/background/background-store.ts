@@ -1,5 +1,6 @@
-import { DOCUMENT } from '@angular/common';
-import { DestroyRef, Injectable, Signal, inject, signal } from '@angular/core';
+import { Injectable, Signal, signal } from '@angular/core';
+
+import { isRecord, readJson, watchKey, writeJson } from '../storage/browser-storage';
 
 /** Where the choice is kept. One key for the whole browser, like the theme. */
 const STORAGE_KEY = 'smart-home.background';
@@ -11,7 +12,6 @@ const STORAGE_KEY = 'smart-home.background';
  */
 @Injectable({ providedIn: 'root' })
 export class BackgroundStore {
-  private readonly document = inject(DOCUMENT);
   private readonly chosen = signal(true);
 
   /** True while the views show their photo. */
@@ -19,47 +19,18 @@ export class BackgroundStore {
 
   constructor() {
     this.read();
-    this.watchOtherTabs();
+    watchKey(STORAGE_KEY, () => this.read());
   }
 
   showPhotos(on: boolean): void {
     this.chosen.set(on);
-    // storage can be unavailable (private mode, blocked site data): the choice then lasts a session
-    try {
-      if (on) {
-        localStorage.removeItem(STORAGE_KEY);
-      } else {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ photos: false }));
-      }
-    } catch {
-      // nothing to do
-    }
+    // kept only while off: the default leaves nothing behind
+    writeJson(STORAGE_KEY, on ? undefined : { photos: false });
   }
 
   private read(): void {
-    let value: unknown;
-    try {
-      value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
-    } catch {
-      // unreadable storage or a value that is not JSON: as if nothing was chosen
-      value = null;
-    }
-    const photos = (typeof value === 'object' && value !== null ? value : {}) as Record<
-      string,
-      unknown
-    >;
-    this.chosen.set(photos['photos'] !== false);
-  }
-
-  private watchOtherTabs(): void {
-    const view = this.document.defaultView;
-    const onStorage = (event: StorageEvent) => {
-      // a null key is "everything was cleared"
-      if (event.key === STORAGE_KEY || event.key === null) {
-        this.read();
-      }
-    };
-    view?.addEventListener('storage', onStorage);
-    inject(DestroyRef).onDestroy(() => view?.removeEventListener('storage', onStorage));
+    // unreadable storage, or a value that is not what this store writes: as if nothing was chosen
+    const value = readJson(STORAGE_KEY);
+    this.chosen.set(!isRecord(value) || value['photos'] !== false);
   }
 }

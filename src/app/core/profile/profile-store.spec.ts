@@ -1,21 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of, throwError } from 'rxjs';
 
-import { HouseholdApi, HouseholdMember } from '../../data-access/household/household-api';
+import { HouseholdApi, HouseholdProfile } from '../../data-access/household/household-api';
 import { ApiError } from '../api/api-error';
 import { ProfileStore } from './profile-store';
 
 const STORAGE_KEY = 'smart-home.profile';
 
-const HOUSEHOLD: HouseholdMember[] = [
-  { name: 'Aurelia', active: true, role: 'admin', rooms: ['office'] },
-  { name: 'Borys', active: true, role: 'resident', rooms: ['loft'] },
-  { name: 'Emil', active: false, role: 'resident' },
+const HOUSEHOLD: HouseholdProfile[] = [
+  { name: 'Aurelia', role: 'admin', rooms: ['office'] },
+  { name: 'Borys', role: 'resident', rooms: ['loft'] },
 ];
 
 describe('ProfileStore', () => {
   /** What the registry answers; a test replaces it to change the household or make it fail. */
-  let registry: () => Observable<HouseholdMember[]>;
+  let registry: () => Observable<HouseholdProfile[]>;
 
   function create(stored?: unknown): ProfileStore {
     if (stored !== undefined) {
@@ -25,7 +24,7 @@ describe('ProfileStore', () => {
       );
     }
     TestBed.configureTestingModule({
-      providers: [{ provide: HouseholdApi, useValue: { members: () => registry() } }],
+      providers: [{ provide: HouseholdApi, useValue: { profiles: () => registry() } }],
     });
     return TestBed.inject(ProfileStore);
   }
@@ -130,7 +129,7 @@ describe('ProfileStore', () => {
   });
 
   describe('asking the registry again', () => {
-    it('lists the active members', async () => {
+    it('lists the members the registry answers with', async () => {
       const store = create();
 
       expect(await store.refresh()).toBe(true);
@@ -148,7 +147,8 @@ describe('ProfileStore', () => {
       expect(remembered()).toEqual({ name: 'Borys', role: 'resident', rooms: ['loft'] });
     });
 
-    it.each(['Emil', 'Zenon'])('forgets %s, who is switched off or gone', async (name) => {
+    // the registry answers with its active members only: switched off and gone look the same
+    it.each(['Emil', 'Zenon'])('forgets %s, who is no longer in the answer', async (name) => {
       const store = create({ name, role: 'resident', rooms: [] });
 
       await store.refresh();
@@ -173,7 +173,7 @@ describe('ProfileStore', () => {
     it.each([{}, null, 'ok'])(
       'treats an answer of %o as a failure, not as an empty household',
       async (answer) => {
-        registry = () => of(answer as unknown as HouseholdMember[]);
+        registry = () => of(answer as unknown as HouseholdProfile[]);
         const store = create({ name: 'Borys', role: 'resident', rooms: [] });
 
         expect(await store.refresh()).toBe(false);
@@ -195,7 +195,7 @@ describe('ProfileStore', () => {
     });
 
     it('asks once for calls made while an answer is on its way', async () => {
-      const answer = new Subject<HouseholdMember[]>();
+      const answer = new Subject<HouseholdProfile[]>();
       const members = vi.fn(() => answer);
       registry = members;
       const store = create();

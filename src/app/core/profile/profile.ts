@@ -1,4 +1,4 @@
-import { HouseholdMember } from '../../data-access/household/household-api';
+import { isRecord } from '../storage/browser-storage';
 
 export type MemberRole = 'admin' | 'resident';
 
@@ -15,14 +15,14 @@ export interface Profile {
 }
 
 /**
- * The profiles of an answer of the registry: its active members, in the order sent. Entries
- * that are not a member are skipped. Whatever is unclear is read the way that reaches the least:
- * a member is active only when the registry says `true` - not when the field is missing or is
- * anything else - and a role that is not `admin` is a resident.
+ * The profiles of an answer of the registry, in the order sent - it answers with its active
+ * members only, so everybody in it has a profile. Nothing checks an answer at runtime: entries
+ * that are not a profile are skipped, and a role that is not `admin` - missing, or one this
+ * version does not know - is a resident, the role that reaches the least.
  */
-export function toProfiles(members: readonly HouseholdMember[]): Profile[] {
-  return members.flatMap((member: unknown): Profile[] => {
-    if (!isRecord(member) || member['active'] !== true) {
+export function toProfiles(members: readonly unknown[]): Profile[] {
+  return members.flatMap((member): Profile[] => {
+    if (!isRecord(member)) {
       return [];
     }
     const name = member['name'];
@@ -78,8 +78,4 @@ function toRooms(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((room): room is string => typeof room === 'string' && room !== '')
     : [];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
