@@ -295,7 +295,7 @@ describe('ThemeStore', () => {
       );
     }
 
-    it('is the app bar of the season and scheme on screen', () => {
+    it('is the page colour of the season and scheme on screen', () => {
       stubBar({
         'autumn --app-bar-light': ' #bf360c',
         'autumn --app-bar-dark': '#8f2a0a',

@@ -53,7 +53,15 @@ export const en = {
       primary: 'Primary',
       secondary: 'Secondary',
       charts: 'Chart series',
+      domains: 'Domains',
     },
+  },
+  // the domains of the house, each with a colour of its own
+  domain: {
+    heating: 'Heating',
+    water: 'Hot water',
+    boiler: 'Boiler room',
+    household: 'Household',
   },
   // names of the seasons, as a label and inside a sentence
   season: {

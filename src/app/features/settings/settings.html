@@ -5,7 +5,7 @@
   </header>
 
   <div class="cards">
-    <mat-card class="appearance">
+    <mat-card appearance="outlined" class="appearance">
       <mat-card-header>
         <mat-card-title>{{ t('settings.appearance.title') }}</mat-card-title>
       </mat-card-header>
@@ -63,7 +63,7 @@
       </mat-card-actions>
     </mat-card>
 
-    <mat-card class="palette">
+    <mat-card appearance="outlined" class="palette">
       <mat-card-header>
         <mat-card-title>{{ t('settings.palette.title') }}</mat-card-title>
         <mat-card-subtitle>{{ t('settings.palette.lead') }}</mat-card-subtitle>
@@ -79,6 +79,18 @@
           <dd>
             @for (series of chartSeries; track series) {
               <span class="swatch" [style.background]="'var(--app-chart-' + series + ')'"></span>
+            }
+          </dd>
+          <dt>{{ t('settings.palette.domains') }}</dt>
+          <dd class="domains">
+            @for (domain of domains; track domain.name) {
+              <span class="domain">
+                <span
+                  class="swatch"
+                  [style.background]="'var(--app-domain-' + domain.name + ')'"
+                ></span>
+                {{ t(domain.label) }}
+              </span>
             }
           </dd>
         </dl>

@@ -57,6 +57,13 @@ export class Settings {
   protected readonly seasons = SEASONS;
   protected readonly seasonLabels = SEASON_LABELS;
   protected readonly chartSeries = [1, 2, 3, 4, 5];
+  /** The domains of the house with a colour of their own, in the order of the palette card. */
+  protected readonly domains: readonly { name: string; label: MessageKey }[] = [
+    { name: 'heating', label: 'domain.heating' },
+    { name: 'water', label: 'domain.water' },
+    { name: 'boiler', label: 'domain.boiler' },
+    { name: 'household', label: 'domain.household' },
+  ];
 
   protected chooseScheme(choice: SchemeChoice): void {
     this.theme.chooseScheme(choice);

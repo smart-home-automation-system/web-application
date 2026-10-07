@@ -34,12 +34,6 @@
               }
             ],
             "styles": [
-              "@fontsource/roboto/latin-400.css",
-              "@fontsource/roboto/latin-ext-400.css",
-              "@fontsource/roboto/latin-500.css",
-              "@fontsource/roboto/latin-ext-500.css",
-              "@fontsource/roboto/latin-700.css",
-              "@fontsource/roboto/latin-ext-700.css",
               "@material-symbols/font-400/outlined.css",
               "src/styles.scss"
             ]

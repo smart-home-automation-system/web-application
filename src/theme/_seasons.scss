@@ -1,12 +1,14 @@
-// The colours of the application: one neutral set, and four seasonal ones laid over it.
+// The colours of the application: one neutral set, four seasonal ones laid over it, and a colour
+// per domain of the house that stays the same all year.
 //
 // Every value lands in a `--mat-sys-*` variable (what Angular Material and all styles of this
 // application read) as `light-dark(<light>, <dark>)`, so a single declaration serves both colour
 // schemes and the browser picks by `color-scheme`. The season is chosen by the attribute
 // `data-season` on <html>, which `ThemeStore` sets.
 //
-// The look follows MUI (https://mui.com/material-ui): white "paper" on a light grey page, one
-// strong primary colour and a secondary accent, each with a lighter shade for the dark scheme.
+// The look is "Zorza" (see `_zorza.scss`): a deep navy page in the dark scheme, a pale one in the
+// light scheme, glowing softly in the two colours of the season; the cards are frosted glass over
+// it. The dark scheme is the one the look was designed in - the light scheme keeps its structure.
 //
 // `npm run check:contrast` reads these values back from the production build and fails when a
 // text / background pair drops below WCAG AA - change a colour here and run it.
@@ -16,29 +18,30 @@
 @use 'sass:math';
 
 // Per season: (light scheme, dark scheme). The dark-scheme shade is the lighter one - it sits on
-// a dark surface. `bar-dark` is the app bar in the dark scheme: a deep shade that keeps white text.
+// a dark surface. The second colour is the accent the season's glow and gradients run to.
+//
+// Spring is green, summer gold, autumn rust, winter blue: four hues that are told apart at a
+// glance in either scheme (a sea-teal summer was once indistinguishable from the winter blue).
 $seasons: (
   spring: (
     primary: (
-      #2e7d32,
+      #2a7530,
       #81c784,
     ),
     secondary: (
       #c2185b,
       #f48fb1,
     ),
-    bar-dark: #1b5e20,
   ),
   summer: (
     primary: (
+      #985a00,
+      #ffc53d,
+    ),
+    secondary: (
       #00707d,
       #4dd0e1,
     ),
-    secondary: (
-      #b84a00,
-      #ffb74d,
-    ),
-    bar-dark: #00525c,
   ),
   autumn: (
     primary: (
@@ -49,7 +52,6 @@ $seasons: (
       #6d4c41,
       #ffd54f,
     ),
-    bar-dark: #8f2a0a,
   ),
   winter: (
     primary: (
@@ -60,106 +62,131 @@ $seasons: (
       #546e7a,
       #b0bec5,
     ),
-    bar-dark: #0d47a1,
   ),
 );
 
 // What a page shows before `ThemeStore` has set the attribute (and in unit tests).
 $default-season: winter;
 
+// The colours of the house's domains, the same in every season: a card about hot water is blue
+// in July and in January. (light scheme, dark scheme) - the dark shade is the lighter one again.
+$domains: (
+  heating: (
+    #c2410c,
+    #ff9a62,
+  ),
+  water: (
+    #1d5fc4,
+    #6fb6ff,
+  ),
+  boiler: (
+    #a35a00,
+    #ffc46b,
+  ),
+  household: (
+    #6d3bd1,
+    #c2a3ff,
+  ),
+);
+
 $_white: #ffffff;
 $_black: #000000;
-$_paper-dark: #1e1e1e;
+// the page
+$_page-light: #eef0f7;
+$_page-dark: #0d0f1d;
+// a sheet of glass as it reads over the plain page - the opaque colour Material components and
+// the contrast check work with; the translucent one is `--app-glass` below
+$_paper-light: #fbfbfd;
+$_paper-dark: #151830;
 // text on a light-shade colour in the dark scheme
 $_ink: #121212;
 
 // Colours that do not change with the season: (light scheme, dark scheme).
 $_neutral: (
   background: (
-    #f5f5f5,
-    #121212,
+    $_page-light,
+    $_page-dark,
   ),
   on-background: (
-    #212121,
-    #ffffff,
+    #161a2e,
+    #f1f2fb,
   ),
   surface: (
-    $_white,
+    $_paper-light,
     $_paper-dark,
   ),
   surface-dim: (
-    #eeeeee,
-    #121212,
+    #e3e6f0,
+    $_page-dark,
   ),
   surface-bright: (
     $_white,
-    #383838,
+    #2b2f50,
   ),
-  // "paper" at rising elevation: in the light scheme the shadow tells the levels apart, in the
-  // dark scheme the surface gets lighter, as in MUI
+  // rising levels of glass: paler in the light scheme, lighter in the dark one
   surface-container-lowest: (
       $_white,
-      #121212,
+      #090b16,
     ),
   surface-container-low: (
-    $_white,
-    $_paper-dark,
+    #f8f9fc,
+    #111428,
   ),
   surface-container: (
-    $_white,
-    #2a2a2a,
+    #f4f5fa,
+    #191c38,
   ),
   surface-container-high: (
-    $_white,
-    #333333,
+    #f0f1f8,
+    #212546,
   ),
   surface-container-highest: (
-    #eeeeee,
-    #383838,
+    #e8eaf3,
+    #2b2f50,
   ),
   surface-variant: (
-    #eeeeee,
-    #383838,
+    #e8eaf3,
+    #2b2f50,
   ),
   on-surface: (
-    #212121,
-    #ffffff,
+    #161a2e,
+    #f1f2fb,
   ),
   on-surface-variant: (
-    #5f5f5f,
-    #b3b3b3,
+    #4a506b,
+    #b8bdd4,
   ),
   outline: (
-    #757575,
-    #9e9e9e,
+    #6f758f,
+    #8e94b3,
   ),
   outline-variant: (
-    #e0e0e0,
-    #3d3d3d,
+    #d5d9e6,
+    #2e3252,
   ),
   inverse-surface: (
-    #323232,
-    #fafafa,
+    #1c2038,
+    #f1f2fb,
   ),
   inverse-on-surface: (
-    $_white,
-    #212121,
+    #f1f2fb,
+    #161a2e,
   ),
   error: (
-    #d32f2f,
-    #ef9a9a,
+    #c62828,
+    #ff8a80,
   ),
   on-error: (
     $_white,
     $_ink,
   ),
   error-container: (
-    #fdeded,
-    #2a1515,
+    #fde8e8,
+    #3a1a1f,
   ),
   on-error-container: (
-    #5f2120,
-    #f4c7c7,
+    #5f1a1a,
+    #ffb4ab,
   ),
   shadow: (
     $_black,
@@ -171,12 +198,12 @@ $_neutral: (
   ),
   // two raw palette tones a few Material components read directly
   neutral10: (
-      #212121,
-      #212121,
+      #161a2e,
+      #161a2e,
     ),
   neutral-variant20: (
-    #333333,
-    #333333,
+    #2a2e4d,
+    #2a2e4d,
   ),
 );
 
@@ -200,7 +227,7 @@ $_neutral: (
 @function _accent($name, $shades) {
   $light: list.nth($shades, 1);
   $dark: list.nth($shades, 2);
-  $container: (_container($light, $_white, 12%), _container($dark, $_paper-dark, 16%));
+  $container: (_container($light, $_paper-light, 14%), _container($dark, $_paper-dark, 18%));
   $on-container: (_mix($light, $_black, 70%), _mix($dark, $_white, 80%));
 
   @return (
@@ -222,7 +249,7 @@ $_neutral: (
   $colours: map.merge(_accent(primary, $primary), _accent(tertiary, $secondary));
 
   // Material uses the "secondary container" for whatever is selected - the active navigation
-  // entry, a pressed toggle. In MUI that is a tint of the primary colour, so the container pair
+  // entry, a pressed toggle. Here that is a tint of the primary colour, so the container pair
   // comes from the primary and only the plain secondary is the accent.
   $colours: map.merge(
     $colours,
@@ -250,34 +277,65 @@ $_neutral: (
   @return $colours;
 }
 
-@mixin _emit($colours) {
+@mixin _emit($colours, $prefix: '--mat-sys-') {
   @each $name, $pair in $colours {
-    --mat-sys-#{$name}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
+    #{$prefix}#{$name}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
   }
 }
 
-// The colours every season shares.
+// The colours every season shares: the neutral set, the glass and the domains.
 @mixin neutral-colours {
   @include _emit($_neutral);
+
+  // The glass: what a card is made of (translucent - see `--mat-sys-surface` for the opaque
+  // colour it reads as over the plain page), the strip along its edge, and the thicker glass of
+  // the navigation panel.
+  --app-glass: light-dark(rgb(255 255 255 / 72%), rgb(28 31 56 / 58%));
+  --app-glass-edge: light-dark(rgb(255 255 255 / 90%), rgb(255 255 255 / 10%));
+  --app-glass-panel: light-dark(rgb(255 255 255 / 70%), rgb(13 15 29 / 55%));
+
+  // The domains, and the colour of an icon or text on a domain colour.
+  @each $name, $pair in $domains {
+    --app-domain-#{$name}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
+  }
+  --app-on-domain: light-dark(#{$_white}, #{$_ink});
+
+  // The status bar of a phone continues the page. Both shades are also given on their own:
+  // `ThemeStore` copies the one in use into <meta name="theme-color">, where `light-dark()` is
+  // not understood.
+  --app-bar-light: #{$_page-light};
+  --app-bar-dark: #{$_page-dark};
+  --app-bar: light-dark(var(--app-bar-light), var(--app-bar-dark));
+  --app-on-bar: var(--mat-sys-on-background);
 }
 
-// The colours of one season, plus the application's own variables built on them.
+// The colours of one season.
 @mixin season-colours($season) {
-  $definition: map.get($seasons, $season);
-
   @include _emit(_season-colours($season));
-
-  // The app bar. Both shades are also given on their own: `ThemeStore` copies the one in use
-  // into <meta name="theme-color">, where `light-dark()` is not understood.
-  --app-bar-light: #{list.nth(map.get($definition, primary), 1)};
-  --app-bar-dark: #{map.get($definition, bar-dark)};
 }
 
 // Variables that are the same expression in every season, because they are derived from the
 // seasonal ones above.
 @mixin derived-colours {
-  --app-bar: light-dark(var(--app-bar-light), var(--app-bar-dark));
-  --app-on-bar: #{$_white};
+  // The glow of the page: the two colours of the season, soft and wide, behind everything. The
+  // strengths are what `check:contrast` assumes under the panel (30 %), the page text (25 %)
+  // and the cards (20 %) - raise one here and raise it there.
+  --app-glow:
+    radial-gradient(
+      70vw 45vh at 8% 0%,
+      color-mix(in srgb, var(--mat-sys-primary) 30%, transparent),
+      transparent 65%
+    ),
+    radial-gradient(
+      55vw 40vh at 95% 10%,
+      color-mix(in srgb, var(--mat-sys-secondary) 25%, transparent),
+      transparent 65%
+    ),
+    radial-gradient(
+      60vw 45vh at 60% 110%,
+      color-mix(in srgb, var(--mat-sys-primary) 20%, transparent),
+      transparent 65%
+    );
 
   // Chart series, in the order they are handed out: the two accents, a second shade of each,
   // and a neutral for "everything else". All of them are colours `check:contrast` knows, so a

@@ -52,7 +52,14 @@ export const pl: Messages = {
       primary: 'Główny',
       secondary: 'Dodatkowy',
       charts: 'Serie wykresów',
+      domains: 'Domeny',
     },
+  },
+  domain: {
+    heating: 'Ogrzewanie',
+    water: 'Ciepła woda',
+    boiler: 'Kotłownia',
+    household: 'Domownicy',
   },
   season: {
     spring: 'Wiosna',

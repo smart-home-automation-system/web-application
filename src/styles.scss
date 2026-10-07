@@ -2,21 +2,24 @@
 // component and every style of this application is built from - never hard-code a colour or a
 // font, use a variable (https://material.angular.dev/guide/system-variables):
 //
-//   theme/_mui.scss      the look - type scale, corners, shadows, component details (MUI style)
-//   theme/_seasons.scss  the colours - one set per season, each for the light and the dark scheme
+//   theme/_zorza.scss    the look - type scale, corners, shadows, glass, component details
+//   theme/_seasons.scss  the colours - one set per season, each for the light and the dark
+//                        scheme, plus the glass and the colours of the domains
 //
 // <html> carries two attributes, both set by `ThemeStore`: `data-season` picks the colours, and
 // `data-color-scheme` - present only when somebody overrode the system setting - the scheme.
 @use 'sass:map';
-@use './theme/mui';
+@use './theme/zorza';
 @use './theme/seasons';
+
+@include zorza.fonts;
 
 html {
   height: 100%;
   // follow the light / dark setting of the system
   color-scheme: light dark;
 
-  @include mui.system;
+  @include zorza.system;
   @include seasons.neutral-colours;
   @include seasons.season-colours(seasons.$default-season);
   @include seasons.derived-colours;
@@ -36,7 +39,7 @@ html[data-color-scheme='dark'] {
   }
 }
 
-@include mui.components;
+@include zorza.components;
 
 body {
   margin: 0;
@@ -117,4 +120,29 @@ body {
   height: 64px;
   font-size: 64px;
   color: var(--mat-sys-on-surface-variant);
+}
+
+// A card about one domain of the house (heating, water, the boiler room, the household): the
+// domain's colour along its top edge and a tinted wash below it. `--app-domain` is set by the
+// card's own class, next to its feature: `.tile--heating { --app-domain: var(--app-domain-heating) }`.
+// (With Material's own class in the selector, because Material's card styles come after this
+// file and would otherwise take the edge back.)
+.mat-mdc-card.card--domain {
+  border-top: 3px solid var(--app-domain);
+  background-image: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--app-domain) 18%, transparent),
+    transparent 55%
+  );
+}
+
+// The round badge of a domain card (Material's avatar keeps it round): the icon of the domain on
+// its colour.
+.domain-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-domain);
+  color: var(--app-on-domain);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--app-domain) 45%, transparent);
 }

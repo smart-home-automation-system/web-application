@@ -3,19 +3,16 @@
     t('app.skipToContent')
   }}</a>
 
-  <mat-toolbar class="shell__toolbar">
+  <!-- One panel, laid out by CSS: a column on the left of a wide screen (brand, navigation,
+       language), a bar across the top of a phone (brand, language - the navigation is then the
+       bottom bar). Both navigations are in the DOM and CSS shows one, so the layout never jumps
+       while JavaScript measures the screen. -->
+  <aside class="shell__panel">
     <a class="shell__brand" routerLink="/">
-      <mat-icon>home</mat-icon>
+      <mat-icon class="shell__brand-icon">home</mat-icon>
       <span>{{ appName }}</span>
     </a>
-    <span class="shell__spacer"></span>
-    <!-- Slot of the weather strip: outdoor temperature, humidity and the rest of the weather
-         station readings land here once a service provides them. -->
-    <div class="shell__weather" data-slot="weather"></div>
-    <app-language-menu />
-  </mat-toolbar>
 
-  <div class="shell__body">
     <nav class="shell__side-nav" [attr.aria-label]="t('nav.label')">
       <mat-nav-list>
         @for (item of navItems; track item.path) {
@@ -34,10 +31,18 @@
       </mat-nav-list>
     </nav>
 
-    <main class="shell__content" id="main-content" tabindex="-1" #main>
-      <router-outlet />
-    </main>
-  </div>
+    <!-- Slot of the weather strip: outdoor temperature, humidity and the rest of the weather
+         station readings land here once a service provides them. -->
+    <div class="shell__weather" data-slot="weather"></div>
+
+    <div class="shell__panel-foot">
+      <app-language-menu />
+    </div>
+  </aside>
+
+  <main class="shell__content" id="main-content" tabindex="-1" #main>
+    <router-outlet />
+  </main>
 
   <nav class="shell__bottom-nav" [attr.aria-label]="t('nav.label')">
     @for (item of navItems; track item.path) {

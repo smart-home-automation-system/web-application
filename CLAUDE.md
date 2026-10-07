@@ -12,12 +12,16 @@ The plan this application is built from lives in Jira (HAS project, tasks labell
 ## Stack
 
 - Angular 22, standalone components, **zoneless** change detection, signals
-- TypeScript strict, SCSS, Angular Material components **dressed as MUI** (owner's choice,
-  2026-10-06: the look of https://mui.com/material-ui, not Angular Material's own Material 3) in
-  the colours of the season, light + dark following the system — see "Theme" below
-- Roboto and Material Symbols are **self-hosted** (`@fontsource/roboto`,
-  `@material-symbols/font-400`) — the application runs on a LAN and its CSP allows this origin
-  only, so nothing may be loaded from a CDN
+- TypeScript strict, SCSS, Angular Material components dressed in the **"Zorza" look** (owner's
+  choice, 2026-10-07, HAS-208: a deep page glowing in the colours of the season, cards of frosted
+  glass, a colour per domain of the house, the navigation in a panel on the left — not Angular
+  Material's own Material 3 and no longer MUI), light + dark following the system — see "Theme"
+  below
+- Plus Jakarta Sans and Material Symbols are **self-hosted**
+  (`@fontsource-variable/plus-jakarta-sans`, `@material-symbols/font-400`) — the application runs
+  on a LAN and its CSP allows this origin only, so nothing may be loaded from a CDN. The font
+  faces are declared in `_zorza.scss` (latin and latin-ext only), not through the package's
+  stylesheet, which would ship Cyrillic and Vietnamese files too
 - Two languages, switched at runtime: Transloco (`@jsverse/transloco`), English by default,
   Polish on choice — see "Languages" below
 - Unit tests: Vitest (`ng test`); browser tests: Playwright (`e2e/`); no SSR
@@ -34,7 +38,7 @@ src/app/
   data-access/    # one injectable class per backend domain (heating, water, boiler, …)
   features/       # routed features, lazy-loaded: overview, about, …
   i18n/           # the texts: en.ts (source of the keys), pl.ts
-src/theme/        # the theme: _mui.scss (the look), _seasons.scss (the colours)
+src/theme/        # the theme: _zorza.scss (the look), _seasons.scss (the colours)
 src/mocks/        # mock API: fixtures and handlers, never part of a production bundle
 src/testing/      # helpers for unit tests (i18n)
 e2e/              # Playwright tests
@@ -89,36 +93,60 @@ e2e/              # Playwright tests
 
 ## Theme
 
-The components are Angular Material; the look is MUI's, and the colours follow the season. Both
-are nothing but values of CSS variables, in two files:
+The components are Angular Material; the look is "Zorza" (aurora), and the colours follow the
+season. Both are nothing but values of CSS variables, in two files:
 
-- **`src/theme/_mui.scss` — the look.** MUI's type scale, 4 px corners, shadows and the details
-  of single components (upper-case 36 px buttons, the coloured app bar, the menu), given as
-  values of `--mat-sys-*` and of component variables through Material's `*-overrides` mixins.
-  **Restyle a component there, through its variables** — a selector reaching into Material's
-  DOM is the last resort (one exists: the shadow of a filled button) and breaks on an upgrade.
-  A Material component used for the first time is checked against its MUI counterpart and gets
-  its overrides there, in the same task. `--mat-sys-corner-full` is deliberately left alone: it
-  keeps round things round.
-- **`src/theme/_seasons.scss` — the colours.** A neutral set (page, paper, text, outline, error)
-  and per season a primary and a secondary colour, each with a light-scheme and a dark-scheme
-  shade; everything else (containers, "on" colours) is derived there. `mat.theme()` is called
-  **without colours** — no palette of Material's is in the build. Every colour is written as
-  `light-dark(<light>, <dark>)`, so one declaration serves both schemes.
+- **`src/theme/_zorza.scss` — the look.** The type scale (Plus Jakarta Sans, heavy tight
+  headings), one radius per role (24 px cards, 14 px controls, pill buttons), soft wide shadows
+  and the details of single components (glass cards, the tinted navigation entry, the segmented
+  control), given as values of `--mat-sys-*` and of component variables through Material's
+  `*-overrides` mixins. **Restyle a component there, through its variables** — a selector
+  reaching into Material's DOM is the last resort (two exist, in `components`: the blur of a
+  card, and the gradient of a filled button) and breaks on an upgrade. Material's own component
+  styles are appended **after** this stylesheet, so a rule of equal specificity on one of its
+  classes silently loses (`.mat-mdc-card { border }` did) — prefer the variable, or an appearance
+  that has one: every card is `appearance="outlined"`, because only the outlined card has an edge
+  to colour. A Material component used for the first time gets its overrides there, in the same
+  task. `--mat-sys-corner-full` is deliberately left alone: it keeps round things round.
+- **`src/theme/_seasons.scss` — the colours.** A neutral set (the deep page and its pale
+  counterpart, the glass as it reads over the page, text, outline, error), per season a primary
+  and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
+  gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` with
+  `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
+  derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
+  the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
+  both schemes. The dark scheme is the one the look was designed in; the light scheme keeps its
+  structure on a pale page.
+- **The glass.** `--mat-sys-surface*` are opaque — what Material components and the contrast
+  check work with — and stand for a sheet of glass as it reads over the plain page; the
+  translucent colour a card is actually painted with is `--app-glass` (`--app-glass-panel` for
+  the navigation, `--app-glass-edge` for the line along an edge), blurred by `--app-glass-blur`.
+  The glow behind everything is `--app-glow`, radial gradients of the season's two colours,
+  painted by the shell. A later task lays a photo of the view under that glow (HAS-209).
+- **A domain card** (a tile about heating, hot water, the boiler room or the household) carries
+  `card--domain` plus a class of its own setting `--app-domain` (`.tile--heating
+  { --app-domain: var(--app-domain-heating) }`): the colour runs along its top edge and tints it;
+  its avatar icon is a `domain-badge`. Both blocks live in `src/styles.scss`. The domain colour
+  is for the card and its badge, never for text — text on glass stays `on-surface`.
 - **Two attributes of `<html>`** select what is painted, both set by `ThemeStore`
   (`core/theme/`): `data-season` (always) and `data-color-scheme` (only while the system setting
   is overridden). The season comes from the browser clock (`seasonOf`: 21 Mar / 22 Jun / 23 Sep
   / 22 Dec), re-read at midnight and whenever the tab becomes visible. The override — season
   and scheme, on the Settings page — is for preview and lives in `localStorage['smart-home.theme']`.
-- **Application variables** next to Material's: `--app-bar` / `--app-on-bar` (the app bar — in
-  the dark scheme a deep shade of the season, not the light primary) and `--app-chart-1` … `-5`
-  (chart series, derived from the season: **a chart takes its colours from these, in order**).
-  `--app-bar-light` / `--app-bar-dark` exist as plain values because `ThemeStore` copies the one
-  in use into `<meta name="theme-color">`, which understands neither `var()` nor `light-dark()`.
+- **Application variables** next to Material's: `--app-bar` / `--app-on-bar` (the colour of the
+  page, which the status bar of a phone continues — there is no app bar any more) and
+  `--app-chart-1` … `-5` (chart series, derived from the season: **a chart takes its colours
+  from these, in order**). `--app-bar-light` / `--app-bar-dark` exist as plain values because
+  `ThemeStore` copies the one in use into `<meta name="theme-color">`, which understands neither
+  `var()` nor `light-dark()`.
 - **Selected means tinted primary**: Material paints selected things (the open navigation entry,
-  a pressed toggle) with the "secondary container"; here that pair is derived from the primary,
-  as in MUI. The season's secondary colour is an accent used on request (`--mat-sys-secondary`,
-  `--mat-sys-tertiary`), never a default.
+  a pressed toggle) with the "secondary container"; here that pair is derived from the primary.
+  The season's secondary colour is the accent the glow and the filled button's gradient run to
+  (`--mat-sys-secondary`, `--mat-sys-tertiary`), never a default for text.
+- **The shell is one panel**, laid out by CSS: a column on the left from 840 px (brand,
+  navigation list, language), a bar across the top below that (brand and language, the
+  navigation then being the bottom bar). One DOM for both, so nothing is rendered twice.
 - **Contrast is checked, not assumed**: `npm run check:contrast` reads the colours back from the
   production stylesheet and fails below WCAG AA (4.5:1 text, 3:1 control outlines) in any of the
   eight variants. A new combination of foreground and background — text on a surface level not

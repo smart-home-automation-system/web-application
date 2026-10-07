@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
@@ -10,9 +9,10 @@ import { LanguageMenu } from './language-menu';
 import { NAV_ITEMS } from './navigation';
 
 /**
- * The frame around every page: toolbar, main navigation and the routed content. The navigation
- * is a side list on wide screens and a bottom bar on phones; both are in the DOM and CSS shows
- * one of them, so the layout never jumps while JavaScript measures the screen.
+ * The frame around every page: the panel (brand, main navigation, language) and the routed
+ * content. The panel is a column on the left of a wide screen and a bar across the top of a
+ * phone, where the navigation is a bottom bar instead; both navigations are in the DOM and CSS
+ * shows one of them, so the layout never jumps while JavaScript measures the screen.
  */
 @Component({
   selector: 'app-shell',
@@ -20,7 +20,6 @@ import { NAV_ITEMS } from './navigation';
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    MatToolbarModule,
     MatListModule,
     MatIconModule,
     TranslocoDirective,
