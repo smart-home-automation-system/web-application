@@ -11,6 +11,7 @@ export const pl: Messages = {
   nav: {
     label: 'Nawigacja główna',
     overview: 'Przegląd',
+    settings: 'Ustawienia',
     about: 'O aplikacji',
   },
   language: {
@@ -29,6 +30,35 @@ export const pl: Messages = {
       switchedOff: 'Wyłączono: {{ time }}',
       loading: 'Wczytywanie stanu ogrzewania',
     },
+  },
+  settings: {
+    title: 'Ustawienia',
+    lead: 'Wygląd aplikacji w tej przeglądarce.',
+    appearance: {
+      title: 'Wygląd',
+      hint: 'Kolory same podążają za porą roku oraz jasnym lub ciemnym trybem urządzenia. Wybór dokonany tutaj służy do podglądu i jest pamiętany tylko w tej przeglądarce.',
+      scheme: 'Tryb kolorów',
+      schemeSystem: 'Systemowy',
+      schemeLight: 'Jasny',
+      schemeDark: 'Ciemny',
+      season: 'Pora roku',
+      seasonAuto: 'Automatycznie',
+      seasonNow: 'Według kalendarza, teraz: {{ season }}',
+      reset: 'Wróć do automatycznych',
+    },
+    palette: {
+      title: 'Paleta',
+      lead: 'Kolory pory roku widocznej na ekranie.',
+      primary: 'Główny',
+      secondary: 'Dodatkowy',
+      charts: 'Serie wykresów',
+    },
+  },
+  season: {
+    spring: 'Wiosna',
+    summer: 'Lato',
+    autumn: 'Jesień',
+    winter: 'Zima',
   },
   about: {
     title: 'O aplikacji',

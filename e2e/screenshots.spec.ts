@@ -36,6 +36,15 @@ for (const language of ['en', 'pl'] as const) {
         await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'about') });
       });
 
+      test('settings', async ({ page }, testInfo) => {
+        await page.goto('/settings');
+        await expect(page.getByTestId('palette')).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'settings'),
+          fullPage: true,
+        });
+      });
+
       test('not found', async ({ page }, testInfo) => {
         await page.goto('/no/such/page');
         await expect(page.getByRole('heading', { name: TEXTS[language].notFound })).toBeVisible();

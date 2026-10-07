@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 // Below this width the side navigation gives way to the bottom bar (Material "expanded" window
 // class starts at 840px).
 $wide: 840px;
@@ -13,9 +15,10 @@ $wide: 840px;
   left: -9999px;
   z-index: 10;
   padding: 8px 16px;
-  background: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-primary);
   border-radius: var(--mat-sys-corner-small);
+  box-shadow: var(--mat-sys-level3);
 
   &:focus {
     left: 8px;
@@ -23,14 +26,34 @@ $wide: 840px;
   }
 }
 
+// The app bar: the colour of the season, casting a shadow over the page below it.
 .shell__toolbar {
   flex: none;
+  position: relative;
+  z-index: 2;
   // room for the notch and the status bar of a phone in standalone mode
   padding-top: env(safe-area-inset-top);
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
   height: calc(var(--mat-toolbar-standard-height, 64px) + env(safe-area-inset-top));
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level2);
+
+  // a button on the bar is drawn in the colour of the bar's text, not in the primary colour -
+  // which is what the bar itself is made of
+  @include mat.button-overrides(
+    (
+      text-label-text-color: var(--app-on-bar),
+      text-state-layer-color: var(--app-on-bar),
+      text-ripple-color: color-mix(in srgb, var(--app-on-bar) 20%, transparent),
+    )
+  );
+  @include mat.icon-button-overrides(
+    (
+      icon-color: var(--app-on-bar),
+      state-layer-color: var(--app-on-bar),
+      ripple-color: color-mix(in srgb, var(--app-on-bar) 20%, transparent),
+    )
+  );
 }
 
 .shell__brand {
@@ -41,8 +64,9 @@ $wide: 840px;
   text-decoration: none;
   border-radius: var(--mat-sys-corner-small);
 
-  mat-icon {
-    color: var(--mat-sys-primary);
+  &:focus-visible {
+    outline: 2px solid var(--app-on-bar);
+    outline-offset: 4px;
   }
 }
 
@@ -56,17 +80,29 @@ $wide: 840px;
   min-height: 0;
 }
 
+// The drawer: a sheet of paper next to the page.
 .shell__side-nav {
   display: none;
   flex: none;
   width: 240px;
-  padding: 8px 12px;
+  padding: 8px;
   box-sizing: border-box;
   overflow-y: auto;
+  background: var(--mat-sys-surface);
   border-right: 1px solid var(--mat-sys-outline-variant);
 
   @media (min-width: $wide) {
     display: block;
+  }
+
+  // the entry of the open page: tinted, with its icon and text in the dark shade of the tint
+  // (a class of our own, set by the router - not one of Material's)
+  .shell__side-link--active {
+    --mat-list-list-item-leading-icon-color: var(--mat-sys-on-secondary-container);
+    --mat-list-list-item-hover-leading-icon-color: var(--mat-sys-on-secondary-container);
+    --mat-list-list-item-label-text-color: var(--mat-sys-on-secondary-container);
+    --mat-list-list-item-hover-label-text-color: var(--mat-sys-on-secondary-container);
+    --mat-list-list-item-focus-label-text-color: var(--mat-sys-on-secondary-container);
   }
 }
 
@@ -82,10 +118,15 @@ $wide: 840px;
   }
 }
 
+// The bottom navigation of a phone: paper lifted above the page, the open destination in the
+// primary colour with a slightly larger label.
 .shell__bottom-nav {
   flex: none;
+  position: relative;
+  z-index: 2;
   display: flex;
   background: var(--mat-sys-surface-container);
+  box-shadow: var(--mat-sys-level3);
   padding-bottom: env(safe-area-inset-bottom);
 
   @media (min-width: $wide) {
@@ -98,12 +139,16 @@ $wide: 840px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px 0 16px;
+  justify-content: center;
+  min-width: 0;
+  height: 56px;
   color: var(--mat-sys-on-surface-variant);
-  font: var(--mat-sys-label-medium);
+  font: var(--mat-sys-body-small);
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+  transition:
+    color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    font-size 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
   &:focus-visible {
     outline: 2px solid var(--mat-sys-primary);
@@ -113,26 +158,15 @@ $wide: 840px;
 
 .shell__bottom-icon {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 32px;
-  border-radius: var(--mat-sys-corner-full);
-  transition: background-color 150ms ease;
 }
 
 .shell__bottom-link--active {
-  color: var(--mat-sys-on-surface);
-  font-weight: 700;
-
-  .shell__bottom-icon {
-    background: var(--mat-sys-secondary-container);
-    color: var(--mat-sys-on-secondary-container);
-  }
+  color: var(--mat-sys-primary);
+  font-size: 0.875rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .shell__bottom-icon {
+  .shell__bottom-link {
     transition: none;
   }
 }

@@ -21,6 +21,24 @@ export async function startIn(page: Page, language: Language): Promise<void> {
   }, language);
 }
 
+export { SEASONS, type Season } from '../src/app/core/theme/season';
+
+/**
+ * Starts the application with a season and a colour scheme chosen, as if somebody had picked
+ * them in the settings on an earlier visit. Like `startIn`, it touches only the first load.
+ */
+export async function startWithTheme(
+  page: Page,
+  theme: { season?: Season; scheme?: 'light' | 'dark' },
+): Promise<void> {
+  await page.addInitScript((value) => {
+    if (sessionStorage.getItem('e2e-theme-set') === null) {
+      localStorage.setItem('smart-home.theme', JSON.stringify(value));
+      sessionStorage.setItem('e2e-theme-set', 'yes');
+    }
+  }, theme);
+}
+
 /**
  * `test` that fails when the page logs an error or throws: a broken import, a blocked resource
  * or a Content-Security-Policy violation shows up in the console long before it shows on screen.

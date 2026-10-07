@@ -43,10 +43,17 @@ the language of the browser; Polish is chosen from the toolbar, changes the open
 reload and is remembered in the browser. Dates and numbers follow the language (a 24-hour clock
 in both), and so do the labels a screen reader announces.
 
+The **colours follow the season**: green in spring, teal in summer, rust in autumn and blue in
+winter, each in a light and a dark variant that follows the setting of the device. The season is
+taken from the clock of the browser (it starts on 21 March, 22 June, 23 September and
+22 December) and changes by itself at midnight, also in a dashboard that is never reloaded. The
+**Settings** page can show any season and either scheme for preview; the choice stays in that
+browser. All eight variants are checked for WCAG AA contrast on every build.
+
 | Layer | Choice |
 |---|---|
 | Framework | Angular 22 - standalone components, zoneless change detection, signals |
-| Components | Angular Material (Material Design 3), light and dark following the system |
+| Components | Angular Material, styled after [MUI](https://mui.com/material-ui/); colours of the season, light and dark following the system |
 | Languages | Transloco, switched at runtime; English in the main bundle, Polish downloaded when chosen |
 | Fonts and icons | Roboto and Material Symbols, **self-hosted** - nothing is loaded from the internet |
 | Tests | Vitest (unit), Playwright (browser, desktop and phone layouts) |
@@ -80,6 +87,7 @@ same ones, which the compiler and a unit test both check.
 | `npm run build` | Production build into `dist/` |
 | `npm run check:i18n` | Fails when a template uses a translation key that does not exist |
 | `npm run check:bundle` | Fails when the production build contains the mock API or loads anything from another origin |
+| `npm run check:contrast` | Fails when a colour of the theme, in any season and scheme, drops below WCAG AA in the production build |
 | `npm run e2e` | Browser tests against the mock API, in a desktop and a phone layout; screenshots land in `test-results/screenshots/` |
 
 # Backend

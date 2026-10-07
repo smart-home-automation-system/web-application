@@ -14,5 +14,6 @@ export interface NavItem {
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/overview', label: 'nav.overview', icon: 'dashboard' },
+  { path: '/settings', label: 'nav.settings', icon: 'settings' },
   { path: '/about', label: 'nav.about', icon: 'info' },
 ];

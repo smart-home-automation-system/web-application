@@ -60,8 +60,8 @@ describe('application routing', () => {
     await harness.navigateByUrl('/about');
 
     expect(navigationLabels()).toEqual({
-      side: ['Overview', 'About'],
-      bottom: ['Overview', 'About'],
+      side: ['Overview', 'Settings', 'About'],
+      bottom: ['Overview', 'Settings', 'About'],
     });
   });
 
@@ -121,8 +121,8 @@ describe('application routing', () => {
       expect(page().querySelector('app-about')).toBe(content);
       expect(page().querySelector('h1')?.textContent).toContain('O aplikacji');
       expect(navigationLabels()).toEqual({
-        side: ['Przegląd', 'O aplikacji'],
-        bottom: ['Przegląd', 'O aplikacji'],
+        side: ['Przegląd', 'Ustawienia', 'O aplikacji'],
+        bottom: ['Przegląd', 'Ustawienia', 'O aplikacji'],
       });
       expect(page().querySelector('[data-testid="app-built"]')?.textContent).toContain(
         'build lokalny',

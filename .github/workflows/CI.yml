@@ -40,6 +40,9 @@ jobs:
       - name: Check the production bundle
         run: npm run check:bundle
 
+      - name: Check the contrast of the theme (WCAG AA)
+        run: npm run check:contrast
+
       - name: Install the browser for the end-to-end tests
         run: npx playwright install --with-deps chromium
 

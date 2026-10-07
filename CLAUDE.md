@@ -12,7 +12,9 @@ The plan this application is built from lives in Jira (HAS project, tasks labell
 ## Stack
 
 - Angular 22, standalone components, **zoneless** change detection, signals
-- TypeScript strict, SCSS, Angular Material (Material 3, light + dark following the system)
+- TypeScript strict, SCSS, Angular Material components **dressed as MUI** (owner's choice,
+  2026-10-06: the look of https://mui.com/material-ui, not Angular Material's own Material 3) in
+  the colours of the season, light + dark following the system — see "Theme" below
 - Roboto and Material Symbols are **self-hosted** (`@fontsource/roboto`,
   `@material-symbols/font-400`) — the application runs on a LAN and its CSP allows this origin
   only, so nothing may be loaded from a CDN
@@ -32,6 +34,7 @@ src/app/
   data-access/    # one injectable class per backend domain (heating, water, boiler, …)
   features/       # routed features, lazy-loaded: overview, about, …
   i18n/           # the texts: en.ts (source of the keys), pl.ts
+src/theme/        # the theme: _mui.scss (the look), _seasons.scss (the colours)
 src/mocks/        # mock API: fixtures and handlers, never part of a production bundle
 src/testing/      # helpers for unit tests (i18n)
 e2e/              # Playwright tests
@@ -83,6 +86,48 @@ e2e/              # Playwright tests
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
+
+## Theme
+
+The components are Angular Material; the look is MUI's, and the colours follow the season. Both
+are nothing but values of CSS variables, in two files:
+
+- **`src/theme/_mui.scss` — the look.** MUI's type scale, 4 px corners, shadows and the details
+  of single components (upper-case 36 px buttons, the coloured app bar, the menu), given as
+  values of `--mat-sys-*` and of component variables through Material's `*-overrides` mixins.
+  **Restyle a component there, through its variables** — a selector reaching into Material's
+  DOM is the last resort (one exists: the shadow of a filled button) and breaks on an upgrade.
+  A Material component used for the first time is checked against its MUI counterpart and gets
+  its overrides there, in the same task. `--mat-sys-corner-full` is deliberately left alone: it
+  keeps round things round.
+- **`src/theme/_seasons.scss` — the colours.** A neutral set (page, paper, text, outline, error)
+  and per season a primary and a secondary colour, each with a light-scheme and a dark-scheme
+  shade; everything else (containers, "on" colours) is derived there. `mat.theme()` is called
+  **without colours** — no palette of Material's is in the build. Every colour is written as
+  `light-dark(<light>, <dark>)`, so one declaration serves both schemes.
+- **Two attributes of `<html>`** select what is painted, both set by `ThemeStore`
+  (`core/theme/`): `data-season` (always) and `data-color-scheme` (only while the system setting
+  is overridden). The season comes from the browser clock (`seasonOf`: 21 Mar / 22 Jun / 23 Sep
+  / 22 Dec), re-read at midnight and whenever the tab becomes visible. The override — season
+  and scheme, on the Settings page — is for preview and lives in `localStorage['smart-home.theme']`.
+- **Application variables** next to Material's: `--app-bar` / `--app-on-bar` (the app bar — in
+  the dark scheme a deep shade of the season, not the light primary) and `--app-chart-1` … `-5`
+  (chart series, derived from the season: **a chart takes its colours from these, in order**).
+  `--app-bar-light` / `--app-bar-dark` exist as plain values because `ThemeStore` copies the one
+  in use into `<meta name="theme-color">`, which understands neither `var()` nor `light-dark()`.
+- **Selected means tinted primary**: Material paints selected things (the open navigation entry,
+  a pressed toggle) with the "secondary container"; here that pair is derived from the primary,
+  as in MUI. The season's secondary colour is an accent used on request (`--mat-sys-secondary`,
+  `--mat-sys-tertiary`), never a default.
+- **Contrast is checked, not assumed**: `npm run check:contrast` reads the colours back from the
+  production stylesheet and fails below WCAG AA (4.5:1 text, 3:1 control outlines) in any of the
+  eight variants. A new combination of foreground and background — text on a surface level not
+  listed yet — is added to `PAIRS` in `scripts/check-contrast.mjs`. Text in the primary colour
+  on a *tinted* background does not pass in every season: use the `on-…-container` colour there.
+- **Tests**: Playwright pins the date with `page.clock` (a test that depends on the season must
+  not depend on the day it runs) and starts in a variant with `startWithTheme(page, …)`. In a
+  unit test `ThemeStore` works without styles and without `matchMedia`; stub the latter to test
+  the system scheme.
 
 ## Languages
 
@@ -196,6 +241,7 @@ up in a production build.
 - `npm test` — unit tests (Vitest; single run when non-interactive)
 - `npm run check:i18n` — every translation key used in a template exists
 - `npm run build` + `npm run check:bundle` — production build and its guard
+- `npm run check:contrast` — WCAG AA contrast of the theme, read from the production build
 - `npm run e2e` — Playwright, desktop and phone projects; screenshots in `test-results/screenshots/`
 
 ## Workflow (strict)
@@ -203,8 +249,8 @@ up in a production build.
 1. Never commit to `main`. Every change goes on a **`feature/HAS-<n>`** branch, where
    `<n>` is the Jira task number (HAS project) — this is an org-wide rule. If no Jira
    task covers the change, have one created first (`jira-backlog`) or ask the user.
-2. Definition of done for any change: lint, translation-key check, unit tests, production build, bundle check and
-   the Playwright suite pass; `/code-review` of the own diff (and `/security-review` before a
+2. Definition of done for any change: lint, translation-key check, unit tests, production build, bundle check,
+   contrast check and the Playwright suite pass; `/code-review` of the own diff (and `/security-review` before a
    release), outcome recorded on the PR; visual verification in a browser for UI changes —
    desktop and phone width, light and dark — with screenshots attached to the PR.
 3. Open a PR to `main` with a plain-language description of what changed and why —
