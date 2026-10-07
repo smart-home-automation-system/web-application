@@ -88,7 +88,7 @@ same ones, which the compiler and a unit test both check.
 | `npm run check:i18n` | Fails when a template uses a translation key that does not exist |
 | `npm run check:bundle` | Fails when the production build contains the mock API or loads anything from another origin |
 | `npm run check:contrast` | Fails when a colour of the theme, in any season and scheme, drops below WCAG AA in the production build |
-| `npm run e2e` | Browser tests against the mock API, in a desktop and a phone layout; screenshots land in `test-results/screenshots/` |
+| `npm run e2e` | Browser tests against the mock API, in a desktop and a phone layout; screenshots land in `screenshots/` |
 
 # Backend
 

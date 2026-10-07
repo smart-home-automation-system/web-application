@@ -24,6 +24,19 @@ export async function startIn(page: Page, language: Language): Promise<void> {
 export { SEASONS, type Season } from '../src/app/core/theme/season';
 
 /**
+ * Where the screenshots go: the evidence a pull request points to, uploaded by CI. Deliberately
+ * not inside `test-results/` - Playwright empties that folder at the start of every run, and CI
+ * runs it twice (mock API, then the container image), which once left the upload without a
+ * single picture.
+ */
+export const SCREENSHOTS_DIR = 'screenshots';
+
+/** The file of one screenshot: `screenshots/<project>-<name>.png`. */
+export function screenshotPath(project: string, name: string): string {
+  return `${SCREENSHOTS_DIR}/${project}-${name}.png`;
+}
+
+/**
  * Starts the application with a season and a colour scheme chosen, as if somebody had picked
  * them in the settings on an earlier visit. Like `startIn`, it touches only the first load.
  */
