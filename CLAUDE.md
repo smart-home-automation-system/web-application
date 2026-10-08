@@ -164,8 +164,9 @@ e2e/              # Playwright tests
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
-- **The rooms of the heating page** (HAS-198, `features/heating/rooms`, `room-views.ts`,
-  `heater-week`) are read from `GET /heating/rooms` of `heating-service` 1.8.0, whose rule is
+- **The rooms of the heating page** (HAS-198, `features/heating/rooms` and `floors.ts`; the
+  reading of a room, the words for a heater and the week of a heater are shared with "My room",
+  in `shared/room-heating/`: `room-views.ts`, `heater-labels.ts`, `heater-week`) are read from `GET /heating/rooms` of `heating-service` 1.8.0, whose rule is
   that a missing field means "not known". `toRoomViews` keeps that rule field by field
   (`working`, `inSchedule`, a temperature, a list of heaters, a list of schedules are each
   `undefined` when absent) and the template has a text for every one of them - a new field of
@@ -181,6 +182,24 @@ e2e/              # Playwright tests
   (`aria-labelledby`) and described by its facts, and `aria-controls` is there only while the
   panel is. In a browser test scope a room to the card (`getByTestId('rooms')`): the sensor
   table carries `data-room` too.
+- **"My room" is a list of capability cards** (HAS-202, `features/my-room/`). The page renders
+  `ROOM_CAPABILITIES` (`capabilities.ts`) for the room on screen and knows none of the cards by
+  name; heating (`RoomHeating`) is the first. **A new thing a room can show or do is an entry
+  there** - a component with one required input, `room` - never a change of the page, and
+  never a placeholder for a service that does not exist yet. Four things to keep:
+  **a card is made anew for every room** (`@for (room of shown(); track room)` over a list of
+  one), so whatever it polls is for one room for as long as it lives and no answer stands under
+  the name of another - which is why `HeatingApi.watchRoom` needs no tagged answers, unlike the
+  reports of the presence page; **the rooms come from the registry and the data from the
+  heating service**, so a room the service does not have (404 with the code `NOT_FOUND_ROOM`)
+  is told in words and wins over the last answer the resource still holds, while a 404 without
+  the code stays a failure; **the choice of a room that is gone is forgotten in an effect**, not
+  hidden by a computed (hidden, it pulled the page back by itself when the room returned -
+  found in review, the lesson of the heating switch again); and **nothing about a room can be
+  pressed** - the one control of the page is the shared switch of the house, and
+  `my-room.spec` lists every control there is: a new one fails that test on purpose. A unit
+  test that renders `/room` through the real routes (`profile-pages.spec`) lets the two reads
+  of the page pass - `GET` only, so that a call that changes the house never slips through.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

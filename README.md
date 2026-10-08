@@ -57,6 +57,15 @@ dashboards:
   it stood empty - for today, 7 or 30 days, or two dates within the last 366 days. Only what
   was observed is drawn: time nobody looked at is hatched and named as such, never shown as
   absence.
+- **My room**: the page of a household member, made for the phone and a resident's whole
+  application. It shows the rooms the registry gives the profile, one at a time - a member with
+  several chooses among them, a member with none is told so. Per room: the temperature with
+  the age of its reading, the humidity when the heating service reports one, the temperature
+  the schedule asks for right now, each heater with what its relay last reported, and the
+  schedule of today. All of it is read-only; setting a temperature or a schedule is not part of
+  this application for anybody yet, and will be the administrator's alone. Under the room
+  stands the switch of the heating of the whole house - the same card as on the heating
+  dashboard, and the one thing a resident can change.
 
 Hot water, the boiler room and the presence are read-only. The landing page still shows a single tile - the
 state of the heating system; the overview proper arrives with a following task.
@@ -111,7 +120,7 @@ that - the administrator has six - it shows the first four and **More**, which l
 | Role | What the interface offers |
 |---|---|
 | `admin` | Every page. The name in the panel leads to the picker, to look at the application as somebody else; the own link leads back. |
-| `resident` | The "My room" page only. Every other address - typed by hand included - leads there, and other profiles are not offered. |
+| `resident` | The "My room" page only - their rooms, read-only, and the switch of the heating of the whole house. Every other address - typed by hand included - leads there, and other profiles are not offered. |
 
 A resident's profile is left only by opening another personal link. Where there is no address
 bar to type one into - the application installed on the home screen of a phone - a profile
@@ -219,10 +228,11 @@ Endpoints used today:
 
 | Method | Path | Used for |
 |---|---|---|
-| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating), polled every 30 s, and once more right after every change of the switch |
-| `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating), after a confirmation. Its answer is not used: the state is read again |
+| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating, my room), polled every 30 s, and once more right after every change of the switch |
+| `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating, my room), after a confirmation. Its answer is not used: the state is read again |
 | `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
 | `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating), polled every 30 s. Needs `heating-service` 1.8.0 or later |
+| `GET` | `/home/heating/rooms/{name}` | One room, by the identifier the registry gives a profile (my room), polled every 30 s for the room on screen. A 404 with the code `NOT_FOUND_ROOM` is shown as "the heating service does not know this room" |
 | `GET` | `/home/heating/floor-pump` | What the relay of the floor heating pump last reported (heating), polled every 30 s |
 | `GET` | `/home/heating/temperature/sensors` | Per room the time of the last reading, `stale` and `muted` (heating), polled every 60 s. A room that never reported is not in the answer |
 | `GET` | `/home/presence/residents/presence` | Who is at home now: per active member `present`, `since` and `lastCheckedAt` (presence), polled every 60 s. A member nothing is stored about comes as not present with no times - shown as "not observed yet", not as away |
@@ -280,8 +290,14 @@ What the application relies on, in every call:
   clock of the house, also on a phone abroad. A period the page cannot draw - an unknown day, a
   cooling period - is counted under the week, not dropped in silence.
 - **Which room is on which floor is a list in this application** (`FLOORS`,
-  `features/heating/room-views.ts`), by the room identifiers of `smart-home-sdk`; the service
+  `features/heating/floors.ts`), by the room identifiers of `smart-home-sdk`; the service
   knows no floors. A room the list does not name is shown all the same, under "Other".
+- **The rooms of a member are the registry's, the data of a room the heating service's.** "My
+  room" asks `heating-service` for each room by the identifier `database-service` gives the
+  profile. Nothing makes the two agree: a room the heating service does not have is told as
+  that, in words, not as a failure - and a room it has but knows little about (one whose
+  radiator is switched elsewhere, say) shows exactly that little: no reading, a heater without
+  a status, no schedule.
 - **Two things the heating page cannot know from the API**: after how long a sensor counts as
   silent (a setting of `heating-service`, a day unless changed - the page does not name the
   number), and *which* rooms are being heated - the answer is one flag for the whole house.
