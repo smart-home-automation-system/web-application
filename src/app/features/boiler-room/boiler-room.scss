@@ -13,8 +13,13 @@ $pipe: 4px;
 
   // as wide as the schematic in it, and no wider: boxes stretched across a wide screen were
   // mostly empty (owner, 2026-10-08)
-  width: fit-content;
-  max-width: 100%;
+  // ...on a wide screen. On a phone a card is as wide as the screen, like every card of every
+  // other view: sized by its content it came out a little narrower than its neighbours, by
+  // however much the longest word of the language left over.
+  @media (min-width: $wide) {
+    width: fit-content;
+    max-width: 100%;
+  }
 }
 
 mat-card-header {

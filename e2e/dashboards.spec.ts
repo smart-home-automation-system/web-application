@@ -151,6 +151,18 @@ test.describe('boiler room', () => {
     expect(overflow).toBe(0);
   });
 
+  // on a phone every card of every view is as wide as the screen allows
+  test('is as wide on a phone as the card of the hot water', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'phone', 'a wide screen sizes the schematic by its boxes');
+    await page.goto('/boiler');
+    const installation = await page.locator('.installation').boundingBox();
+    await page.goto('/water');
+    const temperatures = await page.getByTestId('temperatures').boundingBox();
+
+    expect(installation!.x).toBe(temperatures!.x);
+    expect(installation!.width).toBe(temperatures!.width);
+  });
+
   test('shows the devices as off, with nothing noted, just after a start of the service', async ({
     page,
   }) => {
