@@ -186,6 +186,32 @@ describe('BoilerRoom', () => {
       expect((await part('heating')).classList).toContain('circuit--supplied');
     });
 
+    // a wide screen draws one pipe out of the furnace that forks: each branch follows its pump,
+    // the stub before the fork whichever of them runs
+    it.each([
+      ['only the heating pump', { hot_water: false, heating: true }, [true, false, true]],
+      ['only the hot-water pump', { hot_water: true, heating: false }, [true, true, false]],
+      ['both pumps', { hot_water: true, heating: true }, [true, true, true]],
+      ['neither pump', { hot_water: false, heating: false }, [false, false, false]],
+    ])('draw the fork out of the furnace for %s', async (_, running, expected) => {
+      answer({
+        furnace: { working: true },
+        pumps: {
+          hot_water: { working: running.hot_water },
+          heating: { working: running.heating },
+        },
+      });
+
+      const shown = await page();
+      const flowing = ['.manifold__stub', '.manifold__branch--up', '.manifold__branch--down'].map(
+        (selector) => shown.querySelector(selector)!.classList.contains('manifold--flowing'),
+      );
+
+      expect(flowing).toEqual(expected);
+      // a drawing of what the boxes already say in words
+      expect(shown.querySelector('.manifold')?.getAttribute('aria-hidden')).toBe('true');
+    });
+
     // a pump moves the water whether or not the furnace burns
     it('follow the pump alone, also while the furnace is off', async () => {
       answer({

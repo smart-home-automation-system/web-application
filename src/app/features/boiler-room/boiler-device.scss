@@ -7,6 +7,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  // where the schematic makes a box wider than its text, it centres the text (--device-*)
+  text-align: var(--device-text, start);
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 55%, transparent);
@@ -27,6 +29,7 @@
 
 .device__head {
   display: flex;
+  justify-content: var(--device-head, flex-start);
   align-items: center;
   gap: 8px;
 }

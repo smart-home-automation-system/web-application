@@ -1,6 +1,9 @@
 // From this width the schematic runs from left to right; below it, from top to bottom in two
 // columns, one per pump. (The same step at which the shell moves its navigation to the side.)
 $wide: 840px;
+// between the two pumps of a wide screen; the fork of the pipe is measured with it
+$row-gap: 12px;
+$pipe: 4px;
 
 .installation {
   // the badge, the running devices and the flowing pipes take the colour of the boiler room;
@@ -42,15 +45,33 @@ mat-card-content {
       minmax(0, 220px) 40px
       minmax(0, 200px);
     grid-template-areas:
-      'furnace to-hot-water-pump hot-water-pump to-hot-water hot-water'
-      'furnace to-heating-pump   heating-pump   to-heating   heating';
+      'furnace manifold hot-water-pump to-hot-water hot-water'
+      'furnace manifold heating-pump   to-heating   heating';
+    // both pumps in rows of one height: the fork of the pipe is drawn for that
+    grid-auto-rows: 1fr;
     column-gap: 0;
-    row-gap: 12px;
+    row-gap: $row-gap;
   }
 }
 
+// No box is taller or wider than what it says (owner, 2026-10-08: "you cannot make cards with
+// that much empty room"). On a phone the furnace lies above its pumps, centred and wide enough
+// for both pipes to leave it; on a wide screen it stands between them.
 .schematic__furnace {
   grid-area: furnace;
+  justify-self: center;
+  min-width: 60%;
+  // wider than its text there, so the text sits in its middle instead of leaving half empty
+  --device-text: center;
+  --device-head: center;
+
+  @media (min-width: $wide) {
+    justify-self: stretch;
+    align-self: center;
+    min-width: 0;
+    --device-text: start;
+    --device-head: flex-start;
+  }
 }
 
 .schematic__hot-water-pump {
@@ -67,6 +88,63 @@ mat-card-content {
 
 .schematic__heating {
   grid-area: heating;
+}
+
+// One pipe out of the furnace that forks to the two pumps - a wide screen only. A stub from the
+// middle of the furnace, then a branch up to the middle of the upper row and one down to the
+// middle of the lower: each row is half of what is left after the gap between them, so its
+// middle lies a quarter of that from the edge.
+.manifold {
+  display: none;
+  grid-area: manifold;
+  position: relative;
+  align-self: stretch;
+
+  @media (min-width: $wide) {
+    display: block;
+  }
+}
+
+.manifold__stub,
+.manifold__branch {
+  position: absolute;
+  border: 0 solid color-mix(in srgb, var(--mat-sys-outline) 55%, transparent);
+  transition: border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.manifold__stub {
+  left: 0;
+  width: 50%;
+  top: calc(50% - #{$pipe / 2});
+  border-top-width: $pipe;
+}
+
+.manifold__branch {
+  left: calc(50% - #{$pipe / 2});
+  right: 0;
+  border-left-width: $pipe;
+}
+
+.manifold__branch--up {
+  top: calc((100% - #{$row-gap}) / 4 - #{$pipe / 2});
+  bottom: 50%;
+  border-top-width: $pipe;
+}
+
+.manifold__branch--down {
+  top: 50%;
+  bottom: calc((100% - #{$row-gap}) / 4 - #{$pipe / 2});
+  border-bottom-width: $pipe;
+}
+
+.manifold--flowing {
+  border-color: var(--app-domain);
+  // over the grey of the branch that stands
+  z-index: 1;
 }
 
 // A pipe: a short line between two boxes, down the page on a phone and across it on a wide
@@ -96,6 +174,14 @@ mat-card-content {
   background: var(--app-domain);
 }
 
+// the two straight pipes out of the furnace are those of a phone; a wide screen draws the fork
+.pipe--to-hot-water-pump,
+.pipe--to-heating-pump {
+  @media (min-width: $wide) {
+    display: none;
+  }
+}
+
 .pipe--to-hot-water-pump {
   grid-area: to-hot-water-pump;
 }
@@ -119,6 +205,13 @@ mat-card-content {
   grid-template-columns: auto minmax(0, 1fr);
   column-gap: 8px;
   align-content: center;
+  // As tall as its two lines. On a phone the pipe comes from above, so the box starts where the
+  // pipe ends; on a wide screen the pipe comes from the side, to the middle of the row.
+  align-self: start;
+
+  @media (min-width: $wide) {
+    align-self: center;
+  }
   min-width: 0;
   padding: 10px 12px;
   border: 1px dashed color-mix(in srgb, var(--mat-sys-outline) 55%, transparent);

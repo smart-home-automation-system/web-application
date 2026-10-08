@@ -32,6 +32,24 @@
               [device]="furnace()"
             />
 
+            <!-- On a wide screen the furnace stands between its two pumps, as tall as what it
+                 says, and one pipe leaves it and forks. (On a phone it lies above them, and the
+                 two straight pipes below are drawn instead.) -->
+            <span class="manifold" aria-hidden="true">
+              <span
+                class="manifold__stub"
+                [class.manifold--flowing]="hotWater.working === true || heating.working === true"
+              ></span>
+              <span
+                class="manifold__branch manifold__branch--up"
+                [class.manifold--flowing]="hotWater.working === true"
+              ></span>
+              <span
+                class="manifold__branch manifold__branch--down"
+                [class.manifold--flowing]="heating.working === true"
+              ></span>
+            </span>
+
             <span
               class="pipe pipe--to-hot-water-pump"
               [class.pipe--flowing]="hotWater.working === true"
