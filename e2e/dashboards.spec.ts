@@ -1,9 +1,165 @@
 import { expect, test, useScenario } from './support';
 
 /**
- * The hot water and the boiler room, fed by the mock API: what the pages show in the usual case,
- * just after a start of the services, and while a service fails.
+ * The heating, the hot water and the boiler room, fed by the mock API: what the pages show in
+ * the usual case, just after a start of the services, and while a service fails. The switch of
+ * the heating is pressed here and nowhere else - the mock house is the only one a test may
+ * switch.
  */
+test.describe('heating', () => {
+  test('shows the switch, whether rooms are heated and the sensors, the silent ones first', async ({
+    page,
+  }) => {
+    await page.goto('/heating');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Heating' })).toBeVisible();
+    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
+    await expect(page.getByTestId('heating-switch')).toContainText(
+      'Switched on: 28 Sept 2026, 06:45',
+    );
+    await expect(page.getByTestId('activity')).toContainText('Rooms are being heated');
+
+    const sensors = page.getByTestId('sensors');
+    await expect(sensors.getByTestId('sensor-summary')).toContainText('Silent sensors: 2 of 8.');
+    await expect(sensors.getByRole('rowheader')).toHaveText([
+      'bathroom down',
+      'garden',
+      'office',
+      'living room',
+      'bedroom',
+      'wardrobe',
+      'bathroom up',
+      'loft',
+    ]);
+    // the mock dates the readings from the call, on the clock of the house - the ages must come
+    // out the same in whatever zone this browser runs
+    await expect(sensors.getByRole('row', { name: /bathroom down/ })).toContainText('3 days ago');
+    await expect(sensors.getByRole('row', { name: /bathroom down/ })).toContainText('Silent');
+    await expect(sensors.getByRole('row', { name: /garden/ })).toContainText('Muted');
+    await expect(sensors.getByRole('row', { name: /office/ })).toContainText('2 min ago');
+    await expect(sensors.getByRole('row', { name: /office/ })).toContainText('Reporting');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('asks before it switches the heating off, and shows what the house then says', async ({
+    page,
+  }) => {
+    await page.goto('/heating');
+    const card = page.getByTestId('heating-switch');
+
+    await card.getByRole('button', { name: 'Switch off' }).click();
+
+    const question = card.getByRole('group', {
+      name: 'Switch the heating of the whole house off?',
+    });
+    await expect(question).toBeVisible();
+    await expect(question.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    // nothing has been sent yet
+    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
+
+    await question.getByRole('button', { name: 'Switch off' }).click();
+
+    await expect(page.getByTestId('heating-state')).toContainText('Disabled');
+    await expect(card).toContainText('Switched off:');
+    await expect(question).toHaveCount(0);
+    await expect(card.getByRole('button', { name: 'Switch on' })).toBeEnabled();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('switches nothing when the question is answered with "Cancel"', async ({ page }) => {
+    await page.goto('/heating');
+    const card = page.getByTestId('heating-switch');
+    await card.getByRole('button', { name: 'Switch off' }).click();
+
+    await card.getByRole('button', { name: 'Cancel' }).click();
+
+    await expect(card.getByRole('group')).toHaveCount(0);
+    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
+    await expect(card.getByRole('button', { name: 'Switch off' })).toBeFocused();
+    // a reload is the mock house as it started: had anything been sent, this would still say so
+    await expect(card).toContainText('Switched on: 28 Sept 2026, 06:45');
+  });
+
+  // the house did not carry the change out: the page says so and stays with what the house says
+  test('reports a switch that failed and returns to the state of the house', async ({ page }) => {
+    await useScenario(page, 'writes-fail');
+    await page.goto('/heating');
+    const card = page.getByTestId('heating-switch');
+
+    await card.getByRole('button', { name: 'Switch off' }).click();
+    await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
+
+    await expect(card.getByRole('alert')).toContainText(
+      'The heating could not be switched off. The service is not available right now (error 500).',
+    );
+    await expect(page.getByText('Mock scenario')).toHaveCount(0);
+    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
+    // and it can be tried again
+    await expect(card.getByRole('button', { name: 'Switch off' })).toBeEnabled();
+    await expect(page.getByTestId('offline-notice')).toBeHidden();
+  });
+
+  // a room that never reported is not in the answer of the service
+  test('says that no sensor has reported yet just after the first start of the service', async ({
+    page,
+  }) => {
+    await useScenario(page, 'no-readings');
+
+    await page.goto('/heating');
+
+    await expect(page.getByTestId('sensors')).toContainText('No sensor has reported yet.');
+    await expect(page.getByRole('table')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  // three calls feed the page: each failure is told once, in the card of its call
+  test('says in each card that the service is failing, and offers no switch', async ({ page }) => {
+    await useScenario(page, 'server-error');
+
+    await page.goto('/heating');
+
+    const alerts = page.getByRole('alert');
+    await expect(alerts).toHaveCount(3);
+    for (const alert of await alerts.all()) {
+      await expect(alert).toContainText('The service is not available right now (error 502).');
+    }
+    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
+    await expect(page.getByRole('table')).toHaveCount(0);
+  });
+
+  test('fits a phone without horizontal scrolling, the table included', async ({ page }) => {
+    await page.goto('/heating');
+    await expect(page.getByRole('table')).toBeVisible();
+
+    const overflow = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      card: (() => {
+        const card = document.querySelector('[data-testid="sensors"]')!;
+        return card.scrollWidth - card.clientWidth;
+      })(),
+    }));
+
+    expect(overflow).toEqual({ page: 0, card: 0 });
+  });
+
+  test('speaks Polish, except for the identifiers of the rooms', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('smart-home.language.Aurelia', 'pl'));
+
+    await page.goto('/heating');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Ogrzewanie' })).toBeVisible();
+    const card = page.getByTestId('heating-switch');
+    await expect(page.getByTestId('heating-state')).toContainText('Włączone');
+    await card.getByRole('button', { name: 'Wyłącz' }).click();
+    await expect(
+      card.getByRole('group', { name: 'Wyłączyć ogrzewanie całego domu?' }),
+    ).toBeVisible();
+    const row = page.getByRole('row', { name: /bathroom down/ });
+    await expect(row).toContainText('3 dni temu');
+    await expect(row).toContainText('Milczy');
+  });
+});
+
 test.describe('hot water', () => {
   test('shows both temperatures, the band on the gauge and that the water is warm enough', async ({
     page,
@@ -228,9 +384,9 @@ test.describe('the navigation with more destinations than a phone has room for',
       const bar = page.locator('.shell__bottom-nav');
       await expect(bar.locator('.shell__bottom-label')).toHaveText([
         'Overview',
+        'Heating',
         'Hot water',
         'Boiler room',
-        'My room',
         'More',
       ]);
 
@@ -239,7 +395,7 @@ test.describe('the navigation with more destinations than a phone has room for',
 
       // what did not fit is one tap further
       await bar.getByRole('button', { name: 'More' }).click();
-      await expect(page.getByRole('menuitem')).toHaveText([/Settings/, /About/]);
+      await expect(page.getByRole('menuitem')).toHaveText([/My room/, /Settings/, /About/]);
       await page.getByRole('menuitem', { name: 'About' }).click();
 
       await expect(page).toHaveURL(/\/about$/);
@@ -250,6 +406,7 @@ test.describe('the navigation with more destinations than a phone has room for',
       const side = page.locator('.shell__side-nav');
       await expect(side.getByRole('link')).toHaveText([
         /Overview/,
+        /Heating/,
         /Hot water/,
         /Boiler room/,
         /My room/,

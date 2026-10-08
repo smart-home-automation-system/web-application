@@ -22,6 +22,8 @@ const TEXTS = {
     noProfile: 'This link does not open a profile',
     install: 'Add to the Home Screen',
     warmEnough: 'Warm enough',
+    switchOff: 'Switch off',
+    disabled: 'Disabled',
     furnace: 'Furnace',
     more: 'More',
     offline: 'No connection to the house',
@@ -33,6 +35,8 @@ const TEXTS = {
     noProfile: 'Ten link nie otwiera żadnego profilu',
     install: 'Dodaj do ekranu początkowego',
     warmEnough: 'Wystarczająco ciepła',
+    switchOff: 'Wyłącz',
+    disabled: 'Wyłączone',
     furnace: 'Piec',
     more: 'Więcej',
     offline: 'Brak połączenia z domem',
@@ -73,13 +77,57 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
-      // the two dashboards, each in its usual state, just after a start of its service (nothing
+      // the switch of the heating: the question it asks, the house after the answer, and a
+      // change the house did not carry out
+      test('heating, the switch', async ({ page }, testInfo) => {
+        await page.goto('/heating');
+        const card = page.getByTestId('heating-switch');
+        await card.getByRole('button', { name: TEXTS[language].switchOff }).click();
+        await expect(card.getByRole('group')).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'heating-question'),
+        });
+
+        await card.getByRole('group').getByRole('button').last().click();
+        await expect(page.getByTestId('heating-state')).toContainText(TEXTS[language].disabled);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'heating-switched-off'),
+        });
+      });
+
+      test('heating, a switch that failed', async ({ page }, testInfo) => {
+        await useScenario(page, 'writes-fail');
+        await page.goto('/heating');
+        const card = page.getByTestId('heating-switch');
+        await card.getByRole('button', { name: TEXTS[language].switchOff }).click();
+        await card.getByRole('group').getByRole('button').last().click();
+        await expect(card.getByRole('alert')).toBeVisible();
+        await expect(card.locator('mat-progress-bar')).toHaveCount(0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'heating-switch-failed'),
+        });
+      });
+
+      // the dashboards, each in its usual state, just after a start of its service (nothing
       // measured or noted yet) and while the service fails
       for (const [scenario, suffix] of [
         ['default', ''],
         ['no-readings', '-no-readings'],
         ['server-error', '-failing'],
       ] as const) {
+        test(`heating${suffix}`, async ({ page }, testInfo) => {
+          await useScenario(page, scenario);
+          await page.goto('/heating');
+          await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
+          if (scenario === 'default') {
+            await expect(page.getByRole('table')).toBeVisible();
+          }
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, `heating${suffix}`),
+            fullPage: true,
+          });
+        });
+
         test(`hot water${suffix}`, async ({ page }, testInfo) => {
           await useScenario(page, scenario);
           await page.goto('/water');

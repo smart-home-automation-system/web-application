@@ -39,8 +39,12 @@ export interface PollingResource<T> {
   readonly loading: Signal<boolean>;
   /** True when the value on screen can no longer be trusted: too old, or the last call failed. */
   readonly stale: Signal<boolean>;
-  /** Calls now and restarts the interval; an answer still on its way is dropped. */
-  refresh(): void;
+  /**
+   * Calls now and restarts the interval; an answer still on its way is dropped. Resolves once
+   * that call has answered, one way or the other - in a hidden tab, which makes no calls, when
+   * the tab is looked at again.
+   */
+  refresh(): Promise<void>;
 }
 
 /**
@@ -68,6 +72,8 @@ export function pollingResource<T>(
   const lastUpdated = signal<number | undefined>(undefined);
   const loading = signal(true);
   const refreshRequests = new Subject<void>();
+  // whoever asked for a refresh and waits for its answer
+  let awaitingAnswer: (() => void)[] = [];
 
   const visible$ = fromEvent(document, 'visibilitychange').pipe(
     startWith(undefined),
@@ -105,6 +111,10 @@ export function pollingResource<T>(
         error.set(outcome.error);
       }
       loading.set(false);
+      // a refresh drops the call on its way, so this answer is that of the call it asked for
+      const answered = awaitingAnswer;
+      awaitingAnswer = [];
+      answered.forEach((resolve) => resolve());
     });
 
   const stale = computed(() => {
@@ -121,6 +131,10 @@ export function pollingResource<T>(
     lastUpdated: lastUpdated.asReadonly(),
     loading: loading.asReadonly(),
     stale,
-    refresh: () => refreshRequests.next(),
+    refresh: () =>
+      new Promise<void>((resolve) => {
+        awaitingAnswer.push(resolve);
+        refreshRequests.next();
+      }),
   };
 }

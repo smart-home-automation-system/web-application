@@ -1,4 +1,5 @@
 import { BoilerStatus } from '../app/data-access/boiler/boiler-api';
+import { houseTime } from './house-time';
 
 /**
  * `GET /home/boiler/status`, in the shape of a real answer: the furnace burns for the heating,
@@ -33,22 +34,3 @@ export const BOILER_STATUS_BEFORE_FIRST_LOOK: BoilerStatus = {
   furnace: { working: false },
   pumps: { hot_water: { working: false }, heating: { working: false } },
 };
-
-/**
- * A `LocalDateTime` of the house, some seconds ago: the wall clock of Europe/Warsaw, without an
- * offset, as the backend prints it.
- */
-function houseTime(now: Date, secondsAgo: number): string {
-  const parts = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Europe/Warsaw',
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(new Date(now.getTime() - secondsAgo * 1_000));
-  // "2026-10-08 11:02:41" -> "2026-10-08T11:02:41.596721"
-  return `${parts.replace(' ', 'T')}.596721`;
-}

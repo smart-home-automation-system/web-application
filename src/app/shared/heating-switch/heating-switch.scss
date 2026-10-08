@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.switch {
+  --app-domain: var(--app-domain-heating);
+}
+
+// tighter than Material's 16 px all round, like the tiles of the views this card stands among
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.switch__state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// On a domain card the text is `on-surface` or its variant - the two colours the contrast check
+// knows on the wash of a domain. What tells "enabled" from "disabled" is the stronger colour,
+// the icon and the word, not a hue.
+.switch__state--on {
+  color: var(--mat-sys-on-surface);
+}
+
+.switch__detail {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.switch__trigger {
+  margin-top: 12px;
+}
+
+// the question takes the place of the button: under a line, so it reads as a step of its own
+.switch__question {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
+
+  p {
+    margin: 0 0 8px;
+    font: var(--mat-sys-title-medium);
+    letter-spacing: var(--mat-sys-title-medium-tracking);
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.switch__answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.switch__progress {
+  margin-top: 12px;
+}

@@ -17,8 +17,10 @@ import { MOCK_HANDLERS, MockReply } from './handlers';
  * tested: set `localStorage['mock-scenario']` to `offline` (no answer at all) or `server-error`
  * (every call answers 502) and reload. A third one, `no-readings`, is not a failure: the
  * services answer as they do just after a start, before they measured or looked at anything.
+ * A fourth, `writes-fail`, answers every read as usual and every call that would change
+ * something with a 500 - the way to look at a switch that the house did not carry out.
  */
-export type MockScenario = 'default' | 'offline' | 'server-error' | 'no-readings';
+export type MockScenario = 'default' | 'offline' | 'server-error' | 'no-readings' | 'writes-fail';
 
 // check-bundle.mjs looks for this text: it must never show up in a production bundle
 const MARKER = 'smart-home-mock-api-enabled';
@@ -41,6 +43,12 @@ const mockApiInterceptor: HttpInterceptorFn = (request, next) => {
       });
     case 'no-readings':
       return answer(request, path, true);
+    case 'writes-fail':
+      return request.method === 'GET'
+        ? answer(request, path, false)
+        : fail(request, 500, {
+            errors: [{ message: 'Mock scenario: the change was not carried out' }],
+          });
     default:
       return answer(request, path, false);
   }
@@ -78,7 +86,10 @@ function fail(request: HttpRequest<unknown>, status: number, error: unknown): Ob
 function scenario(): MockScenario {
   try {
     const stored = localStorage.getItem('mock-scenario');
-    return stored === 'offline' || stored === 'server-error' || stored === 'no-readings'
+    return stored === 'offline' ||
+      stored === 'server-error' ||
+      stored === 'no-readings' ||
+      stored === 'writes-fail'
       ? stored
       : 'default';
   } catch {

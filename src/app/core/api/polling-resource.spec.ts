@@ -179,6 +179,45 @@ describe('pollingResource', () => {
     expect(load).toHaveBeenCalledTimes(3);
   });
 
+  it('tells whoever asked for a refresh when its call has answered', async () => {
+    const answers = [new Subject<string>(), new Subject<string>(), new Subject<string>()];
+    const load = vi.fn(() => answers[load.mock.calls.length - 1]);
+    const resource = create(load);
+    vi.advanceTimersByTime(0);
+    let answered = false;
+
+    void resource.refresh().then(() => (answered = true));
+    vi.advanceTimersByTime(0);
+    // the call the refresh dropped: its answer is nobody's
+    answers[0].next('late answer of the dropped call');
+    await Promise.resolve();
+
+    expect(answered).toBe(false);
+
+    answers[1].next('fresh');
+    await Promise.resolve();
+
+    expect(answered).toBe(true);
+    expect(resource.value()).toBe('fresh');
+  });
+
+  it('tells it when the call failed, too', async () => {
+    const load = vi
+      .fn<() => Observable<string>>()
+      .mockReturnValueOnce(of('value'))
+      .mockReturnValue(throwError(() => new ApiError('server', 502)));
+    const resource = create(load);
+    vi.advanceTimersByTime(0);
+    let answered = false;
+
+    void resource.refresh().then(() => (answered = true));
+    vi.advanceTimersByTime(0);
+    await Promise.resolve();
+
+    expect(answered).toBe(true);
+    expect(resource.error()?.status).toBe(502);
+  });
+
   it('stops polling when its owner is destroyed', () => {
     const load = vi.fn(() => of('value'));
     create(load);

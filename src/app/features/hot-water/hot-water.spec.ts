@@ -23,7 +23,7 @@ function fakeResource<T>(): FakeResource<T> {
     loading: signal(true),
     stale: signal(false),
     lastUpdated: signal<number | undefined>(undefined),
-    refresh: () => undefined,
+    refresh: () => Promise.resolve(),
   };
 }
 

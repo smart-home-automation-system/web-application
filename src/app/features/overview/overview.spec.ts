@@ -19,7 +19,7 @@ describe('Overview', () => {
     loading,
     stale,
     lastUpdated,
-    refresh: () => undefined,
+    refresh: () => Promise.resolve(),
   };
   let fixture: ComponentFixture<Overview>;
 

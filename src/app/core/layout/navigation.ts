@@ -22,6 +22,7 @@ export interface NavItem {
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/overview', label: 'nav.overview', icon: 'dashboard', access: 'admin' },
+  { path: '/heating', label: 'nav.heating', icon: 'mode_heat', access: 'admin' },
   { path: '/water', label: 'nav.hotWater', icon: 'water_drop', access: 'admin' },
   { path: '/boiler', label: 'nav.boilerRoom', icon: 'water_heater', access: 'admin' },
   { path: '/room', label: 'nav.myRoom', icon: 'bed', access: 'member' },

@@ -9,6 +9,9 @@ import { describeApiError } from './describe-api-error';
  * Why the last call of a polled resource failed, as a strip inside the card that shows its data:
  * `<app-api-error-strip [error]="resource.error()" />`. Renders nothing while there is no error.
  * The last value stays on screen next to it, marked stale by `<app-data-freshness>`.
+ *
+ * A failure that is not that of the data on screen - a change that was not carried out - says
+ * first what failed: `[summary]="t('heatingSwitch.failedOn')"`, a text already translated.
  */
 @Component({
   selector: 'app-api-error-strip',
@@ -17,7 +20,12 @@ import { describeApiError } from './describe-api-error';
     @if (error(); as failure) {
       <p class="strip" role="alert">
         <mat-icon>cloud_off</mat-icon>
-        <span>{{ describe(failure) | displayText }}</span>
+        <span>
+          @if (summary(); as what) {
+            {{ what }}&ngsp;
+          }
+          {{ describe(failure) | displayText }}
+        </span>
       </p>
     }
   `,
@@ -44,5 +52,7 @@ import { describeApiError } from './describe-api-error';
 })
 export class ApiErrorStrip {
   readonly error = input.required<ApiError | undefined>();
+  /** What failed, in the active language; left out where the card itself says it. */
+  readonly summary = input<string>();
   protected readonly describe = describeApiError;
 }

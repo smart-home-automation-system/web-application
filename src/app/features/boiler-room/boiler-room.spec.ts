@@ -57,7 +57,7 @@ describe('BoilerRoom', () => {
               loading,
               stale,
               lastUpdated,
-              refresh: () => undefined,
+              refresh: () => Promise.resolve(),
             }),
           },
         },
