@@ -63,21 +63,6 @@
               offLabel="boilerRoom.stopped"
               [device]="hotWater"
             />
-            <span
-              class="pipe pipe--to-hot-water"
-              [class.pipe--flowing]="hotWater.working === true"
-            ></span>
-            <div
-              class="circuit schematic__hot-water"
-              data-testid="hot-water"
-              [class.circuit--supplied]="hotWater.working === true"
-            >
-              <mat-icon class="circuit__icon">shower</mat-icon>
-              <h3 class="circuit__name">{{ t('boilerRoom.hotWater') }}</h3>
-              <p class="circuit__state">
-                {{ t(flow(hotWater)) }}
-              </p>
-            </div>
 
             <span
               class="pipe pipe--to-heating-pump"
@@ -92,21 +77,6 @@
               offLabel="boilerRoom.stopped"
               [device]="heating"
             />
-            <span
-              class="pipe pipe--to-heating"
-              [class.pipe--flowing]="heating.working === true"
-            ></span>
-            <div
-              class="circuit schematic__heating"
-              data-testid="heating"
-              [class.circuit--supplied]="heating.working === true"
-            >
-              <mat-icon class="circuit__icon">mode_heat</mat-icon>
-              <h3 class="circuit__name">{{ t('boilerRoom.heating') }}</h3>
-              <p class="circuit__state">
-                {{ t(flow(heating)) }}
-              </p>
-            </div>
           </div>
         }
         <app-api-error-strip [error]="status.error()" />

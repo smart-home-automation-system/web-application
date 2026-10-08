@@ -82,7 +82,7 @@ describe('BoilerRoom', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  type Part = 'furnace' | 'hot-water-pump' | 'heating-pump' | 'hot-water' | 'heating';
+  type Part = 'furnace' | 'hot-water-pump' | 'heating-pump';
 
   async function part(name: Part): Promise<HTMLElement> {
     return (await page()).querySelector(`[data-testid="${name}"]`)!;
@@ -105,18 +105,13 @@ describe('BoilerRoom', () => {
     expect(shown.querySelector('.schematic')).toBeNull();
   });
 
-  it('draws the furnace, both pumps and where each of them sends the heat', async () => {
+  // only what the service reports: no boxes for the tank and the circuits behind the pumps
+  it('draws the furnace and its two pumps, and nothing else', async () => {
     answer(HEATING_THE_HOUSE);
 
     const names = [...(await page()).querySelectorAll('.schematic h3')].map(words);
 
-    expect(names).toEqual([
-      'Furnace',
-      'Hot-water pump',
-      'Hot-water tank',
-      'Heating pump',
-      'Heating circuits',
-    ]);
+    expect(names).toEqual(['Furnace', 'Hot-water pump', 'Heating pump']);
     expect((await page()).querySelector('.schematic')?.getAttribute('aria-label')).toBe(
       'Schematic of the boiler room',
     );
@@ -175,15 +170,7 @@ describe('BoilerRoom', () => {
     it('are drawn as flowing along the pump that runs', async () => {
       answer(HEATING_THE_HOUSE);
 
-      expect(await pipes()).toEqual({
-        'hot-water-pump': false,
-        'hot-water': false,
-        'heating-pump': true,
-        heating: true,
-      });
-      expect(words((await part('heating')).querySelector('.circuit__state'))).toBe('Heat flowing');
-      expect(words((await part('hot-water')).querySelector('.circuit__state'))).toBe('No flow');
-      expect((await part('heating')).classList).toContain('circuit--supplied');
+      expect(await pipes()).toEqual({ 'hot-water-pump': false, 'heating-pump': true });
     });
 
     // a wide screen draws one pipe out of the furnace that forks: each branch follows its pump,
@@ -219,12 +206,7 @@ describe('BoilerRoom', () => {
         pumps: { hot_water: { working: true }, heating: { working: false } },
       });
 
-      expect(await pipes()).toEqual({
-        'hot-water-pump': true,
-        'hot-water': true,
-        'heating-pump': false,
-        heating: false,
-      });
+      expect(await pipes()).toEqual({ 'hot-water-pump': true, 'heating-pump': false });
     });
   });
 
@@ -240,7 +222,7 @@ describe('BoilerRoom', () => {
       expect(words(furnace.querySelector('.device__state'))).toBe('Off');
       expect(furnace.querySelector('.device__message')).toBeNull();
       expect(furnace.querySelector('.device__age')).toBeNull();
-      expect(Object.values(await pipes())).toEqual([false, false, false, false]);
+      expect(Object.values(await pipes())).toEqual([false, false]);
     });
 
     // JSON that is not the model must not read as "everything is off"
@@ -257,13 +239,9 @@ describe('BoilerRoom', () => {
         expect(device.getAttribute('data-state'), name).toBe('unknown');
         expect(device.classList, name).not.toContain('device--working');
       }
-      // ...and where a pump of unknown state sends the heat is unknown too, not "no flow"
-      for (const name of ['hot-water', 'heating'] as const) {
-        const circuit = await part(name);
-        expect(words(circuit.querySelector('.circuit__state')), name).toBe('No status yet');
-        expect(circuit.classList, name).not.toContain('circuit--supplied');
-      }
-      expect(Object.values(await pipes())).toEqual([false, false, false, false]);
+      // ...and no pipe of a pump of unknown state is drawn as flowing
+      expect(Object.values(await pipes())).toEqual([false, false]);
+      expect((await page()).querySelectorAll('.manifold--flowing')).toHaveLength(0);
     });
 
     // a 200 without a body: the service answered, and said nothing
@@ -277,11 +255,13 @@ describe('BoilerRoom', () => {
       expect(shown.querySelector('[role="alert"]')).toBeNull();
     });
 
-    it('tells one pump of unknown state from one that stands', async () => {
+    it('tells a pump of unknown state from one that stands', async () => {
       answer({ furnace: { working: true }, pumps: { hot_water: { working: false } } });
 
-      expect(words((await part('hot-water')).querySelector('.circuit__state'))).toBe('No flow');
-      expect(words((await part('heating')).querySelector('.circuit__state'))).toBe('No status yet');
+      expect(words((await part('hot-water-pump')).querySelector('.device__state'))).toBe('Stopped');
+      expect(words((await part('heating-pump')).querySelector('.device__state'))).toBe(
+        'No status yet',
+      );
     });
   });
 
@@ -324,9 +304,7 @@ describe('BoilerRoom', () => {
     expect([...shown.querySelectorAll('.schematic h3')].map(words)).toEqual([
       'Piec',
       'Pompa ciepłej wody',
-      'Zasobnik ciepłej wody',
       'Pompa ogrzewania',
-      'Obiegi grzewcze',
     ]);
     const pump = await part('heating-pump');
     expect(words(pump.querySelector('.device__state'))).toBe('Pracuje');

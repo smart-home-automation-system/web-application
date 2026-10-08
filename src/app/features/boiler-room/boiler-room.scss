@@ -4,6 +4,11 @@ $wide: 840px;
 // between the two pumps of a wide screen; the fork of the pipe is measured with it
 $row-gap: 12px;
 $pipe: 4px;
+// The schematic of a wide screen, column by column: a box for the furnace, the fork, a box for
+// a pump. The card is capped at their sum.
+$device: 240px;
+$link: 40px;
+$padding: 12px;
 
 .installation {
   // the badge, the running devices and the flowing pipes take the colour of the boiler room;
@@ -11,14 +16,14 @@ $pipe: 4px;
   // colour than the text on them is checked against
   --app-domain: var(--app-domain-boiler);
 
-  // as wide as the schematic in it, and no wider: boxes stretched across a wide screen were
-  // mostly empty (owner, 2026-10-08)
-  // ...on a wide screen. On a phone a card is as wide as the screen, like every card of every
-  // other view: sized by its content it came out a little narrower than its neighbours, by
-  // however much the longest word of the language left over.
+  // As wide as its place allows, up to what the schematic needs - and no wider: boxes stretched
+  // across a wide screen were mostly empty (owner, 2026-10-08). A cap, not `fit-content`: sized
+  // by its content the card was a narrow strip while it held only a progress bar or a failure,
+  // and narrower than the cards of the other views on a phone.
+  max-width: 2 * 260px + 3 * $padding + 2px;
+
   @media (min-width: $wide) {
-    width: fit-content;
-    max-width: 100%;
+    max-width: 2 * $device + $link + 2 * $padding + 2px;
   }
 }
 
@@ -27,31 +32,28 @@ mat-card-header {
 }
 
 mat-card-content {
-  padding: 12px;
+  padding: $padding;
 }
 
-// furnace -> pump -> where the heat goes, once per pump
+// furnace -> its two pumps
 .schematic {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     'furnace          furnace'
     'to-hot-water-pump to-heating-pump'
-    'hot-water-pump    heating-pump'
-    'to-hot-water      to-heating'
-    'hot-water         heating';
+    'hot-water-pump    heating-pump';
   column-gap: 12px;
   align-items: stretch;
 
   @media (min-width: $wide) {
     // each box about as wide as its longest line - the note of the service - needs
     grid-template-columns:
-      minmax(0, 220px) 40px
-      minmax(0, 220px) 40px
-      minmax(0, 200px);
+      minmax(0, $device) $link
+      minmax(0, $device);
     grid-template-areas:
-      'furnace manifold hot-water-pump to-hot-water hot-water'
-      'furnace manifold heating-pump   to-heating   heating';
+      'furnace manifold hot-water-pump'
+      'furnace manifold heating-pump';
     // both pumps in rows of one height: the fork of the pipe is drawn for that
     grid-auto-rows: 1fr;
     column-gap: 0;
@@ -85,14 +87,6 @@ mat-card-content {
 
 .schematic__heating-pump {
   grid-area: heating-pump;
-}
-
-.schematic__hot-water {
-  grid-area: hot-water;
-}
-
-.schematic__heating {
-  grid-area: heating;
 }
 
 // One pipe out of the furnace that forks to the two pumps - a wide screen only. A stub from the
@@ -193,63 +187,4 @@ mat-card-content {
 
 .pipe--to-heating-pump {
   grid-area: to-heating-pump;
-}
-
-.pipe--to-hot-water {
-  grid-area: to-hot-water;
-}
-
-.pipe--to-heating {
-  grid-area: to-heating;
-}
-
-// Where a pump sends the heat: not a device with a status of its own, so a lighter box - a name
-// and whether anything flows there.
-.circuit {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 8px;
-  align-content: center;
-  // As tall as its two lines. On a phone the pipe comes from above, so the box starts where the
-  // pipe ends; on a wide screen the pipe comes from the side, to the middle of the row.
-  align-self: start;
-
-  @media (min-width: $wide) {
-    align-self: center;
-  }
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px dashed color-mix(in srgb, var(--mat-sys-outline) 55%, transparent);
-  border-radius: var(--mat-sys-corner-small);
-  transition: border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.circuit--supplied {
-  border-style: solid;
-  border-color: var(--app-domain);
-}
-
-.circuit__icon {
-  grid-row: 1 / span 2;
-  align-self: center;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.circuit__name {
-  min-width: 0;
-  margin: 0;
-  font: var(--mat-sys-title-medium);
-  letter-spacing: var(--mat-sys-title-medium-tracking);
-  color: var(--mat-sys-on-surface);
-}
-
-.circuit__state {
-  margin: 0;
-  font: var(--mat-sys-body-small);
-  letter-spacing: var(--mat-sys-body-small-tracking);
-  color: var(--mat-sys-on-surface-variant);
 }
