@@ -119,6 +119,37 @@ describe('ProfileStore', () => {
       expect(store.profile()?.name).toBe('Borys');
     });
 
+    // the installed application starts from the own link of its member: it must not wait for
+    // an answer that takes ten seconds to not arrive
+    it('opens the link of the member already remembered before the registry answers', async () => {
+      const answer = new Subject<HouseholdProfile[]>();
+      const members = vi.fn(() => answer);
+      registry = members;
+      const store = create({ name: 'Borys', role: 'admin', rooms: [] });
+
+      expect(await store.open('BORYS')).toBe('opened');
+      expect(store.profile()?.role).toBe('admin');
+
+      // ...and the registry is asked all the same: what it says takes effect when it answers
+      expect(members).toHaveBeenCalledTimes(1);
+      answer.next(HOUSEHOLD);
+      answer.complete();
+      await vi.waitFor(() => expect(store.profile()?.role).toBe('resident'));
+    });
+
+    it('takes the profile from a member who opened their own link and is switched off since', async () => {
+      const answer = new Subject<HouseholdProfile[]>();
+      registry = () => answer;
+      const store = create({ name: 'Emil', role: 'resident', rooms: [] });
+
+      expect(await store.open('Emil')).toBe('opened');
+      answer.next(HOUSEHOLD);
+      answer.complete();
+
+      await vi.waitFor(() => expect(store.profile()).toBeUndefined());
+      expect(remembered()).toBeNull();
+    });
+
     it('replaces the profile of somebody else', async () => {
       const store = create({ name: 'Borys', role: 'resident', rooms: ['loft'] });
 

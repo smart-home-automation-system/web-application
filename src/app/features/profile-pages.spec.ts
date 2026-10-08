@@ -240,6 +240,24 @@ describe('profiles in the application', () => {
       await vi.waitFor(() => expect(url()).toBe('/room'));
     });
 
+    // the banner keeps asking the registry while the house is out of reach: its answer opens
+    // the link, nobody has to tap "Try again" under a message that is no longer true
+    it('opens the link by itself once the registry answers again', async () => {
+      await start();
+      await harness.navigateByUrl('/u/Borys');
+      await registryFails(503);
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain(
+          'The profile could not be opened',
+        ),
+      );
+
+      void TestBed.inject(ProfileStore).refresh();
+      await registryAnswers();
+
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+    });
+
     it('opens the own link of the member remembered while the registry is away', async () => {
       await start(BORYS);
       await harness.navigateByUrl('/u/borys');
@@ -247,6 +265,29 @@ describe('profiles in the application', () => {
       await registryFails(503);
 
       await vi.waitFor(() => expect(url()).toBe('/room'));
+    });
+
+    // the installed application starts from this address every time
+    it('opens the own link of the member remembered at once, without waiting for the registry', async () => {
+      await start(BORYS);
+
+      await harness.navigateByUrl('/u/borys');
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+
+      await registryAnswers();
+      expect(url()).toBe('/room');
+    });
+
+    it('asks who is using the application when the own link is of a member switched off since', async () => {
+      await start(BORYS);
+      await harness.navigateByUrl('/u/borys');
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+
+      await registryAnswers([HOUSEHOLD[0]]);
+
+      await vi.waitFor(() => expect(url()).toBe('/profiles'));
+      expect(TestBed.inject(ProfileStore).profile()).toBeUndefined();
+      await registryAnswers([HOUSEHOLD[0]]);
     });
 
     it('opens the member of the link followed last', async () => {
@@ -268,6 +309,127 @@ describe('profiles in the application', () => {
       await vi.waitFor(() => expect(url()).toBe('/room'));
 
       expect(page().textContent).toContain('No room is assigned to your profile yet.');
+    });
+  });
+
+  // Safari on an iPhone is told by a property of its navigator that no other browser has
+  describe('a personal link on an iPhone', () => {
+    function iPhone(standalone: boolean): void {
+      Object.defineProperty(navigator, 'standalone', { value: standalone, configurable: true });
+      Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
+    }
+
+    afterEach(() => {
+      delete (navigator as { standalone?: boolean }).standalone;
+      delete (navigator as { maxTouchPoints?: number }).maxTouchPoints;
+    });
+
+    it('stays under its own address in a browser tab and shows how to add it to the home screen', async () => {
+      iPhone(false);
+      await start();
+
+      await harness.navigateByUrl('/u/Borys');
+      await registryAnswers();
+
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('Add to the Home Screen'),
+      );
+      // what gets added is the address in the bar: it has to be the link, not the page it leads to
+      expect(url()).toBe('/u/Borys');
+      expect(TestBed.inject(ProfileStore).profile()).toEqual(BORYS);
+      const steps = [...page().querySelectorAll('.steps__list li span')].map((step) =>
+        step.textContent?.trim(),
+      );
+      expect(steps).toEqual([
+        'Tap the Share button of the browser.',
+        'Choose "Add to Home Screen".',
+        'Tap "Add".',
+      ]);
+    });
+
+    it('goes on to the application for whoever stays in the browser', async () => {
+      iPhone(false);
+      await start();
+      await harness.navigateByUrl('/u/Borys');
+      await registryAnswers();
+      const onward = await vi.waitFor(() => {
+        const link = page().querySelector<HTMLAnchorElement>('app-install-instructions a');
+        expect(link).toBeTruthy();
+        return link!;
+      });
+
+      onward.click();
+
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+    });
+
+    it('shows the steps to the member remembered too', async () => {
+      iPhone(false);
+      await start(BORYS);
+
+      await harness.navigateByUrl('/u/Borys');
+
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('Add to the Home Screen'),
+      );
+      await registryAnswers();
+      expect(url()).toBe('/u/Borys');
+    });
+
+    // the browser remembered them, the registry no longer has them: nothing to install
+    it('takes the steps back from a member who is switched off since', async () => {
+      iPhone(false);
+      await start(BORYS);
+      await harness.navigateByUrl('/u/Borys');
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('Add to the Home Screen'),
+      );
+
+      await registryAnswers([HOUSEHOLD[0]]);
+
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('does not open'),
+      );
+      expect(page().querySelector('app-install-instructions')).toBeNull();
+    });
+
+    it('explains the steps in Polish', async () => {
+      iPhone(false);
+      await start();
+      await useLanguage('pl');
+
+      await harness.navigateByUrl('/u/Borys');
+      await registryAnswers();
+
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('Dodaj do ekranu początkowego'),
+      );
+      expect(page().querySelector('.steps__list')?.textContent).toContain(
+        'Wybierz „Do ekranu początkowego”.',
+      );
+    });
+
+    it('goes straight on when opened from the home screen', async () => {
+      iPhone(true);
+      await start();
+
+      await harness.navigateByUrl('/u/Borys');
+      await registryAnswers();
+
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+    });
+
+    it('says nothing about the home screen when the link opens nobody', async () => {
+      iPhone(false);
+      await start();
+
+      await harness.navigateByUrl('/u/nobody');
+      await registryAnswers();
+
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('does not open'),
+      );
+      expect(page().querySelector('app-install-instructions')).toBeNull();
     });
   });
 

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,8 +15,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { ProfileStore } from '../../core/profile/profile-store';
+import { offersHomeScreen } from '../../core/pwa/install-context';
 import { describeApiError } from '../../shared/api-error/describe-api-error';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
+import { InstallInstructions } from '../install/install-instructions';
 
 /**
  * The personal link of a household member, `/u/<member>`: asks the registry for the member,
@@ -16,6 +26,12 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
  * role starts on. A link that names nobody, or somebody switched off, ends on a message that
  * says so; so does a registry that cannot be asked, with a way to try again. A profile already
  * in use is left alone in both cases.
+ *
+ * **This is also the page the application is installed from.** An icon on the home screen of a
+ * phone opens the address it was added from, and that has to be this one: the installed
+ * application keeps its own storage, apart from the browser's, so it knows nobody until the link
+ * tells it. In a browser tab of an iPhone the page therefore stays, under its own address, and
+ * shows how to add it; opened from the home screen - or anywhere else - it goes straight on.
  *
  * What comes after `/u/` is all this page knows about the link. In phase 2 it is a token instead
  * of a name; `ProfileStore.open()` is where that difference lives.
@@ -29,6 +45,7 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
     MatProgressBarModule,
     TranslocoDirective,
     DisplayTextPipe,
+    InstallInstructions,
   ],
   template: `
     <section class="message-page" *transloco="let t">
@@ -41,6 +58,9 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
             mode="indeterminate"
             [attr.aria-label]="t('personalLink.opening')"
           />
+        }
+        @case ('install') {
+          <app-install-instructions />
         }
         @case ('unknown') {
           <mat-icon class="message-page__icon">person_off</mat-icon>
@@ -71,7 +91,8 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 export class PersonalLink {
   protected readonly profiles = inject(ProfileStore);
   private readonly router = inject(Router);
-  protected readonly state = signal<'opening' | 'unknown' | 'unavailable'>('opening');
+  private readonly view = inject(DOCUMENT).defaultView;
+  protected readonly state = signal<'opening' | 'install' | 'unknown' | 'unavailable'>('opening');
   protected readonly describeApiError = describeApiError;
   private member = '';
   /** Counts the attempts, so that a slow answer cannot overrule a link opened after it. */
@@ -85,6 +106,19 @@ export class PersonalLink {
         this.member = params.get('member') ?? '';
         void this.open();
       });
+
+    // The registry is also asked behind this page - at the start, and by the banner while the
+    // house is out of reach - and what it then says must not leave the page behind:
+    effect(() => {
+      const state = this.state();
+      if (state === 'unavailable' && this.profiles.error() === undefined) {
+        // it answers again: the link can be opened after all
+        untracked(() => void this.open());
+      } else if (state === 'install' && this.profiles.profile() === undefined) {
+        // the member this browser remembered is no longer in it: there is nothing to install
+        this.state.set('unknown');
+      }
+    });
   }
 
   protected retry(): void {
@@ -98,11 +132,14 @@ export class PersonalLink {
     if (attempt !== this.attempts) {
       return;
     }
-    if (result === 'opened') {
+    if (result !== 'opened') {
+      this.state.set(result);
+    } else if (offersHomeScreen(this.view)) {
+      // stay: what gets added to the home screen is the address in the bar
+      this.state.set('install');
+    } else {
       // the start address leads everybody to the page of their role; the link leaves the history
       await this.router.navigateByUrl('/', { replaceUrl: true });
-    } else {
-      this.state.set(result);
     }
   }
 }

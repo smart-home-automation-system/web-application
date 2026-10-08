@@ -3,6 +3,7 @@ import {
   ApplicationConfig,
   computed,
   inject,
+  isDevMode,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
@@ -14,6 +15,7 @@ import {
   provideRouter,
   withNavigationErrorHandler,
 } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
 import { mockApiInterceptors } from './core/api/mock-api';
@@ -60,6 +62,13 @@ export const appConfig: ApplicationConfig = {
     // the colours of the season are in place before Angular renders the first page
     provideAppInitializer(() => {
       inject(ThemeStore);
+    }),
+    // The service worker keeps the application itself in the browser (ngsw-config.json): it
+    // starts without the network and is updated in the background. Production builds only -
+    // the dev server serves no worker, and a cached copy would get in the way of development.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
     }),
     { provide: TitleStrategy, useClass: AppTitleStrategy },
     // icons are the self-hosted Material Symbols font, not the legacy Material Icons

@@ -67,13 +67,19 @@ export class ProfileStore {
   /**
    * Opens the profile of a member, by the name a personal link carries. The registry is asked
    * first, so only somebody who is in it, and active, gets a profile. The one exception is the
-   * member this browser already remembers: their own link - the bookmark they open the
-   * application with - works while the registry is away, like the rest of the application.
+   * member this browser already remembers: their own link is the address the installed
+   * application starts from, every time, so it opens at once - also while the registry is slow
+   * or away, like the rest of the application. The registry is asked on the side, as at every
+   * start, and a member it no longer answers with loses the profile when it does.
    */
   async open(member: string): Promise<OpenResult> {
+    const current = this.active();
+    if (current !== undefined && sameName(current.name, member)) {
+      void this.refresh();
+      return 'opened';
+    }
     if (!(await this.refresh())) {
-      const current = this.active();
-      return current !== undefined && sameName(current.name, member) ? 'opened' : 'unavailable';
+      return 'unavailable';
     }
     const found = this.registry()?.find((candidate) => sameName(candidate.name, member));
     if (found === undefined) {

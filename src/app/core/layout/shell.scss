@@ -199,8 +199,17 @@ $panel-width: 220px;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
-.shell__content {
+// The column of the page: the notices on top, the page itself scrolling below them.
+.shell__column {
   grid-area: content;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.shell__content {
+  flex: 1;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;

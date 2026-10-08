@@ -1,0 +1,69 @@
+// Takes no room while there is nothing to say - but stays rendered: a live region that appears
+// together with its first words is often not read out.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  // nothing but the comments Angular leaves for its conditions
+  &:not(:empty) {
+    // in line with the page below, and clear of the rounded corners of a phone held sideways
+    padding: 12px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+
+    @media (min-width: 840px) {
+      padding: 16px 28px 0;
+    }
+  }
+}
+
+// A strip above the page: opaque, in the "container" pair of its colour - the two pairs
+// `check:contrast` knows as text on a tinted background.
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 16px;
+  border-radius: var(--mat-sys-corner-small);
+  box-shadow: var(--mat-sys-level2);
+}
+
+.notice--offline {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  // the label of a text button is the season's colour; on the error strip it is the strip's own
+  --mat-button-text-label-text-color: var(--mat-sys-on-error-container);
+  --mat-button-text-state-layer-color: var(--mat-sys-on-error-container);
+  --mat-button-text-ripple-color: color-mix(
+    in srgb,
+    var(--mat-sys-on-error-container) 12%,
+    transparent
+  );
+}
+
+.notice--update {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.notice__icon {
+  flex: none;
+}
+
+.notice__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: var(--mat-sys-body-large);
+  letter-spacing: var(--mat-sys-body-large-tracking);
+}
+
+// the time of the last contact: a line of its own on a phone, where the sentence already wraps
+.notice__detail {
+  display: block;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+}
+
+.notice button {
+  flex: none;
+}

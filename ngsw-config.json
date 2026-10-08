@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "shell",
+      "installMode": "prefetch",
+      "resources": {
+        "files": [
+          "/index.html",
+          "/manifest.webmanifest",
+          "/favicon.ico",
+          "/icon.svg",
+          "/apple-touch-icon.png",
+          "/icons/*.png",
+          "/*.css",
+          "/*.js",
+          "/media/*"
+        ]
+      }
+    },
+    {
+      "name": "backgrounds",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": ["/backgrounds/*.webp"]
+      }
+    }
+  ],
+  "navigationUrls": [
+    "/**",
+    "!/**/*.*",
+    "!/**/*__*",
+    "!/**/*__*/**",
+    "!/home",
+    "!/home/**",
+    "!/healthz"
+  ]
+}
