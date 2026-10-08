@@ -11,6 +11,7 @@ argument of the script) - by as little as makes `npm run check:contrast` pass.
 | Name | View | Generated |
 |---|---|---|
 | `home` | Overview | 2026-10-07, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
+| `heating` | Heating | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `water` | Hot water | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `boiler` | Boiler room | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 
@@ -30,6 +31,20 @@ one.
 
 Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; the owner chose the
 picture on 2026-10-07 (HAS-209).
+
+### `heating`
+
+> Photorealistic wide interior photograph of a modern living room at dusk, clearly a heated home
+> in the cold season: a flat white panel radiator under a large window, a wall thermostat beside
+> it, a sofa with a wool blanket, light oak floor; outside the window a cold blue evening. Even,
+> soft, mid-toned light across the whole frame, especially along the top: no bright lamp, no
+> black window frame, no deep shadows at the top. No people, no text, no brand logos. Calm
+> composition with free wall area so that user-interface cards can be laid over the picture.
+> Realistic interior photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-08 (HAS-196). Tones untouched: asking for even, mid-toned light at the top was
+enough for the title in both schemes.
 
 ### `water`
 

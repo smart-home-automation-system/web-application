@@ -488,6 +488,7 @@ describe('profiles in the application', () => {
 
       expect(sideNavigation()).toEqual([
         'Overview',
+        'Heating',
         'Hot water',
         'Boiler room',
         'My room',

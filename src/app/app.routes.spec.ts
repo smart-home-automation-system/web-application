@@ -46,6 +46,7 @@ describe('routes', () => {
   // silently show the plain glow
   it.each([
     ['overview', 'home'],
+    ['heating', 'heating'],
     ['water', 'water'],
     ['boiler', 'boiler'],
   ])('name the photo of /%s under the key the background layer reads', (path, photo) => {

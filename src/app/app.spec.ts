@@ -70,8 +70,8 @@ describe('application routing', () => {
     await harness.navigateByUrl('/about');
 
     expect(navigationLabels()).toEqual({
-      side: ['Overview', 'Hot water', 'Boiler room', 'My room', 'Settings', 'About'],
-      bottom: ['Overview', 'Hot water', 'Boiler room', 'My room', 'More'],
+      side: ['Overview', 'Heating', 'Hot water', 'Boiler room', 'My room', 'Settings', 'About'],
+      bottom: ['Overview', 'Heating', 'Hot water', 'Boiler room', 'More'],
     });
   });
 
@@ -88,10 +88,14 @@ describe('application routing', () => {
     await settle();
 
     const offered = [...document.querySelectorAll<HTMLAnchorElement>('a[mat-menu-item]')];
-    expect(offered.map((entry) => entry.getAttribute('href'))).toEqual(['/settings', '/about']);
+    expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
+      '/room',
+      '/settings',
+      '/about',
+    ]);
     expect(
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
-    ).toEqual(['Settings', 'About']);
+    ).toEqual(['My room', 'Settings', 'About']);
     document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
   });
 
@@ -169,8 +173,16 @@ describe('application routing', () => {
       expect(page().querySelector('app-about')).toBe(content);
       expect(page().querySelector('h1')?.textContent).toContain('O aplikacji');
       expect(navigationLabels()).toEqual({
-        side: ['Przegląd', 'Ciepła woda', 'Kotłownia', 'Mój pokój', 'Ustawienia', 'O aplikacji'],
-        bottom: ['Przegląd', 'Ciepła woda', 'Kotłownia', 'Mój pokój', 'Więcej'],
+        side: [
+          'Przegląd',
+          'Ogrzewanie',
+          'Ciepła woda',
+          'Kotłownia',
+          'Mój pokój',
+          'Ustawienia',
+          'O aplikacji',
+        ],
+        bottom: ['Przegląd', 'Ogrzewanie', 'Ciepła woda', 'Kotłownia', 'Więcej'],
       });
       expect(page().querySelector('[data-testid="app-built"]')?.textContent).toContain(
         'build lokalny',

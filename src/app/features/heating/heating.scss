@@ -1,0 +1,152 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+  max-width: 960px;
+  // a card is as tall as what it has to say, not as its neighbour
+  align-items: start;
+}
+
+// every card here is of the heating domain: its colour on the edge and the badge
+.tile {
+  --app-domain: var(--app-domain-heating);
+}
+
+// The table takes a row of its own, as wide as two cards and no wider. (Not `span 2`: where
+// the grid has room for one column only - a phone, and a window just wide enough for the side
+// panel - a span of two would add a column that is not there.)
+.tile--sensors {
+  grid-column: 1 / -1;
+  max-width: 636px;
+}
+
+// tighter than Material's 16 px all round: the tiles are read, not touched
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.tile__state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// On a domain card the text is `on-surface` or its variant - the two colours the contrast check
+// knows on the wash of a domain. What tells "heating" from "not heating" is the stronger colour,
+// the icon and the words, not a hue.
+.tile__state--on {
+  color: var(--mat-sys-on-surface);
+}
+
+.tile__detail {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.sensors__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.sensors__summary--silent {
+  color: var(--mat-sys-on-surface);
+}
+
+.sensors__table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+
+  th,
+  td {
+    padding: 6px 8px 6px 0;
+    text-align: left;
+    vertical-align: top;
+    border-top: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
+  }
+
+  th:last-child,
+  td:last-child {
+    padding-right: 0;
+  }
+
+  thead th {
+    border-top: 0;
+    font: var(--mat-sys-label-medium);
+    letter-spacing: var(--mat-sys-label-medium-tracking);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+// an identifier of the backend ("living room"), shown as a name
+.sensors__room {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.sensors__age {
+  display: block;
+  // the digits keep their width, so the column does not shake when an age changes
+  font-variant-numeric: tabular-nums;
+}
+
+.sensors__time {
+  display: block;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.sensors__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+// "reporting" is the usual case and stays quiet: a word in a thin outline
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 60%, transparent);
+  border-radius: var(--mat-sys-corner-full);
+  font: var(--mat-sys-label-medium);
+  letter-spacing: var(--mat-sys-label-medium-tracking);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+// the size of the letters next to it; with Material's own class, whose 24 px box comes later
+// in the stylesheet and would otherwise win
+.mat-icon.badge__icon {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+}
+
+// the one that asks for attention: the pair of colours made for a failure
+.badge--silent {
+  border-color: transparent;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.sensors__legend {
+  margin-top: 8px;
+}

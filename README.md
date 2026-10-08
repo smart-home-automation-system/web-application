@@ -34,17 +34,23 @@ it holds no data and no logic of its own beyond presentation.
 
 It has the **application shell** - the layout and navigation, the foundation every dashboard is
 built on (API client, polling, error handling, house time, two languages, the profiles of the
-household), the mock API for development, and the delivery pipeline - and the first two
-dashboards, both read-only:
+household), the mock API for development, and the delivery pipeline - and the first three
+dashboards:
 
+- **Heating**: the switch of the whole heating system, whether any room is being heated right
+  now, and the temperature sensors - when each room last reported, which sensor has fallen
+  silent and which is left out of the alerts. The switch is the one control of the application
+  that changes the house: it asks before it acts, and what it shows afterwards is what the
+  house answers when asked again, never what was clicked.
 - **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
   circulation, and whether the water asks to be heated.
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
-The landing page still shows a single tile - the switch of the heating system; the heating
-dashboards and the overview proper arrive with the following tasks.
+Hot water and the boiler room are read-only. The landing page still shows a single tile - the
+state of the heating system; the room view of the heating and the overview proper arrive with
+the following tasks.
 
 Everybody in the household has a **profile**, opened by a personal link and remembered in the
 browser: the administrator gets the whole application, a resident their own page - see
@@ -171,8 +177,12 @@ this repository is public.
 
 The mock API can be switched into another mode, to look at the states that are hard to come by:
 in the browser console set `localStorage['mock-scenario']` to `offline` (no answer at all),
-`server-error` (every call answers 502) or `no-readings` (the services answer as they do just
-after a start, before anything was measured) and reload; remove the key to go back.
+`server-error` (every call answers 502), `no-readings` (the services answer as they do just
+after a start, before anything was measured) or `writes-fail` (reads answer as usual, every
+change answers 500 - a heating switch the house did not carry out) and reload; remove the key
+to go back. The heating of the mock house can be switched: it lives in the memory of the page,
+and a reload is the house as it started. **`npm start` talks to the real gateway - the switch
+pressed there switches the real heating.**
 
 Texts live in `src/app/i18n/` - `en.ts` is the source of the keys and `pl.ts` has to carry the
 same ones, which the compiler and a unit test both check.
@@ -198,7 +208,10 @@ Endpoints used today:
 
 | Method | Path | Used for |
 |---|---|---|
-| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile), polled every 30 s |
+| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating), polled every 30 s, and once more right after every change of the switch |
+| `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating), after a confirmation. Its answer is not used: the state is read again |
+| `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
+| `GET` | `/home/heating/temperature/sensors` | Per room the time of the last reading, `stale` and `muted` (heating), polled every 60 s. A room that never reported is not in the answer |
 | `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation (hot water), polled every 30 s. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room), polled every 30 s |
@@ -226,6 +239,13 @@ What the application relies on, in every call:
 - **Timeouts**: a call that gets no answer within 10 s is aborted and reported as a connection
   failure, so a backend that accepts a request and never answers cannot leave a view loading
   forever.
+- **A change is never assumed to have worked - or to have failed**: after `POST /home/heating`
+  the state is read again, whatever the change answered, and the page shows that. A change
+  that got no answer is told as "may not have been carried out", and the notice goes once the
+  house is in the state that was asked for.
+- **Two things the heating page cannot know from the API**: after how long a sensor counts as
+  silent (a setting of `heating-service`, a day unless changed - the page does not name the
+  number), and *which* rooms are being heated - the answer is one flag for the whole house.
 - **No answer is kept**: every call carries the header `ngsw-bypass`, which sends it past the
   service worker untouched. The gateway ignores the header.
 - **Out of reach**: two calls in a row without any answer raise the banner "No connection to

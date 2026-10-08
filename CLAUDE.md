@@ -40,7 +40,7 @@ src/app/
   i18n/           # the texts: en.ts (source of the keys), pl.ts
 src/theme/        # the theme: _zorza.scss (the look), _seasons.scss (the colours)
 src/mocks/        # mock API: fixtures and handlers, never part of a production bundle
-src/testing/      # helpers for unit tests (i18n)
+src/testing/      # helpers for unit tests (i18n, a polled resource set by hand)
 e2e/              # Playwright tests
 ```
 
@@ -60,6 +60,26 @@ e2e/              # Playwright tests
   call share a card, or its freshness and its failure are told twice (the two temperatures of
   the hot water did, until a review). The freshness is that of the *call*: where the answer
   carries no time of its own (`water/status/temperature`), say so in the data-access class.
+- **A change of the house has no optimistic state** (HAS-196, the heating switch): the
+  data-access class returns the polled resource together with the way to change it
+  (`HeatingApi.watchSwitch()`: `turn()`, `switching`, `switchFailure`). The change is sent, then
+  the state is **read again** (`await resource.refresh()`, which resolves when that call has
+  answered) and only that answer moves what is on screen - also after a change that failed or
+  got no answer, which may have been carried out all the same. The answer of the `POST` itself
+  is not used. A failed change is told in the card (`<app-api-error-strip [summary]>`), next to
+  the state the service gives. A write on its way is never aborted with its component. Three
+  things the review of it found, each with a test: a change that got **no answer** (`network`)
+  is not "could not be switched" - it may have been carried out, so it is worded as such and
+  the notice goes once the house is in the state asked for; **what depends on the changed
+  state is asked again too** (the page refreshes "rooms are being heated" when the switch has
+  been read back); and `refresh()` lets go of whoever waits when the owner of the resource is
+  destroyed.
+- **A control that changes the house asks first, in the card itself** - the button is replaced
+  by the question and two buttons, "Cancel" takes the focus, and the question goes away **for
+  good** when the state it was asked in goes (`shared/heating-switch`: cleared in an effect,
+  not hidden by a computed - a hidden question came back by itself with the next change). A template
+  reference must not carry the name of a method the template calls (`#cancel` next to
+  `cancel()` does not compile).
 - **The service worker never sees a backend call**: `ApiClient` sends `ngsw-bypass` with every
   request. Never call the backend around `ApiClient`, and never add a data group to
   `ngsw-config.json` - see "Installed application" below.
@@ -475,11 +495,19 @@ up in a production build.
   typed with the data-access model — a new call without one answers 404, like the gateway.
 - Fixtures mirror real gateway answers in shape and use **invented names and values only**:
   this repository is public, the household is not.
-- Scenarios: `localStorage['mock-scenario']` = `offline` | `server-error` | `no-readings` - the
-  last one is no failure: the services answer as just after a start (an empty 200, devices
-  nothing is noted about). A handler gets it as its second argument (`fresh`).
+- Scenarios: `localStorage['mock-scenario']` = `offline` | `server-error` | `no-readings` |
+  `writes-fail`. `no-readings` is no failure: the services answer as just after a start (an
+  empty 200, devices nothing is noted about, no sensor) - a handler gets it as its second
+  argument (`fresh`). `writes-fail` answers every read as usual and every other call with a
+  500: the way to look at a switch the house did not carry out.
+- **The mock house can be switched**: `POST /home/heating` changes what the next reads answer,
+  in the memory of the page - a reload is the house as it started. A fixture that a write
+  changes is a function over that state (`heatingStatus()`), with a reset for the unit tests.
 - A fixture with a time in it that the page shows as an *age* is a function of "now"
-  (`boilerStatus()`): a fixed time reads as a service that stopped reporting.
+  (`boilerStatus()`, built with `houseTime()` of `src/mocks/house-time.ts`): a fixed time reads
+  as a service that stopped reporting. Make it a little older than a round age (3 min 5 s, not
+  3 min) - the page counts from a clock that ticks every few seconds, and a test that expects
+  "3 min ago" would now and then read "2 min ago".
 - Playwright runs against the mock API, so a browser test can never switch a real device.
   **Never point a test at the cluster for anything that writes** (the heating switch, the
   household registry); reading is fine.

@@ -1,7 +1,12 @@
 import { HttpRequest } from '@angular/common/http';
 
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
-import { HEATING_STATUS } from './heating.fixtures';
+import {
+  heatingActivity,
+  heatingStatus,
+  temperatureSensors,
+  turnHeating,
+} from './heating.fixtures';
 import { HOUSEHOLD_PROFILES } from './household.fixtures';
 import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
 
@@ -23,7 +28,24 @@ export interface MockHandler {
  * gateway in shape - and use invented names and values only: this repository is public.
  */
 export const MOCK_HANDLERS: readonly MockHandler[] = [
-  { method: 'GET', path: '/home/heating', reply: () => ({ status: 200, body: HEATING_STATUS }) },
+  { method: 'GET', path: '/home/heating', reply: () => ({ status: 200, body: heatingStatus() }) },
+  {
+    // the switch of the mock house: the next read of the status answers with what was set here
+    method: 'POST',
+    path: '/home/heating',
+    reply: (request) => ({ status: 200, body: turnHeating(request.params.get('turn')) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/heating/status/active',
+    reply: () => ({ status: 200, body: heatingActivity() }),
+  },
+  {
+    method: 'GET',
+    path: '/home/heating/temperature/sensors',
+    // a room that never reported is not in the answer: just after the first start there is none
+    reply: (_, fresh) => ({ status: 200, body: fresh ? [] : temperatureSensors() }),
+  },
   {
     method: 'GET',
     path: '/home/household/profiles',

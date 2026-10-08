@@ -1,0 +1,84 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="switch card--domain" data-testid="heating-switch">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>mode_heat</mat-icon></div>
+      <mat-card-title>{{ t('heatingSwitch.title') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="control().lastUpdated()" [stale]="control().stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (control().loading()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('heatingSwitch.loading')" />
+      } @else {
+        @let on = enabled();
+        @if (on !== undefined) {
+          <p class="switch__state" [class.switch__state--on]="on" data-testid="heating-state">
+            <mat-icon>{{ on ? 'check_circle' : 'do_not_disturb_on' }}</mat-icon>
+            {{ t(on ? 'heatingSwitch.enabled' : 'heatingSwitch.disabled') }}
+          </p>
+          @if (since(); as time) {
+            <p class="switch__detail">
+              {{
+                t(on ? 'heatingSwitch.switchedOn' : 'heatingSwitch.switchedOff', {
+                  time: time | houseDateTime,
+                })
+              }}
+            </p>
+          }
+
+          @let change = question();
+          @if (change !== undefined) {
+            <div class="switch__question" role="group" [attr.aria-labelledby]="questionId">
+              <p [id]="questionId">
+                {{ t(change ? 'heatingSwitch.confirmOn' : 'heatingSwitch.confirmOff') }}
+              </p>
+              <div class="switch__answers">
+                <button #cancelButton matButton type="button" (click)="cancel()">
+                  {{ t('heatingSwitch.cancel') }}
+                </button>
+                <button matButton="filled" type="button" (click)="confirm(change)">
+                  {{ t(change ? 'heatingSwitch.turnOn' : 'heatingSwitch.turnOff') }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            <!-- disabled and still focusable while a change is on its way: the focus stays
+                 where it was, and a screen reader hears why the button does nothing -->
+            <button
+              #triggerButton
+              matButton="outlined"
+              type="button"
+              class="switch__trigger"
+              disabledInteractive
+              [disabled]="control().switching()"
+              (click)="ask(!on)"
+            >
+              <mat-icon>power_settings_new</mat-icon>
+              {{ t(on ? 'heatingSwitch.turnOff' : 'heatingSwitch.turnOn') }}
+            </button>
+          }
+        } @else if (!control().error()) {
+          <p class="switch__detail">{{ t('heatingSwitch.unknown') }}</p>
+        }
+
+        @if (control().switching()) {
+          <mat-progress-bar
+            class="switch__progress"
+            mode="indeterminate"
+            [attr.aria-label]="t('heatingSwitch.switching')"
+          />
+        }
+        @if (failure(); as failed) {
+          <app-api-error-strip
+            data-testid="switch-failure"
+            [error]="failed.error"
+            [summary]="t(failureText(failed))"
+          />
+        }
+        <app-api-error-strip [error]="control().error()" />
+      }
+    </mat-card-content>
+  </mat-card>
+</ng-container>
