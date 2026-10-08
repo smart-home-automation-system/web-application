@@ -260,6 +260,32 @@ describe('groupByFloor', () => {
     ]);
   });
 
+  // the fifteen rooms heating-service answers with: none of them is left for "Other"
+  it('has a floor for every room of the house', () => {
+    const house = [
+      'office',
+      'tobi',
+      'livia',
+      'bedroom',
+      'wardrobe',
+      'bathroom up',
+      'loft',
+      'living room',
+      'cinema',
+      'bathroom down',
+      'entrance',
+      'garage',
+      'sanctum',
+      'sauna',
+      'garden',
+    ];
+
+    const floors = grouped(...house);
+
+    expect(floors.map(([id]) => id)).toEqual(['ground', 'upper', 'attic', 'outside']);
+    expect(floors.at(-1)).toEqual(['outside', ['sanctum', 'sauna', 'garden']]);
+  });
+
   it('leaves out a floor without a room in the answer', () => {
     expect(grouped('loft')).toEqual([['attic', ['loft']]]);
   });
