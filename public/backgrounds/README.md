@@ -33,16 +33,23 @@ picture on 2026-10-07 (HAS-209).
 
 ### `water`
 
-> Photorealistic wide interior photograph of a modern minimalist bathroom at blue hour: a walk-in
-> rain shower behind clear glass with soft steam, matte stone walls, a large window with deep
-> navy dusk sky, warm indirect light along the ceiling. No people, no text. Calm, quiet
-> composition with large empty wall and floor areas so that user-interface cards can be laid over
-> the picture. Soft natural light, subtle haze, realistic architecture photography, 16:9.
+> Photorealistic wide interior photograph of a modern home bathroom at dusk, clearly recognisable
+> as a bathroom: a washbasin on a wooden vanity with a tap, a round mirror above it, a soap
+> dispenser, a toothbrush cup and a small plant; next to it a wall-mounted heated towel rail
+> (ladder radiator) with a folded towel hanging on it; a walk-in shower with a glass screen and a
+> rain shower head in the background; matte stone-grey wall tiles. Even, soft, mid-toned light
+> across the whole frame, especially along the top of the picture: no bright light strips, no
+> black window frame, no deep shadows at the top. No people, no text, no brand logos. Calm
+> composition with some free wall area so that user-interface cards can be laid over the picture.
+> Realistic interior photography, 16:9.
 
 Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
-owner on 2026-10-08 (HAS-195). Tones `36-232`: the black frame of the window and the white strip
-of light, both in the top band where the title lies, were too far apart for one title colour per
-scheme.
+owner on 2026-10-08 (HAS-195). Tones `0-232`: the lamp in the ceiling, in the top band where the
+title lies, is a little too bright for the light title of the dark scheme.
+
+The second picture for this view. The first - an empty tiled room with a walk-in shower and a
+large window - was turned down by the owner: nothing in it said "bathroom". A photo has to read
+as its place at a glance, so the prompt names the things that make it one.
 
 ### `boiler`
 

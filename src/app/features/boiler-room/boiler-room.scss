@@ -8,7 +8,10 @@ $wide: 840px;
   // colour than the text on them is checked against
   --app-domain: var(--app-domain-boiler);
 
-  max-width: 1080px;
+  // as wide as the schematic in it, and no wider: boxes stretched across a wide screen were
+  // mostly empty (owner, 2026-10-08)
+  width: fit-content;
+  max-width: 100%;
 }
 
 mat-card-header {
@@ -33,7 +36,11 @@ mat-card-content {
   align-items: stretch;
 
   @media (min-width: $wide) {
-    grid-template-columns: minmax(0, 1.1fr) 48px minmax(0, 1.1fr) 48px minmax(0, 0.9fr);
+    // each box about as wide as its longest line - the note of the service - needs
+    grid-template-columns:
+      minmax(0, 220px) 40px
+      minmax(0, 220px) 40px
+      minmax(0, 200px);
     grid-template-areas:
       'furnace to-hot-water-pump hot-water-pump to-hot-water hot-water'
       'furnace to-heating-pump   heating-pump   to-heating   heating';

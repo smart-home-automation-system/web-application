@@ -3,6 +3,9 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 12px;
   max-width: 960px;
+  // A card is as tall as what it has to say. Stretched to the tallest card of its row, a card
+  // with one line in it was mostly empty (owner, 2026-10-08).
+  align-items: start;
 }
 
 // every card here is of the hot-water domain: its colour on the edge, the badge and the gauge

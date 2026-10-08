@@ -2,7 +2,11 @@
 // text on glass - and, once the device runs, on the wash of the domain, the other background
 // `check:contrast` knows for `on-surface` and its variant.
 :host {
-  display: block;
+  // What the box says sits in its middle: the furnace is as tall as both pumps next to it, and
+  // with its text at the top more than half of it was empty (owner, 2026-10-08).
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 55%, transparent);

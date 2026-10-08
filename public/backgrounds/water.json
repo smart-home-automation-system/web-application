@@ -4,23 +4,23 @@
     "height": 2304
   },
   "tones": {
-    "black": 36,
+    "black": 0,
     "white": 232
   },
   "files": {
     "water-2560.webp": {
-      "bytes": 91372,
+      "bytes": 356282,
       "quality": 82
     },
     "water-1280.webp": {
-      "bytes": 28358,
+      "bytes": 77162,
       "quality": 82
     }
   },
-  "darkest": "#263b63",
-  "lightest": "#ded5d1",
+  "darkest": "#1d1e1f",
+  "lightest": "#d7d7d8",
   "top": {
-    "darkest": "#373b45",
-    "lightest": "#e1d2c0"
+    "darkest": "#414145",
+    "lightest": "#d7d7d8"
   }
 }
