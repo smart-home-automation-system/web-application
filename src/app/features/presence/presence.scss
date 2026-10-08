@@ -1,0 +1,308 @@
+// The page is laid out for the screen it is on, so that a week fits without scrolling wherever
+// there is room for it (owner, 2026-10-08: a list that has to be scrolled next to a screen that
+// is mostly empty is the wrong layout). A phone and a narrow window: one column. A window:
+// who is at home and the period side by side, the two lists of days under them - side by side
+// too once they have the room. A wide screen: three columns, the two small cards stacked in
+// the first and a list of days in each of the other two.
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'now'
+    'period'
+    'resident'
+    'house';
+  gap: 12px;
+  // a card is as tall as what it has to say, not as its neighbour
+  align-items: start;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'now period'
+      'resident resident'
+      'house house';
+  }
+
+  @media (min-width: 1000px) {
+    grid-template-areas:
+      'now period'
+      'resident house';
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: minmax(280px, 3fr) repeat(2, minmax(0, 5fr));
+    // the lists of days span both rows; the last row takes what they need beyond the first card
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'now resident house'
+      'period resident house';
+  }
+}
+
+.tile--now {
+  grid-area: now;
+}
+
+.tile--period {
+  grid-area: period;
+}
+
+.tile--resident {
+  grid-area: resident;
+}
+
+.tile--house {
+  grid-area: house;
+}
+
+// every card here is about the household: its colour on the edge, the badge and the bars
+.tile {
+  --app-domain: var(--app-domain-household);
+}
+
+// tighter than Material's 16 px all round: the tiles are read, not touched
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.tile__detail {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// ---- who is at home now ----
+
+.residents {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// icon | name over the detail | state
+.resident {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'icon name state'
+    'icon detail detail';
+  column-gap: 8px;
+  align-items: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.resident__icon {
+  grid-area: icon;
+}
+
+.resident__name {
+  grid-area: name;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-surface);
+}
+
+.resident__state {
+  grid-area: state;
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+}
+
+// At home: the stronger of the two text colours a domain card has. What tells it from "away" is
+// that, the icon and the word - not a hue.
+.resident[data-state='home'] {
+  .resident__icon,
+  .resident__state {
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.resident__detail {
+  grid-area: detail;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  font: var(--mat-sys-body-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.resident__checked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.resident__checked--late {
+  color: var(--mat-sys-on-surface);
+}
+
+// the size of the letters next to it; with Material's own class, whose 24 px box comes later
+// in the stylesheet and would otherwise win
+.mat-icon.resident__late {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+}
+
+// ---- the period ----
+
+.period__presets {
+  margin-bottom: 12px;
+}
+
+.period__dates {
+  display: block;
+  max-width: 280px;
+}
+
+// ---- a list of days ----
+
+.who {
+  margin-bottom: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.days__note {
+  margin: 0 0 8px;
+}
+
+// the hours above the bars: five marks, each centred on its hour
+.scale {
+  display: flex;
+  justify-content: space-between;
+  // half the width of a mark sticks out at either end, so that 00 and 24 sit on the ends of the bar
+  margin: 0 -8px 2px;
+  font: var(--mat-sys-label-small);
+  letter-spacing: var(--mat-sys-label-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+
+  span {
+    width: 16px;
+    text-align: center;
+  }
+}
+
+.days {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day__head,
+.day__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 12px;
+  margin: 0;
+}
+
+.day__head {
+  justify-content: space-between;
+  // room for a badge above the bar: it has an outline of its own, which must not touch it
+  margin-bottom: 6px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.day__date {
+  font-weight: 600;
+}
+
+.day__figures {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.day__share {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.day__foot {
+  margin-top: 3px;
+  min-height: 1rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.day__open {
+  color: var(--mat-sys-on-surface);
+  font-weight: 600;
+}
+
+// "never empty" is the usual case and stays quiet: a word in a thin outline
+.badge {
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 60%, transparent);
+  border-radius: var(--mat-sys-corner-full);
+  font: var(--mat-sys-label-medium);
+  letter-spacing: var(--mat-sys-label-medium-tracking);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+// the day worth a look: the stronger text colour and a full outline
+.badge--empty {
+  border-color: var(--mat-sys-outline);
+  color: var(--mat-sys-on-surface);
+  font-weight: 600;
+}
+
+// ---- what the bars mean ----
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 12px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// the same paints as the bar (day-lane.scss)
+.legend__swatch {
+  width: 18px;
+  height: 10px;
+  border-radius: var(--mat-sys-corner-full);
+}
+
+.legend__swatch--filled {
+  background: var(--app-domain);
+}
+
+.legend__swatch--observed {
+  background: color-mix(in srgb, var(--mat-sys-on-surface) 14%, var(--mat-sys-surface));
+}
+
+.legend__swatch--unobserved {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mat-sys-outline) 55%, transparent) 0 2px,
+    transparent 2px 6px
+  );
+}
+
+.legend__swatch--open {
+  background: var(--app-domain);
+  border-right: 3px solid var(--mat-sys-on-surface);
+}

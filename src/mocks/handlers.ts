@@ -8,6 +8,13 @@ import {
   turnHeating,
 } from './heating.fixtures';
 import { HOUSEHOLD_PROFILES } from './household.fixtures';
+import {
+  dailyPresenceReport,
+  houseReport,
+  isRefusal,
+  presenceNow,
+  presenceReport,
+} from './presence.fixtures';
 import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
 
 export interface MockReply {
@@ -17,11 +24,24 @@ export interface MockReply {
 
 export interface MockHandler {
   readonly method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
-  /** Full path as the browser sends it, base path included. */
-  readonly path: string;
+  /**
+   * Full path as the browser sends it, base path included - or a pattern, for a path with a
+   * name in it; what its groups caught is handed to `reply`.
+   */
+  readonly path: string | RegExp;
   /** `fresh` is true in the scenario of services that have just started and know nothing yet. */
-  reply(request: HttpRequest<unknown>, fresh: boolean): MockReply;
+  reply(request: HttpRequest<unknown>, fresh: boolean, caught: readonly string[]): MockReply;
 }
+
+/** A report of presence-service, or the refusal it answers instead - in the error contract. */
+function report(answer: object): MockReply {
+  return isRefusal(answer)
+    ? { status: answer.status, body: { errors: [{ message: answer.message }] } }
+    : { status: 200, body: answer };
+}
+
+const from = (request: HttpRequest<unknown>) => request.params.get('from');
+const to = (request: HttpRequest<unknown>) => request.params.get('to');
 
 /**
  * One entry per backend endpoint the application calls. Fixtures mirror real answers of the
@@ -50,6 +70,28 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/household/profiles',
     reply: () => ({ status: 200, body: HOUSEHOLD_PROFILES }),
+  },
+  {
+    method: 'GET',
+    path: '/home/presence/residents/presence',
+    reply: (_, fresh) => ({ status: 200, body: presenceNow(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/presence\/residents\/([^/]+)\/report$/,
+    reply: (request, fresh, [name]) =>
+      report(presenceReport(decodeURIComponent(name), from(request), to(request), fresh)),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/presence\/residents\/([^/]+)\/report\/daily$/,
+    reply: (request, fresh, [name]) =>
+      report(dailyPresenceReport(decodeURIComponent(name), from(request), to(request), fresh)),
+  },
+  {
+    method: 'GET',
+    path: '/home/presence/house/report',
+    reply: (request, fresh) => report(houseReport(from(request), to(request), fresh)),
   },
   {
     method: 'GET',

@@ -268,6 +268,20 @@ $_shadows: (
     )
   );
 
+  // A field (the dates of the presence reports): 48 px tall, with its text in the middle.
+  // Material's own padding is a fixed 16 px above and below a line of 24 px; the type scale
+  // here gives the text of a field a line of 1.25 rem, and what the fixed padding left over all
+  // went below the text (owner, 2026-10-08: the date was not centred). So the padding is
+  // worked out from the line.
+  @include mat.form-field-overrides(
+    (
+      container-height: 48px,
+      container-vertical-padding: calc((48px - 1.25rem) / 2),
+      outlined-outline-color: var(--mat-sys-outline),
+      outlined-container-shape: $radius-control,
+    )
+  );
+
   @include mat.progress-bar-overrides(
     (
       track-color: color-mix(in srgb, var(--mat-sys-primary) 30%, transparent),

@@ -162,6 +162,51 @@ for (const language of ['en', 'pl'] as const) {
         });
       }
 
+      // presence: the usual week, a period that begins before the history does, the calendar,
+      // nothing stored yet, and the service failing. The mock household lives by the clock.
+      test.describe('presence', () => {
+        test.beforeEach(async ({ page }) => {
+          await page.clock.setFixedTime(new Date('2026-10-08T13:30:00Z'));
+        });
+
+        for (const [scenario, suffix] of [
+          ['default', ''],
+          ['no-readings', '-no-readings'],
+          ['server-error', '-failing'],
+        ] as const) {
+          test(`presence${suffix}`, async ({ page }, testInfo) => {
+            await useScenario(page, scenario);
+            await page.goto('/presence');
+            await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
+            if (scenario === 'default') {
+              await expect(page.getByTestId('house').locator('.day')).toHaveCount(7);
+            }
+            await photoIsShown(page);
+            await page.screenshot({
+              path: shot(testInfo.project.name, scheme, language, `presence${suffix}`),
+              fullPage: true,
+            });
+          });
+        }
+
+        test('presence, thirty days and the calendar', async ({ page }, testInfo) => {
+          await page.goto('/presence');
+          await page.getByTestId('period').getByRole('radio').nth(2).click();
+          await expect(page.getByTestId('house').locator('.day')).toHaveCount(13);
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'presence-30-days'),
+            fullPage: true,
+          });
+
+          await page.getByTestId('period').locator('mat-date-range-input').click();
+          await expect(page.getByRole('dialog')).toBeVisible();
+          await expect(page.locator('.mat-datepicker-content')).toHaveCSS('opacity', '1');
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'presence-calendar'),
+          });
+        });
+      });
+
       // only a phone has the bar, and only the bar has "More"
       test('navigation, what did not fit in the bottom bar', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'phone', 'the bottom bar is the navigation of a phone');

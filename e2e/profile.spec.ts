@@ -57,7 +57,16 @@ test.describe('without a profile', () => {
     expect(await destinations(page, testInfo.project.name)).toEqual(
       testInfo.project.name === 'phone'
         ? ['Overview', 'Heating', 'Hot water', 'Boiler room', 'More']
-        : ['Overview', 'Heating', 'Hot water', 'Boiler room', 'My room', 'Settings', 'About'],
+        : [
+            'Overview',
+            'Heating',
+            'Hot water',
+            'Boiler room',
+            'Presence',
+            'My room',
+            'Settings',
+            'About',
+          ],
     );
     await expect(page.locator('.shell__profile')).toContainText('Aurelia');
   });

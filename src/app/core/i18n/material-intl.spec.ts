@@ -4,11 +4,16 @@ import { MatDatepickerIntl } from '@angular/material/datepicker';
 import { MatPaginatorIntl } from '@angular/material/paginator';
 
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
+import { provideCalendar } from './calendar';
+import { providePaginator } from './material-intl';
 
 describe('labels of Angular Material controls', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideI18nTesting()] }));
 
+  // provided by the view that has a paginator, not by the application
   describe('paginator', () => {
+    beforeEach(() => TestBed.configureTestingModule({ providers: [providePaginator()] }));
+
     it('starts in English', () => {
       const intl = TestBed.inject(MatPaginatorIntl);
 
@@ -61,7 +66,10 @@ describe('labels of Angular Material controls', () => {
     });
   });
 
+  // the calendar is provided by the view that has one, not by the application
   describe('date picker', () => {
+    beforeEach(() => TestBed.configureTestingModule({ providers: [provideCalendar()] }));
+
     it('follows the language, labels and calendar alike', async () => {
       const intl = TestBed.inject(MatDatepickerIntl);
       const adapter = TestBed.inject<DateAdapter<Date>>(DateAdapter);

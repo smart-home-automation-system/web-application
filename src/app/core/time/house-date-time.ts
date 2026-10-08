@@ -74,6 +74,20 @@ export function houseInstant(value: HouseDateTime, timeZone: string): number {
   return wallClock - offsetAt(guess);
 }
 
+/**
+ * The wall-clock value as a number - milliseconds on a timeline of its own, on which every day
+ * is 24 hours long. For laying wall-clock times next to each other (where in its day a moment
+ * lies, how two of them are ordered); never for an age, which needs `houseInstant`.
+ */
+export function houseWallClock(value: HouseDateTime): number {
+  return wallClockAsUtc(value);
+}
+
+/** The calendar day the clocks of the house show at the instant, as `2026-10-08`. */
+export function houseDay(instant: number, timeZone: string): string {
+  return new Date(wallClockIn(timeZone, instant)).toISOString().slice(0, 10);
+}
+
 /** What the clocks of the zone show at the instant, placed on the UTC timeline. */
 function wallClockIn(timeZone: string, instant: number): number {
   const parts = dateTimeFormat('en-GB', zoneClock(timeZone)).formatToParts(instant);

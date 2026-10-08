@@ -106,6 +106,55 @@ describe('mock API', () => {
     });
   });
 
+  describe('the presence', () => {
+    const range = { params: { from: '2026-10-07T00:00:00', to: '2026-10-08T00:00:00' } };
+
+    it('answers who is at home, one entry per member of the household', async () => {
+      const now = (await firstValueFrom(http.get('/home/presence/residents/presence'))) as {
+        name: string;
+      }[];
+
+      expect(now.map((resident) => resident.name)).toEqual(
+        HOUSEHOLD_PROFILES.map((profile) => profile.name),
+      );
+    });
+
+    // the name is part of the path, percent-encoded like the application sends it
+    it('answers the two reports of the resident named in the path', async () => {
+      const report = await firstValueFrom(
+        http.get('/home/presence/residents/Aurelia/report', range),
+      );
+      const daily = await firstValueFrom(
+        http.get('/home/presence/residents/Aurelia/report/daily', range),
+      );
+
+      expect(report).toMatchObject({ name: 'Aurelia', from: range.params.from });
+      expect(daily).toMatchObject({ name: 'Aurelia', days: [{ date: '2026-10-07' }] });
+    });
+
+    it('answers the house', async () => {
+      expect(await firstValueFrom(http.get('/home/presence/house/report', range))).toMatchObject({
+        days: [{ date: '2026-10-07' }],
+      });
+    });
+
+    it('refuses like the service, in the error contract', async () => {
+      const unknown = await failure(
+        firstValueFrom(http.get('/home/presence/residents/No%20Body/report', range)),
+      );
+      const noRange = await failure(firstValueFrom(http.get('/home/presence/house/report')));
+
+      expect(unknown.status).toBe(404);
+      expect(unknown.error.errors[0].message).toBe('Unknown resident: No Body');
+      expect(noRange.status).toBe(400);
+    });
+
+    // every MAC address of the network: the gateway does not route it, the mock does not serve it
+    it('does not serve the list of network clients', async () => {
+      expect((await failure(firstValueFrom(http.get('/home/presence/clients')))).status).toBe(404);
+    });
+  });
+
   it('answers the household profiles from their fixture', async () => {
     expect(await firstValueFrom(http.get('/home/household/profiles'))).toEqual(HOUSEHOLD_PROFILES);
   });

@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+// The whole day: hatched, which is what "nobody looked" looks like. The observed part is laid
+// over it, and the periods at home over that.
+.lane {
+  position: relative;
+  height: 14px;
+  border-radius: var(--mat-sys-corner-full);
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mat-sys-outline) 55%, transparent) 0 2px,
+    transparent 2px 6px
+  );
+}
+
+.lane__observed,
+.lane__block {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+// observed and away: the page colour through a thin veil - plain, where the rest is hatched
+.lane__observed {
+  background: color-mix(in srgb, var(--mat-sys-on-surface) 14%, var(--mat-sys-surface));
+}
+
+// At home: the colour of the domain. Told from "away" by more than the hue - it is the dark
+// part of a pale bar in the light scheme and the bright part of a dark one in the dark scheme.
+.lane__block {
+  // a period seen by a few passes only is still a period: never thinner than a hairline
+  min-width: 2px;
+  background: var(--app-domain);
+}
+
+// still going on: the bar ends in a stripe of the text colour instead of an edge
+.lane__block--open {
+  border-right: 3px solid var(--mat-sys-on-surface);
+}

@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 22,
+    "white": 237
+  },
+  "files": {
+    "presence-2560.webp": {
+      "bytes": 289400,
+      "quality": 82
+    },
+    "presence-1280.webp": {
+      "bytes": 80862,
+      "quality": 82
+    }
+  },
+  "darkest": "#16181d",
+  "lightest": "#e7ddd5",
+  "top": {
+    "darkest": "#3f342a",
+    "lightest": "#e8dacb"
+  }
+}

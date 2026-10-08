@@ -70,7 +70,16 @@ describe('application routing', () => {
     await harness.navigateByUrl('/about');
 
     expect(navigationLabels()).toEqual({
-      side: ['Overview', 'Heating', 'Hot water', 'Boiler room', 'My room', 'Settings', 'About'],
+      side: [
+        'Overview',
+        'Heating',
+        'Hot water',
+        'Boiler room',
+        'Presence',
+        'My room',
+        'Settings',
+        'About',
+      ],
       bottom: ['Overview', 'Heating', 'Hot water', 'Boiler room', 'More'],
     });
   });
@@ -89,13 +98,14 @@ describe('application routing', () => {
 
     const offered = [...document.querySelectorAll<HTMLAnchorElement>('a[mat-menu-item]')];
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
+      '/presence',
       '/room',
       '/settings',
       '/about',
     ]);
     expect(
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
-    ).toEqual(['My room', 'Settings', 'About']);
+    ).toEqual(['Presence', 'My room', 'Settings', 'About']);
     document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
   });
 
@@ -178,6 +188,7 @@ describe('application routing', () => {
           'Ogrzewanie',
           'Ciepła woda',
           'Kotłownia',
+          'Obecność',
           'Mój pokój',
           'Ustawienia',
           'O aplikacji',

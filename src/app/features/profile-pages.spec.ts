@@ -491,6 +491,7 @@ describe('profiles in the application', () => {
         'Heating',
         'Hot water',
         'Boiler room',
+        'Presence',
         'My room',
         'Settings',
         'About',
