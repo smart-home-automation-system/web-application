@@ -27,10 +27,12 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
  * What concerns every page, above the open one: that the house cannot be reached - with the time
  * it last answered - and that a newer version of the application is waiting.
  *
- * The banner goes when a call is answered. A page without polling asks nothing by itself, so
- * while the banner is up the household registry is asked here - on request, every half a minute
- * and the moment the device is back online. It is the one call every page can afford, and its
- * answer also brings the profile up to date.
+ * One call that got no answer does not raise the banner - a single service that hangs looks the
+ * same - so at the first doubt the household registry is asked here, at once: its answer clears
+ * the doubt, its silence raises the banner. The banner goes when a call is answered. A page
+ * without polling asks nothing by itself, so while the banner is up the registry is asked again
+ * - on request, every half a minute and the moment the device is back online. It is the one
+ * call every page can afford, and its answer also brings the profile up to date.
  */
 @Component({
   selector: 'app-notices',
@@ -48,7 +50,9 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
               }}</span>
             }
           </p>
-          <button matButton type="button" [disabled]="profiles.loading()" (click)="askAgain()">
+          <!-- never disabled: a question already on its way is shared, and a button that
+               switches off under the finger loses the focus -->
+          <button matButton type="button" (click)="askAgain()">
             {{ t('connection.retry') }}
           </button>
         </div>
@@ -72,7 +76,7 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
 export class Notices {
   protected readonly connection = inject(ConnectionStore);
   protected readonly update = inject(AppUpdate);
-  protected readonly profiles = inject(ProfileStore);
+  private readonly profiles = inject(ProfileStore);
   private readonly document = inject(DOCUMENT);
   private readonly ticker = inject(Ticker);
 
@@ -83,6 +87,11 @@ export class Notices {
   });
 
   constructor() {
+    effect(() => {
+      if (this.connection.doubted() && !this.connection.offline()) {
+        this.askAgain();
+      }
+    });
     effect((onCleanup) => {
       if (!this.connection.offline()) {
         return;

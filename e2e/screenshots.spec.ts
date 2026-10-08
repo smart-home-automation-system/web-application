@@ -1,4 +1,12 @@
-import { Language, expect, screenshotPath, startIn, test, useScenario } from './support';
+import {
+  Language,
+  expect,
+  onAnIPhone,
+  screenshotPath,
+  startIn,
+  test,
+  useScenario,
+} from './support';
 
 /**
  * Not assertions but evidence: one picture per layout, colour scheme and language, written to
@@ -91,14 +99,9 @@ for (const language of ['en', 'pl'] as const) {
           });
         });
 
-        // what Safari on an iPhone shows; told by a property only its navigator has
+        // what a browser on an iPhone shows
         test('personal link, how to add it to the home screen', async ({ page }, testInfo) => {
-          await page.addInitScript(() =>
-            Object.defineProperty(Navigator.prototype, 'standalone', {
-              value: false,
-              configurable: true,
-            }),
-          );
+          await onAnIPhone(page, 'in a tab');
           await page.goto('/u/Borys');
           await expect(page.getByRole('heading', { name: TEXTS[language].install })).toBeVisible();
           await page.screenshot({

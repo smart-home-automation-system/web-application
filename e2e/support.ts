@@ -52,6 +52,27 @@ export async function startAs(page: Page, profile: ProfileName): Promise<void> {
   }, PROFILES[profile]);
 }
 
+/**
+ * Makes the browser look like one on an iPhone, which is told by `navigator.standalone` - a
+ * property no other browser has: `false` in a tab, `true` when started from the home screen -
+ * on a device with a touch screen.
+ */
+export async function onAnIPhone(
+  page: Page,
+  where: 'in a tab' | 'from the home screen',
+): Promise<void> {
+  await page.addInitScript((standalone) => {
+    Object.defineProperty(Navigator.prototype, 'standalone', {
+      value: standalone,
+      configurable: true,
+    });
+    Object.defineProperty(Navigator.prototype, 'maxTouchPoints', {
+      value: 5,
+      configurable: true,
+    });
+  }, where === 'from the home screen');
+}
+
 export { SEASONS, type Season } from '../src/app/core/theme/season';
 
 /**

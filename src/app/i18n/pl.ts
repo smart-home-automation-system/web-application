@@ -56,7 +56,7 @@ export const pl: Messages = {
     title: 'Dodaj do ekranu początkowego',
     lead: 'Ikona dodana z tej strony otwiera aplikację od razu w Twoim profilu.',
     steps: 'Jak ją dodać',
-    share: 'Dotknij przycisku Udostępnij na pasku Safari.',
+    share: 'Dotknij przycisku Udostępnij w przeglądarce.',
     add: 'Wybierz „Do ekranu początkowego”.',
     confirm: 'Dotknij „Dodaj”.',
     continue: 'Dalej w przeglądarce',

@@ -32,6 +32,12 @@ describe('Notices', () => {
     fixture = TestBed.createComponent(Notices);
   }
 
+  /** Two calls in a row without an answer: the house is out of reach. */
+  function cutOff(): void {
+    connection.failed(NO_ANSWER, Date.now());
+    connection.failed(NO_ANSWER, Date.now());
+  }
+
   function host(): HTMLElement {
     return fixture.nativeElement as HTMLElement;
   }
@@ -64,6 +70,16 @@ describe('Notices', () => {
     localStorage.removeItem(STORAGE_KEY);
   });
 
+  // one service that hangs looks like this too, while the house is fine
+  it('asks the house at once after a single call that got no answer, and shows nothing yet', async () => {
+    create();
+    connection.failed(NO_ANSWER, Date.now());
+    await fixture.whenStable();
+
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(notice('offline')).toBeNull();
+  });
+
   it('says nothing, and takes no room, while there is nothing to say', async () => {
     create();
     await fixture.whenStable();
@@ -85,7 +101,7 @@ describe('Notices', () => {
       create();
       connection.succeeded();
       vi.setSystemTime(NOON + 600_000);
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       expect(text(notice('offline'))).toBe(
@@ -96,7 +112,7 @@ describe('Notices', () => {
     it('adds the date once the last answer is of another day', async () => {
       localStorage.setItem(STORAGE_KEY, String(NOON - 86_400_000));
       create();
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       expect(text(notice('offline'))).toContain(
@@ -106,7 +122,7 @@ describe('Notices', () => {
 
     it('names no time when the house never answered in this browser', async () => {
       create();
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       expect(text(notice('offline'))).toBe('No connection to the house. Check the Wi-Fi or VPN.');
@@ -116,7 +132,7 @@ describe('Notices', () => {
       localStorage.setItem(STORAGE_KEY, String(NOON - 86_400_000));
       create();
       await useLanguage('pl');
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       expect(text(notice('offline'))).toBe(
@@ -130,7 +146,7 @@ describe('Notices', () => {
 
     it('asks the house again on request', async () => {
       create();
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       notice('offline')!.querySelector('button')!.click();
@@ -138,20 +154,21 @@ describe('Notices', () => {
       expect(refresh).toHaveBeenCalledTimes(1);
     });
 
-    it('does not offer to ask while an answer is on its way', async () => {
+    // a question on its way is shared; a button that switches off under the finger loses the focus
+    it('keeps the button usable while an answer is on its way', async () => {
       create();
-      connection.failed(NO_ANSWER);
+      cutOff();
       asking.set(true);
       await fixture.whenStable();
 
-      expect(notice('offline')!.querySelector('button')!.disabled).toBe(true);
+      expect(notice('offline')!.querySelector('button')!.disabled).toBe(false);
     });
 
     // a page without polling would otherwise keep the banner until somebody taps it
     it('asks again by itself every half a minute, while the page is in view', async () => {
       const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
       create();
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       vi.advanceTimersByTime(ASK_AGAIN_MS - 1);
@@ -166,7 +183,7 @@ describe('Notices', () => {
 
     it('asks the moment the device is back online', async () => {
       create();
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       window.dispatchEvent(new Event('online'));
@@ -177,7 +194,7 @@ describe('Notices', () => {
     it('goes with the first answer, and stops asking', async () => {
       vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
       create();
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       connection.succeeded();
@@ -214,7 +231,7 @@ describe('Notices', () => {
     it('says so next to the missing connection, not instead of it', async () => {
       create();
       newVersion.set(true);
-      connection.failed(NO_ANSWER);
+      cutOff();
       await fixture.whenStable();
 
       expect(notice('offline')).toBeTruthy();

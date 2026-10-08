@@ -22,24 +22,26 @@ import { TranslocoDirective } from '@jsverse/transloco';
       <h1>{{ t('install.title') }}</h1>
       <p>{{ t('install.lead') }}</p>
 
-      <mat-card appearance="outlined" class="steps">
-        <mat-card-content>
-          <ol class="steps__list" [attr.aria-label]="t('install.steps')">
-            <li>
-              <mat-icon>ios_share</mat-icon>
-              <span>{{ t('install.share') }}</span>
-            </li>
-            <li>
-              <mat-icon>add_box</mat-icon>
-              <span>{{ t('install.add') }}</span>
-            </li>
-            <li>
-              <mat-icon>check</mat-icon>
-              <span>{{ t('install.confirm') }}</span>
-            </li>
-          </ol>
-        </mat-card-content>
-      </mat-card>
+      <div class="steps">
+        <mat-card appearance="outlined">
+          <mat-card-content>
+            <ol class="steps__list" [attr.aria-label]="t('install.steps')">
+              <li>
+                <mat-icon>ios_share</mat-icon>
+                <span>{{ t('install.share') }}</span>
+              </li>
+              <li>
+                <mat-icon>add_box</mat-icon>
+                <span>{{ t('install.add') }}</span>
+              </li>
+              <li>
+                <mat-icon>check</mat-icon>
+                <span>{{ t('install.confirm') }}</span>
+              </li>
+            </ol>
+          </mat-card-content>
+        </mat-card>
+      </div>
 
       <a matButton="outlined" routerLink="/" replaceUrl>{{ t('install.continue') }}</a>
     </ng-container>
@@ -54,10 +56,6 @@ import { TranslocoDirective } from '@jsverse/transloco';
       align-self: stretch;
       margin-bottom: 8px;
       text-align: start;
-    }
-
-    mat-card-content {
-      padding: 12px;
     }
 
     .steps__list {

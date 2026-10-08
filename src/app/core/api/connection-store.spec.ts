@@ -5,10 +5,16 @@ import { ConnectionStore } from './connection-store';
 
 const STORAGE_KEY = 'smart-home.last-contact';
 const NOON = Date.parse('2026-10-08T12:00:00Z');
+const NO_ANSWER = new ApiError('network', 0);
 
 describe('ConnectionStore', () => {
   function create(): ConnectionStore {
     return TestBed.inject(ConnectionStore);
+  }
+
+  /** A call sent now that gets no answer. */
+  function unanswered(store: ConnectionStore): void {
+    store.failed(NO_ANSWER, Date.now());
   }
 
   beforeEach(() => {
@@ -26,6 +32,7 @@ describe('ConnectionStore', () => {
     const store = create();
 
     expect(store.offline()).toBe(false);
+    expect(store.doubted()).toBe(false);
     expect(store.lastContact()).toBeUndefined();
   });
 
@@ -35,12 +42,50 @@ describe('ConnectionStore', () => {
     expect(create().offline()).toBe(true);
   });
 
-  it('is out of reach after a call that got no answer', () => {
+  // one service behind the gateway that never answers looks the same, while the house is fine
+  it('only doubts after a single call that got no answer', () => {
     const store = create();
 
-    store.failed(new ApiError('network', 0));
+    unanswered(store);
+
+    expect(store.doubted()).toBe(true);
+    expect(store.offline()).toBe(false);
+  });
+
+  it('is out of reach after two calls in a row that got no answer', () => {
+    const store = create();
+
+    unanswered(store);
+    unanswered(store);
 
     expect(store.offline()).toBe(true);
+  });
+
+  it('starts counting again after an answer', () => {
+    const store = create();
+    unanswered(store);
+    store.succeeded();
+    expect(store.doubted()).toBe(false);
+
+    vi.setSystemTime(NOON + 1_000);
+    unanswered(store);
+
+    expect(store.offline()).toBe(false);
+  });
+
+  // a view polls a service that hangs and one that answers: the banner must not come and go
+  it('does not count a call that waited in vain while another one was answered', () => {
+    const store = create();
+    const sentAt = Date.now();
+    vi.setSystemTime(NOON + 5_000);
+    store.succeeded();
+    vi.setSystemTime(NOON + 10_000);
+
+    store.failed(NO_ANSWER, sentAt);
+    store.failed(NO_ANSWER, sentAt);
+
+    expect(store.doubted()).toBe(false);
+    expect(store.offline()).toBe(false);
   });
 
   // an answer, whatever it says, came from the house: what failed is for the view to tell
@@ -49,11 +94,13 @@ describe('ConnectionStore', () => {
     ['a refusal', new ApiError('client', 404)],
   ])('is within reach again after %s answered', (_, answer) => {
     const store = create();
-    store.failed(new ApiError('network', 0));
+    unanswered(store);
+    unanswered(store);
 
-    store.failed(answer);
+    store.failed(answer, Date.now());
 
     expect(store.offline()).toBe(false);
+    expect(store.doubted()).toBe(false);
     expect(store.lastContact()).toBeUndefined();
   });
 
@@ -63,18 +110,22 @@ describe('ConnectionStore', () => {
     (answer) => {
       const store = create();
 
-      store.failed(answer);
+      store.failed(answer, Date.now());
+      store.failed(answer, Date.now());
+      expect(store.doubted()).toBe(false);
       expect(store.offline()).toBe(false);
 
-      store.failed(new ApiError('network', 0));
-      store.failed(answer);
+      unanswered(store);
+      unanswered(store);
+      store.failed(answer, Date.now());
       expect(store.offline()).toBe(true);
     },
   );
 
   it('is within reach after a call that succeeded, and knows when that was', () => {
     const store = create();
-    store.failed(new ApiError('network', 0));
+    unanswered(store);
+    unanswered(store);
 
     store.succeeded();
 
@@ -87,8 +138,10 @@ describe('ConnectionStore', () => {
     store.succeeded();
     vi.setSystemTime(NOON + 300_000);
 
-    store.failed(new ApiError('network', 0));
+    unanswered(store);
+    unanswered(store);
 
+    expect(store.offline()).toBe(true);
     expect(store.lastContact()).toBe(NOON);
   });
 

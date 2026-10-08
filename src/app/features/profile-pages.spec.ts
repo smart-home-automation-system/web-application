@@ -240,6 +240,24 @@ describe('profiles in the application', () => {
       await vi.waitFor(() => expect(url()).toBe('/room'));
     });
 
+    // the banner keeps asking the registry while the house is out of reach: its answer opens
+    // the link, nobody has to tap "Try again" under a message that is no longer true
+    it('opens the link by itself once the registry answers again', async () => {
+      await start();
+      await harness.navigateByUrl('/u/Borys');
+      await registryFails(503);
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain(
+          'The profile could not be opened',
+        ),
+      );
+
+      void TestBed.inject(ProfileStore).refresh();
+      await registryAnswers();
+
+      await vi.waitFor(() => expect(url()).toBe('/room'));
+    });
+
     it('opens the own link of the member remembered while the registry is away', async () => {
       await start(BORYS);
       await harness.navigateByUrl('/u/borys');
@@ -298,10 +316,12 @@ describe('profiles in the application', () => {
   describe('a personal link on an iPhone', () => {
     function iPhone(standalone: boolean): void {
       Object.defineProperty(navigator, 'standalone', { value: standalone, configurable: true });
+      Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
     }
 
     afterEach(() => {
       delete (navigator as { standalone?: boolean }).standalone;
+      delete (navigator as { maxTouchPoints?: number }).maxTouchPoints;
     });
 
     it('stays under its own address in a browser tab and shows how to add it to the home screen', async () => {
@@ -321,7 +341,7 @@ describe('profiles in the application', () => {
         step.textContent?.trim(),
       );
       expect(steps).toEqual([
-        'Tap the Share button in the toolbar of Safari.',
+        'Tap the Share button of the browser.',
         'Choose "Add to Home Screen".',
         'Tap "Add".',
       ]);
@@ -354,6 +374,23 @@ describe('profiles in the application', () => {
       );
       await registryAnswers();
       expect(url()).toBe('/u/Borys');
+    });
+
+    // the browser remembered them, the registry no longer has them: nothing to install
+    it('takes the steps back from a member who is switched off since', async () => {
+      iPhone(false);
+      await start(BORYS);
+      await harness.navigateByUrl('/u/Borys');
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('Add to the Home Screen'),
+      );
+
+      await registryAnswers([HOUSEHOLD[0]]);
+
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent).toContain('does not open'),
+      );
+      expect(page().querySelector('app-install-instructions')).toBeNull();
     });
 
     it('explains the steps in Polish', async () => {

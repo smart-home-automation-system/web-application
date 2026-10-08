@@ -113,17 +113,43 @@ describe('ApiClient', () => {
       how(http.expectOne('/home/heating'));
     }
 
-    it('out of reach after a call that got no answer', () => {
+    it('in doubt after one call that got no answer, out of reach after the second', () => {
       fail((request) => request.error(new ProgressEvent('error')));
+      expect(connection.doubted()).toBe(true);
+      expect(connection.offline()).toBe(false);
 
+      fail((request) => request.error(new ProgressEvent('error')));
       expect(connection.offline()).toBe(true);
     });
 
-    it('out of reach after a call that got no answer in time', () => {
+    // one service that never answers, next to one that does: the house is there
+    it('within reach when another call was answered while this one waited in vain', () => {
+      vi.useFakeTimers();
+      try {
+        api.get('/water').subscribe({ error: () => undefined });
+        api.get('/boiler').subscribe({ error: () => undefined });
+        http.expectOne('/home/water');
+        http.expectOne('/home/boiler');
+        vi.advanceTimersByTime(5_000);
+        api.get('/heating').subscribe();
+        http.expectOne('/home/heating').flush({});
+
+        vi.advanceTimersByTime(5_000);
+
+        expect(connection.doubted()).toBe(false);
+        expect(connection.offline()).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('out of reach after two calls that got no answer in time', () => {
       vi.useFakeTimers();
       try {
         api.get('/heating').subscribe({ error: () => undefined });
+        api.get('/water').subscribe({ error: () => undefined });
         http.expectOne('/home/heating');
+        http.expectOne('/home/water');
 
         vi.advanceTimersByTime(10_000);
 
@@ -135,6 +161,7 @@ describe('ApiClient', () => {
 
     it('within reach again, with the time of it, after a call that succeeded', () => {
       fail((request) => request.error(new ProgressEvent('error')));
+      fail((request) => request.error(new ProgressEvent('error')));
       const before = Date.now();
 
       api.get('/heating').subscribe();
@@ -145,6 +172,7 @@ describe('ApiClient', () => {
     });
 
     it('within reach after a failing service answered - but that is no contact to date', () => {
+      fail((request) => request.error(new ProgressEvent('error')));
       fail((request) => request.error(new ProgressEvent('error')));
 
       fail((request) => request.flush({}, { status: 502, statusText: 'Bad Gateway' }));

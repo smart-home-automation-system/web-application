@@ -1,6 +1,4 @@
-import { Page } from '@playwright/test';
-
-import { expect, test, useScenario } from './support';
+import { expect, onAnIPhone, test, useScenario } from './support';
 
 /**
  * The application as something installed on a phone: the personal link as the page it is added
@@ -8,19 +6,6 @@ import { expect, test, useScenario } from './support';
  * worker itself exists in a production build only and is tested on the container image
  * (`image.spec.ts`).
  */
-
-/**
- * Makes the browser look like Safari on an iPhone, which is told by `navigator.standalone` - a
- * property no other browser has: `false` in a tab, `true` when started from the home screen.
- */
-async function onAnIPhone(page: Page, where: 'in a tab' | 'from the home screen'): Promise<void> {
-  await page.addInitScript((standalone) => {
-    Object.defineProperty(Navigator.prototype, 'standalone', {
-      value: standalone,
-      configurable: true,
-    });
-  }, where === 'from the home screen');
-}
 
 test.describe('the personal link on an iPhone', () => {
   test.use({ profile: 'none' });
@@ -37,7 +22,11 @@ test.describe('the personal link on an iPhone', () => {
     ).toBeVisible();
     await expect(
       page.getByRole('list', { name: 'How to add it' }).getByRole('listitem'),
-    ).toHaveText([/Tap the Share button/, /Choose "Add to Home Screen"/, /Tap "Add"/]);
+    ).toHaveText([
+      /Tap the Share button of the browser/,
+      /Choose "Add to Home Screen"/,
+      /Tap "Add"/,
+    ]);
     // the icon opens the address it was added from: it has to be the link, not the room
     await expect(page).toHaveURL(/\/u\/Borys$/);
     // ...and the profile is open already: the name is in the panel

@@ -1,5 +1,12 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -99,6 +106,19 @@ export class PersonalLink {
         this.member = params.get('member') ?? '';
         void this.open();
       });
+
+    // The registry is also asked behind this page - at the start, and by the banner while the
+    // house is out of reach - and what it then says must not leave the page behind:
+    effect(() => {
+      const state = this.state();
+      if (state === 'unavailable' && this.profiles.error() === undefined) {
+        // it answers again: the link can be opened after all
+        untracked(() => void this.open());
+      } else if (state === 'install' && this.profiles.profile() === undefined) {
+        // the member this browser remembered is no longer in it: there is nothing to install
+        this.state.set('unknown');
+      }
+    });
   }
 
   protected retry(): void {

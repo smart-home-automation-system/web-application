@@ -58,7 +58,7 @@ export const en = {
     title: 'Add to the Home Screen',
     lead: 'An icon added from this page opens the application straight in your profile.',
     steps: 'How to add it',
-    share: 'Tap the Share button in the toolbar of Safari.',
+    share: 'Tap the Share button of the browser.',
     add: 'Choose "Add to Home Screen".',
     confirm: 'Tap "Add".',
     continue: 'Continue in the browser',

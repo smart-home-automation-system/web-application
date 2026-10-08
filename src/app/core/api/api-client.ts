@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, tap, throwError, timeout } from 'rxjs';
+import { Observable, catchError, defer, tap, throwError, timeout } from 'rxjs';
 
 import { APP_CONFIG } from '../config/app-config';
 import { ApiError, toApiError } from './api-error';
@@ -51,20 +51,24 @@ export class ApiClient {
   }
 
   private guard<T>(call: Observable<T>): Observable<T> {
-    return call.pipe(
-      // unsubscribing on timeout aborts the request itself
-      timeout({
-        first: this.config.requestTimeoutMs,
-        with: () =>
-          throwError(() => new ApiError('network', 0, [], new Error('The call timed out'))),
-      }),
-      tap(() => this.connection.succeeded()),
-      catchError((error: unknown) => {
-        const failure = toApiError(error);
-        this.connection.failed(failure);
-        return throwError(() => failure);
-      }),
-    );
+    // deferred: the call is sent when somebody subscribes, and that is the moment that counts
+    return defer(() => {
+      const sentAt = Date.now();
+      return call.pipe(
+        // unsubscribing on timeout aborts the request itself
+        timeout({
+          first: this.config.requestTimeoutMs,
+          with: () =>
+            throwError(() => new ApiError('network', 0, [], new Error('The call timed out'))),
+        }),
+        tap(() => this.connection.succeeded()),
+        catchError((error: unknown) => {
+          const failure = toApiError(error);
+          this.connection.failed(failure, sentAt);
+          return throwError(() => failure);
+        }),
+      );
+    });
   }
 
   private options(params?: ApiParams) {
