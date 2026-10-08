@@ -10,12 +10,16 @@ const TEXTS = {
     notFound: 'Page not found',
     myRoom: 'My room',
     noProfile: 'This link does not open a profile',
+    install: 'Add to the Home Screen',
+    offline: 'No connection to the house',
   },
   pl: {
     enabled: 'Włączone',
     notFound: 'Nie znaleziono strony',
     myRoom: 'Mój pokój',
     noProfile: 'Ten link nie otwiera żadnego profilu',
+    install: 'Dodaj do ekranu początkowego',
+    offline: 'Brak połączenia z domem',
   },
 } as const;
 
@@ -35,8 +39,21 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         await expect(page.getByRole('alert')).toBeVisible();
+        await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
+        });
+      });
+
+      // the banner with the time of the last answer: the house answered, then the connection went
+      test('overview, connection lost', async ({ page }, testInfo) => {
+        await page.goto('/');
+        await expect(page.getByText(TEXTS[language].enabled)).toBeVisible();
+        await page.evaluate(() => localStorage.setItem('mock-scenario', 'offline'));
+        await page.reload();
+        await expect(page.getByTestId('offline-notice')).toContainText(/\d{2}:\d{2}/);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'overview-connection-lost'),
         });
       });
 
@@ -71,6 +88,21 @@ for (const language of ['en', 'pl'] as const) {
           await expect(page.getByRole('link', { name: /Aurelia/ })).toBeVisible();
           await page.screenshot({
             path: shot(testInfo.project.name, scheme, language, 'profiles'),
+          });
+        });
+
+        // what Safari on an iPhone shows; told by a property only its navigator has
+        test('personal link, how to add it to the home screen', async ({ page }, testInfo) => {
+          await page.addInitScript(() =>
+            Object.defineProperty(Navigator.prototype, 'standalone', {
+              value: false,
+              configurable: true,
+            }),
+          );
+          await page.goto('/u/Borys');
+          await expect(page.getByRole('heading', { name: TEXTS[language].install })).toBeVisible();
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'install'),
           });
         });
 

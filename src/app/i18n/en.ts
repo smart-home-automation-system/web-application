@@ -53,6 +53,25 @@ export const en = {
     unavailableTitle: 'The profile could not be opened',
     continue: 'Go to the application',
   },
+  // adding the application to the home screen of an iPhone; the quoted names are the ones iOS shows
+  install: {
+    title: 'Add to the Home Screen',
+    lead: 'An icon added from this page opens the application straight in your profile.',
+    steps: 'How to add it',
+    share: 'Tap the Share button in the toolbar of Safari.',
+    add: 'Choose "Add to Home Screen".',
+    confirm: 'Tap "Add".',
+    continue: 'Continue in the browser',
+  },
+  connection: {
+    offline: 'No connection to the house. Check the Wi-Fi or VPN.',
+    lastContact: 'Last contact: {{ time }}',
+    retry: 'Try again',
+  },
+  update: {
+    available: 'A new version of the application is ready.',
+    reload: 'Reload',
+  },
   myRoom: {
     title: 'My room',
     rooms: 'Your rooms',

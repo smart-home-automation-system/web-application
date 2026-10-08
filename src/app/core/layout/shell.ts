@@ -19,11 +19,13 @@ import { ProfileStore } from '../profile/profile-store';
 import { APP_NAME } from './app-title-strategy';
 import { LanguageMenu } from './language-menu';
 import { NAV_ITEMS } from './navigation';
+import { Notices } from './notices';
 import { ViewBackground } from './view-background';
 
 /**
- * The frame around every page: the panel (brand, main navigation, profile, language) and the routed
- * content, over the photo of the open view and the glow of the season. The panel is a column on
+ * The frame around every page: the panel (brand, main navigation, profile, language), what
+ * concerns every page (no connection to the house, a new version) and the routed content, over
+ * the photo of the open view and the glow of the season. The panel is a column on
  * the left of a wide screen and a bar across the top of a phone, where the navigation is a
  * bottom bar instead; both navigations are in the DOM and CSS shows one of them, so the layout
  * never jumps while JavaScript measures the screen.
@@ -42,6 +44,7 @@ import { ViewBackground } from './view-background';
     MatIconModule,
     TranslocoDirective,
     LanguageMenu,
+    Notices,
     ViewBackground,
   ],
   templateUrl: './shell.html',

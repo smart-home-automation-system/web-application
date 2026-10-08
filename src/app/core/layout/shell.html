@@ -60,9 +60,13 @@
     </div>
   </aside>
 
-  <main class="shell__content" id="main-content" tabindex="-1" #main>
-    <router-outlet />
-  </main>
+  <!-- the notices stay in place above the page, which scrolls under them -->
+  <div class="shell__column">
+    <app-notices />
+    <main class="shell__content" id="main-content" tabindex="-1" #main>
+      <router-outlet />
+    </main>
+  </div>
 
   <!-- a bar with a single destination leads nowhere: a resident's phone keeps the room for the page -->
   @if (navItems().length > 1) {

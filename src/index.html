@@ -11,6 +11,12 @@
     <link rel="icon" type="image/svg+xml" href="icon.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <!-- Installed on a home screen the application opens in a window of its own. The manifest
+         names no start address on purpose: the icon then opens the address it was added from -
+         the personal link of a household member. -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <!-- the name under the icon on an iPhone; without it the title of the open page is offered -->
+    <meta name="apple-mobile-web-app-title" content="Smart Home" />
   </head>
   <body>
     <app-root></app-root>

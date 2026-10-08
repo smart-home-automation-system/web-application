@@ -104,7 +104,8 @@ test.describe('without a profile', () => {
     await expect(page.getByRole('alert')).toContainText('The server cannot be reached');
 
     await page.evaluate(() => localStorage.removeItem('mock-scenario'));
-    await page.getByRole('button', { name: 'Try again' }).click();
+    // the page's own button; the banner above the page offers the same
+    await page.getByRole('main').getByRole('button', { name: 'Try again' }).click();
 
     await expect(page).toHaveURL(/\/room$/);
   });
@@ -118,7 +119,8 @@ test.describe('without a profile', () => {
     await expect(page.getByRole('alert')).toContainText('The server cannot be reached');
 
     await page.evaluate(() => localStorage.removeItem('mock-scenario'));
-    await page.getByRole('button', { name: 'Try again' }).click();
+    // the page's own button; the banner above the page offers the same
+    await page.getByRole('main').getByRole('button', { name: 'Try again' }).click();
 
     await expect(page.getByRole('link', { name: /Aurelia/ })).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);

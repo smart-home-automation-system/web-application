@@ -1,18 +1,37 @@
-// Renders the application icon (`public/icon.svg`) into the two bitmaps browsers and phones ask
-// for: `favicon.ico` (32 px, a PNG inside the ICO container - the fallback for a browser that
-// does not take the SVG from the tab) and `apple-touch-icon.png` (180 px, the home screen of an
-// iPhone, which never reads an SVG).
+// Renders the application icon (`public/icon.svg`) into the bitmaps browsers and phones ask for:
+//
+//  - `favicon.ico` (32 px, a PNG inside the ICO container - the fallback for a browser that does
+//    not take the SVG from the tab),
+//  - `apple-touch-icon.png` (180 px, the home screen of an iPhone, which never reads an SVG),
+//  - `icons/icon-192.png`, `icons/icon-512.png` and `icons/icon-maskable-512.png`, the icons the
+//    web app manifest names (`public/manifest.webmanifest`).
+//
+// The icon is drawn with rounded corners, which suits a browser tab. A home screen rounds the
+// icon itself and paints what is transparent black, so the two it cuts to its own shape - the
+// iPhone's and the maskable one - are rendered **without** the corners, the page filling the
+// whole square. The house stays inside the middle 80 %, the part every mask keeps.
 //
 //   node scripts/make-icons.mjs
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 
 const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
-const svg = readFileSync(`${PUBLIC}icon.svg`);
+const rounded = readFileSync(`${PUBLIC}icon.svg`, 'utf8');
 
-const png = (size) => sharp(svg, { density: (72 * size) / 64 }).resize(size, size).png().toBuffer();
+const ROUNDING = ' rx="15"';
+const square = rounded.replaceAll(ROUNDING, '');
+if (rounded.split(ROUNDING).length !== 3) {
+  // the two rectangles of the page: a changed icon.svg must not silently keep its corners
+  throw new Error(`icon.svg no longer rounds exactly two rectangles with${ROUNDING}`);
+}
+
+const png = (svg, size) =>
+  sharp(Buffer.from(svg), { density: (72 * size) / 64 })
+    .resize(size, size)
+    .png()
+    .toBuffer();
 
 /** One PNG image wrapped in an ICO container (ICONDIR + one ICONDIRENTRY + the PNG as it is). */
 function ico(image, size) {
@@ -31,6 +50,12 @@ function ico(image, size) {
   return Buffer.concat([header, image]);
 }
 
-writeFileSync(`${PUBLIC}favicon.ico`, ico(await png(32), 32));
-writeFileSync(`${PUBLIC}apple-touch-icon.png`, await png(180));
-console.log('favicon.ico (32 px) and apple-touch-icon.png (180 px) written');
+mkdirSync(`${PUBLIC}icons`, { recursive: true });
+writeFileSync(`${PUBLIC}favicon.ico`, ico(await png(rounded, 32), 32));
+writeFileSync(`${PUBLIC}apple-touch-icon.png`, await png(square, 180));
+writeFileSync(`${PUBLIC}icons/icon-192.png`, await png(rounded, 192));
+writeFileSync(`${PUBLIC}icons/icon-512.png`, await png(rounded, 512));
+writeFileSync(`${PUBLIC}icons/icon-maskable-512.png`, await png(square, 512));
+console.log(
+  'favicon.ico (32 px), apple-touch-icon.png (180 px) and icons/ (192, 512, maskable 512) written',
+);

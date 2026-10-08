@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { ApiClient } from './api-client';
 import { ApiError } from './api-error';
+import { ConnectionStore } from './connection-store';
 
 describe('ApiClient', () => {
   let api: ApiClient;
@@ -82,6 +83,75 @@ describe('ApiClient', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // the service worker stores the application, never an answer of the backend - and would turn
+  // a call that got no answer into a 504 of its own making
+  it.each(['get', 'post', 'patch', 'delete'] as const)(
+    'sends every %s past the service worker',
+    (method) => {
+      api[method]('/heating', {}).subscribe();
+
+      const request = http.expectOne('/home/heating');
+      expect(request.request.headers.get('ngsw-bypass')).toBe('true');
+      request.flush({});
+    },
+  );
+
+  describe('tells whether the house can be reached', () => {
+    let connection: ConnectionStore;
+
+    beforeEach(() => {
+      localStorage.removeItem('smart-home.last-contact');
+      connection = TestBed.inject(ConnectionStore);
+    });
+
+    afterEach(() => localStorage.removeItem('smart-home.last-contact'));
+
+    function fail(how: (request: ReturnType<HttpTestingController['expectOne']>) => void): void {
+      api.get('/heating').subscribe({ error: () => undefined });
+      how(http.expectOne('/home/heating'));
+    }
+
+    it('out of reach after a call that got no answer', () => {
+      fail((request) => request.error(new ProgressEvent('error')));
+
+      expect(connection.offline()).toBe(true);
+    });
+
+    it('out of reach after a call that got no answer in time', () => {
+      vi.useFakeTimers();
+      try {
+        api.get('/heating').subscribe({ error: () => undefined });
+        http.expectOne('/home/heating');
+
+        vi.advanceTimersByTime(10_000);
+
+        expect(connection.offline()).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('within reach again, with the time of it, after a call that succeeded', () => {
+      fail((request) => request.error(new ProgressEvent('error')));
+      const before = Date.now();
+
+      api.get('/heating').subscribe();
+      http.expectOne('/home/heating').flush({});
+
+      expect(connection.offline()).toBe(false);
+      expect(connection.lastContact()).toBeGreaterThanOrEqual(before);
+    });
+
+    it('within reach after a failing service answered - but that is no contact to date', () => {
+      fail((request) => request.error(new ProgressEvent('error')));
+
+      fail((request) => request.flush({}, { status: 502, statusText: 'Bad Gateway' }));
+
+      expect(connection.offline()).toBe(false);
+      expect(connection.lastContact()).toBeUndefined();
+    });
   });
 
   it('turns a lost connection into a network ApiError', () => {

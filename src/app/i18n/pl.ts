@@ -52,6 +52,24 @@ export const pl: Messages = {
     unavailableTitle: 'Nie udało się otworzyć profilu',
     continue: 'Przejdź do aplikacji',
   },
+  install: {
+    title: 'Dodaj do ekranu początkowego',
+    lead: 'Ikona dodana z tej strony otwiera aplikację od razu w Twoim profilu.',
+    steps: 'Jak ją dodać',
+    share: 'Dotknij przycisku Udostępnij na pasku Safari.',
+    add: 'Wybierz „Do ekranu początkowego”.',
+    confirm: 'Dotknij „Dodaj”.',
+    continue: 'Dalej w przeglądarce',
+  },
+  connection: {
+    offline: 'Brak połączenia z domem. Sprawdź Wi-Fi lub VPN.',
+    lastContact: 'Ostatnie połączenie: {{ time }}',
+    retry: 'Spróbuj ponownie',
+  },
+  update: {
+    available: 'Nowa wersja aplikacji jest gotowa.',
+    reload: 'Wczytaj ponownie',
+  },
   myRoom: {
     title: 'Mój pokój',
     rooms: 'Twoje pokoje',
