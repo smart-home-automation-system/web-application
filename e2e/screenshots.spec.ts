@@ -24,6 +24,7 @@ const TEXTS = {
     warmEnough: 'Warm enough',
     switchOff: 'Switch off',
     disabled: 'Disabled',
+    noRoomHeated: 'No room is being heated',
     furnace: 'Furnace',
     more: 'More',
     offline: 'No connection to the house',
@@ -37,6 +38,7 @@ const TEXTS = {
     warmEnough: 'Wystarczająco ciepła',
     switchOff: 'Wyłącz',
     disabled: 'Wyłączone',
+    noRoomHeated: 'Żaden pokój nie jest ogrzewany',
     furnace: 'Piec',
     more: 'Więcej',
     offline: 'Brak połączenia z domem',
@@ -90,6 +92,7 @@ for (const language of ['en', 'pl'] as const) {
 
         await card.getByRole('group').getByRole('button').last().click();
         await expect(page.getByTestId('heating-state')).toContainText(TEXTS[language].disabled);
+        await expect(page.getByTestId('activity')).toContainText(TEXTS[language].noRoomHeated);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'heating-switched-off'),
         });

@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
@@ -26,9 +26,11 @@ describe('Heating', () => {
   let status: FakeResource<HeatingStatus>;
   let activity: FakeResource<HeatingActivity>;
   let sensors: FakeResource<readonly TemperatureSensor[] | null>;
+  let switching: WritableSignal<boolean>;
   let fixture: ComponentFixture<Heating>;
 
   beforeEach(() => {
+    switching = signal(false);
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
     status = fakeResource();
     activity = fakeResource();
@@ -41,7 +43,7 @@ describe('Heating', () => {
           useValue: {
             watchSwitch: () => ({
               ...status,
-              switching: signal(false),
+              switching,
               switchFailure: signal(undefined),
               turn: () => undefined,
             }),
@@ -87,6 +89,22 @@ describe('Heating', () => {
 
     expect(words(await part('heating-switch'))).toContain('Enabled');
     expect(words(await part('heating-switch'))).toContain('Switch off');
+  });
+
+  // "rooms are being heated" depends on the switch: it must not contradict it for half a minute
+  it('asks again whether rooms are heated as soon as a switch has been read back', async () => {
+    const refresh = vi.spyOn(activity, 'refresh');
+    await fixture.whenStable();
+    expect(refresh).not.toHaveBeenCalled();
+
+    switching.set(true);
+    await fixture.whenStable();
+    expect(refresh).not.toHaveBeenCalled();
+
+    switching.set(false);
+    await fixture.whenStable();
+
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 
   describe('whether any room is being heated', () => {
@@ -190,6 +208,19 @@ describe('Heating', () => {
       answer(sensors, [{ room: 'office', lastReadingAt: null, stale: true, muted: false }]);
 
       expect(await table()).toEqual([['office', 'No reading', 'Silent']]);
+    });
+
+    // a time in a form this application does not read is still a reading
+    it('shows a time it cannot read as it came, not as no reading', async () => {
+      answer(sensors, [{ room: 'office', lastReadingAt: 'yesterday', stale: false }]);
+
+      expect(await table()).toEqual([['office', 'yesterday', 'Reporting']]);
+    });
+
+    it('lists a room twice when the service does', async () => {
+      answer(sensors, [SENSORS[0], SENSORS[0]]);
+
+      expect((await table()).map((row) => row[0])).toEqual(['office', 'office']);
     });
 
     it.each([

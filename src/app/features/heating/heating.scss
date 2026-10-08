@@ -12,13 +12,12 @@
   --app-domain: var(--app-domain-heating);
 }
 
-// the table needs the room of two cards; on a phone it takes the row like every card
+// The table takes a row of its own, as wide as two cards and no wider. (Not `span 2`: where
+// the grid has room for one column only - a phone, and a window just wide enough for the side
+// panel - a span of two would add a column that is not there.)
 .tile--sensors {
-  grid-column: span 2;
-
-  @media (max-width: 640px) {
-    grid-column: 1 / -1;
-  }
+  grid-column: 1 / -1;
+  max-width: 636px;
 }
 
 // tighter than Material's 16 px all round: the tiles are read, not touched

@@ -218,6 +218,20 @@ describe('pollingResource', () => {
     expect(resource.error()?.status).toBe(502);
   });
 
+  // a caller that waits must not wait for ever
+  it('lets go of whoever waits for a refresh when its owner is destroyed, and afterwards', async () => {
+    const resource = create(() => NEVER);
+    vi.advanceTimersByTime(0);
+    const answered: string[] = [];
+
+    void resource.refresh().then(() => answered.push('asked before'));
+    destroyOwner();
+    void resource.refresh().then(() => answered.push('asked after'));
+    await Promise.resolve();
+
+    expect(answered).toEqual(['asked before', 'asked after']);
+  });
+
   it('stops polling when its owner is destroyed', () => {
     const load = vi.fn(() => of('value'));
     create(load);

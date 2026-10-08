@@ -173,6 +173,45 @@ describe('HeatingSwitch', () => {
       expect(await button('Switch on')).toBeDefined();
       expect(control.asked).toEqual([]);
     });
+
+    // a dropped question is gone: nobody pressed anything since
+    it('does not bring a dropped question back when the house returns to where it was', async () => {
+      answer(control, ON);
+      await press('Switch off');
+      answer(control, OFF);
+      await card();
+
+      answer(control, ON);
+
+      expect((await card()).querySelector('[role="group"]')).toBeNull();
+      expect(await button('Switch off')).toBeDefined();
+    });
+
+    it('drops the question when the service stops saying what the state is', async () => {
+      answer(control, ON);
+      await press('Switch off');
+      answer(control, {});
+      await card();
+
+      answer(control, ON);
+
+      expect((await card()).querySelector('[role="group"]')).toBeNull();
+    });
+
+    it('names its question by an id of its own, so two cards on a page do not share one', async () => {
+      const other = TestBed.createComponent(HeatingSwitch);
+      other.componentRef.setInput('control', control);
+      answer(control, ON);
+      await press('Switch off');
+      await other.whenStable();
+
+      const ids = [fixture, other].map(
+        (shown) => (shown.nativeElement as HTMLElement).querySelector('[role="group"] p')?.id,
+      );
+
+      expect(ids[0]).toMatch(/^heating-switch-question-\d+$/);
+      expect(ids[1]).not.toBe(ids[0]);
+    });
   });
 
   describe('while a change is on its way', () => {
@@ -220,11 +259,33 @@ describe('HeatingSwitch', () => {
 
     it('names the other direction for a failed switching on', async () => {
       answer(control, OFF);
-      control.switchFailure.set({ on: true, error: new ApiError('network', 0) });
+      control.switchFailure.set({ on: true, error: new ApiError('server', 500) });
 
       expect(words((await card()).querySelector('[data-testid="switch-failure"]'))).toContain(
-        'The heating could not be switched on. The server cannot be reached.',
+        'The heating could not be switched on.',
       );
+    });
+
+    // no answer is not a refusal: the change may have been carried out, or still be on its way
+    it('does not call a change that got no answer a change that failed', async () => {
+      answer(control, ON);
+      control.switchFailure.set({ on: false, error: new ApiError('network', 0) });
+
+      const failure = words((await card()).querySelector('[data-testid="switch-failure"]'));
+
+      expect(failure).toContain('The change got no answer and may not have been carried out.');
+      expect(failure).not.toContain('could not be switched');
+    });
+
+    it('stops telling a failure once the house is in the state that was asked for', async () => {
+      answer(control, ON);
+      control.switchFailure.set({ on: false, error: new ApiError('network', 0) });
+      await card();
+
+      answer(control, OFF);
+
+      expect((await card()).querySelector('[data-testid="switch-failure"]')).toBeNull();
+      expect(await state()).toBe('do_not_disturb_on Disabled');
     });
   });
 

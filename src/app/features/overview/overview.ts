@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -30,4 +30,10 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
 })
 export class Overview {
   protected readonly heating = inject(HeatingApi).watchStatus();
+
+  /** True, false, or `undefined` while the answer does not say - never "disabled" by default. */
+  protected readonly enabled = computed(() => {
+    const enabled: unknown = this.heating.value()?.isHeatingEnabled;
+    return typeof enabled === 'boolean' ? enabled : undefined;
+  });
 }

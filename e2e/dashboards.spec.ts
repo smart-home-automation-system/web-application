@@ -60,6 +60,8 @@ test.describe('heating', () => {
     await question.getByRole('button', { name: 'Switch off' }).click();
 
     await expect(page.getByTestId('heating-state')).toContainText('Disabled');
+    // the card next to it is asked again at once, not at its next turn half a minute later
+    await expect(page.getByTestId('activity')).toContainText('No room is being heated');
     await expect(card).toContainText('Switched off:');
     await expect(question).toHaveCount(0);
     await expect(card.getByRole('button', { name: 'Switch on' })).toBeEnabled();

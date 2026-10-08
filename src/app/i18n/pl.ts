@@ -78,6 +78,7 @@ export const pl: Messages = {
     switching: 'Przełączanie ogrzewania',
     failedOn: 'Nie udało się włączyć ogrzewania.',
     failedOff: 'Nie udało się wyłączyć ogrzewania.',
+    noAnswer: 'Zmiana została bez odpowiedzi i mogła nie zostać wykonana.',
   },
   hotWater: {
     title: 'Ciepła woda',

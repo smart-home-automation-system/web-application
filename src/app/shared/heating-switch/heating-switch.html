@@ -30,8 +30,8 @@
 
           @let change = question();
           @if (change !== undefined) {
-            <div class="switch__question" role="group" aria-labelledby="heating-switch-question">
-              <p id="heating-switch-question">
+            <div class="switch__question" role="group" [attr.aria-labelledby]="questionId">
+              <p [id]="questionId">
                 {{ t(change ? 'heatingSwitch.confirmOn' : 'heatingSwitch.confirmOff') }}
               </p>
               <div class="switch__answers">
@@ -70,11 +70,11 @@
             [attr.aria-label]="t('heatingSwitch.switching')"
           />
         }
-        @if (control().switchFailure(); as failed) {
+        @if (failure(); as failed) {
           <app-api-error-strip
             data-testid="switch-failure"
             [error]="failed.error"
-            [summary]="t(failed.on ? 'heatingSwitch.failedOn' : 'heatingSwitch.failedOff')"
+            [summary]="t(failureText(failed))"
           />
         }
         <app-api-error-strip [error]="control().error()" />

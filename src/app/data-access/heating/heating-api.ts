@@ -74,7 +74,9 @@ export class HeatingApi {
   /**
    * The state of the switch with the way to change it. Call in an injection context: the polling
    * lives as long as the caller. A change that is on its way when the caller goes is not
-   * aborted - a write cut off halfway is carried out or not, and nobody would know which.
+   * aborted with it - a write cut off halfway is carried out or not, and nobody would know
+   * which. The one thing that does cut it off is the time limit of `ApiClient`: such a change
+   * is a failure of the `network` kind, which says "no answer", not "not carried out".
    */
   watchSwitch(): HeatingSwitchControl {
     const status = this.watchStatus();

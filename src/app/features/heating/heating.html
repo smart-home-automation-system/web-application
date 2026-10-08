@@ -82,7 +82,8 @@
                 </tr>
               </thead>
               <tbody>
-                @for (sensor of rows(); track sensor.room) {
+                <!-- by position: nothing promises that a room is listed once -->
+                @for (sensor of rows(); track $index) {
                   <tr [attr.data-room]="sensor.room">
                     <!-- the identifier of the backend, printed as it is: never a translation -->
                     <th scope="row" class="sensors__room">{{ sensor.room }}</th>
@@ -93,8 +94,11 @@
                         >&ngsp;<span class="sensors__time">{{
                           sensor.lastReadingAt | houseDateTime
                         }}</span>
-                      } @else {
+                      } @else if (sensor.lastReadingAt === undefined) {
                         <span class="sensors__time">{{ t('heating.sensors.noReading') }}</span>
+                      } @else {
+                        <!-- a time this application cannot read: shown as it came, not as none -->
+                        <span class="sensors__time">{{ sensor.lastReadingAt }}</span>
                       }
                     </td>
                     <td>

@@ -6,6 +6,7 @@ import {
   Signal,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   signal,
@@ -17,7 +18,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { HeatingSwitchControl } from '../../data-access/heating/heating-api';
+import { FailedSwitch, HeatingSwitchControl } from '../../data-access/heating/heating-api';
+import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../api-error/api-error-strip';
 import { DataFreshness } from '../data-freshness/data-freshness';
 import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
@@ -51,6 +53,10 @@ import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeatingSwitch {
+  /** Two of these cards on one page must not share the id their question is named by. */
+  private static cards = 0;
+  protected readonly questionId = `heating-switch-question-${HeatingSwitch.cards++}`;
+
   readonly control = input.required<HeatingSwitchControl>();
 
   private readonly injector = inject(Injector);
@@ -71,14 +77,41 @@ export class HeatingSwitch {
   /** The state somebody asked for with the button and has not confirmed yet. */
   private readonly asked = signal<boolean | undefined>(undefined);
 
+  /** The change the question on screen is about. */
+  protected readonly question = this.asked.asReadonly();
+
   /**
-   * The change the question on screen is about. A question whose answer the house already gives
-   * - somebody else switched in the meantime - is no question any more.
+   * A change that failed, for as long as it says something: once the house is in the state that
+   * was asked for - the change got through after all, or somebody else made it - there is no
+   * failure left to tell.
    */
-  protected readonly question = computed(() => {
-    const asked = this.asked();
-    return asked !== undefined && asked !== this.enabled() ? asked : undefined;
+  protected readonly failure = computed(() => {
+    const failed = this.control().switchFailure();
+    return failed !== undefined && failed.on !== this.enabled() ? failed : undefined;
   });
+
+  constructor() {
+    // A question is about leaving the state on screen. When that state goes - somebody else
+    // switched in the meantime, or the service stopped saying - the question goes for good:
+    // it must not come back by itself when the house returns to where it was.
+    effect(() => {
+      const asked = this.asked();
+      if (asked !== undefined && this.enabled() !== !asked) {
+        this.asked.set(undefined);
+      }
+    });
+  }
+
+  /**
+   * What to say about a failed change. A change that got no answer may have been carried out
+   * all the same - or may still be: that is not "could not be switched".
+   */
+  protected failureText(failed: FailedSwitch): MessageKey {
+    if (failed.error.kind === 'network') {
+      return 'heatingSwitch.noAnswer';
+    }
+    return failed.on ? 'heatingSwitch.failedOn' : 'heatingSwitch.failedOff';
+  }
 
   protected ask(on: boolean): void {
     if (this.control().switching()) {

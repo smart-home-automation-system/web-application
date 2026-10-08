@@ -20,29 +20,24 @@
             [attr.aria-label]="t('overview.heating.loading')"
           />
         } @else {
-          @if (heating.value(); as status) {
-            <p class="tile__state" [class.tile__state--on]="status.isHeatingEnabled">
-              <mat-icon>{{
-                status.isHeatingEnabled ? 'check_circle' : 'do_not_disturb_on'
-              }}</mat-icon>
-              {{
-                t(
-                  status.isHeatingEnabled ? 'overview.heating.enabled' : 'overview.heating.disabled'
-                )
-              }}
+          @let on = enabled();
+          @if (on !== undefined) {
+            <p class="tile__state" [class.tile__state--on]="on">
+              <mat-icon>{{ on ? 'check_circle' : 'do_not_disturb_on' }}</mat-icon>
+              {{ t(on ? 'overview.heating.enabled' : 'overview.heating.disabled') }}
             </p>
-            @if (status.updatedAt) {
+            @if (heating.value()?.updatedAt; as updatedAt) {
               <p class="tile__detail">
                 {{
-                  t(
-                    status.isHeatingEnabled
-                      ? 'overview.heating.switchedOn'
-                      : 'overview.heating.switchedOff',
-                    { time: status.updatedAt | houseDateTime }
-                  )
+                  t(on ? 'overview.heating.switchedOn' : 'overview.heating.switchedOff', {
+                    time: updatedAt | houseDateTime,
+                  })
                 }}
               </p>
             }
+          } @else if (!heating.error()) {
+            <!-- an answer without the flag is not "disabled" -->
+            <p class="tile__detail">{{ t('heatingSwitch.unknown') }}</p>
           }
           <app-api-error-strip [error]="heating.error()" />
         }

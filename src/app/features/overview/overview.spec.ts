@@ -49,6 +49,19 @@ describe('Overview', () => {
     expect(fixture.nativeElement.querySelector('mat-progress-bar')).toBeTruthy();
   });
 
+  // the same answer must not read "unknown" on the heating page and "disabled" here
+  it('does not read an answer without the flag as a disabled heating', async () => {
+    value.set({ updatedAt: '2026-09-28T06:45:12.840868' });
+    loading.set(false);
+    lastUpdated.set(Date.now());
+
+    const content = await text();
+
+    expect(content).toContain('The service does not say whether the heating is switched on.');
+    expect(content).not.toContain('Disabled');
+    expect(content).not.toContain('Switched off');
+  });
+
   it('shows an enabled heating system with the house time of the change', async () => {
     value.set({ isHeatingEnabled: true, updatedAt: '2026-09-28T06:45:12.840868' });
     loading.set(false);

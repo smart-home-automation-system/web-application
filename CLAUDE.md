@@ -67,10 +67,17 @@ e2e/              # Playwright tests
   answered) and only that answer moves what is on screen - also after a change that failed or
   got no answer, which may have been carried out all the same. The answer of the `POST` itself
   is not used. A failed change is told in the card (`<app-api-error-strip [summary]>`), next to
-  the state the service gives. A write on its way is never aborted with its component.
+  the state the service gives. A write on its way is never aborted with its component. Three
+  things the review of it found, each with a test: a change that got **no answer** (`network`)
+  is not "could not be switched" - it may have been carried out, so it is worded as such and
+  the notice goes once the house is in the state asked for; **what depends on the changed
+  state is asked again too** (the page refreshes "rooms are being heated" when the switch has
+  been read back); and `refresh()` lets go of whoever waits when the owner of the resource is
+  destroyed.
 - **A control that changes the house asks first, in the card itself** - the button is replaced
-  by the question and two buttons, "Cancel" takes the focus, and the question goes away by
-  itself when the house is already in the state asked for (`shared/heating-switch`). A template
+  by the question and two buttons, "Cancel" takes the focus, and the question goes away **for
+  good** when the state it was asked in goes (`shared/heating-switch`: cleared in an effect,
+  not hidden by a computed - a hidden question came back by itself with the next change). A template
   reference must not carry the name of a method the template calls (`#cancel` next to
   `cancel()` does not compile).
 - **The service worker never sees a backend call**: `ApiClient` sends `ngsw-bypass` with every

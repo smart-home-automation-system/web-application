@@ -42,7 +42,7 @@ export interface PollingResource<T> {
   /**
    * Calls now and restarts the interval; an answer still on its way is dropped. Resolves once
    * that call has answered, one way or the other - in a hidden tab, which makes no calls, when
-   * the tab is looked at again.
+   * the tab is looked at again, and at once when the owner of the resource is gone.
    */
   refresh(): Promise<void>;
 }
@@ -117,6 +117,14 @@ export function pollingResource<T>(
       answered.forEach((resolve) => resolve());
     });
 
+  // nobody is left to answer: whoever waits is let go instead of waiting for ever
+  let ended = false;
+  destroyRef.onDestroy(() => {
+    ended = true;
+    awaitingAnswer.forEach((resolve) => resolve());
+    awaitingAnswer = [];
+  });
+
   const stale = computed(() => {
     if (error() !== undefined) {
       return true;
@@ -133,6 +141,10 @@ export function pollingResource<T>(
     stale,
     refresh: () =>
       new Promise<void>((resolve) => {
+        if (ended) {
+          resolve();
+          return;
+        }
         awaitingAnswer.push(resolve);
         refreshRequests.next();
       }),

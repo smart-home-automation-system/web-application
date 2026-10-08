@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -52,4 +52,17 @@ export class Heating {
 
   protected readonly rows = computed(() => toSensorRows(this.sensors.value()));
   protected readonly summary = computed(() => summarise(this.rows()));
+
+  constructor() {
+    // "Rooms are being heated" depends on the switch: left to its own interval, the card next
+    // to a switch that was just turned would contradict it for half a minute.
+    let switching = false;
+    effect(() => {
+      const before = switching;
+      switching = this.heating.switching();
+      if (before && !switching) {
+        void this.activity.refresh();
+      }
+    });
+  }
 }

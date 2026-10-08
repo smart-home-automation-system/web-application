@@ -80,6 +80,7 @@ export const en = {
     switching: 'Switching the heating',
     failedOn: 'The heating could not be switched on.',
     failedOff: 'The heating could not be switched off.',
+    noAnswer: 'The change got no answer and may not have been carried out.',
   },
   hotWater: {
     title: 'Hot water',
