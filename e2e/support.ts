@@ -30,8 +30,9 @@ export const PROFILES = {
   resident: { name: 'Borys', role: 'resident', rooms: ['loft'] },
   'resident-two-rooms': { name: 'Celina', role: 'resident', rooms: ['bedroom', 'wardrobe'] },
   'resident-no-room': { name: 'Damian', role: 'resident', rooms: [] },
-  // two the registry no longer agrees with: a member switched off since, and a resident whom
-  // this browser still remembers as the administrator
+  // two the registry no longer agrees with: a member it no longer answers with - switched off
+  // or removed since, which look the same from here - and a resident whom this browser still
+  // remembers as the administrator
   'switched-off': { name: 'Emil', role: 'resident', rooms: ['garage'] },
   demoted: { name: 'Borys', role: 'admin', rooms: ['loft'] },
 } as const;

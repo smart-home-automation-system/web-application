@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { DestroyRef, Injectable, Signal, computed, effect, inject, signal } from '@angular/core';
 
+import { readJson, watchKey, writeJson } from '../storage/browser-storage';
+import { isRecord } from '../util/is-record';
 import { Season, isSeason, millisecondsUntilTomorrow, seasonOf } from './season';
 
 export type ColorScheme = 'light' | 'dark';
@@ -201,46 +203,22 @@ export class ThemeStore {
    * stale half back over the newer one.
    */
   private watchOtherTabs(): void {
-    const view = this.document.defaultView;
-    const onStorage = (event: StorageEvent) => {
-      // a null key is "everything was cleared"
-      if (event.key === STORAGE_KEY || event.key === null) {
-        this.readChoices();
-      }
-    };
-    view?.addEventListener('storage', onStorage);
-    inject(DestroyRef).onDestroy(() => view?.removeEventListener('storage', onStorage));
+    watchKey(STORAGE_KEY, () => this.readChoices());
   }
 
+  /** Kept only while something is overridden: nothing chosen leaves nothing behind. */
   private store(): void {
-    // storage can be unavailable (private mode, blocked site data): the choice then lasts a session
-    try {
-      if (this.overridden()) {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ season: this.chosenSeason(), scheme: this.chosenScheme() }),
-        );
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {
-      // nothing to do
-    }
+    writeJson(
+      STORAGE_KEY,
+      this.overridden() ? { season: this.chosenSeason(), scheme: this.chosenScheme() } : undefined,
+    );
   }
 }
 
 function readStored(): { season: SeasonChoice; scheme: SchemeChoice } {
-  let value: unknown;
-  try {
-    value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
-  } catch {
-    // unreadable storage or a value that is not JSON: as if nothing was chosen
-    value = null;
-  }
-  const { season, scheme } = (typeof value === 'object' && value !== null ? value : {}) as Record<
-    string,
-    unknown
-  >;
+  // unreadable storage, or a value that is not what this store writes: as if nothing was chosen
+  const value = readJson(STORAGE_KEY);
+  const { season, scheme } = isRecord(value) ? value : {};
   return {
     season: isSeason(season) ? season : 'auto',
     scheme: scheme === 'light' || scheme === 'dark' ? scheme : 'system',

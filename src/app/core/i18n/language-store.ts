@@ -12,6 +12,7 @@ import {
 import { TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 
+import { readText, writeText } from '../storage/browser-storage';
 import {
   DEFAULT_LANGUAGE,
   LANGUAGES,
@@ -169,25 +170,15 @@ export class LanguageStore {
   }
 }
 
-// storage can be unavailable (private mode, blocked site data): the choice then lasts a session
-
 function keyOf(owner: string | undefined): string {
   return owner === undefined ? STORAGE_KEY : `${STORAGE_KEY}.${owner}`;
 }
 
 function readStored(key: string): LanguageCode | undefined {
-  try {
-    const value = localStorage.getItem(key);
-    return isLanguageCode(value) ? value : undefined;
-  } catch {
-    return undefined;
-  }
+  const value = readText(key);
+  return isLanguageCode(value) ? value : undefined;
 }
 
 function store(key: string, language: LanguageCode): void {
-  try {
-    localStorage.setItem(key, language);
-  } catch {
-    // nothing to do
-  }
+  writeText(key, language);
 }

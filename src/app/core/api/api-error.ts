@@ -1,5 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
+import { isRecord } from '../util/is-record';
+
 /**
  * What went wrong, from the point of view of what the user can do about it:
  * - `network` - no answer at all (backend down, VPN off, connection lost, or no answer in time),
@@ -91,8 +93,4 @@ function parseJson(text: string): unknown {
   } catch {
     return undefined;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }

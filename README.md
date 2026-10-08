@@ -89,8 +89,11 @@ chosen by mistake is undone by clearing the data of the site (accepted by the ow
 
 The role and the rooms come from the household registry (`database-service`), never from this
 application: they are read when a profile is opened, remembered with it, and read again at every
-start, so a change in the registry takes effect with the next visit - also under an open page. A
-member who is switched off or removed there loses the profile; a link that names such a member,
+start and whenever the page comes back into view, so a change in the registry takes effect with
+the next visit - also under an open page. The application asks for the profiles only - the name,
+the role and the rooms of the members who are active - and never downloads the rest of the
+registry (phone numbers, devices). A member who is switched off or removed there is not in that
+answer and loses the profile; a link that names such a member,
 or nobody, ends on a message that says so. While the backend is away the application keeps
 working as the member it remembers.
 
@@ -103,7 +106,7 @@ working as the member it remembers.
 > one place for it (`src/app/core/profile/`), so no feature changes when it comes.
 
 In the mock API the household is Aurelia (administrator), Borys, Celina and Damian (residents
-with one room, two rooms and none) and Emil, who is switched off: `/u/aurelia`, `/u/borys`.
+with one room, two rooms and none): `/u/aurelia`, `/u/borys`.
 
 # Run locally
 
@@ -148,7 +151,7 @@ Endpoints used today:
 | Method | Path | Used for |
 |---|---|---|
 | `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile), polled every 30 s |
-| `GET` | `/home/household` | The household registry: the name, role and rooms of every active member (profiles). Asked at every start, by the profile picker and when a personal link is opened; the phone numbers and devices it also carries are not read |
+| `GET` | `/home/household/profiles` | The profiles of the household: the name, role and rooms of every active member, and nothing else (`database-service` 0.10.0 or later). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened |
 
 What the application relies on, in every call:
 

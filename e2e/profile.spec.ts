@@ -26,8 +26,6 @@ test.describe('without a profile', () => {
     await expect(members.nth(0)).toContainText('Aurelia');
     await expect(members.nth(0)).toContainText('Administrator');
     await expect(members.nth(1)).toContainText('Resident');
-    // switched off in the registry
-    await expect(page.getByText('Emil')).toHaveCount(0);
     // nothing to navigate to yet
     expect(await destinations(page, testInfo.project.name)).toEqual([]);
   });
@@ -79,20 +77,20 @@ test.describe('without a profile', () => {
     await expect(page.getByRole('link', { name: /Switch profile/ })).toHaveCount(0);
   });
 
-  for (const member of ['nobody', 'Emil']) {
-    test(`explains a link that names ${member}, and leads on`, async ({ page }) => {
-      await page.goto(`/u/${member}`);
+  // a member who is switched off is not in the answer of the registry: to the application they
+  // are a name nobody answers to, like any other
+  test('explains a link that opens nobody, and leads on', async ({ page }) => {
+    await page.goto('/u/nobody');
 
-      await expect(
-        page.getByRole('heading', { level: 1, name: 'This link does not open a profile' }),
-      ).toBeVisible();
-      await expect(page.getByText('Ask the administrator for a current link.')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'This link does not open a profile' }),
+    ).toBeVisible();
+    await expect(page.getByText('Ask the administrator for a current link.')).toBeVisible();
 
-      await page.getByRole('link', { name: 'Go to the application' }).click();
+    await page.getByRole('link', { name: 'Go to the application' }).click();
 
-      await expect(page).toHaveURL(/\/profiles$/);
-    });
-  }
+    await expect(page).toHaveURL(/\/profiles$/);
+  });
 
   test('explains that the registry cannot be reached, and opens the link once it can', async ({
     page,
@@ -216,7 +214,7 @@ test.describe('the administrator', () => {
 });
 
 test.describe('a profile the registry no longer agrees with', () => {
-  test.describe('switched off', () => {
+  test.describe('no longer in the registry', () => {
     test.use({ profile: 'switched-off' });
 
     test('is forgotten: the application asks who is using it', async ({ page }) => {

@@ -87,6 +87,11 @@ e2e/              # Playwright tests
   residents until somebody decides otherwise. Its `NAV_ITEMS` entry carries the same value (a
   test compares them), and `app.routes.spec.ts` lists every page open to others: add to that
   list deliberately.
+- **The browser's storage goes through `core/storage/browser-storage.ts`** (`readText` /
+  `writeText` / `readJson` / `writeJson` / `watchKey`), never through `localStorage` directly:
+  it throws in private mode, holds whatever an older version wrote, and changes under the page
+  from another tab. A store keeps its key and the check of what came back (`readJson` answers
+  `unknown`; `isRecord` from `core/util/is-record.ts` is the first step of that check).
 - **State**: signals. Component-local state stays in the component; cross-feature state
   lives in small injectable stores (`core/` or the owning feature).
 - Modern Angular only: `input()`/`output()`/`inject()`, built-in control flow
@@ -103,9 +108,13 @@ access control** — the README says so plainly, and nothing here may be describ
 - **Everything lives in `core/profile/`.** `ProfileStore` holds the active `Profile` (name,
   role, rooms) in `localStorage['smart-home.profile']` — with role and rooms, so the application
   starts as the same person without waiting for the backend, and keeps working while it is away.
-  `refresh()` asks the registry (`GET /home/household`, `HouseholdApi`) and reconciles: new role
-  or rooms replace the remembered ones, a member gone or switched off loses the profile, a
-  failed call changes nothing. It runs at every start (not awaited), in the picker and inside
+  `refresh()` asks the registry (`GET /home/household/profiles`, `HouseholdApi.profiles()`)
+  and reconciles: new role or rooms replace the remembered ones, a member who is not in the
+  answer loses the profile, a failed call changes nothing. The answer holds the active members
+  only - name, `role` (`admin` / `resident`) and `rooms`, left out when there are none - so
+  "switched off" and "removed" are one case here. **Never call `GET /home/household`**: the full
+  registry carries phone numbers and device MAC addresses (HAS-211), and the mock API answers it
+  with 404 so that a browser test fails on it. It runs at every start (not awaited), in the picker and inside
   `open(member)`, which is what a personal link calls.
 - **One rule, asked in three places**: `redirectFor(access, profile)` answers where somebody is
   sent instead of a page, or `undefined`. `profileGuard` (`canActivateChild` of the shell

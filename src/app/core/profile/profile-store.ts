@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { HouseholdApi } from '../../data-access/household/household-api';
 import { ApiError, toApiError } from '../api/api-error';
+import { readJson, watchKey, writeJson } from '../storage/browser-storage';
 import { Profile, parseProfile, sameName, sameProfile, toProfiles } from './profile';
 
 /** Where the profile is kept: the member with the role and rooms the registry last gave them. */
@@ -47,7 +48,8 @@ export class ProfileStore {
   readonly error: Signal<ApiError | undefined> = this.failure.asReadonly();
 
   constructor() {
-    this.watchOtherTabs();
+    // a profile opened or lost in another tab of this browser is the profile of this one too
+    watchKey(STORAGE_KEY, () => this.active.set(readStored()));
     this.askAgainOnReturn();
   }
 
@@ -84,12 +86,12 @@ export class ProfileStore {
   private async load(): Promise<boolean> {
     this.pending.set(true);
     try {
-      const answer: unknown = await firstValueFrom(this.api.members());
+      const answer: unknown = await firstValueFrom(this.api.profiles());
       if (!Array.isArray(answer)) {
         // a 200 that is not the registry: nothing to conclude about anybody from it
         throw new ApiError('invalid-response', 200);
       }
-      const members = toProfiles(answer);
+      const members = toProfiles(answer as readonly unknown[]);
       this.registry.set(members);
       this.failure.set(undefined);
       this.reconcile(members);
@@ -111,16 +113,7 @@ export class ProfileStore {
 
   private use(profile: Profile | undefined): void {
     this.active.set(profile);
-    // storage can be unavailable (private mode, blocked site data): the profile then lasts a session
-    try {
-      if (profile === undefined) {
-        localStorage.removeItem(STORAGE_KEY);
-      } else {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-      }
-    } catch {
-      // nothing to do
-    }
+    writeJson(STORAGE_KEY, profile);
   }
 
   /**
@@ -139,26 +132,9 @@ export class ProfileStore {
       this.document.removeEventListener('visibilitychange', onVisibility),
     );
   }
-
-  /** A profile opened or lost in another tab of this browser is the profile of this one too. */
-  private watchOtherTabs(): void {
-    const view = this.document.defaultView;
-    const onStorage = (event: StorageEvent) => {
-      // a null key is "everything was cleared"
-      if (event.key === STORAGE_KEY || event.key === null) {
-        this.active.set(readStored());
-      }
-    };
-    view?.addEventListener('storage', onStorage);
-    inject(DestroyRef).onDestroy(() => view?.removeEventListener('storage', onStorage));
-  }
 }
 
+/** Unreadable storage, or a value that is not a profile: as if nobody was chosen. */
 function readStored(): Profile | undefined {
-  try {
-    return parseProfile(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null'));
-  } catch {
-    // unreadable storage or a value that is not JSON: as if nobody was chosen
-    return undefined;
-  }
+  return parseProfile(readJson(STORAGE_KEY));
 }

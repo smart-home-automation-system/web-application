@@ -9,7 +9,7 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
 import { HEATING_STATUS } from './heating.fixtures';
-import { HOUSEHOLD } from './household.fixtures';
+import { HOUSEHOLD_PROFILES } from './household.fixtures';
 import { mockApiInterceptors } from './mock-api';
 
 describe('mock API', () => {
@@ -39,8 +39,13 @@ describe('mock API', () => {
     expect(await firstValueFrom(http.get('/home/heating'))).toEqual(HEATING_STATUS);
   });
 
-  it('answers the household registry from its fixture', async () => {
-    expect(await firstValueFrom(http.get('/home/household'))).toEqual(HOUSEHOLD);
+  it('answers the household profiles from their fixture', async () => {
+    expect(await firstValueFrom(http.get('/home/household/profiles'))).toEqual(HOUSEHOLD_PROFILES);
+  });
+
+  // the registry itself is not something the application asks for: it carries phones and devices
+  it('does not serve the full household registry', async () => {
+    expect((await failure(firstValueFrom(http.get('/home/household')))).status).toBe(404);
   });
 
   it('answers an unknown endpoint like the gateway does: 404 in the error contract', async () => {
