@@ -175,7 +175,7 @@ export const FLOORS: readonly { id: string; label: MessageKey; rooms: readonly s
     rooms: ['office', 'tobi', 'livia', 'bedroom', 'wardrobe', 'bathroom up'],
   },
   { id: 'attic', label: 'heating.rooms.floor.attic', rooms: ['loft'] },
-  { id: 'outside', label: 'heating.rooms.floor.outside', rooms: ['sauna', 'garden'] },
+  { id: 'outside', label: 'heating.rooms.floor.outside', rooms: ['sanctum', 'sauna', 'garden'] },
 ];
 
 /**
