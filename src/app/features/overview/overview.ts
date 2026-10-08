@@ -5,9 +5,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { HeatingApi } from '../../data-access/heating/heating-api';
-import { describeApiError } from '../../shared/api-error/describe-api-error';
+import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
-import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 
 /**
@@ -21,8 +20,8 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
     MatIconModule,
     MatProgressBarModule,
     TranslocoDirective,
+    ApiErrorStrip,
     DataFreshness,
-    DisplayTextPipe,
     HouseDateTimePipe,
   ],
   templateUrl: './overview.html',
@@ -31,5 +30,4 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
 })
 export class Overview {
   protected readonly heating = inject(HeatingApi).watchStatus();
-  protected readonly describeApiError = describeApiError;
 }

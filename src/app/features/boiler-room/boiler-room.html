@@ -18,7 +18,7 @@
       @if (status.loading()) {
         <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('boilerRoom.loading')" />
       } @else {
-        @if (status.value()) {
+        @if (status.lastUpdated() !== undefined) {
           @let hotWater = hotWaterPump();
           @let heating = heatingPump();
           <div class="schematic" role="group" [attr.aria-label]="t('boilerRoom.schematic')">
@@ -57,7 +57,7 @@
               <mat-icon class="circuit__icon">shower</mat-icon>
               <h3 class="circuit__name">{{ t('boilerRoom.hotWater') }}</h3>
               <p class="circuit__state">
-                {{ t(hotWater.working === true ? 'boilerRoom.flowing' : 'boilerRoom.noFlow') }}
+                {{ t(flow(hotWater)) }}
               </p>
             </div>
 
@@ -86,7 +86,7 @@
               <mat-icon class="circuit__icon">mode_heat</mat-icon>
               <h3 class="circuit__name">{{ t('boilerRoom.heating') }}</h3>
               <p class="circuit__state">
-                {{ t(heating.working === true ? 'boilerRoom.flowing' : 'boilerRoom.noFlow') }}
+                {{ t(flow(heating)) }}
               </p>
             </div>
           </div>

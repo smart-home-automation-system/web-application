@@ -10,9 +10,14 @@
   --app-domain: var(--app-domain-water);
 }
 
-// the tank is what the page is about: the full width, so the gauge has room for its scale
+// the temperatures are what the page is about: twice the width, so the gauge has room for
+// its scale
 .tile--tank {
-  grid-column: 1 / -1;
+  grid-column: span 2;
+
+  @media (max-width: 640px) {
+    grid-column: 1 / -1;
+  }
 }
 
 // tighter than Material's 16 px all round: the tiles are read, not touched
@@ -30,6 +35,34 @@ mat-card-content {
   letter-spacing: var(--mat-sys-display-small-tracking);
   color: var(--mat-sys-on-surface);
   // the digits keep their width, so the number does not shake when it changes
+  font-variant-numeric: tabular-nums;
+}
+
+// the second temperature of the same call: a line under the first, not a card of its own
+.tile__second {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-surface-variant);
+
+  // alone in the card - the tank has no reading - it needs no line above it
+  &:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.tile__second-reading {
+  margin-left: auto;
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  color: var(--mat-sys-on-surface);
   font-variant-numeric: tabular-nums;
 }
 

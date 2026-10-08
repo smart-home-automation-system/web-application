@@ -11,12 +11,14 @@ test.describe('hot water', () => {
     await page.goto('/water');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Hot water' })).toBeVisible();
-    const tank = page.getByTestId('tank');
-    await expect(tank.locator('.tile__reading')).toHaveText('40.6 °C');
-    const gauge = tank.getByRole('meter');
+    const temperatures = page.getByTestId('temperatures');
+    await expect(page.getByTestId('tank')).toHaveText('40.6 °C');
+    const gauge = temperatures.getByRole('meter');
     await expect(gauge).toHaveAttribute('aria-valuetext', '40.6 °C; kept between 38 and 42 °C');
-    await expect(tank).toContainText('Heated once it drops below 38 °C, until it is above 42 °C.');
-    await expect(page.getByTestId('circulation').locator('.tile__reading')).toHaveText('29.8 °C');
+    await expect(temperatures).toContainText(
+      'Heated once it drops below 38 °C, until it is above 42 °C.',
+    );
+    await expect(page.getByTestId('circulation')).toContainText('29.8 °C');
     await expect(page.getByTestId('demand')).toContainText('Warm enough');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
@@ -44,31 +46,34 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    for (const card of ['tank', 'circulation']) {
-      await expect(page.getByTestId(card)).toContainText('No temperature has been measured yet.');
-    }
+    await expect(page.getByTestId('temperatures')).toContainText(
+      'No temperature has been measured yet.',
+    );
+    await expect(page.getByTestId('tank')).toHaveCount(0);
+    await expect(page.getByTestId('circulation')).toHaveCount(0);
     await expect(page.getByRole('meter')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(page.getByTestId('offline-notice')).toBeHidden();
   });
 
-  test('says in every card that the service is failing, without quoting it', async ({ page }) => {
+  // two calls feed the page: each failure is told once, in the card of its call
+  test('says in each card that the service is failing, without quoting it', async ({ page }) => {
     await useScenario(page, 'server-error');
 
     await page.goto('/water');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(3);
+    await expect(alerts).toHaveCount(2);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }
     await expect(page.getByText('Mock scenario')).toHaveCount(0);
-    await expect(page.locator('.tile__reading')).toHaveCount(0);
+    await expect(page.getByTestId('tank')).toHaveCount(0);
   });
 
   test('fits a phone without horizontal scrolling', async ({ page }) => {
     await page.goto('/water');
-    await expect(page.getByTestId('tank').locator('.tile__reading')).toBeVisible();
+    await expect(page.getByTestId('tank')).toBeVisible();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

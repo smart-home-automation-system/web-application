@@ -3,6 +3,7 @@ import { TranslocoService } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
 import { LanguageStore } from '../../core/i18n/language-store';
+import { memoLast } from '../../core/i18n/memo-last';
 import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { JUST_NOW_MS, formatAge } from '../age/format-age';
@@ -23,12 +24,21 @@ export class HouseAgePipe implements PipeTransform {
   private readonly languages = inject(LanguageStore);
   private readonly transloco = inject(TranslocoService);
 
-  transform(value: string | null | undefined): string {
+  /**
+   * When the value was: the same for as long as the value is, so it is worked out once and not
+   * on every refresh of the view - only the subtraction below moves with the clock.
+   */
+  private readonly instant = memoLast((value: string | null | undefined, zone: string) => {
     const parsed = parseHouseDateTime(value);
-    if (!parsed) {
+    return parsed ? houseInstant(parsed, zone) : undefined;
+  });
+
+  transform(value: string | null | undefined): string {
+    const instant = this.instant(value, this.zone);
+    if (instant === undefined) {
       return '';
     }
-    const ageMs = this.ticker.now() - houseInstant(parsed, this.zone);
+    const ageMs = this.ticker.now() - instant;
     if (ageMs < JUST_NOW_MS) {
       // read so that the view is refreshed when the language changes
       this.languages.language();

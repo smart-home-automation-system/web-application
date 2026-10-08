@@ -82,6 +82,7 @@ describe('application routing', () => {
     http.expectOne('/home/water/status/active');
     const more = page().querySelector<HTMLButtonElement>('.shell__bottom-more')!;
     expect(more.classList).not.toContain('shell__bottom-link--active');
+    expect(more.getAttribute('aria-current')).toBeNull();
 
     more.click();
     await settle();
@@ -117,9 +118,10 @@ describe('application routing', () => {
     );
 
     expect(current).toEqual(['/about']);
-    expect(page().querySelector('.shell__bottom-more')?.classList).toContain(
-      'shell__bottom-link--active',
-    );
+    const more = page().querySelector('.shell__bottom-more');
+    expect(more?.classList).toContain('shell__bottom-link--active');
+    // not "page": the button is not a link to the open page, it stands for the entry that is
+    expect(more?.getAttribute('aria-current')).toBe('true');
   });
 
   it('moves the focus to the content from the skip link, without leaving the page', async () => {

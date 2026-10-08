@@ -15,8 +15,13 @@ import { TemperatureGauge } from './temperature-gauge';
  * the temperature of the circulation, and whether the water asks to be heated. Read-only - the
  * backend has nothing to set here.
  *
- * Two calls feed the page, each with its own freshness and its own failure: the temperatures
- * and the demand come from the same service, but one can be answered while the other is not.
+ * Two calls feed the page, and each has one card: its freshness and its failure are told once.
+ * The temperatures and the demand come from the same service, but one can be answered while the
+ * other is not.
+ *
+ * The freshness is that of the call. The answer does not say when the sensors were read, so a
+ * sensor that fell silent keeps showing its last temperature as current - a gap of the API
+ * (`water-api.ts`), not something this page can tell.
  */
 @Component({
   selector: 'app-hot-water',

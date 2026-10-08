@@ -44,12 +44,7 @@
               </p>
             }
           }
-          @if (heating.error(); as error) {
-            <p class="tile__error" role="alert">
-              <mat-icon>cloud_off</mat-icon>
-              <span>{{ describeApiError(error) | displayText }}</span>
-            </p>
-          }
+          <app-api-error-strip [error]="heating.error()" />
         }
       </mat-card-content>
     </mat-card>

@@ -13,7 +13,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
-import { filter, map } from 'rxjs';
+import { filter } from 'rxjs';
 
 import { PROFILES_PATH, accessOf, redirectFor } from '../profile/access';
 import { ProfileStore } from '../profile/profile-store';
@@ -64,16 +64,13 @@ export class Shell {
   );
   /** The bottom bar of a phone: the entries it has room for, and the rest behind "More". */
   protected readonly bottomBar = computed(() => splitForBottomBar(this.navItems()));
-  private readonly path = toSignal(
-    this.router.events.pipe(
-      filter((event) => event instanceof NavigationEnd),
-      map((event) => event.urlAfterRedirects),
-    ),
-    { initialValue: this.router.url },
+  /** The navigation that ended last; `undefined` until the first one has. */
+  private readonly arrived = toSignal(
+    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)),
   );
   /** True while the open page is one of those behind "More": the button is then the open entry. */
   protected readonly moreIsOpen = computed(() => {
-    const path = this.path().split(/[?#]/)[0];
+    const path = (this.arrived()?.urlAfterRedirects ?? this.router.url).split(/[?#]/)[0];
     return this.bottomBar().more.some(
       (item) => path === item.path || path.startsWith(`${item.path}/`),
     );
@@ -86,12 +83,9 @@ export class Shell {
     // may no longer see is left. It is asked at the end of every navigation too: a profile that
     // changes while a page is on its way was judged by the guard before the change, and by this
     // check on the page being left.
-    const arrived = toSignal(
-      this.router.events.pipe(filter((event) => event instanceof NavigationEnd)),
-    );
     effect(() => {
       const profile = this.profile();
-      arrived();
+      this.arrived();
       untracked(() => {
         const target = redirectFor(accessOf(this.router.routerState.snapshot.root), profile);
         if (target !== undefined) {

@@ -58,6 +58,31 @@ describe('TemperatureGauge', () => {
     expect(part('marker').style.left).toBe(left);
   });
 
+  // a meter may only report a value on its scale; the reading in words keeps the true number
+  it.each([
+    [24, '30'],
+    [55, '50'],
+    [41.5, '41.5'],
+  ])('reports %d °C to a screen reader as %s on its scale', async (value, reported) => {
+    await show(value);
+
+    const meter = (fixture.nativeElement as HTMLElement).querySelector('[role="meter"]')!;
+
+    expect(meter.getAttribute('aria-valuenow')).toBe(reported);
+    expect(meter.getAttribute('aria-valuetext')).toBe(`${value} degrees`);
+  });
+
+  it.each([
+    ['no length', { min: 40, max: 40 }],
+    ['its ends the wrong way round', { min: 50, max: 30 }],
+  ])('keeps the band and the marker on the track for a scale with %s', async (_, scale) => {
+    await show(40, scale);
+
+    expect(part('marker').style.left).toBe('0%');
+    expect(part('band').style.left).toBe('0%');
+    expect(part('band').style.width).toBe('0%');
+  });
+
   it('follows another scale', async () => {
     await show(40, { min: 20, max: 60 });
 

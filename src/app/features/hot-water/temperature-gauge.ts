@@ -20,7 +20,7 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
       [attr.aria-label]="label()"
       [attr.aria-valuemin]="min()"
       [attr.aria-valuemax]="max()"
-      [attr.aria-valuenow]="value()"
+      [attr.aria-valuenow]="onScale()"
       [attr.aria-valuetext]="valueText()"
     >
       <div class="gauge__track">
@@ -107,10 +107,22 @@ export class TemperatureGauge {
   readonly valueText = input.required<string>();
 
   protected readonly marker = computed(() => this.at(this.value()));
+  /**
+   * The value as a meter may report it: within its scale. The true number, when the water is
+   * off the scale, is in `valueText` - which is what a screen reader reads out.
+   */
+  protected readonly onScale = computed(() =>
+    Math.min(this.max(), Math.max(this.min(), this.value())),
+  );
 
   /** Where a temperature lies on the scale, in per cent of its length. */
   protected at(temperature: number): number {
-    const share = (temperature - this.min()) / (this.max() - this.min());
+    const length = this.max() - this.min();
+    if (!(length > 0)) {
+      // a scale without a length has no places: everything sits at its start
+      return 0;
+    }
+    const share = (temperature - this.min()) / length;
     // to a hundredth of a per cent: finer than a pixel, and free of the tail binary fractions leave
     return Math.round(Math.min(100, Math.max(0, share * 100)) * 100) / 100;
   }

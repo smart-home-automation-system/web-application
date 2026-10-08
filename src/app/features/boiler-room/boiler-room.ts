@@ -7,7 +7,8 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
-import { BoilerDevice, toDeviceView } from './boiler-device';
+import { MessageKey } from '../../i18n/messages';
+import { BoilerDevice, DeviceView, toDeviceView } from './boiler-device';
 
 /**
  * The boiler room as a schematic: the furnace, the two pumps it feeds, and where each of them
@@ -17,6 +18,10 @@ import { BoilerDevice, toDeviceView } from './boiler-device';
  *
  * The furnace feeds both pumps, so its pipe to a pump is "flowing" by the pump alone: a pump
  * that runs while the furnace is off still moves the water.
+ *
+ * The schematic is drawn once the service has answered, whatever it answered: a device the
+ * answer says nothing about - also when there is no body at all - shows "no status yet", and so
+ * does the place its heat would go. Nothing here reads silence as "off".
  */
 @Component({
   selector: 'app-boiler-room',
@@ -43,4 +48,12 @@ export class BoilerRoom {
   protected readonly heatingPump = computed(() =>
     toDeviceView(this.status.value()?.pumps?.heating),
   );
+
+  /** What is said about the place a pump sends the heat to: it flows, it does not, or unknown. */
+  protected flow(pump: DeviceView): MessageKey {
+    if (pump.working === undefined) {
+      return 'boilerRoom.noStatus';
+    }
+    return pump.working ? 'boilerRoom.flowing' : 'boilerRoom.noFlow';
+  }
 }

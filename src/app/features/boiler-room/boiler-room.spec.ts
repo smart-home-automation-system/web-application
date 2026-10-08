@@ -231,6 +231,31 @@ describe('BoilerRoom', () => {
         expect(device.getAttribute('data-state'), name).toBe('unknown');
         expect(device.classList, name).not.toContain('device--working');
       }
+      // ...and where a pump of unknown state sends the heat is unknown too, not "no flow"
+      for (const name of ['hot-water', 'heating'] as const) {
+        const circuit = await part(name);
+        expect(words(circuit.querySelector('.circuit__state')), name).toBe('No status yet');
+        expect(circuit.classList, name).not.toContain('circuit--supplied');
+      }
+      expect(Object.values(await pipes())).toEqual([false, false, false, false]);
+    });
+
+    // a 200 without a body: the service answered, and said nothing
+    it('draws the schematic with nothing known for an answer without a body', async () => {
+      answer(null as unknown as BoilerStatus);
+
+      const shown = await page();
+
+      expect(shown.querySelector('.schematic')).toBeTruthy();
+      expect(words((await part('furnace')).querySelector('.device__state'))).toBe('No status yet');
+      expect(shown.querySelector('[role="alert"]')).toBeNull();
+    });
+
+    it('tells one pump of unknown state from one that stands', async () => {
+      answer({ furnace: { working: true }, pumps: { hot_water: { working: false } } });
+
+      expect(words((await part('hot-water')).querySelector('.circuit__state'))).toBe('No flow');
+      expect(words((await part('heating')).querySelector('.circuit__state'))).toBe('No status yet');
     });
   });
 

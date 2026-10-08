@@ -84,7 +84,7 @@ for (const language of ['en', 'pl'] as const) {
           await useScenario(page, scenario);
           await page.goto('/water');
           await expect(page.getByTestId('demand').locator('mat-progress-bar')).toHaveCount(0);
-          await expect(page.getByTestId('tank').locator('mat-progress-bar')).toHaveCount(0);
+          await expect(page.getByTestId('temperatures').locator('mat-progress-bar')).toHaveCount(0);
           if (scenario === 'default') {
             await expect(page.getByText(TEXTS[language].warmEnough)).toBeVisible();
           }

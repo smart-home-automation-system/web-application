@@ -4,7 +4,9 @@
   </header>
 
   <section class="tiles" [attr.aria-label]="t('hotWater.readings')">
-    <mat-card appearance="outlined" class="tile tile--tank card--domain" data-testid="tank">
+    <!-- Both temperatures come from one call, so they share one card: one freshness, and one
+         explanation when the call fails. -->
+    <mat-card appearance="outlined" class="tile tile--tank card--domain" data-testid="temperatures">
       <mat-card-header>
         <div mat-card-avatar class="domain-badge"><mat-icon>water_drop</mat-icon></div>
         <mat-card-title>{{ t('hotWater.tank.title') }}</mat-card-title>
@@ -21,8 +23,9 @@
           <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('hotWater.loading')" />
         } @else {
           @let water = tank();
+          @let loop = circulation();
           @if (water !== undefined) {
-            <p class="tile__reading">{{ water | localNumber: oneDecimal }} °C</p>
+            <p class="tile__reading" data-testid="tank">{{ water | localNumber: oneDecimal }} °C</p>
             <app-temperature-gauge
               class="tile__gauge"
               [value]="water"
@@ -40,7 +43,18 @@
             <p class="tile__detail">
               {{ t('hotWater.tank.band', { low: band.low, high: band.high }) }}
             </p>
-          } @else if (!temperatures.error()) {
+          }
+          @if (loop !== undefined) {
+            <p class="tile__second" data-testid="circulation">
+              <mat-icon>cycle</mat-icon>
+              <!-- a space a screen reader hears: the name and the number are two words -->
+              <span class="tile__second-name">{{ t('hotWater.circulation.title') }}</span
+              >&ngsp;<span class="tile__second-reading"
+                >{{ loop | localNumber: oneDecimal }} °C</span
+              >
+            </p>
+          }
+          @if (water === undefined && loop === undefined && !temperatures.error()) {
             <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
           }
           <app-api-error-strip [error]="temperatures.error()" />
@@ -76,33 +90,6 @@
             <p class="tile__detail">{{ t('hotWater.heating.unknown') }}</p>
           }
           <app-api-error-strip [error]="demand.error()" />
-        }
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card appearance="outlined" class="tile card--domain" data-testid="circulation">
-      <mat-card-header>
-        <div mat-card-avatar class="domain-badge"><mat-icon>cycle</mat-icon></div>
-        <mat-card-title>{{ t('hotWater.circulation.title') }}</mat-card-title>
-        <mat-card-subtitle>
-          <app-data-freshness
-            [lastUpdated]="temperatures.lastUpdated()"
-            [stale]="temperatures.stale()"
-          />
-        </mat-card-subtitle>
-      </mat-card-header>
-
-      <mat-card-content>
-        @if (temperatures.loading()) {
-          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('hotWater.loading')" />
-        } @else {
-          @let loop = circulation();
-          @if (loop !== undefined) {
-            <p class="tile__reading">{{ loop | localNumber: oneDecimal }} °C</p>
-          } @else if (!temperatures.error()) {
-            <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
-          }
-          <app-api-error-strip [error]="temperatures.error()" />
         }
       </mat-card-content>
     </mat-card>

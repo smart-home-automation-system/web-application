@@ -91,6 +91,7 @@
           type="button"
           class="shell__bottom-link shell__bottom-more"
           [class.shell__bottom-link--active]="moreIsOpen()"
+          [attr.aria-current]="moreIsOpen() ? 'true' : null"
           [matMenuTriggerFor]="moreMenu"
         >
           <span class="shell__bottom-icon"><mat-icon>more_horiz</mat-icon></span>

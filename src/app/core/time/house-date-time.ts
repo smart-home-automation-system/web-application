@@ -89,25 +89,18 @@ function wallClockIn(timeZone: string, instant: number): number {
   );
 }
 
-const zoneClocks = new Map<string, Intl.DateTimeFormatOptions>();
-
-/** One options object per zone: the formatter cache is keyed by it. */
+/** Every field of the clock as digits, on a 24-hour clock. */
 function zoneClock(timeZone: string): Intl.DateTimeFormatOptions {
-  let options = zoneClocks.get(timeZone);
-  if (options === undefined) {
-    options = {
-      timeZone,
-      hourCycle: 'h23',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    };
-    zoneClocks.set(timeZone, options);
-  }
-  return options;
+  return {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  };
 }
 
 function wallClockAsUtc(value: HouseDateTime): number {
