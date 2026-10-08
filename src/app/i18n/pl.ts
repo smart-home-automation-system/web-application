@@ -186,6 +186,7 @@ export const pl: Messages = {
       choose: 'Domownik',
       loading: 'Wczytywanie okresów w domu',
       nobody: 'Nie ma nikogo, czyją historię można pokazać.',
+      householdUnknown: 'Nie udało się odczytać domowników, więc na razie nie ma o kogo zapytać.',
       nothing: 'W tym okresie nic nie zaobserwowano dla tego domownika.',
       firstArrival: 'Pierwsze przyjście {{ time }}',
       lastDeparture: 'Ostatnie wyjście {{ time }}',
@@ -205,6 +206,10 @@ export const pl: Messages = {
       laneNone: 'Nikogo w domu',
       gapNote:
         'Czas, w którym wykrywanie nie działało w środku historii, czyta się jako pusty: serwis nie odróżnia jednego od drugiego.',
+    },
+    lane: {
+      unknown: 'Okresy tego dnia nie są znane',
+      observedPart: 'Obserwowano tylko od {{ from }} do {{ to }}',
     },
     legend: {
       atHome: 'w domu',

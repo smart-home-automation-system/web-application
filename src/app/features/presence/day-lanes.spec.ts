@@ -10,6 +10,7 @@ describe('toDayLanes', () => {
     expect(lanes.map((lane) => lane.date)).toEqual(['2026-10-07', '2026-10-06', '2026-10-05']);
     expect(lanes[0].at).toBe('2026-10-07T00:00:00');
     expect(lanes[0].observed).toEqual({ left: 0, width: 100 });
+    expect(lanes[0]).toMatchObject({ whole: true, known: true });
   });
 
   it('places a period in its day by the clock', () => {
@@ -68,6 +69,9 @@ describe('toDayLanes', () => {
       expect(lanes[0].observed).toEqual({ left: 0, width: 50 });
       expect(lanes[1].observed).toEqual({ left: 0, width: 100 });
       expect(lanes[2].observed).toEqual({ left: 25, width: 75 });
+      expect(lanes.map((lane) => lane.whole)).toEqual([false, true, false]);
+      expect(lanes[0].observedClock).toEqual({ from: '00:00', to: '12:00' });
+      expect(lanes[2].observedClock).toEqual({ from: '06:00', to: '24:00' });
     });
 
     it.each([
@@ -98,9 +102,15 @@ describe('toDayLanes', () => {
     expect(day.blocks.map((block) => block.from)).toEqual(['20:00']);
   });
 
-  it('reads an answer without a list of stretches as none', () => {
-    expect(toDayLanes(WEEK, WEEK.from, WEEK.to, null)).toHaveLength(3);
-    expect(toDayLanes(WEEK, WEEK.from, WEEK.to, 'none' as never)[0].blocks).toEqual([]);
+  // an empty list says "none"; no list says nothing
+  it('gives days whose periods are not known when there is no list of stretches', () => {
+    const missing = toDayLanes(WEEK, WEEK.from, WEEK.to, null);
+    const wrong = toDayLanes(WEEK, WEEK.from, WEEK.to, 'none' as never);
+
+    expect(missing).toHaveLength(3);
+    expect(missing.every((lane) => !lane.known && lane.blocks.length === 0)).toBe(true);
+    expect(wrong[0].known).toBe(false);
+    expect(toDayLanes(WEEK, WEEK.from, WEEK.to, [])[0].known).toBe(true);
   });
 
   it('gives no days for a range that is not one', () => {

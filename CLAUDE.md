@@ -84,9 +84,20 @@ e2e/              # Playwright tests
   the resource of a report for a period or a person answers `Answered<Q, T>` - the answer with
   the query it was asked for (`PresenceApi.watchHouse(() => range())`). The resource asks again
   when the query changes, but until the new answer arrives it still holds the old one; the view
-  shows a value only while `answered.query === query()` and a progress bar otherwise. Without
-  it the days of one resident stand under the name of another for the length of a call. The
-  query has to be a signal with an `equal`, so that the same question is the same object.
+  shows a value only while `answered.query === query()`. Without it the days of one resident
+  stand under the name of another for the length of a call. **The failure and the freshness
+  are not tagged**, so the resource also says which question its last call - answered or
+  failed - was for (`settledFor`): until that is the question on screen the card shows a
+  progress bar and nothing else, not the error of the question asked before. The query has to
+  be a signal with an `equal`, so that the same question is the same object.
+- **A missing list is not an empty list.** A report without its periods (`intervals` absent, a
+  stretch without `occupied`) gives days drawn as *not known*, hatched from end to end - an
+  empty list is what says "none". The same for the name a screen reader hears for a bar: it
+  says which part of the day was observed, and which period is still going on.
+- **A control that shows a value must not read it back as a choice.** The date field shows the
+  period on screen; the calendar closing without a pick left those two dates in the field, and
+  taking them for a pick turned "7 days" into seven fixed dates that no longer moved on at
+  midnight (found in review). Compare with what is shown before calling it chosen.
 - **Only what was observed is drawn.** The reports of `presence-service` say from when to when
   their history covers the period (`observedFrom`, `observedUntil`). A day outside it gets no
   row, the part of a day outside it is hatched, and the page says in words where the history

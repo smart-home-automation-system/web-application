@@ -32,9 +32,9 @@
                     @if (resident.lastCheckedAt | houseAge; as age) {
                       <span
                         class="resident__checked"
-                        [class.resident__checked--late]="resident.late"
+                        [class.resident__checked--late]="late().has(resident.name)"
                       >
-                        @if (resident.late) {
+                        @if (late().has(resident.name)) {
                           <mat-icon class="resident__late">warning</mat-icon>
                         }
                         {{ t('presence.now.checked', { age }) }}
@@ -107,7 +107,11 @@
         <div mat-card-avatar class="domain-badge"><mat-icon>person</mat-icon></div>
         <mat-card-title>{{ t('presence.resident.title') }}</mat-card-title>
         <mat-card-subtitle>
-          <app-data-freshness [lastUpdated]="history.lastUpdated()" [stale]="history.stale()" />
+          <!-- with nobody to ask about no call is made: there is no freshness to tell -->
+          <app-data-freshness
+            [lastUpdated]="resident() === undefined ? undefined : history.lastUpdated()"
+            [stale]="resident() !== undefined && history.stale()"
+          />
         </mat-card-subtitle>
       </mat-card-header>
 
@@ -134,9 +138,14 @@
               [attr.aria-label]="t('presence.resident.loading')"
             />
           } @else {
-            <p class="tile__detail">{{ t('presence.resident.nobody') }}</p>
+            <!-- an empty household and a household that could not be read are two things -->
+            <p class="tile__detail">
+              {{
+                t(now.error() ? 'presence.resident.householdUnknown' : 'presence.resident.nobody')
+              }}
+            </p>
           }
-        } @else if (answered === undefined && !history.error()) {
+        } @else if (!historySettled()) {
           <mat-progress-bar
             mode="indeterminate"
             [attr.aria-label]="t('presence.resident.loading')"
@@ -235,7 +244,7 @@
 
       <mat-card-content>
         @let occupancy = shownHouse();
-        @if (occupancy === undefined && !house.error()) {
+        @if (!houseSettled()) {
           <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('presence.house.loading')" />
         } @else {
           @if (occupancy !== undefined) {

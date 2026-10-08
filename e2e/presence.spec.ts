@@ -62,6 +62,9 @@ test.describe('presence', () => {
     const today = card.locator('.day[data-date="2026-10-08"]');
     await expect(today).toContainText('Still at home');
     await expect(today.locator('.lane__block--open')).toHaveCount(1);
+    await expect(today.getByRole('img')).toHaveAccessibleName(
+      'At home: 00:00–08:15, 15:05–15:29 (still going on). Observed from 00:00 to 15:29 only.',
+    );
     // an evening that ran on into the night is not open on the day it began
     await expect(card.locator('.day[data-date="2026-10-07"] .lane__block--open')).toHaveCount(0);
     await expect(card.locator('.day[data-date="2026-10-07"]')).not.toContainText('Still at home');
@@ -93,7 +96,7 @@ test.describe('presence', () => {
     await expect(today).toContainText('Stood empty');
     await expect(today).toContainText('Empty 6 h 50 min');
     await expect(today.getByRole('img')).toHaveAccessibleName(
-      'Somebody at home: 00:00–08:15, 15:05–15:29',
+      'Somebody at home: 00:00–08:15, 15:05–15:29. Observed from 00:00 to 15:29 only.',
     );
     // a Sunday with somebody in all day
     const sunday = house.locator('.day[data-date="2026-10-04"]');
@@ -141,6 +144,13 @@ test.describe('presence', () => {
     await expect(period.getByLabel('Last day')).toHaveValue('06/10/2026');
     // none of the presets is the period any more
     await expect(period.getByRole('radio', { checked: true })).toHaveCount(0);
+
+    // a calendar opened and closed again chooses nothing
+    await period.getByRole('radio', { name: '7 days' }).click();
+    await period.getByLabel('First day').click();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(period.getByRole('radio', { name: '7 days' })).toBeChecked();
 
     await period.getByRole('radio', { name: 'Today' }).click();
 
@@ -190,7 +200,7 @@ test.describe('presence', () => {
     await expect(page.getByRole('main').getByRole('alert')).toHaveCount(2);
     // without the list of who lives here there is nobody to ask a history of
     await expect(page.getByTestId('resident')).toContainText(
-      'There is nobody to show the history of.',
+      'The household could not be read, so there is nobody to ask about yet.',
     );
     await expect(page.locator('.day')).toHaveCount(0);
   });

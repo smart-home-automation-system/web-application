@@ -47,8 +47,8 @@ interface ResidentNow {
   readonly state: 'home' | 'away' | 'not-observed' | 'unknown';
   readonly since?: string;
   readonly lastCheckedAt?: string;
-  /** The last check is older than a detection that runs every minute would leave it. */
-  readonly late: boolean;
+  /** The instant of that check, worked out once per answer. */
+  readonly checkedAt?: number;
 }
 
 /** A day of one resident: the bar and the figures of the service next to it. */
@@ -190,6 +190,21 @@ export class Presence {
 
   protected readonly now = this.api.watchNow();
   protected readonly residents = computed(() => this.toResidents(this.now.value()));
+  /**
+   * Whose last check is older than a detection that runs every minute would leave it. Apart
+   * from the list: this moves with the clock, the list only with an answer.
+   */
+  protected readonly late = computed(() => {
+    const now = this.ticker.now();
+    return new Set(
+      this.residents()
+        .filter(
+          (resident) =>
+            resident.checkedAt !== undefined && now - resident.checkedAt > CHECK_IS_LATE_AFTER_MS,
+        )
+        .map((resident) => resident.name),
+    );
+  });
   private readonly chosen = signal<string | undefined>(undefined);
   /** The resident whose history is shown: the one chosen, or the first of the list. */
   protected readonly resident = computed(() => {
@@ -223,6 +238,18 @@ export class Presence {
     const answered = this.house.value();
     return answered !== undefined && answered.query === this.range() ? answered : undefined;
   });
+  /**
+   * The last call that ended was for what is on screen. Until then there is nothing to show but
+   * that the page is waiting - not the days of another question, and not its failure either.
+   */
+  protected readonly historySettled = computed(() => {
+    const settled = this.history.settledFor();
+    return settled !== undefined && settled.query === this.query();
+  });
+  protected readonly houseSettled = computed(() => {
+    const settled = this.house.settledFor();
+    return settled !== undefined && settled.query === this.range();
+  });
 
   protected readonly residentDays = computed((): ResidentDay[] => {
     const answer = this.shownHistory()?.answer;
@@ -234,7 +261,8 @@ export class Presence {
       this.range(),
       answer.daily?.observedFrom,
       answer.daily?.observedUntil,
-      answer.report?.intervals,
+      // no list of periods is not a list of none: the days are then drawn as not known
+      Array.isArray(answer.report?.intervals) ? answer.report.intervals : undefined,
     ).map((lane) => {
       const day = days.find((candidate) => candidate?.date === lane.date);
       return {
@@ -257,9 +285,13 @@ export class Presence {
       return [];
     }
     const days = Array.isArray(answer.days) ? answer.days : [];
-    const occupied = (Array.isArray(answer.intervals) ? answer.intervals : []).filter(
-      (interval) => interval?.occupied === true,
-    );
+    // a timeline that is missing, or that does not say of a stretch whether it was occupied,
+    // is not a timeline of an empty house
+    const occupied =
+      Array.isArray(answer.intervals) &&
+      answer.intervals.every((interval) => typeof interval?.occupied === 'boolean')
+        ? answer.intervals.filter((interval) => interval.occupied === true)
+        : undefined;
     return toDayLanes(this.range(), answer.observedFrom, answer.observedUntil, occupied).map(
       (lane) => {
         const day = days.find((candidate) => candidate?.date === lane.date);
@@ -285,14 +317,24 @@ export class Presence {
     this.preset.set(preset);
   }
 
-  /** Called when the calendar closes. A period has two ends: half a choice is no choice. */
+  /**
+   * Called when the calendar closes. A period has two ends: half a choice is no choice - and
+   * neither is a calendar that was opened and closed again. The field already shows the period
+   * on screen; taking that for a pick would turn "7 days" into seven fixed dates that no longer
+   * move on at midnight.
+   */
   protected pickDates(): void {
     const { first, last } = this.dates.getRawValue();
+    const shown = this.range();
     if (!first || !last || this.dates.invalid) {
-      this.showInDateField(this.range());
+      this.showInDateField(shown);
       return;
     }
-    this.picked.set({ first: toDay(first), last: toDay(last) });
+    const picked = { first: toDay(first), last: toDay(last) };
+    if (picked.first === dayOf(shown.from) && picked.last === addDays(dayOf(shown.to), -1)) {
+      return;
+    }
+    this.picked.set(picked);
     this.preset.set('custom');
   }
 
@@ -311,7 +353,6 @@ export class Presence {
     if (!Array.isArray(answer)) {
       return [];
     }
-    const now = this.ticker.now();
     return answer.flatMap((entry: unknown): ResidentNow[] => {
       const resident = isRecord(entry) ? entry : {};
       const name = resident['name'];
@@ -335,9 +376,7 @@ export class Presence {
                   : 'away',
           since: text(resident['since']),
           lastCheckedAt,
-          late:
-            checked !== undefined &&
-            now - houseInstant(checked, this.zone) > CHECK_IS_LATE_AFTER_MS,
+          checkedAt: checked ? houseInstant(checked, this.zone) : undefined,
         },
       ];
     });

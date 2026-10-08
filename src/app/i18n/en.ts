@@ -189,6 +189,7 @@ export const en = {
       choose: 'Resident',
       loading: 'Loading the periods at home',
       nobody: 'There is nobody to show the history of.',
+      householdUnknown: 'The household could not be read, so there is nobody to ask about yet.',
       nothing: 'Nothing was observed for this resident in this period.',
       firstArrival: 'First arrival {{ time }}',
       lastDeparture: 'Last departure {{ time }}',
@@ -208,6 +209,11 @@ export const en = {
       laneNone: 'Nobody at home',
       gapNote:
         'Time the detection did not work in the middle of the history reads as empty: the service cannot tell the two apart.',
+    },
+    // what a screen reader hears for the bar of a day, after its periods
+    lane: {
+      unknown: 'The periods of this day are not known',
+      observedPart: 'Observed from {{ from }} to {{ to }} only',
     },
     legend: {
       atHome: 'at home',

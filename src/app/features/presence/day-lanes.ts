@@ -1,9 +1,10 @@
 import { houseWallClock, parseHouseDateTime } from '../../core/time/house-date-time';
 import { ReportRange } from '../../data-access/presence/presence-api';
+import { LONGEST_RANGE_DAYS } from './report-range';
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
-/** A report spans at most 366 days; anything longer is not a range this page asked for. */
-const MOST_DAYS = 367;
+/** One more than a report can span: a range that starts in the middle of a day touches as many. */
+const MOST_DAYS = LONGEST_RANGE_DAYS + 1;
 
 /** A stretch of a day, as a share of its 24 hours. */
 export interface LanePart {
@@ -32,6 +33,15 @@ export interface DayLane {
    * absence - and it is drawn as such.
    */
   readonly observed: LanePart;
+  /** The same part by the clock: `00:00` to `15:29`. */
+  readonly observedClock: { readonly from: string; readonly to: string };
+  /** The whole day was observed. */
+  readonly whole: boolean;
+  /**
+   * False when the answer did not say when the periods were: the day is then drawn as not
+   * known, never as a day without any.
+   */
+  readonly known: boolean;
   readonly blocks: readonly LaneBlock[];
 }
 
@@ -50,6 +60,9 @@ export interface Stretch {
  *
  * The times are wall-clock times of the house and are laid out as they read: every day is drawn
  * 24 hours wide, also the two a year that are 23 and 25 hours long.
+ *
+ * `stretches` that are no list - the answer did not carry them - give days whose periods are
+ * not `known`: an empty list says "none", a missing one says nothing.
  */
 export function toDayLanes(
   range: ReportRange,
@@ -70,7 +83,8 @@ export function toDayLanes(
   ) {
     return [];
   }
-  const spans = (Array.isArray(stretches) ? stretches : []).flatMap((stretch: Stretch) => {
+  const known = Array.isArray(stretches);
+  const spans = (known ? stretches : []).flatMap((stretch: Stretch) => {
     const from = moment(stretch?.from);
     const to = moment(stretch?.to);
     return from !== undefined && to !== undefined && from < to
@@ -88,10 +102,15 @@ export function toDayLanes(
       width: ((to - from) / DAY_MS) * 100,
     });
     const date = new Date(day).toISOString().slice(0, 10);
+    const observedFromHere = Math.max(day, observedStart);
+    const observedToHere = Math.min(nextDay, observedEnd);
     lanes.push({
       date,
       at: `${date}T00:00:00`,
-      observed: part(Math.max(day, observedStart), Math.min(nextDay, observedEnd)),
+      observed: part(observedFromHere, observedToHere),
+      observedClock: { from: clock(observedFromHere, day), to: clock(observedToHere, day) },
+      whole: observedFromHere === day && observedToHere === nextDay,
+      known,
       blocks: spans
         .filter((span) => span.from < nextDay && span.to > day)
         .map((span) => {

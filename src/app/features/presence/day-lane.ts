@@ -1,22 +1,25 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 
+import { LanguageStore } from '../../core/i18n/language-store';
 import { MessageKey } from '../../i18n/messages';
 import { DayLane } from './day-lanes';
 
 /**
  * One day as a bar from 00:00 to 24:00: filled where the resident was at home (or the house
  * occupied), pale where not, and hatched where nobody looked - before the history begins, and
- * after the last check. A period that is still going on ends in a marker instead of an edge.
+ * after the last check. A period that is still going on ends in a marker instead of an edge. A
+ * day whose periods the answer did not carry is hatched from end to end: not known is not "none".
  *
- * To a screen reader the bar is one picture whose name lists the filled periods by their times.
+ * To a screen reader the bar is one picture, and its name says what the picture shows: the
+ * filled periods by their times, which of them is still going on, and which part of the day was
+ * observed at all - a day looked at until 15:29 is not a day spent away after it.
  */
 @Component({
   selector: 'app-day-lane',
-  imports: [TranslocoDirective],
   template: `
-    <ng-container *transloco="let t">
-      <div class="lane" role="img" [attr.aria-label]="t(label(), { periods: periods() })">
+    <div class="lane" role="img" [attr.aria-label]="name()">
+      @if (lane().known) {
         <span
           class="lane__observed"
           [style.left.%]="lane().observed.left"
@@ -31,8 +34,8 @@ import { DayLane } from './day-lanes';
             [attr.title]="block.from + ' – ' + block.to"
           ></span>
         }
-      </div>
-    </ng-container>
+      }
+    </div>
   `,
   styleUrl: './day-lane.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,14 +47,30 @@ export class DayLaneBar {
   /** The name of the picture when nothing is. */
   readonly emptyLabel = input.required<MessageKey>();
 
-  protected readonly label = computed(() =>
-    this.lane().blocks.length > 0 ? this.filledLabel() : this.emptyLabel(),
-  );
+  private readonly transloco = inject(TranslocoService);
+  private readonly language = inject(LanguageStore).language;
 
-  /** `00:00–07:12, 07:32–10:41` - times of our own making, so they may be a parameter. */
-  protected readonly periods = computed(() =>
-    this.lane()
-      .blocks.map((block) => `${block.from}–${block.to}`)
-      .join(', '),
-  );
+  /**
+   * The words themselves, not a key: the name is put together from several texts. The times in
+   * it are of our own making, so they may be parameters.
+   */
+  protected readonly name = computed(() => {
+    // read so that the name follows a change of language
+    this.language();
+    const lane = this.lane();
+    if (!lane.known) {
+      return this.transloco.translate('presence.lane.unknown');
+    }
+    const stillGoingOn = this.transloco.translate('presence.legend.open');
+    const periods = lane.blocks
+      .map((block) => `${block.from}–${block.to}${block.open ? ` (${stillGoingOn})` : ''}`)
+      .join(', ');
+    const shown =
+      lane.blocks.length > 0
+        ? this.transloco.translate(this.filledLabel(), { periods })
+        : this.transloco.translate(this.emptyLabel());
+    return lane.whole
+      ? shown
+      : `${shown}. ${this.transloco.translate('presence.lane.observedPart', lane.observedClock)}.`;
+  });
 }

@@ -3,7 +3,10 @@ import { ReportRange } from '../../data-access/presence/presence-api';
 /** How the period of the reports was chosen. */
 export type Preset = 'today' | 'week' | 'month' | 'custom';
 
-/** `presence-service` refuses a range longer than this. */
+/**
+ * `presence-service` refuses a range longer than this. The one place that says so: the calendar,
+ * the lists of days and the mock API all take it from here.
+ */
 export const LONGEST_RANGE_DAYS = 366;
 
 const DAYS_OF: Readonly<Record<Exclude<Preset, 'custom'>, number>> = {

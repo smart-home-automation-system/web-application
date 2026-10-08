@@ -1,4 +1,7 @@
+import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDateRangePicker } from '@angular/material/datepicker';
+import { By } from '@angular/platform-browser';
 
 import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
@@ -76,10 +79,19 @@ const HOUSE: HouseReport = {
   ],
 };
 
+/** A resource of a report, set by hand - with the question its last call was for. */
+type FakeReport<Q, T> = FakeResource<Answered<Q, T>> & {
+  readonly settledFor: WritableSignal<{ readonly query: Q } | undefined>;
+};
+
+function fakeReport<Q, T>(): FakeReport<Q, T> {
+  return { ...fakeResource<Answered<Q, T>>(), settledFor: signal(undefined) };
+}
+
 describe('Presence', () => {
   let now: FakeResource<readonly ResidentPresence[] | null>;
-  let history: FakeResource<Answered<ResidentQuery | undefined, ResidentHistory | null>>;
-  let house: FakeResource<Answered<ReportRange, HouseReport | null>>;
+  let history: FakeReport<ResidentQuery | undefined, ResidentHistory | null>;
+  let house: FakeReport<ReportRange, HouseReport | null>;
   /** What the page asks the reports for, as it stands. */
   let query: () => ResidentQuery | undefined;
   let range: () => ReportRange;
@@ -88,8 +100,8 @@ describe('Presence', () => {
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
     now = fakeResource();
-    history = fakeResource();
-    house = fakeResource();
+    history = fakeReport();
+    house = fakeReport();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -124,11 +136,24 @@ describe('Presence', () => {
 
   /** Answers a report for exactly what the page asks at this moment. */
   function answerHistory(body: ResidentHistory | null): void {
+    history.settledFor.set({ query: query() });
     answer(history, { query: query(), answer: body });
   }
 
   function answerHouse(body: HouseReport | null): void {
+    house.settledFor.set({ query: range() });
     answer(house, { query: range(), answer: body });
+  }
+
+  /** The call for what the page asks at this moment failed. */
+  function failHistory(error: ApiError): void {
+    history.settledFor.set({ query: query() });
+    fail(history, error);
+  }
+
+  function failHouse(error: ApiError): void {
+    house.settledFor.set({ query: range() });
+    fail(house, error);
   }
 
   async function days(name: 'resident' | 'house'): Promise<string[]> {
@@ -251,6 +276,26 @@ describe('Presence', () => {
       expect(range()).toEqual({ from: '2026-10-03T00:00:00', to: '2026-10-10T00:00:00' });
     });
 
+    // the field already shows the period: a calendar opened and closed again chose nothing
+    it('keeps "7 days" when the calendar is closed without a choice', async () => {
+      await fixture.whenStable();
+      const before = range();
+
+      fixture.debugElement.query(By.directive(MatDateRangePicker)).triggerEventHandler('closed');
+      await fixture.whenStable();
+
+      expect(range()).toBe(before);
+      expect(
+        (await part('period')).querySelectorAll('mat-button-toggle.mat-button-toggle-checked'),
+      ).toHaveLength(1);
+
+      // and so it still moves on with the day
+      vi.setSystemTime(Date.parse('2026-10-08T22:00:30Z'));
+      vi.advanceTimersByTime(5_000);
+      await fixture.whenStable();
+      expect(range().to).toBe('2026-10-10T00:00:00');
+    });
+
     it('shows the period in the date field, chosen in the calendar only', async () => {
       const inputs = [...(await part('period')).querySelectorAll<HTMLInputElement>('input')];
 
@@ -283,6 +328,16 @@ describe('Presence', () => {
 
       fail(now, new ApiError('server', 502));
 
+      // a household that could not be read is not an empty household
+      expect(words(await part('resident'))).toContain(
+        'The household could not be read, so there is nobody to ask about yet.',
+      );
+      expect(words(await part('resident'))).not.toContain('Updated');
+    });
+
+    it('says that there is nobody when the registry has nobody', async () => {
+      answer(now, []);
+
       expect(words(await part('resident'))).toContain('There is nobody to show the history of.');
     });
 
@@ -304,9 +359,40 @@ describe('Presence', () => {
 
       const bars = [...(await part('resident')).querySelectorAll('.lane')];
 
+      // today was looked at until the last check only, and its last period has not ended
       expect(bars.map((bar) => bar.getAttribute('aria-label'))).toEqual([
-        'At home: 00:00–07:40, 15:05–15:29',
+        'At home: 00:00–07:40, 15:05–15:29 (still going on). Observed from 00:00 to 15:29 only.',
         'At home: 00:00–07:40, 16:30–24:00',
+      ]);
+    });
+
+    // an answer without the periods is not an answer of "no periods"
+    it('draws a day as not known when the answer does not carry the periods', async () => {
+      answer(now, AT_HOME_NOW);
+      await fixture.whenStable();
+      answerHistory({ report: null, daily: HISTORY.daily });
+
+      const bars = [...(await part('resident')).querySelectorAll('.lane')];
+
+      expect(bars.map((bar) => bar.getAttribute('aria-label'))).toEqual([
+        'The periods of this day are not known',
+        'The periods of this day are not known',
+      ]);
+      expect(bars[0].children).toHaveLength(0);
+      // the figures of the service are still shown
+      expect((await days('resident'))[1]).toContain('15 h 10 min');
+    });
+
+    it('says "not at home" only of the part of a day that was observed', async () => {
+      answer(now, AT_HOME_NOW);
+      await fixture.whenStable();
+      answerHistory({ report: { intervals: [] }, daily: HISTORY.daily });
+
+      const bars = [...(await part('resident')).querySelectorAll('.lane')];
+
+      expect(bars.map((bar) => bar.getAttribute('aria-label'))).toEqual([
+        'Not at home. Observed from 00:00 to 15:29 only.',
+        'Not at home',
       ]);
     });
 
@@ -363,12 +449,28 @@ describe('Presence', () => {
     it('says why the days are missing when a call fails, and keeps nothing of another question', async () => {
       answer(now, AT_HOME_NOW);
       await fixture.whenStable();
-      fail(history, new ApiError('client', 404, [{ message: 'Unknown resident: Aurelia' }]));
+      failHistory(new ApiError('client', 404, [{ message: 'Unknown resident: Aurelia' }]));
 
       const shown = await part('resident');
 
       expect(words(shown.querySelector('[role="alert"]'))).toContain('Unknown resident: Aurelia');
       expect(shown.querySelector('mat-progress-bar')).toBeNull();
+    });
+
+    // the failure of the question asked before says nothing about the one asked now
+    it('does not show the failure of one resident under the name of another', async () => {
+      answer(now, AT_HOME_NOW);
+      await fixture.whenStable();
+      failHistory(new ApiError('client', 404, [{ message: 'Unknown resident: Aurelia' }]));
+      await fixture.whenStable();
+
+      (await part('resident'))
+        .querySelectorAll<HTMLButtonElement>('mat-button-toggle button')[1]
+        .click();
+
+      const shown = await part('resident');
+      expect(shown.querySelector('[role="alert"]')).toBeNull();
+      expect(shown.querySelector('mat-progress-bar')).toBeTruthy();
     });
 
     it('shows a day the figures are missing for with its bar alone', async () => {
@@ -398,7 +500,9 @@ describe('Presence', () => {
 
       const today = (await part('house')).querySelector('.lane')!;
 
-      expect(today.getAttribute('aria-label')).toBe('Somebody at home: 00:00–08:15, 15:05–15:29');
+      expect(today.getAttribute('aria-label')).toBe(
+        'Somebody at home: 00:00–08:15, 15:05–15:29. Observed from 00:00 to 15:29 only.',
+      );
       expect(today.querySelectorAll('.lane__block')).toHaveLength(2);
     });
 
@@ -421,6 +525,37 @@ describe('Presence', () => {
       expect(words(await part('house'))).toContain('Nothing was observed in this period.');
     });
 
+    // a stretch that does not say whether the house was occupied is not an empty stretch
+    it.each([
+      ['no timeline', { ...HOUSE, intervals: undefined }],
+      [
+        'a stretch without the flag',
+        { ...HOUSE, intervals: [{ from: '2026-10-07T00:00:00', to: LAST_CHECK }] },
+      ],
+    ])('draws the days as not known for %s', async (_, body) => {
+      await fixture.whenStable();
+      answerHouse(body as HouseReport);
+
+      const bars = [...(await part('house')).querySelectorAll('.lane')];
+
+      expect(bars.map((bar) => bar.getAttribute('aria-label'))).toEqual([
+        'The periods of this day are not known',
+        'The periods of this day are not known',
+      ]);
+    });
+
+    it('does not show the failure of one period under another', async () => {
+      await fixture.whenStable();
+      failHouse(new ApiError('server', 502));
+      await fixture.whenStable();
+
+      (await part('period')).querySelector<HTMLButtonElement>('mat-button-toggle button')!.click();
+
+      const shown = await part('house');
+      expect(shown.querySelector('[role="alert"]')).toBeNull();
+      expect(shown.querySelector('mat-progress-bar')).toBeTruthy();
+    });
+
     it('waits for the answer of the period on screen after the period changes', async () => {
       await fixture.whenStable();
       answerHouse(HOUSE);
@@ -435,7 +570,7 @@ describe('Presence', () => {
 
     it('says why the days are missing when the call fails', async () => {
       await fixture.whenStable();
-      fail(house, new ApiError('server', 502));
+      failHouse(new ApiError('server', 502));
 
       expect(words((await part('house')).querySelector('[role="alert"]'))).toContain('(error 502)');
     });

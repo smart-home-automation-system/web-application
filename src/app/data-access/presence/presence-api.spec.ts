@@ -108,6 +108,36 @@ describe('PresenceApi', () => {
 
       expect(history.error()?.status).toBe(404);
       expect(history.value()).toBeUndefined();
+      // the failure is that of this question, and the resource says so
+      expect(history.settledFor()?.query).toBe(query());
+    });
+
+    it('says which question its last call was for only once that call has ended', () => {
+      const first: ResidentQuery = { name: 'Aurelia', range: WEEK };
+      const second: ResidentQuery = { name: 'Borys', range: WEEK };
+      const query = signal<ResidentQuery | undefined>(first);
+      const history = TestBed.runInInjectionContext(() => api.watchResident(query));
+      settle();
+      expect(history.settledFor()).toBeUndefined();
+      http.match(() => true).forEach((call) => call.flush({}));
+      expect(history.settledFor()?.query).toBe(first);
+
+      query.set(second);
+      settle();
+
+      expect(history.settledFor()?.query).toBe(first);
+      http.match(() => true).forEach((call) => call.flush({}));
+      expect(history.settledFor()?.query).toBe(second);
+    });
+
+    // the browser resolves a segment of dots away before it sends anything
+    it.each(['.', '..'])('does not ask for a resident named "%s"', (name) => {
+      const query = signal<ResidentQuery | undefined>({ name, range: WEEK });
+      const history = TestBed.runInInjectionContext(() => api.watchResident(query));
+      settle();
+
+      http.expectNone(() => true);
+      expect(history.error()?.kind).toBe('unexpected');
     });
 
     // a name is a path segment: a space or a slash in it must not change the path

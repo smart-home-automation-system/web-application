@@ -8,6 +8,7 @@ import {
   PresenceReport,
   ResidentPresence,
 } from '../app/data-access/presence/presence-api';
+import { LONGEST_RANGE_DAYS } from '../app/features/presence/report-range';
 import { HOUSEHOLD_PROFILES } from './household.fixtures';
 import { houseTime } from './house-time';
 
@@ -26,7 +27,6 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const HISTORY_DAYS = 12;
 const LAST_CHECK_AGO_MS = 40_000;
-const LONGEST_RANGE_DAYS = 366;
 const NEVER_SEEN = 'Damian';
 
 /** A stretch of the wall clock of the house, in milliseconds on a timeline without zones. */
