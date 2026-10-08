@@ -15,7 +15,7 @@
 // day | bar | the periods in words; on a narrow panel the words go under the bar
 .week__day {
   display: grid;
-  grid-template-columns: 3.2em minmax(80px, 1fr) minmax(0, 1.4fr);
+  grid-template-columns: 4em minmax(80px, 1fr) minmax(0, 1.4fr);
   align-items: center;
   column-gap: 8px;
   row-gap: 2px;
@@ -23,7 +23,7 @@
   color: var(--mat-sys-on-surface-variant);
 
   @container (max-width: 380px) {
-    grid-template-columns: 3.2em minmax(0, 1fr);
+    grid-template-columns: 4em minmax(0, 1fr);
 
     .week__periods {
       grid-column: 2;

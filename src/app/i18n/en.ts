@@ -65,7 +65,7 @@ export const en = {
     },
     pump: {
       title: 'Floor heating pump',
-      loading: 'Loading the state of the floor heating pump',
+      loading: 'Loading the floor heating pump',
       running: 'Running',
       stopped: 'Stopped',
       noStatus: 'No status yet',
@@ -75,6 +75,7 @@ export const en = {
       title: 'Rooms',
       loading: 'Loading the rooms',
       none: 'The service lists no room.',
+      notListed: 'The service did not answer with a list of rooms.',
       measured: 'Measured',
       noReading: 'No reading yet',
       target: 'Target',
@@ -82,13 +83,13 @@ export const en = {
       noHeater: 'No heater',
       heatersUnknown: 'The service does not list the heaters.',
       legend:
-        'Target: what the schedule asks for right now. Calls for heat: the room is colder than that. A heater without a status has not answered since the heating service started.',
+        'Target: what the schedule asks for now. Calls for heat: the room is colder. No status: the relay has not answered since the service started.',
       floor: {
         ground: 'Ground floor',
         upper: 'Upper floor',
         attic: 'Attic',
         outside: 'Outside',
-        other: 'Other rooms',
+        other: 'Other',
       },
       heater: {
         radiator: 'Radiator',
@@ -105,7 +106,7 @@ export const en = {
         noneThatDay: 'no heating',
         none: 'No schedule.',
         unknown: 'The service does not list the schedule.',
-        unreadable: 'Periods the application could not read: {{ count }}.',
+        unreadable: 'Periods that could not be read: {{ count }}.',
       },
     },
   },

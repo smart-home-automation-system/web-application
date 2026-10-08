@@ -24,81 +24,92 @@
                     type="button"
                     class="room__summary"
                     [attr.aria-expanded]="shown"
-                    [attr.aria-controls]="panelId(room.name)"
+                    [attr.aria-controls]="shown ? panelId(floor.id, $index) : null"
+                    [attr.aria-labelledby]="panelId(floor.id, $index) + '-name'"
+                    [attr.aria-describedby]="panelId(floor.id, $index) + '-facts'"
                     (click)="toggle(room.name)"
                   >
                     <span class="room__head">
                       <!-- the identifier of the backend, printed as it is: never a translation -->
-                      <span class="room__name">{{ room.name }}</span>
+                      <span class="room__name" [id]="panelId(floor.id, $index) + '-name'">{{
+                        room.name
+                      }}</span>
                       <mat-icon class="room__chevron" aria-hidden="true">{{
                         shown ? 'expand_less' : 'expand_more'
                       }}</mat-icon>
                     </span>
 
-                    @if (room.temperature !== undefined) {
-                      <span class="room__temperature" data-testid="room-temperature"
-                        >{{ room.temperature | localNumber: ONE_DECIMAL }}&nbsp;°C</span
-                      >
-                      @if (room.measuredAt | houseAge; as age) {
-                        <span class="room__detail"
-                          >{{ t('heating.rooms.measured') }}&ngsp;{{ age }}</span
+                    <!-- the button is named by the room; what the card says about it is its description -->
+                    <span class="room__facts" [id]="panelId(floor.id, $index) + '-facts'">
+                      @if (room.temperature !== undefined) {
+                        <span class="room__temperature" data-testid="room-temperature"
+                          >{{ room.temperature | localNumber: ONE_DECIMAL }}&nbsp;°C</span
                         >
-                      }
-                    } @else {
-                      <span class="room__temperature room__temperature--none">{{
-                        t('heating.rooms.noReading')
-                      }}</span>
-                    }
-
-                    @if (room.target !== undefined) {
-                      <span class="room__detail" data-testid="room-target"
-                        >{{ t('heating.rooms.target') }}&ngsp;<strong
-                          >{{ room.target | localNumber: TARGET }}&nbsp;°C</strong
-                        ></span
-                      >
-                    } @else if (room.heaters !== undefined && room.heaters.length > 0) {
-                      <span class="room__detail" data-testid="room-target">{{
-                        t('heating.rooms.noTarget')
-                      }}</span>
-                    }
-
-                    @if (room.heaters === undefined) {
-                      <span class="room__detail">{{ t('heating.rooms.heatersUnknown') }}</span>
-                    } @else if (room.heaters.length === 0) {
-                      <span class="room__detail">{{ t('heating.rooms.noHeater') }}</span>
-                    } @else {
-                      <span class="room__heaters">
-                        @for (heater of room.heaters; track $index) {
-                          <span
-                            class="heater"
-                            [class.heater--on]="heater.working === true"
-                            [attr.data-state]="
-                              heater.working === undefined
-                                ? 'unknown'
-                                : heater.working
-                                  ? 'on'
-                                  : 'off'
-                            "
+                        @if (room.measuredAt | houseAge; as age) {
+                          <span class="room__detail"
+                            >{{ t('heating.rooms.measured') }}&ngsp;{{ age }}</span
                           >
-                            <mat-icon class="heater__icon" aria-hidden="true">{{
-                              kindIcon(heater)
-                            }}</mat-icon>
-                            <span
-                              >{{ t(kindLabel(heater)) }}:&ngsp;{{ t(stateLabel(heater)) }}</span
-                            >
-                            @if (heater.callsForHeat === true) {
-                              <span class="badge">{{
-                                t('heating.rooms.heater.callsForHeat')
-                              }}</span>
-                            }
-                          </span>
                         }
-                      </span>
-                    }
+                      } @else {
+                        <span class="room__temperature room__temperature--none">{{
+                          t('heating.rooms.noReading')
+                        }}</span>
+                      }
+
+                      @if (room.target !== undefined) {
+                        <span class="room__detail" data-testid="room-target"
+                          >{{ t('heating.rooms.target') }}&ngsp;<strong
+                            >{{ room.target | localNumber: TARGET }}&nbsp;°C</strong
+                          ></span
+                        >
+                      } @else if (room.heaters !== undefined && room.heaters.length > 0) {
+                        <span class="room__detail" data-testid="room-target">{{
+                          t('heating.rooms.noTarget')
+                        }}</span>
+                      }
+
+                      @if (room.heaters === undefined) {
+                        <span class="room__detail">{{ t('heating.rooms.heatersUnknown') }}</span>
+                      } @else if (room.heaters.length === 0) {
+                        <span class="room__detail">{{ t('heating.rooms.noHeater') }}</span>
+                      } @else {
+                        <span class="room__heaters">
+                          @for (heater of room.heaters; track $index) {
+                            <span
+                              class="heater"
+                              [class.heater--on]="heater.working === true"
+                              [attr.data-state]="
+                                heater.working === undefined
+                                  ? 'unknown'
+                                  : heater.working
+                                    ? 'on'
+                                    : 'off'
+                              "
+                            >
+                              <mat-icon class="heater__icon" aria-hidden="true">{{
+                                kindIcon(heater)
+                              }}</mat-icon>
+                              <span
+                                >{{ t(kindLabel(heater)) }}:&ngsp;{{ t(stateLabel(heater)) }}</span
+                              >
+                              @if (heater.callsForHeat === true) {
+                                <span class="badge">{{
+                                  t('heating.rooms.heater.callsForHeat')
+                                }}</span>
+                              }
+                            </span>
+                          }
+                        </span>
+                      }
+                    </span>
                   </button>
 
                   @if (shown) {
-                    <div class="room__panel" [id]="panelId(room.name)" data-testid="room-panel">
+                    <div
+                      class="room__panel"
+                      [id]="panelId(floor.id, $index)"
+                      data-testid="room-panel"
+                    >
                       @if (room.heaters === undefined) {
                         <p class="room__note">{{ t('heating.rooms.heatersUnknown') }}</p>
                       } @else {
@@ -141,7 +152,10 @@
           </section>
         } @empty {
           @if (!rooms.error()) {
-            <p class="room__note">{{ t('heating.rooms.none') }}</p>
+            <!-- an answer that is no list is not a house without rooms -->
+            <p class="room__note">
+              {{ t(listed() ? 'heating.rooms.none' : 'heating.rooms.notListed') }}
+            </p>
           }
         }
         @if (floors().length > 0) {

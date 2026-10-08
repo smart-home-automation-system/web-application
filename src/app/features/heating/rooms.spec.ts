@@ -177,7 +177,7 @@ describe('Rooms', () => {
       ['Ground floor', ['living room']],
       ['Upper floor', ['office']],
       ['Outside', ['sauna']],
-      ['Other rooms', ['winter garden']],
+      ['Other', ['winter garden']],
     ]);
   });
 
@@ -281,7 +281,7 @@ describe('Rooms', () => {
       const panel = await open('office');
 
       expect(words(panel)).toContain('07:00–09:00 · 20 °C');
-      expect(words(panel)).toContain('Periods the application could not read: 1.');
+      expect(words(panel)).toContain('Periods that could not be read: 1.');
       expect(words(panel)).not.toContain('No schedule.');
     });
 
@@ -317,6 +317,43 @@ describe('Rooms', () => {
       expect(words(await room('living room'))).toContain('20.1 °C');
       expect((await room('living room')).querySelector('[data-testid="room-panel"]')).toBeTruthy();
     });
+  });
+
+  // a 200 without a body, or anything that is no list, is not a house without rooms
+  it.each([
+    ['no body', null],
+    ['an object', {} as unknown as Room[]],
+  ])('says that the service did not answer with a list for %s', async (_, value) => {
+    answer(rooms, value);
+
+    const shown = words(await card());
+
+    expect(shown).toContain('The service did not answer with a list of rooms.');
+    expect(shown).not.toContain('The service lists no room.');
+  });
+
+  it('names the button of a room by the room, and describes it by what the card says', async () => {
+    answer(rooms, [LIVING_ROOM]);
+    const shown = await room('living room');
+    const button = shown.querySelector('button')!;
+    const byId = (attribute: string) =>
+      words(shown.querySelector(`[id="${button.getAttribute(attribute)}"]`));
+
+    expect(byId('aria-labelledby')).toBe('living room');
+    expect(byId('aria-describedby')).toContain('19.4 °C');
+    // the panel does not exist while the room is closed
+    expect(button.hasAttribute('aria-controls')).toBe(false);
+  });
+
+  it('gives two rooms of one name panels of their own', async () => {
+    answer(rooms, [SAUNA, SAUNA]);
+    (await card()).querySelectorAll<HTMLElement>('[data-room="sauna"] button')[0].click();
+
+    const ids = [...(await card()).querySelectorAll('[data-testid="room-panel"]')].map(
+      (panel) => panel.id,
+    );
+
+    expect(new Set(ids).size).toBe(2);
   });
 
   it('says that the service lists no room when it answers with none', async () => {
@@ -359,7 +396,7 @@ describe('Rooms', () => {
     expect(shown).toContain('Pomiar 3 min temu');
     expect(shown).toContain('Cel 21,5 °C');
     expect(shown).toContain('Grzejnik: grzeje Wymaga grzania');
-    expect(shown).toContain('Podłogówka: nie grzeje');
+    expect(shown).toContain('Podłoga: nie grzeje');
     expect(shown).toContain('Grzejnik: brak stanu');
     expect(shown).toContain('Brak odczytu');
     expect(words(await open('living room'))).toContain('czw. (dzisiaj) 06:00–08:00 · 21 °C');

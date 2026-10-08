@@ -61,6 +61,9 @@ export class Rooms {
 
   protected readonly floors = computed(() => groupByFloor(toRoomViews(this.rooms.value())));
 
+  /** Whether the answer is a list at all: a 200 without a body is not "no rooms". */
+  protected readonly listed = computed(() => Array.isArray(this.rooms.value()));
+
   /** The identifier of the room whose week is shown; one at a time. */
   protected readonly open = signal<string | undefined>(undefined);
 
@@ -90,8 +93,11 @@ export class Rooms {
     return heater.working ? 'heating.rooms.heater.on' : 'heating.rooms.heater.off';
   }
 
-  /** An address inside the page for the panel of a room: the identifier without its spaces. */
-  protected panelId(room: string): string {
-    return `room-panel-${room.replace(/[^a-z0-9]+/gi, '-')}`;
+  /**
+   * An address inside the page for the panel of a room. By its place, not by its name: a name
+   * is text from outside, and two rooms may share one.
+   */
+  protected panelId(floor: string, index: number): string {
+    return `room-panel-${floor}-${index}`;
   }
 }

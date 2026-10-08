@@ -74,6 +74,11 @@ function toPeriod(entry: unknown): SchedulePeriod | undefined {
   if (!isRecord(entry) || !Array.isArray(entry['days'])) {
     return undefined;
   }
+  // The service knows cooling periods too, and nothing here could draw one as what it is: a
+  // period of another type is not shown as heating.
+  if (entry['type'] !== undefined && entry['type'] !== 'HEATING') {
+    return undefined;
+  }
   const days = [...new Set(entry['days'].map((day: unknown) => DAYS.indexOf(String(day))))];
   const start = minutes(entry['startTime']);
   const end = minutes(entry['endTime']);
@@ -135,7 +140,11 @@ export function toRoomViews(answer: unknown): RoomView[] {
         temperature,
         // the time of a reading says nothing without the reading
         measuredAt: temperature === undefined ? undefined : text(reading['updatedAt']),
-        target: targets.length > 0 ? Math.max(...targets) : undefined,
+        // not Math.max(...targets): a list as long as the answer makes it must not be spread
+        target: targets.reduce<number | undefined>(
+          (highest, target) => (highest === undefined || target > highest ? target : highest),
+          undefined,
+        ),
         heaters: Array.isArray(list) ? list.map(toHeater) : undefined,
       },
     ];

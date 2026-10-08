@@ -1,5 +1,7 @@
 :host {
   display: block;
+  // an open room is laid out for the width of the card, not of the window
+  container: rooms / inline-size;
 }
 
 .rooms {
@@ -58,10 +60,6 @@ mat-card-content {
   }
 }
 
-:host {
-  container: rooms / inline-size;
-}
-
 .room__summary {
   display: grid;
   gap: 2px;
@@ -84,6 +82,16 @@ mat-card-content {
     outline: 2px solid var(--mat-sys-on-surface);
     outline-offset: 2px;
   }
+}
+
+// the facts of a room are rows of the summary itself
+.room__facts {
+  display: contents;
+}
+
+// "heating - reported 4 min ago" begins a line of its own
+.schedule .room__note::first-letter {
+  text-transform: uppercase;
 }
 
 .room__head {

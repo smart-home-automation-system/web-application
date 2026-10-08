@@ -56,9 +56,7 @@ const A_DAY_MS = 24 * 60 * 60 * 1_000;
                   }}&nbsp;°C</span
                 >
               } @empty {
-                <span class="week__text week__text--none">{{
-                  t('heating.rooms.schedule.noneThatDay')
-                }}</span>
+                <span class="week__text">{{ t('heating.rooms.schedule.noneThatDay') }}</span>
               }
             </span>
           </li>

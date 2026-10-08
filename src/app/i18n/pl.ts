@@ -74,12 +74,13 @@ export const pl: Messages = {
       title: 'Pokoje',
       loading: 'Wczytywanie pokoi',
       none: 'Serwis nie podaje żadnego pokoju.',
+      notListed: 'Serwis nie odpowiedział listą pokoi.',
       measured: 'Pomiar',
       noReading: 'Brak odczytu',
       target: 'Cel',
       noTarget: 'Teraz poza harmonogramem',
       noHeater: 'Bez ogrzewania',
-      heatersUnknown: 'Serwis nie podaje grzejników.',
+      heatersUnknown: 'Serwis nie podaje ogrzewania tego pokoju.',
       legend:
         'Cel: temperatura, której harmonogram wymaga w tej chwili. Wymaga grzania: w pokoju jest chłodniej. Grzejnik bez stanu nie odpowiedział od startu serwisu ogrzewania.',
       floor: {
@@ -91,7 +92,7 @@ export const pl: Messages = {
       },
       heater: {
         radiator: 'Grzejnik',
-        floor: 'Podłogówka',
+        floor: 'Podłoga',
         other: 'Ogrzewanie',
         on: 'grzeje',
         off: 'nie grzeje',

@@ -181,6 +181,8 @@ describe('toRoomViews', () => {
               { ...period, startTime: '25:00:00' },
               { ...period, endTime: '06:00:00' },
               { ...period, temperature: 'warm' },
+              // a cooling period is not drawn as heating
+              { ...period, type: 'COOLING' },
               'a period',
             ],
           },
@@ -191,7 +193,7 @@ describe('toRoomViews', () => {
     expect(room.heaters?.[0].periods).toEqual([
       { days: [0], start: 420, end: 540, temperature: 20 },
     ]);
-    expect(room.heaters?.[0].unreadablePeriods).toBe(7);
+    expect(room.heaters?.[0].unreadablePeriods).toBe(8);
   });
 
   it('puts the days of a period in the order of the week, each once', () => {
