@@ -1,4 +1,33 @@
-import { formatHouseDateTime, houseInstant, parseHouseDateTime } from './house-date-time';
+import {
+  formatHouseDateTime,
+  houseInstant,
+  houseWeekMinute,
+  parseHouseDateTime,
+} from './house-date-time';
+
+describe('houseWeekMinute', () => {
+  const at = (instant: string, zone = 'Europe/Warsaw') =>
+    houseWeekMinute(Date.parse(instant), zone);
+
+  it('tells the day of the week, Monday being 0, and the minutes since midnight', () => {
+    // a Thursday, 14:30 in summer time
+    expect(at('2026-10-08T12:30:59Z')).toEqual({ day: 3, minute: 870 });
+    expect(at('2026-10-05T04:00:00Z')).toEqual({ day: 0, minute: 360 });
+  });
+
+  it('is on the clock of the house: Sunday night there while it is still Sunday evening in UTC', () => {
+    expect(at('2026-10-11T21:59:00Z')).toEqual({ day: 6, minute: 1439 });
+    expect(at('2026-10-11T22:00:00Z')).toEqual({ day: 0, minute: 0 });
+  });
+
+  it('follows the winter time of the house', () => {
+    expect(at('2026-12-01T12:30:00Z')).toEqual({ day: 1, minute: 810 });
+  });
+
+  it('does not depend on the zone of the browser', () => {
+    expect(at('2026-10-08T12:30:00Z', 'America/New_York')).toEqual({ day: 3, minute: 510 });
+  });
+});
 
 describe('parseHouseDateTime', () => {
   it('reads a LocalDateTime with fractional seconds', () => {

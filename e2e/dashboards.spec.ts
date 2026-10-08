@@ -101,6 +101,169 @@ test.describe('heating', () => {
     await expect(page.getByTestId('offline-notice')).toBeHidden();
   });
 
+  test.describe('the rooms', () => {
+    // Thursday 8 October 2026, 14:30 on the clocks of the house: what a schedule asks for
+    // depends on the day and the hour
+    test.beforeEach(async ({ page }) => {
+      await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+    });
+
+    test('shows every room on its floor, with its temperature, target and heaters', async ({
+      page,
+    }) => {
+      await page.goto('/heating');
+      const rooms = page.getByTestId('rooms');
+
+      await expect(rooms.getByRole('heading', { level: 3 })).toHaveText([
+        'Ground floor',
+        'Upper floor',
+        'Attic',
+        'Outside',
+      ]);
+      await expect(rooms.locator('[data-room]')).toHaveCount(9);
+      await expect(rooms.locator('[data-floor="upper"] [data-room]')).toHaveCount(4);
+
+      const livingRoom = rooms.locator('[data-room="living room"]');
+      await expect(livingRoom).toContainText('20.4 °C');
+      await expect(livingRoom).toContainText('Measured 4 min ago');
+      await expect(livingRoom).toContainText('Target 21.5 °C');
+      await expect(livingRoom).toContainText('Radiator: heating');
+      await expect(livingRoom).toContainText('Calls for heat');
+      await expect(livingRoom).toContainText('Floor heating: off');
+
+      // warm enough: the target stays on the card, and nothing calls for heat
+      const office = rooms.locator('[data-room="office"]');
+      await expect(office).toContainText('Target 20.5 °C');
+      await expect(office).toContainText('Radiator: off');
+      await expect(office).not.toContainText('Calls for heat');
+
+      // a relay that has not answered is not "off"
+      await expect(rooms.locator('[data-room="wardrobe"]')).toContainText(
+        'Floor heating: no status yet',
+      );
+      await expect(rooms.locator('[data-room="bedroom"]')).toContainText('No schedule right now');
+      await expect(rooms.locator('[data-room="sauna"]')).toContainText('No reading yet');
+      await expect(rooms.locator('[data-room="garden"]')).toContainText('Measured 47 days ago');
+      await expect(page.getByTestId('floor-pump')).toContainText('Running');
+      await expect(page.getByTestId('floor-pump')).toContainText('Reported 2 min ago');
+      await expect(page.getByRole('alert')).toHaveCount(0);
+    });
+
+    test('opens a room into the week of its heaters, and closes it again', async ({ page }) => {
+      await page.goto('/heating');
+      const livingRoom = page.getByTestId('rooms').locator('[data-room="living room"]');
+      const button = livingRoom.getByRole('button');
+
+      await expect(button).toHaveAttribute('aria-expanded', 'false');
+      await button.click();
+
+      await expect(button).toHaveAttribute('aria-expanded', 'true');
+      const panel = livingRoom.getByTestId('room-panel');
+      await expect(panel.getByRole('heading', { level: 4 })).toHaveText([
+        'Radiator',
+        'Floor heating',
+      ]);
+      // several periods a day, and other ones at the weekend
+      const floor = panel.locator('.schedule').nth(1);
+      await expect(floor.locator('.week__day')).toHaveText([
+        /Mon\s+06:00–08:00\s·\s21\s°C\s+15:00–22:00\s·\s21\.5\s°C/,
+        /Tue/,
+        /Wed/,
+        /Thu\s+\(today\)\s+06:00–08:00\s·\s21\s°C\s+15:00–22:00\s·\s21\.5\s°C/,
+        /Fri/,
+        /Sat\s+08:00–22:30\s·\s21\.5\s°C/,
+        /Sun\s+08:00–22:30\s·\s21\.5\s°C/,
+      ]);
+      await expect(floor.locator('.week__now')).toHaveCount(1);
+
+      // one room at a time
+      await page
+        .getByTestId('rooms')
+        .locator('[data-room="bathroom down"]')
+        .getByRole('button')
+        .click();
+      await expect(livingRoom.getByTestId('room-panel')).toHaveCount(0);
+      // a heater without a schedule
+      await expect(
+        page.getByTestId('rooms').locator('[data-room="bathroom down"]').getByTestId('room-panel'),
+      ).toContainText('No schedule.');
+
+      await page
+        .getByTestId('rooms')
+        .locator('[data-room="bathroom down"]')
+        .getByRole('button')
+        .click();
+      await expect(page.getByTestId('room-panel')).toHaveCount(0);
+    });
+
+    test('can be opened from the keyboard', async ({ page }) => {
+      await page.goto('/heating');
+      const button = page.getByTestId('rooms').locator('[data-room="office"]').getByRole('button');
+
+      await button.focus();
+      await page.keyboard.press('Enter');
+
+      await expect(
+        page.getByTestId('rooms').locator('[data-room="office"]').getByTestId('room-panel'),
+      ).toContainText('07:00–17:00 · 20.5 °C');
+    });
+
+    // heating-service just after a start: it knows its rooms and schedules and nothing else
+    test('claims nothing the service has not measured, heard or decided yet', async ({ page }) => {
+      await useScenario(page, 'no-readings');
+
+      await page.goto('/heating');
+      const rooms = page.getByTestId('rooms');
+
+      await expect(rooms.locator('[data-room]')).toHaveCount(9);
+      await expect(rooms.getByText('No reading yet')).toHaveCount(9);
+      await expect(rooms.getByTestId('room-temperature')).toHaveCount(0);
+      await expect(rooms.locator('.heater[data-state="unknown"]')).toHaveCount(8);
+      await expect(rooms.locator('.heater:not([data-state="unknown"])')).toHaveCount(0);
+      await expect(rooms.locator('.heater .badge')).toHaveCount(0);
+      // the one thing the service works out when asked
+      await expect(rooms.locator('[data-room="office"]')).toContainText('Target 20.5 °C');
+      await expect(page.getByTestId('floor-pump')).toContainText('No status yet');
+      await expect(page.getByRole('alert')).toHaveCount(0);
+    });
+
+    test('fits a phone with a room open, without horizontal scrolling', async ({ page }) => {
+      await page.goto('/heating');
+      await page
+        .getByTestId('rooms')
+        .locator('[data-room="living room"]')
+        .getByRole('button')
+        .click();
+      await expect(page.getByTestId('room-panel')).toBeVisible();
+
+      const overflow = await page.evaluate(() => ({
+        page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        card: (() => {
+          const card = document.querySelector('[data-testid="rooms"]')!;
+          return card.scrollWidth - card.clientWidth;
+        })(),
+      }));
+
+      expect(overflow).toEqual({ page: 0, card: 0 });
+    });
+
+    test('speaks Polish, except for the identifiers of the rooms', async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem('smart-home.language.Aurelia', 'pl'));
+
+      await page.goto('/heating');
+      const livingRoom = page.getByTestId('rooms').locator('[data-room="living room"]');
+
+      await expect(page.getByTestId('rooms').getByRole('heading', { level: 3 }).first()).toHaveText(
+        'Parter',
+      );
+      await expect(livingRoom).toContainText('living room');
+      await expect(livingRoom).toContainText('20,4 °C');
+      await expect(livingRoom).toContainText('Cel 21,5 °C');
+      await expect(livingRoom).toContainText('Grzejnik: grzeje');
+      await expect(page.getByTestId('floor-pump')).toContainText('Pracuje');
+    });
+  });
+
   // a room that never reported is not in the answer of the service
   test('says that no sensor has reported yet just after the first start of the service', async ({
     page,
@@ -114,14 +277,14 @@ test.describe('heating', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  // three calls feed the page: each failure is told once, in the card of its call
+  // five calls feed the page: each failure is told once, in the card of its call
   test('says in each card that the service is failing, and offers no switch', async ({ page }) => {
     await useScenario(page, 'server-error');
 
     await page.goto('/heating');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(3);
+    await expect(alerts).toHaveCount(5);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }

@@ -4,9 +4,9 @@
   </header>
 
   <section class="tiles" [attr.aria-label]="t('heating.cards')">
-    <app-heating-switch [control]="heating" />
+    <app-heating-switch class="tile--switch" [control]="heating" />
 
-    <mat-card appearance="outlined" class="tile card--domain" data-testid="activity">
+    <mat-card appearance="outlined" class="tile tile--activity card--domain" data-testid="activity">
       <mat-card-header>
         <div mat-card-avatar class="domain-badge"><mat-icon>heat</mat-icon></div>
         <mat-card-title>{{ t('heating.activity.title') }}</mat-card-title>
@@ -35,6 +35,38 @@
         }
       </mat-card-content>
     </mat-card>
+
+    <mat-card appearance="outlined" class="tile tile--pump card--domain" data-testid="floor-pump">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>water_pump</mat-icon></div>
+        <mat-card-title>{{ t('heating.pump.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="pump.lastUpdated()" [stale]="pump.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (pump.loading()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('heating.pump.loading')" />
+        } @else {
+          @let running = pumpRunning();
+          @if (running !== undefined) {
+            <p class="tile__state" [class.tile__state--on]="running">
+              <mat-icon>{{ running ? 'water_pump' : 'mode_off_on' }}</mat-icon>
+              {{ t(running ? 'heating.pump.running' : 'heating.pump.stopped') }}
+            </p>
+            @if (pump.value()?.updatedAt | houseAge; as age) {
+              <p class="tile__detail">{{ t('heating.pump.reported') }}&ngsp;{{ age }}</p>
+            }
+          } @else if (!pump.error()) {
+            <p class="tile__detail">{{ t('heating.pump.noStatus') }}</p>
+          }
+          <app-api-error-strip [error]="pump.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <app-heating-rooms class="tile--rooms" />
 
     <mat-card appearance="outlined" class="tile tile--sensors card--domain" data-testid="sensors">
       <mat-card-header>

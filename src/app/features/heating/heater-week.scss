@@ -1,0 +1,84 @@
+:host {
+  display: block;
+  // the rows are laid out for the width of the panel, not of the window
+  container-type: inline-size;
+}
+
+.week {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// day | bar | the periods in words; on a narrow panel the words go under the bar
+.week__day {
+  display: grid;
+  grid-template-columns: 4em minmax(80px, 1fr) minmax(0, 1.4fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  @container (max-width: 380px) {
+    grid-template-columns: 4em minmax(0, 1fr);
+
+    .week__periods {
+      grid-column: 2;
+    }
+  }
+}
+
+// today: the stronger of the two text colours, and a heavier name - not a hue
+.week__day--today {
+  color: var(--mat-sys-on-surface);
+
+  .week__name {
+    font-weight: 700;
+  }
+}
+
+.week__name {
+  text-transform: capitalize;
+}
+
+// the whole day, pale; the periods of the schedule are laid over it
+.week__lane {
+  position: relative;
+  height: 12px;
+  border-radius: var(--mat-sys-corner-full);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--mat-sys-on-surface) 14%, var(--mat-sys-surface));
+}
+
+.week__period {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  // a short period is still a period: never thinner than a hairline
+  min-width: 2px;
+  background: var(--app-domain);
+}
+
+// where the clock of the house is now: a line of the text colour across the bar
+.week__now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--mat-sys-on-surface);
+}
+
+.week__periods {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.week__text {
+  white-space: nowrap;
+}

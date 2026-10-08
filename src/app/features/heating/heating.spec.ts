@@ -5,9 +5,11 @@ import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import {
+  FloorPump,
   HeatingActivity,
   HeatingApi,
   HeatingStatus,
+  Room,
   TemperatureSensor,
 } from '../../data-access/heating/heating-api';
 import { Heating } from './heating';
@@ -26,6 +28,8 @@ describe('Heating', () => {
   let status: FakeResource<HeatingStatus>;
   let activity: FakeResource<HeatingActivity>;
   let sensors: FakeResource<readonly TemperatureSensor[] | null>;
+  let pump: FakeResource<FloorPump | null>;
+  let rooms: FakeResource<readonly Room[] | null>;
   let switching: WritableSignal<boolean>;
   let fixture: ComponentFixture<Heating>;
 
@@ -35,6 +39,8 @@ describe('Heating', () => {
     status = fakeResource();
     activity = fakeResource();
     sensors = fakeResource();
+    pump = fakeResource();
+    rooms = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -49,6 +55,8 @@ describe('Heating', () => {
             }),
             watchActivity: () => activity,
             watchSensors: () => sensors,
+            watchFloorPump: () => pump,
+            watchRooms: () => rooms,
           },
         },
       ],
@@ -58,7 +66,9 @@ describe('Heating', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  async function part(name: 'heating-switch' | 'activity' | 'sensors'): Promise<HTMLElement> {
+  async function part(
+    name: 'heating-switch' | 'activity' | 'sensors' | 'floor-pump' | 'rooms',
+  ): Promise<HTMLElement> {
     await fixture.whenStable();
     return (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${name}"]`)!;
   }
@@ -74,7 +84,7 @@ describe('Heating', () => {
   }
 
   it('shows a progress bar in each card until its call has answered', async () => {
-    for (const name of ['heating-switch', 'activity', 'sensors'] as const) {
+    for (const name of ['heating-switch', 'activity', 'floor-pump', 'rooms', 'sensors'] as const) {
       expect((await part(name)).querySelector('mat-progress-bar'), name).toBeTruthy();
     }
 
@@ -260,6 +270,51 @@ describe('Heating', () => {
         'The server cannot be reached.',
       );
     });
+  });
+
+  describe('the pump of the floor heating', () => {
+    it('says that it runs, and when its relay reported that', async () => {
+      answer(pump, { working: true, updatedAt: '2026-10-08T14:27:00.926456' });
+
+      expect(words(await part('floor-pump'))).toContain('Running Reported 3 min ago');
+    });
+
+    it('says that it is stopped', async () => {
+      answer(pump, { working: false, updatedAt: '2026-10-08T14:29:55.926456' });
+
+      expect(words(await part('floor-pump'))).toContain('Stopped Reported just now');
+    });
+
+    // what the service answers until the relay has answered: {} - and null for no body at all
+    it.each([
+      ['an empty answer', {}],
+      ['no body', null],
+      ['a text where the flag should be', { working: 'yes' } as unknown as FloorPump],
+    ])('says that there is no status yet for %s, never "stopped"', async (_, value) => {
+      answer(pump, value);
+
+      const card = words(await part('floor-pump'));
+
+      expect(card).toContain('No status yet');
+      expect(card).not.toContain('Stopped');
+    });
+
+    it('says why it is not known when the call fails', async () => {
+      fail(pump, new ApiError('server', 502));
+
+      const card = await part('floor-pump');
+
+      expect(words(card.querySelector('[role="alert"]'))).toContain(
+        'The service is not available right now (error 502).',
+      );
+      expect(words(card)).not.toContain('No status yet');
+    });
+  });
+
+  it('shows the rooms of the house in a card of their own', async () => {
+    answer(rooms, [{ name: 'office', temperature: { value: 21.3 }, heaters: [] }]);
+
+    expect(words(await part('rooms'))).toContain('21.3 °C');
   });
 
   it('speaks Polish, except for the identifiers of the rooms', async () => {

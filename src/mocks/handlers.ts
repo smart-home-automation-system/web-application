@@ -2,7 +2,9 @@ import { HttpRequest } from '@angular/common/http';
 
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import {
+  floorPump,
   heatingActivity,
+  heatingRooms,
   heatingStatus,
   temperatureSensors,
   turnHeating,
@@ -65,6 +67,18 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: '/home/heating/temperature/sensors',
     // a room that never reported is not in the answer: just after the first start there is none
     reply: (_, fresh) => ({ status: 200, body: fresh ? [] : temperatureSensors() }),
+  },
+  {
+    method: 'GET',
+    path: '/home/heating/rooms',
+    // just after a start the service knows its rooms and their schedules, and nothing measured
+    reply: (_, fresh) => ({ status: 200, body: heatingRooms(new Date(), fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/heating/floor-pump',
+    // until the relay of the pump has answered the service says nothing about it
+    reply: (_, fresh) => ({ status: 200, body: fresh ? {} : floorPump() }),
   },
   {
     method: 'GET',

@@ -10,14 +10,16 @@ import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { HeatingSwitch } from '../../shared/heating-switch/heating-switch';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
+import { Rooms } from './rooms';
 import { summarise, toSensorRows } from './sensor-rows';
 
 /**
- * Heating: the switch of the whole system, whether any room is being heated right now, and the
+ * Heating: the switch of the whole system, whether any room is being heated right now, the pump
+ * of the floor heating, the rooms with their temperatures, heaters and schedules, and the
  * health of the temperature sensors - which room last reported when, which sensor fell silent
  * and which is left out of the alerts.
  *
- * Three calls feed the page, and each has one card: its freshness and its failure are told once.
+ * Five calls feed the page, and each has one card: its freshness and its failure are told once.
  * The switch is the one thing here that changes the house; it is a card shared with other views
  * (`shared/heating-switch`).
  */
@@ -33,6 +35,7 @@ import { summarise, toSensorRows } from './sensor-rows';
     HeatingSwitch,
     HouseAgePipe,
     HouseDateTimePipe,
+    Rooms,
   ],
   templateUrl: './heating.html',
   styleUrl: './heating.scss',
@@ -43,6 +46,13 @@ export class Heating {
   protected readonly heating = this.api.watchSwitch();
   protected readonly activity = this.api.watchActivity();
   protected readonly sensors = this.api.watchSensors();
+  protected readonly pump = this.api.watchFloorPump();
+
+  /** True, false, or `undefined` until the relay of the pump has answered - never "stopped". */
+  protected readonly pumpRunning = computed(() => {
+    const working: unknown = this.pump.value()?.working;
+    return typeof working === 'boolean' ? working : undefined;
+  });
 
   /** True, false, or `undefined` while the answer does not say. */
   protected readonly heatingRooms = computed(() => {

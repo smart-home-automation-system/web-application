@@ -164,6 +164,23 @@ e2e/              # Playwright tests
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
+- **The rooms of the heating page** (HAS-198, `features/heating/rooms`, `room-views.ts`,
+  `heater-week`) are read from `GET /heating/rooms` of `heating-service` 1.8.0, whose rule is
+  that a missing field means "not known". `toRoomViews` keeps that rule field by field
+  (`working`, `inSchedule`, a temperature, a list of heaters, a list of schedules are each
+  `undefined` when absent) and the template has a text for every one of them - a new field of
+  that answer gets the same treatment before it gets a place on the card. Five things to keep:
+  the target is the service's `scheduledTemperature`, **never computed here from `schedules`**
+  (the browser's clock is not the house's, and the rule of when a period is on is the
+  service's); `inSchedule` is worded "Calls for heat", because it is not "a period is on"; a
+  period that cannot be drawn is **counted** (`unreadablePeriods`), a cooling one included; a
+  room unknown to `FLOORS` goes to "Other" instead of vanishing; and the week is placed
+  with `houseWeekMinute` - the day and minute of the house. The card and the week set
+  `preserveWhitespaces`: their rows are pieces of text side by side, and a unit test read
+  "heatingCalls for heat" without it. A room is a `<button>` named by the room
+  (`aria-labelledby`) and described by its facts, and `aria-controls` is there only while the
+  panel is. In a browser test scope a room to the card (`getByTestId('rooms')`): the sensor
+  table carries `data-room` too.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

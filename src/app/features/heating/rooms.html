@@ -1,0 +1,168 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="rooms card--domain" data-testid="rooms">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>meeting_room</mat-icon></div>
+      <mat-card-title>{{ t('heating.rooms.title') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="rooms.lastUpdated()" [stale]="rooms.stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (rooms.loading()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('heating.rooms.loading')" />
+      } @else {
+        @for (floor of floors(); track floor.id) {
+          <section class="floor" [attr.data-floor]="floor.id">
+            <h3 class="floor__name">{{ t(floor.label) }}</h3>
+            <ul class="floor__rooms">
+              <!-- by position: nothing promises that a room is listed once -->
+              @for (room of floor.rooms; track $index) {
+                @let shown = open() === room.name;
+                <li class="room" [class.room--open]="shown" [attr.data-room]="room.name">
+                  <button
+                    type="button"
+                    class="room__summary"
+                    [attr.aria-expanded]="shown"
+                    [attr.aria-controls]="shown ? panelId(floor.id, $index) : null"
+                    [attr.aria-labelledby]="panelId(floor.id, $index) + '-name'"
+                    [attr.aria-describedby]="panelId(floor.id, $index) + '-facts'"
+                    (click)="toggle(room.name)"
+                  >
+                    <span class="room__head">
+                      <!-- the identifier of the backend, printed as it is: never a translation -->
+                      <span class="room__name" [id]="panelId(floor.id, $index) + '-name'">{{
+                        room.name
+                      }}</span>
+                      <mat-icon class="room__chevron" aria-hidden="true">{{
+                        shown ? 'expand_less' : 'expand_more'
+                      }}</mat-icon>
+                    </span>
+
+                    <!-- the button is named by the room; what the card says about it is its description -->
+                    <span class="room__facts" [id]="panelId(floor.id, $index) + '-facts'">
+                      @if (room.temperature !== undefined) {
+                        <span class="room__temperature" data-testid="room-temperature"
+                          >{{ room.temperature | localNumber: ONE_DECIMAL }}&nbsp;°C</span
+                        >
+                        @if (room.measuredAt | houseAge; as age) {
+                          <span class="room__detail"
+                            >{{ t('heating.rooms.measured') }}&ngsp;{{ age }}</span
+                          >
+                        }
+                      } @else {
+                        <span class="room__temperature room__temperature--none">{{
+                          t('heating.rooms.noReading')
+                        }}</span>
+                      }
+
+                      @if (room.target !== undefined) {
+                        <span class="room__detail" data-testid="room-target"
+                          >{{ t('heating.rooms.target') }}&ngsp;<strong
+                            >{{ room.target | localNumber: TARGET }}&nbsp;°C</strong
+                          ></span
+                        >
+                      } @else if (room.heaters !== undefined && room.heaters.length > 0) {
+                        <span class="room__detail" data-testid="room-target">{{
+                          t('heating.rooms.noTarget')
+                        }}</span>
+                      }
+
+                      @if (room.heaters === undefined) {
+                        <span class="room__detail">{{ t('heating.rooms.heatersUnknown') }}</span>
+                      } @else if (room.heaters.length === 0) {
+                        <span class="room__detail">{{ t('heating.rooms.noHeater') }}</span>
+                      } @else {
+                        <span class="room__heaters">
+                          @for (heater of room.heaters; track $index) {
+                            <span
+                              class="heater"
+                              [class.heater--on]="heater.working === true"
+                              [attr.data-state]="
+                                heater.working === undefined
+                                  ? 'unknown'
+                                  : heater.working
+                                    ? 'on'
+                                    : 'off'
+                              "
+                            >
+                              <mat-icon class="heater__icon" aria-hidden="true">{{
+                                kindIcon(heater)
+                              }}</mat-icon>
+                              <span
+                                >{{ t(kindLabel(heater)) }}:&ngsp;{{ t(stateLabel(heater)) }}</span
+                              >
+                              @if (heater.callsForHeat === true) {
+                                <span class="badge">{{
+                                  t('heating.rooms.heater.callsForHeat')
+                                }}</span>
+                              }
+                            </span>
+                          }
+                        </span>
+                      }
+                    </span>
+                  </button>
+
+                  @if (shown) {
+                    <div
+                      class="room__panel"
+                      [id]="panelId(floor.id, $index)"
+                      data-testid="room-panel"
+                    >
+                      @if (room.heaters === undefined) {
+                        <p class="room__note">{{ t('heating.rooms.heatersUnknown') }}</p>
+                      } @else {
+                        @for (heater of room.heaters; track $index) {
+                          <section class="schedule">
+                            <h4 class="schedule__title">{{ t(kindLabel(heater)) }}</h4>
+                            @if (heater.reportedAt | houseAge; as age) {
+                              <p class="room__note">
+                                {{ t(stateLabel(heater)) }}&ngsp;·&ngsp;{{
+                                  t('heating.rooms.heater.reported')
+                                }}&ngsp;{{ age }}
+                              </p>
+                            }
+                            @if (heater.periods === undefined) {
+                              <p class="room__note">{{ t('heating.rooms.schedule.unknown') }}</p>
+                            } @else if (heater.periods.length > 0) {
+                              <app-heater-week [periods]="heater.periods" />
+                            } @else if (heater.unreadablePeriods === 0) {
+                              <p class="room__note">{{ t('heating.rooms.schedule.none') }}</p>
+                            }
+                            @if (heater.unreadablePeriods > 0) {
+                              <p class="room__note">
+                                {{
+                                  t('heating.rooms.schedule.unreadable', {
+                                    count: heater.unreadablePeriods,
+                                  })
+                                }}
+                              </p>
+                            }
+                          </section>
+                        } @empty {
+                          <p class="room__note">{{ t('heating.rooms.noHeater') }}</p>
+                        }
+                      }
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        } @empty {
+          @if (!rooms.error()) {
+            <!-- an answer that is no list is not a house without rooms -->
+            <p class="room__note">
+              {{ t(listed() ? 'heating.rooms.none' : 'heating.rooms.notListed') }}
+            </p>
+          }
+        }
+        @if (floors().length > 0) {
+          <p class="room__note rooms__legend">{{ t('heating.rooms.legend') }}</p>
+        }
+        <app-api-error-strip [error]="rooms.error()" />
+      }
+    </mat-card-content>
+  </mat-card>
+</ng-container>

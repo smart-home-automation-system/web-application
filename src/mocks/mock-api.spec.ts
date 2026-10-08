@@ -9,7 +9,13 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
-import { HEATING_STATUS, resetHeating, temperatureSensors } from './heating.fixtures';
+import {
+  HEATING_STATUS,
+  floorPump,
+  heatingRooms,
+  resetHeating,
+  temperatureSensors,
+} from './heating.fixtures';
 import { HOUSEHOLD_PROFILES } from './household.fixtures';
 import { mockApiInterceptors } from './mock-api';
 import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
@@ -92,6 +98,87 @@ describe('mock API', () => {
       expect(temperatureSensors(new Date('2026-07-15T10:00:30Z'))[0].lastReadingAt).toBe(
         '2026-07-15T11:58:10.596721',
       );
+    });
+
+    it('answers the rooms: every case the page has to show, the names being those of the SDK', async () => {
+      const rooms = (await firstValueFrom(http.get('/home/heating/rooms'))) as ReturnType<
+        typeof heatingRooms
+      >;
+      const named = (name: string) => rooms.find((room) => room.name === name)!;
+
+      expect(rooms.map((room) => room.name)).toEqual([
+        'office',
+        'bedroom',
+        'wardrobe',
+        'bathroom up',
+        'loft',
+        'living room',
+        'bathroom down',
+        'sauna',
+        'garden',
+      ]);
+      // a room that never reported, rooms without a heater, a heater without a schedule,
+      // a relay that has not answered and a room with two heaters
+      expect(named('sauna')).toEqual({ name: 'sauna', mode: 'HEATING', heaters: [] });
+      expect(named('loft').heaters).toEqual([]);
+      expect(named('bathroom down').heaters?.[0].schedules).toEqual([]);
+      expect(named('wardrobe').heaters?.[0].working).toBeUndefined();
+      expect(named('wardrobe').heatingEnabled).toBeUndefined();
+      expect(named('living room').heaters?.map((heater) => heater.type)).toEqual([
+        'radiator',
+        'floor',
+      ]);
+    });
+
+    // Thursday 8 October 2026 on the clock of the house: 14:30, then 23:30
+    it('works out what a schedule asks for at the moment of the call, like the service', () => {
+      const office = (at: string) => heatingRooms(new Date(at))[0];
+
+      const afternoon = office('2026-10-08T12:30:00Z');
+      expect(afternoon.temperature).toEqual({
+        value: 21.3,
+        updatedAt: '2026-10-08T14:27:40.596721',
+      });
+      expect(afternoon.heaters?.[0]).toMatchObject({
+        working: false,
+        updatedAt: '2026-10-08T14:27:40.596721',
+        // warm enough: a period is on, and the room is not colder than it asks
+        inSchedule: false,
+        scheduledTemperature: 20.5,
+      });
+      expect(afternoon.heaters?.[0].targetTemperature).toBeUndefined();
+
+      const night = office('2026-10-08T21:30:00Z').heaters?.[0];
+      expect(night?.scheduledTemperature).toBeUndefined();
+      expect(night?.inSchedule).toBe(false);
+
+      // both ends of a period are excluded
+      expect(office('2026-10-08T05:00:00Z').heaters?.[0].scheduledTemperature).toBeUndefined();
+      expect(office('2026-10-08T05:01:00Z').heaters?.[0].scheduledTemperature).toBe(20.5);
+    });
+
+    it('answers a room that is being heated with the target next to "in schedule"', () => {
+      const livingRoom = heatingRooms(new Date('2026-10-08T12:30:00Z')).find(
+        (room) => room.name === 'living room',
+      );
+
+      expect(livingRoom?.heatingEnabled).toBe(true);
+      expect(livingRoom?.heaters?.[0]).toMatchObject({
+        working: true,
+        inSchedule: true,
+        targetTemperature: 21.5,
+        scheduledTemperature: 21.5,
+      });
+    });
+
+    it('answers the pump of the floor heating, dated a moment before the call', async () => {
+      expect(await firstValueFrom(http.get('/home/heating/floor-pump'))).toMatchObject({
+        working: true,
+      });
+      expect(floorPump(new Date('2026-07-15T10:00:30Z'))).toEqual({
+        working: true,
+        updatedAt: '2026-07-15T11:58:25.596721',
+      });
     });
 
     describe('in the scenario of changes that fail', () => {
@@ -199,6 +286,23 @@ describe('mock API', () => {
     // a room that never reported is not in the answer of the service
     it('answers the sensors with an empty list', async () => {
       expect(await firstValueFrom(http.get('/home/heating/temperature/sensors'))).toEqual([]);
+    });
+
+    // heating-service after its first start: rooms and schedules, nothing measured or decided
+    it('answers the rooms with nothing measured, reported or decided', async () => {
+      const rooms = (await firstValueFrom(http.get('/home/heating/rooms'))) as ReturnType<
+        typeof heatingRooms
+      >;
+      const heaters = rooms.flatMap((room) => room.heaters ?? []);
+
+      expect(rooms).toHaveLength(9);
+      expect(rooms.filter((room) => room.temperature || 'heatingEnabled' in room)).toEqual([]);
+      expect(heaters.filter((heater) => 'working' in heater || 'inSchedule' in heater)).toEqual([]);
+      expect(heaters.filter((heater) => heater.schedules!.length > 0)).not.toEqual([]);
+    });
+
+    it('answers the pump of the floor heating with nothing about it', async () => {
+      expect(await firstValueFrom(http.get('/home/heating/floor-pump'))).toEqual({});
     });
 
     it('answers everything else as usual', async () => {

@@ -111,6 +111,19 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // a room opened into the week of its two heaters, on a Thursday afternoon of the house
+      test('heating, a room with its week', async ({ page }, testInfo) => {
+        await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+        await page.goto('/heating');
+        const room = page.getByTestId('rooms').locator('[data-room="living room"]');
+        await room.getByRole('button').click();
+        await expect(room.getByTestId('room-panel')).toBeVisible();
+        await room.scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'heating-room-week'),
+        });
+      });
+
       // the dashboards, each in its usual state, just after a start of its service (nothing
       // measured or noted yet) and while the service fails
       for (const [scenario, suffix] of [
