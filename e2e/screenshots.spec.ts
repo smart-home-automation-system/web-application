@@ -125,6 +125,7 @@ for (const language of ['en', 'pl'] as const) {
           if (scenario === 'default') {
             await expect(page.getByRole('table')).toBeVisible();
           }
+          await photoIsShown(page);
           await page.screenshot({
             path: shot(testInfo.project.name, scheme, language, `heating${suffix}`),
             fullPage: true,

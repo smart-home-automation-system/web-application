@@ -29,6 +29,7 @@ const pages: Page[] = [
   {
     path: 'heating',
     title: 'nav.heating',
+    data: { background: 'heating' },
     loadComponent: () => import('./features/heating/heating').then((m) => m.Heating),
   },
   {
