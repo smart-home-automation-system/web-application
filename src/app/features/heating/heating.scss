@@ -1,10 +1,56 @@
+// The page is laid out for the screen it is on (as the presence page is). A phone and a narrow
+// window: one column, the three small cards first. A window: those three in a row, the rooms
+// and the sensors under them, as wide as the page. A wide screen: three columns - the small
+// cards stacked in the first, the rooms in the middle, the sensors on the right - so that the
+// whole house is on screen without scrolling.
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'switch'
+    'activity'
+    'pump'
+    'rooms'
+    'sensors';
   gap: 12px;
-  max-width: 960px;
   // a card is as tall as what it has to say, not as its neighbour
   align-items: start;
+
+  @media (min-width: 1000px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      'switch activity pump'
+      'rooms rooms rooms'
+      'sensors sensors sensors';
+  }
+
+  @media (min-width: 1800px) {
+    grid-template-columns: minmax(260px, 2fr) minmax(0, 6fr) minmax(380px, 3fr);
+    // the rooms and the sensors span every row; the last one takes what they need beyond the pump
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      'switch rooms sensors'
+      'activity rooms sensors'
+      'pump rooms sensors'
+      '. rooms sensors';
+  }
+}
+
+.tile--switch {
+  grid-area: switch;
+}
+
+.tile--activity {
+  grid-area: activity;
+}
+
+.tile--pump {
+  grid-area: pump;
+}
+
+.tile--rooms {
+  grid-area: rooms;
+  min-width: 0;
 }
 
 // every card here is of the heating domain: its colour on the edge and the badge
@@ -12,11 +58,10 @@
   --app-domain: var(--app-domain-heating);
 }
 
-// The table takes a row of its own, as wide as two cards and no wider. (Not `span 2`: where
-// the grid has room for one column only - a phone, and a window just wide enough for the side
-// panel - a span of two would add a column that is not there.)
+// The table is as wide as two small cards and no wider: stretched across a window its three
+// short columns would stand far apart.
 .tile--sensors {
-  grid-column: 1 / -1;
+  grid-area: sensors;
   max-width: 636px;
 }
 

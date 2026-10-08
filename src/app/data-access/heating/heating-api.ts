@@ -35,6 +35,70 @@ export interface TemperatureSensor {
   readonly muted?: boolean;
 }
 
+/** A measured value with the house wall-clock time the service got it at. */
+export interface RoomReading {
+  readonly value?: number;
+  readonly updatedAt?: string;
+}
+
+/** One period of a heater's week: on its days, between the two times, heat up to the temperature. */
+export interface HeaterSchedule {
+  readonly type?: string;
+  /** `MONDAY` ... `SUNDAY`. */
+  readonly days?: readonly string[];
+  /** Local times of the house, `07:00:00`; a period is on strictly between the two. */
+  readonly startTime?: string;
+  readonly endTime?: string;
+  readonly temperature?: number;
+}
+
+/** A heater of a room - a radiator or the floor - as the service last knew it. */
+export interface RoomHeater {
+  /** `radiator` or `floor`. */
+  readonly type?: string;
+  /** What its relay last reported; missing until the relay has answered since the service started. */
+  readonly working?: boolean;
+  /** House wall-clock time of that report. */
+  readonly updatedAt?: string;
+  /**
+   * The decision of the control loop at the last reading of the room: a period is on **and** the
+   * room is colder than it asks for. Missing until a reading has arrived since the service
+   * started. The switch of the whole heating is not part of it.
+   */
+  readonly inSchedule?: boolean;
+  /** The temperature of that period - there only while `inSchedule` is true. */
+  readonly targetTemperature?: number;
+  /**
+   * What the schedules ask for at the moment of the call, whether or not the room has reached it;
+   * missing when no period is on. The target to show: worked out by the service, with its clock.
+   */
+  readonly scheduledTemperature?: number;
+  readonly schedules?: readonly HeaterSchedule[];
+}
+
+/**
+ * One room of `GET /home/heating/rooms`. A missing field means "not known", never off or zero:
+ * the service leaves out whatever was not measured, reported or decided yet. After a start of
+ * the service a room has its last stored temperature and, until its sensor reports again,
+ * nothing else.
+ */
+export interface Room {
+  /** The identifier of the room in the backend (`living room`), not a name to translate. */
+  readonly name?: string;
+  readonly mode?: string;
+  readonly heatingEnabled?: boolean;
+  readonly temperature?: RoomReading;
+  readonly humidity?: RoomReading;
+  readonly heaters?: readonly RoomHeater[];
+}
+
+/** `GET /home/heating/floor-pump`: `{}` until the relay of the pump has answered. */
+export interface FloorPump {
+  readonly working?: boolean;
+  /** House wall-clock time of that report. */
+  readonly updatedAt?: string;
+}
+
 /** A change of the heating switch that the service did not carry out. */
 export interface FailedSwitch {
   /** What was asked for. */
@@ -111,6 +175,25 @@ export class HeatingApi {
   /** Call in an injection context: the polling lives as long as the caller. */
   watchActivity(): PollingResource<HeatingActivity> {
     return pollingResource(() => this.api.get<HeatingActivity>('/heating/status/active'), {
+      intervalMs: POLL_EVERY_MS,
+    });
+  }
+
+  /**
+   * Every room of the house with its temperature, heaters and schedules. The service answers
+   * from its memory, so the freshness of the call is not the age of a reading - each reading
+   * and each relay report carries its own time. Call in an injection context: the polling lives
+   * as long as the caller.
+   */
+  watchRooms(): PollingResource<readonly Room[] | null> {
+    return pollingResource(() => this.api.get<readonly Room[] | null>('/heating/rooms'), {
+      intervalMs: POLL_EVERY_MS,
+    });
+  }
+
+  /** Call in an injection context: the polling lives as long as the caller. */
+  watchFloorPump(): PollingResource<FloorPump | null> {
+    return pollingResource(() => this.api.get<FloorPump | null>('/heating/floor-pump'), {
       intervalMs: POLL_EVERY_MS,
     });
   }

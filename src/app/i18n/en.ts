@@ -63,6 +63,51 @@ export const en = {
       legend:
         'Silent: no reading for longer than the heating service allows. Muted: left out of the alerts.',
     },
+    pump: {
+      title: 'Floor heating pump',
+      loading: 'Loading the state of the floor heating pump',
+      running: 'Running',
+      stopped: 'Stopped',
+      noStatus: 'No status yet',
+      reported: 'Reported',
+    },
+    rooms: {
+      title: 'Rooms',
+      loading: 'Loading the rooms',
+      none: 'The service lists no room.',
+      measured: 'Measured',
+      noReading: 'No reading yet',
+      target: 'Target',
+      noTarget: 'No schedule right now',
+      noHeater: 'No heater',
+      heatersUnknown: 'The service does not list the heaters.',
+      legend:
+        'Target: what the schedule asks for right now. Calls for heat: the room is colder than that. A heater without a status has not answered since the heating service started.',
+      floor: {
+        ground: 'Ground floor',
+        upper: 'Upper floor',
+        attic: 'Attic',
+        outside: 'Outside',
+        other: 'Other rooms',
+      },
+      heater: {
+        radiator: 'Radiator',
+        floor: 'Floor heating',
+        other: 'Heater',
+        on: 'heating',
+        off: 'off',
+        noStatus: 'no status yet',
+        callsForHeat: 'Calls for heat',
+        reported: 'reported',
+      },
+      schedule: {
+        today: 'today',
+        noneThatDay: 'no heating',
+        none: 'No schedule.',
+        unknown: 'The service does not list the schedule.',
+        unreadable: 'Periods the application could not read: {{ count }}.',
+      },
+    },
   },
   // the switch of the heating system: a card shared by the views that show it
   heatingSwitch: {

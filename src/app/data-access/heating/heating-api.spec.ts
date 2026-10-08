@@ -170,4 +170,19 @@ describe('HeatingApi', () => {
     expect(activity.value()).toEqual({ active: true });
     expect(sensors.value()).toHaveLength(1);
   });
+
+  it('reads the rooms and the pump of the floor heating', () => {
+    const { rooms, pump } = TestBed.runInInjectionContext(() => {
+      const api = TestBed.inject(HeatingApi);
+      return { rooms: api.watchRooms(), pump: api.watchFloorPump() };
+    });
+    vi.advanceTimersByTime(0);
+
+    http.expectOne('/home/heating/rooms').flush([{ name: 'office', heaters: [] }]);
+    // what the service answers until the relay of the pump has answered
+    http.expectOne('/home/heating/floor-pump').flush({});
+
+    expect(rooms.value()).toEqual([{ name: 'office', heaters: [] }]);
+    expect(pump.value()).toEqual({});
+  });
 });

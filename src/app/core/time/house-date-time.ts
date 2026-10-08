@@ -88,6 +88,22 @@ export function houseDay(instant: number, timeZone: string): string {
   return new Date(wallClockIn(timeZone, instant)).toISOString().slice(0, 10);
 }
 
+/**
+ * Where in its week the house is at the instant: the day, Monday being 0, and the minutes since
+ * its midnight. For placing "now" on a weekly schedule, which is written in the wall-clock times
+ * of the house.
+ */
+export function houseWeekMinute(
+  instant: number,
+  timeZone: string,
+): { readonly day: number; readonly minute: number } {
+  const clock = new Date(wallClockIn(timeZone, instant));
+  return {
+    day: (clock.getUTCDay() + 6) % 7,
+    minute: clock.getUTCHours() * 60 + clock.getUTCMinutes(),
+  };
+}
+
 /** What the clocks of the zone show at the instant, placed on the UTC timeline. */
 function wallClockIn(timeZone: string, instant: number): number {
   const parts = dateTimeFormat('en-GB', zoneClock(timeZone)).formatToParts(instant);
