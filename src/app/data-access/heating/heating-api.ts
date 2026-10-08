@@ -1,4 +1,5 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
+import { throwError } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { ApiError, toApiError } from '../../core/api/api-error';
@@ -189,6 +190,32 @@ export class HeatingApi {
     return pollingResource(() => this.api.get<readonly Room[] | null>('/heating/rooms'), {
       intervalMs: POLL_EVERY_MS,
     });
+  }
+
+  /**
+   * One room, by the identifier the list gives it (`living room`, in any case). `name` is read
+   * when a call is made, so it may be an input of the caller; a caller that shows another room
+   * makes a resource of its own for it, or the answer for one room stands under the name of
+   * another for the length of a call. A name the service has no room for fails with a 404 that
+   * carries the code `NOT_FOUND_ROOM`; a 404 without it is a route that is not there. Call in
+   * an injection context: the polling lives as long as the caller.
+   */
+  watchRoom(name: () => string): PollingResource<Room | null> {
+    return pollingResource(
+      () => {
+        const asked = name();
+        // The name is a path segment: encoded, a space or a slash in it cannot change the path.
+        // Dots are not encoded, and a segment of dots alone is one the browser resolves away
+        // before it sends anything - such a name cannot be asked for, and is not.
+        if (/^\.+$/.test(asked)) {
+          return throwError(
+            () => new ApiError('unexpected', 0, [], new Error('A name of dots is not a path')),
+          );
+        }
+        return this.api.get<Room | null>(`/heating/rooms/${encodeURIComponent(asked)}`);
+      },
+      { intervalMs: POLL_EVERY_MS },
+    );
   }
 
   /** Call in an injection context: the polling lives as long as the caller. */

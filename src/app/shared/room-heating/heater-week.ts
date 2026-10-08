@@ -15,7 +15,7 @@ const A_MONDAY = Date.UTC(2024, 0, 1);
 const A_DAY_MS = 24 * 60 * 60 * 1_000;
 
 /**
- * The week of one heater, read-only: a bar from 00:00 to 24:00 per day, filled where a period
+ * The week of one heater - or only its today - read-only: a bar from 00:00 to 24:00 per day, filled where a period
  * of the schedule is on, with the periods in words next to it - the bar alone tells neither the
  * times nor the temperature. Today's row is marked, and a line on it shows where the clock of
  * the house is now.
@@ -29,37 +29,41 @@ const A_DAY_MS = 24 * 60 * 60 * 1_000;
     <ng-container *transloco="let t">
       <ul class="week">
         @for (day of week(); track $index) {
-          <li class="week__day" [class.week__day--today]="$index === now().day">
-            <span class="week__name">
-              {{ dayNames()[$index] }}
-              @if ($index === now().day) {
-                <span class="visually-hidden">&ngsp;({{ t('heating.rooms.schedule.today') }})</span>
-              }
-            </span>
-            <span class="week__lane" aria-hidden="true">
-              @for (period of day; track $index) {
-                <span
-                  class="week__period"
-                  [style.left.%]="period.offset"
-                  [style.width.%]="period.width"
-                ></span>
-              }
-              @if ($index === now().day) {
-                <span class="week__now" [style.left.%]="nowOffset()"></span>
-              }
-            </span>
-            <span class="week__periods">
-              @for (period of day; track $index) {
-                <span class="week__text"
-                  >{{ clock(period.start) }}–{{ clock(period.end) }}&ngsp;·&ngsp;{{
-                    period.temperature | localNumber: ONE_DECIMAL
-                  }}&nbsp;°C</span
-                >
-              } @empty {
-                <span class="week__text">{{ t('heating.rooms.schedule.noneThatDay') }}</span>
-              }
-            </span>
-          </li>
+          @if (only() === 'week' || $index === now().day) {
+            <li class="week__day" [class.week__day--today]="$index === now().day">
+              <span class="week__name">
+                {{ dayNames()[$index] }}
+                @if ($index === now().day) {
+                  <span class="visually-hidden"
+                    >&ngsp;({{ t('heating.rooms.schedule.today') }})</span
+                  >
+                }
+              </span>
+              <span class="week__lane" aria-hidden="true">
+                @for (period of day; track $index) {
+                  <span
+                    class="week__period"
+                    [style.left.%]="period.offset"
+                    [style.width.%]="period.width"
+                  ></span>
+                }
+                @if ($index === now().day) {
+                  <span class="week__now" [style.left.%]="nowOffset()"></span>
+                }
+              </span>
+              <span class="week__periods">
+                @for (period of day; track $index) {
+                  <span class="week__text"
+                    >{{ clock(period.start) }}–{{ clock(period.end) }}&ngsp;·&ngsp;{{
+                      period.temperature | localNumber: ONE_DECIMAL
+                    }}&nbsp;°C</span
+                  >
+                } @empty {
+                  <span class="week__text">{{ t('heating.rooms.schedule.noneThatDay') }}</span>
+                }
+              </span>
+            </li>
+          }
         }
       </ul>
     </ng-container>
@@ -71,6 +75,8 @@ const A_DAY_MS = 24 * 60 * 60 * 1_000;
 })
 export class HeaterWeek {
   readonly periods = input.required<readonly SchedulePeriod[]>();
+  /** The seven days, or the row of today alone - by the clock of the house. */
+  readonly only = input<'week' | 'today'>('week');
 
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
   private readonly ticker = inject(Ticker);

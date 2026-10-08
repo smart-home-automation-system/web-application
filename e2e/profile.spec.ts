@@ -76,7 +76,7 @@ test.describe('without a profile', () => {
 
     await expect(page).toHaveURL(/\/room$/);
     await expect(page).toHaveTitle('My room · Smart Home');
-    await expect(page.getByRole('listitem').filter({ hasText: 'loft' })).toBeVisible();
+    await expect(page.getByTestId('room-heating')).toContainText('loft');
     if (testInfo.project.name === 'phone') {
       // a bar with one destination leads nowhere
       await expect(page.locator('.shell__bottom-nav')).toHaveCount(0);
@@ -172,7 +172,7 @@ test.describe('a resident', () => {
     await page.goto('/');
 
     await expect(page).toHaveURL(/\/room$/);
-    await expect(page.getByRole('listitem').filter({ hasText: 'loft' })).toBeVisible();
+    await expect(page.getByTestId('room-heating')).toContainText('loft');
   });
 });
 
@@ -182,7 +182,10 @@ test.describe('a resident with two rooms', () => {
   test('sees both, in the order of the registry', async ({ page }) => {
     await page.goto('/room');
 
-    await expect(page.locator('.rooms__list li')).toHaveText(['bedroom', 'wardrobe']);
+    await expect(page.getByTestId('room-switcher').getByRole('radio')).toHaveText([
+      'bedroom',
+      'wardrobe',
+    ]);
   });
 });
 

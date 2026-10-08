@@ -272,9 +272,18 @@ export const pl: Messages = {
   },
   myRoom: {
     title: 'Mój pokój',
-    rooms: 'Twoje pokoje',
+    switcher: 'Twoje pokoje',
+    cards: 'Pokój i ogrzewanie domu',
+    noRoomsTitle: 'Brak pokoju',
     noRooms:
       'Do twojego profilu nie przypisano jeszcze żadnego pokoju. Pokoje przypisuje administrator domu.',
+    heating: {
+      loading: 'Wczytywanie pokoju',
+      humidity: 'Wilgotność',
+      today: 'Harmonogram na dziś',
+      unknownRoom: 'Serwis ogrzewania nie zna tego pokoju, więc nie ma o nim nic do pokazania.',
+      noAnswer: 'Serwis ogrzewania nie odpowiedział danymi pokoju.',
+    },
   },
   settings: {
     title: 'Ustawienia',

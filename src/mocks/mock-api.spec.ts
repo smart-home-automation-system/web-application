@@ -171,6 +171,32 @@ describe('mock API', () => {
       });
     });
 
+    it('answers one room by its name, in any case, as the service does', async () => {
+      const room = (name: string) =>
+        firstValueFrom(http.get(`/home/heating/rooms/${encodeURIComponent(name)}`));
+
+      expect(await room('living room')).toMatchObject({ name: 'living room' });
+      expect(await room('Living Room')).toMatchObject({ name: 'living room' });
+      // the one room of the mock house that reports a humidity
+      expect(await room('bedroom')).toMatchObject({ humidity: { value: 46 } });
+      expect(await room('loft')).not.toHaveProperty('humidity');
+    });
+
+    it('refuses a room the house does not have like the service: a 404 with its code', async () => {
+      const refused = await failure(firstValueFrom(http.get('/home/heating/rooms/attic')));
+
+      expect(refused.status).toBe(404);
+      expect(refused.error).toEqual({
+        errors: [
+          {
+            code: 'NOT_FOUND_ROOM',
+            details: 'Room name: attic',
+            message: 'Room with provided name is not a part of home',
+          },
+        ],
+      });
+    });
+
     it('answers the pump of the floor heating, dated a moment before the call', async () => {
       expect(await firstValueFrom(http.get('/home/heating/floor-pump'))).toMatchObject({
         working: true,

@@ -5,25 +5,18 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { HeatingApi } from '../../data-access/heating/heating-api';
-import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
-import { HeaterWeek } from './heater-week';
-import { HeaterKind, HeaterView, groupByFloor, toRoomViews } from './room-views';
-
-const KIND_LABELS: Record<HeaterKind, MessageKey> = {
-  radiator: 'heating.rooms.heater.radiator',
-  floor: 'heating.rooms.heater.floor',
-  other: 'heating.rooms.heater.other',
-};
-
-const KIND_ICONS: Record<HeaterKind, string> = {
-  radiator: 'heat',
-  floor: 'floor',
-  other: 'device_thermostat',
-};
+import {
+  heaterKindIcon,
+  heaterKindLabel,
+  heaterStateLabel,
+} from '../../shared/room-heating/heater-labels';
+import { HeaterWeek } from '../../shared/room-heating/heater-week';
+import { toRoomViews } from '../../shared/room-heating/room-views';
+import { groupByFloor } from './floors';
 
 /**
  * The rooms of the house, floor by floor: per room its temperature with the age of the reading,
@@ -77,21 +70,9 @@ export class Rooms {
     this.open.update((current) => (current === room ? undefined : room));
   }
 
-  protected kindLabel(heater: HeaterView): MessageKey {
-    return KIND_LABELS[heater.kind];
-  }
-
-  protected kindIcon(heater: HeaterView): string {
-    return KIND_ICONS[heater.kind];
-  }
-
-  /** What the relay last reported, in words - "no status yet" where it has not. */
-  protected stateLabel(heater: HeaterView): MessageKey {
-    if (heater.working === undefined) {
-      return 'heating.rooms.heater.noStatus';
-    }
-    return heater.working ? 'heating.rooms.heater.on' : 'heating.rooms.heater.off';
-  }
+  protected readonly kindLabel = heaterKindLabel;
+  protected readonly kindIcon = heaterKindIcon;
+  protected readonly stateLabel = heaterStateLabel;
 
   /**
    * An address inside the page for the panel of a room. By its place, not by its name: a name
