@@ -55,6 +55,13 @@ e2e/              # Playwright tests
 - **Every polled view shows its freshness**: `<app-data-freshness>` with the resource's
   `lastUpdated` and `stale`. A value without its age reads as current when the backend has been
   down for an hour. On an error the last value stays on screen, marked stale, next to the message.
+- **The service worker never sees a backend call**: `ApiClient` sends `ngsw-bypass` with every
+  request. Never call the backend around `ApiClient`, and never add a data group to
+  `ngsw-config.json` - see "Installed application" below.
+- **Whether the house can be reached is one fact**, `ConnectionStore.offline()`
+  (`core/api/connection-store.ts`), told by `ApiClient` from how every call ends, and shown by the
+  shell as a banner. A view still shows its own error next to its data; it does not build a
+  second "offline" state of its own.
 - **Timeouts**: `ApiClient` fails a call that gets no answer within `requestTimeoutMs` (10 s) as a
   `network` error and aborts it. A request that is accepted and never answered is the outage that
   otherwise looks like "still loading" forever.
@@ -115,7 +122,11 @@ access control** — the README says so plainly, and nothing here may be describ
   "switched off" and "removed" are one case here. **Never call `GET /home/household`**: the full
   registry carries phone numbers and device MAC addresses (HAS-211), and the mock API answers it
   with 404 so that a browser test fails on it. It runs at every start (not awaited), in the picker and inside
-  `open(member)`, which is what a personal link calls.
+  `open(member)`, which is what a personal link calls. **`open()` of the member already
+  remembered answers at once** and asks the registry on the side (HAS-194): their own link is
+  the address the installed application starts from, and waiting for the registry there was a
+  10-second spinner at every start outside the house. A member switched off since then is
+  therefore led to the picker when the registry answers, not to the "link opens nobody" message.
 - **One rule, asked in three places**: `redirectFor(access, profile)` answers where somebody is
   sent instead of a page, or `undefined`. `profileGuard` (`canActivateChild` of the shell
   route) asks it on navigation; the shell asks it to list the navigation entries, and again in an
@@ -136,6 +147,77 @@ access control** — the README says so plainly, and nothing here may be describ
   does it for a page of another context. A unit test that renders the shell puts a profile into
   `localStorage['smart-home.profile']` first, or every address leads to the picker. The image
   test has no backend, so it starts with a remembered profile too.
+
+## Installed application
+
+On the household's iPhones the application is added to the home screen and runs in a window of
+its own (HAS-194). Everything about that lives in `core/pwa/`, `core/api/connection-store.ts`,
+`core/layout/notices.ts` and `features/install/`.
+
+- **The manifest names no `start_url`, and must not get one.** The icon then opens the address it
+  was added from, and that has to be the personal link: an installed application on iOS has its
+  own storage, apart from Safari's, so on its first start it knows nobody. `scope` is `/` on
+  purpose - its default is the folder of the start address, `/u/`, which the first page behind
+  the link already leaves. `check:bundle` fails on either. The fallback the task names, should a
+  real iPhone behave differently, is a manifest served per profile.
+- **The personal link is the page the application is installed from.** In a tab of Safari on an
+  iPhone (`offersHomeScreen`: `navigator.standalone` exists and is false, on a touch screen - a
+  property only Apple's engine has, so nothing parses a user agent; every browser on an iPhone
+  is built on it, hence the steps say "the browser", not Safari) `PersonalLink` opens the profile, **stays under
+  its own address** and shows `InstallInstructions`. Anywhere else, and from the home screen, it
+  goes on as before. A page that navigates away before the member taps Share would put the
+  wrong address on the home screen - keep that in mind before adding a redirect there.
+- **The service worker keeps the application and nothing else** (`ngsw-config.json`): the shell
+  prefetched (scripts, styles, fonts, icons), the photos once seen. No data group, ever, and
+  `/home` is out of the navigation fallback. Left in the path of an API call the worker would
+  also answer a call that got no reply with **a 504 of its own making**, which reads as a failing
+  service instead of a house out of reach - hence `ngsw-bypass`. It is registered in production
+  builds only (`enabled: !isDevMode()`): the dev server and the mock build have none, so
+  **anything about the worker is tested on the container image** (`e2e/image.spec.ts`:
+  `workerKeepsTheApplication()` waits until it holds every file).
+- **A new kind of file the application needs offline goes into `ngsw-config.json`** - the same
+  moment it needs a prefix in nginx. A file missing there works online and is absent offline.
+- **`ngsw-worker.js` and `ngsw.json` must stay `no-cache`** in nginx (they are unhashed and take
+  the default): a browser that kept either would start the old version after every deploy.
+- **The worker serves `index.html` from its cache with the headers it had when cached**, and
+  replaces it only when the file changes. A change of `nginx/security-headers.conf` alone does
+  not reach installed clients for the document - change the CSP together with something that
+  changes `index.html`, or say so in the release.
+- **Updates**: `AppUpdate` (`core/pwa/app-update.ts`) turns the worker's `VERSION_READY` into the
+  "new version" strip and reloads on request. It asks the server on every return into view and
+  hourly - the worker itself looks only when the page is loaded, which an installed application
+  hardly ever is. `SwUpdate` is injected as optional, so a unit test needs no provider.
+- **The banner**: `ConnectionStore` - any answer, 4xx / 5xx included, means within reach;
+  `invalid-response` proves nothing; a call without an answer (`network`) is only a **doubt**.
+  Out of reach takes **two unanswered calls in a row, with nothing answered since the first was
+  sent** (`ApiClient` passes the time each call was sent): judged call by call, one service that
+  hangs behind a healthy gateway made the banner come and go with every poll (found in review -
+  the same lesson as the device monitors of the backend). At the first doubt `Notices` asks the
+  registry at once, so the second call follows immediately. The last successful call is kept in
+  `localStorage['smart-home.last-contact']` (written once a minute at most). The banner goes with
+  the next answer, and `Notices` asks the registry every 30 s while it is up, because a page
+  without polling asks nothing by itself.
+- **A page shown on the strength of what the browser remembers follows the registry afterwards**:
+  `PersonalLink` has an effect for it - `unavailable` opens the link by itself once the registry
+  answers, `install` turns into `unknown` when the remembered member is gone. The banner's
+  probe and the start both ask the registry behind the open page.
+- **Known limit**: the worker hands `index.html` to navigations only for addresses without a dot
+  (`!/**/*.*`, Angular's default, and a negative pattern cannot be overridden per path). A
+  member whose name contains a dot could not start the installed application offline.
+- **The notices are `role`-less strips in an `aria-live` region**, outside `<main>`, and the
+  region stays rendered while empty (zero padding, not `display: none`) - one that appears
+  together with its first words is often not read out. Many browser
+  tests ask for *the* `alert` on a page: a second element with that role breaks them all. A page
+  with its own "Try again" now shares the name with the banner's button - scope it
+  (`page.getByRole('main')`).
+- **Icons**: `node scripts/make-icons.mjs` renders all of them from `public/icon.svg`. The
+  iPhone's and the maskable one are rendered without the rounded corners - a home screen cuts
+  the shape itself and paints transparency black.
+- **Tests**: `onAnIPhone(page, …)` (`e2e/support.ts`) defines `navigator.standalone` and a touch
+  screen; a unit test does the same on `navigator` and deletes both afterwards.
+- **Not decided here, judged on the real phone**: the status bar of the installed application is
+  the system's default (no `apple-mobile-web-app-status-bar-style`; the translucent variant
+  draws white text over a pale page).
 
 ## Theme
 
@@ -373,13 +455,15 @@ up in a production build.
 - nginx's `add_header` in a `location` drops the inherited ones — every location serving the
   application includes the snippet.
 - CI builds the image, starts it read-only and runs `e2e/image.spec.ts` against it in a real
-  browser: the only test of nginx (CSP, SPA fallback, caching, `/healthz`). Locally:
+  browser: the only test of nginx (CSP, SPA fallback, caching, `/healthz`) and of the service
+  worker (starting offline, taking an update). Locally:
   `IMAGE_URL=http://localhost:8080 npm run e2e`.
 - **Playwright empties its output folder at the start of every run**, and CI runs it twice. So
   the two kinds of run write side by side (`test-results` / `playwright-report` for the mock
   API, `test-results-image` / `playwright-report-image` for the image), and the screenshots go
   to `screenshots/`, which no run empties by itself (`e2e/global-setup.ts` clears it before the
-  run that takes them). A screenshot is always written through `screenshotPath()`
+  run that takes them; the image run adds one picture of its own, so it runs second, as in CI).
+  A screenshot is always written through `screenshotPath()`
   (`e2e/support.ts`), never to a path of its own. CI uploads them as the artifact
   `screenshots` and fails when there are none - **that artifact is what a PR links to**; check
   that it holds pictures before writing that it does.

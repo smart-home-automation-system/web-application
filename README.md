@@ -42,6 +42,10 @@ Everybody in the household has a **profile**, opened by a personal link and reme
 browser: the administrator gets the whole application, a resident their own page - see
 [Profiles](#profiles), including what a profile is not.
 
+On an iPhone it is **installed on the home screen** and then runs in a window of its own, starts
+without the network, says when the house cannot be reached and tells when a newer version is
+waiting - see [On the phone](#on-the-phone).
+
 The interface speaks **English and Polish**. English is the default on a first visit, whatever
 the language of the browser; Polish is chosen from the toolbar, changes the open page without a
 reload and is remembered in the browser - for the household member who chose it, so a screen that
@@ -97,6 +101,11 @@ answer and loses the profile; a link that names such a member,
 or nobody, ends on a message that says so. While the backend is away the application keeps
 working as the member it remembers.
 
+A member's **own link opens at once**, without waiting for the registry: it is the address the
+installed application starts from, every time, also where the house cannot be reached. The
+registry is asked on the side; a member switched off since then loses the profile when it answers
+and is led to the picker (from the install steps: to the message that the link opens nobody).
+
 > **This is not access control.** A profile is a name, and anybody who can reach the application
 > can open anybody's link - the administrator's too - or call the API directly: nothing behind
 > the gateway is authenticated. The roles keep each member's view simple and keep a resident from
@@ -107,6 +116,33 @@ working as the member it remembers.
 
 In the mock API the household is Aurelia (administrator), Borys, Celina and Damian (residents
 with one room, two rooms and none): `/u/aurelia`, `/u/borys`.
+
+# On the phone
+
+The household uses iPhones, and the application is a web application all the way: there is
+nothing in the App Store. It is put on the home screen from Safari.
+
+**Installing.** Open your personal link (`/u/<name>`) in the browser of the phone. On an iPhone
+the page stays and shows the steps: the **Share** button, **Add to Home Screen**, **Add**. The icon then opens the
+application in a window of its own, straight in your profile. It has to be added *from the
+personal link*: the icon opens the address it was added from (the web app manifest names no start
+address on purpose), and the installed application keeps its own storage, apart from Safari's -
+on its first start the link is what tells it whose it is. Whoever prefers the browser taps
+"Continue in the browser".
+
+**Without a connection.** The application itself is kept on the phone by a service worker, so it
+starts anywhere. The house is reachable on the home network and over VPN only; outside, a banner
+above the page says that there is no connection, with the time the house last answered, and goes
+by itself when it answers again. **No value is ever shown from memory**: the worker keeps the
+application and never an answer of the backend - a remembered "heating is on" would be worse than
+an error.
+
+**Updates.** A new release is downloaded in the background, next to the running version. Once it
+is complete a strip says "A new version of the application is ready" and offers to reload. The
+application looks for one whenever it comes back into view and once an hour, because a phone
+brings an installed application back as it was and hardly ever loads it anew.
+
+Notifications (Web Push) are not part of this; they come with the appliance notifications.
 
 # Run locally
 
@@ -135,7 +171,7 @@ same ones, which the compiler and a unit test both check.
 | `npm test` | Unit tests (Vitest); `npm run test:coverage` writes `coverage/` for Sonar |
 | `npm run build` | Production build into `dist/` |
 | `npm run check:i18n` | Fails when a template uses a translation key that does not exist |
-| `npm run check:bundle` | Fails when the production build contains the mock API or loads anything from another origin |
+| `npm run check:bundle` | Fails when the production build contains the mock API, loads anything from another origin, has a manifest with a start address, or a service worker that would keep backend answers |
 | `npm run check:contrast` | Fails when a colour of the theme, in any season and scheme, drops below WCAG AA in the production build |
 | `npm run e2e` | Browser tests against the mock API, in a desktop and a phone layout; screenshots land in `screenshots/` |
 
@@ -166,6 +202,13 @@ What the application relies on, in every call:
 - **Timeouts**: a call that gets no answer within 10 s is aborted and reported as a connection
   failure, so a backend that accepts a request and never answers cannot leave a view loading
   forever.
+- **No answer is kept**: every call carries the header `ngsw-bypass`, which sends it past the
+  service worker untouched. The gateway ignores the header.
+- **Out of reach**: two calls in a row without any answer raise the banner "No connection to
+  the house" - one is not enough, because a single service that hangs looks the same while the
+  house is fine; after the first, the profiles are asked for at once, which settles it. Any
+  answer, a failing service included, takes the banner away - what failed is then told by the
+  view that asked. While the banner is up the profiles are asked for every 30 s.
 - **Polling** stops while the browser tab is hidden and resumes at once when it is back; every
   view shows how old its data is and marks it once it can no longer be trusted.
 
@@ -181,13 +224,16 @@ the release tag and the commit are stamped into it and shown on the **About** pa
 | Port | `8080` (the image runs as a non-root user and needs only `/tmp` writable) |
 | Health | `GET /healthz` - used by the Kubernetes probes |
 | Deep links | any path without a file falls back to `index.html`, so `/about` can be opened or reloaded directly |
-| Caching | files the build names with a content hash are immutable; `index.html` is revalidated on every load, which is how a new release reaches an open browser |
+| Caching | files the build names with a content hash are immutable; everything else is revalidated on every load - `index.html`, and the service worker with its list of files (`ngsw-worker.js`, `ngsw.json`), which is how a new release reaches a browser that keeps the application |
+| Manifest | `/manifest.webmanifest`, served as `application/manifest+json` |
 | Security headers | a `Content-Security-Policy` allowing this origin only, plus `nosniff`, `frame-ancestors 'none'` and a no-referrer policy |
 | Logs | one JSON object per request on stdout |
 
 The image is tested in CI before it can be released: it is built, started with a read-only
 root filesystem, and opened in a real browser, which checks that the application runs under
-its Content-Security-Policy.
+its Content-Security-Policy, that it starts again with the network cut off, and that it notices
+a version deployed since. The service worker exists in a production build only - the dev server
+and the mock API run without one - so this is the one place it is tested.
 
 ```bash
 docker build --build-arg APP_VERSION=0.0.0-local -t web-application:local .
