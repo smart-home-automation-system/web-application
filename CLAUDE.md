@@ -89,7 +89,7 @@ e2e/              # Playwright tests
   shown as unknown, never as the falsy value**: a device without `working` is "no status yet",
   not "off" (`toDeviceView`); a temperature that is not a finite number is "nothing measured
   yet" - and that includes whatever is *derived* from such a field one element further on (the
-  pipe and the circuit behind a pump of unknown state). A 200 without a body arrives as `null`:
+  pipe behind a pump of unknown state). A 200 without a body arrives as `null`:
   model it (`PollingResource<T | null>`) and decide what the page shows for it.
 - **Routes**: lazy-loaded with `loadComponent`, each with a `title` — the **key** of its text,
   not the text. **No route may start with `home`** — the ingress sends `/home` to the API gateway
@@ -121,6 +121,13 @@ e2e/              # Playwright tests
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
+- **A box on a page shows something the backend reports.** The schematic of the boiler room
+  had a box for the hot-water tank and one for the heating circuits, each repeating the state of
+  the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason
+  for them". Do not draw an element to complete a picture - draw it when it has data of its own.
+- **A card is as wide as its place allows, up to a cap** - never `width: fit-content`: sized by
+  its content a card is a narrow strip while it holds only a progress bar or a failure, and
+  narrower than its neighbours on a phone (the card of the boiler room was, in 0.8.0).
 - **A card is as big as what it says** (owner, 2026-10-08, HAS-195): never stretched to the
   height of its neighbour (`align-items: start` on a grid of cards) or across a wide screen and
   left mostly empty. Where a box has to be taller than its text - the furnace next to two

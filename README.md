@@ -40,9 +40,8 @@ dashboards, both read-only:
 - **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
   circulation, and whether the water asks to be heated.
-- **Boiler room**: a schematic of the furnace, the two pumps it feeds and where each sends the
-  heat, with the state of every device, the last thing `boiler-service` noted about it and how
-  long ago that was.
+- **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
+  every device, the last thing `boiler-service` noted about it and how long ago that was.
 
 The landing page still shows a single tile - the switch of the heating system; the heating
 dashboards and the overview proper arrive with the following tasks.
