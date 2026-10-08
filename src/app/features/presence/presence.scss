@@ -1,22 +1,64 @@
+// The page is laid out for the screen it is on, so that a week fits without scrolling wherever
+// there is room for it (owner, 2026-10-08: a list that has to be scrolled next to a screen that
+// is mostly empty is the wrong layout). A phone and a narrow window: one column. A window:
+// who is at home and the period side by side, the two lists of days under them - side by side
+// too once they have the room. A wide screen: three columns, the two small cards stacked in
+// the first and a list of days in each of the other two.
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'now'
+    'period'
+    'resident'
+    'house';
   gap: 12px;
-  max-width: 960px;
   // a card is as tall as what it has to say, not as its neighbour
   align-items: start;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'now period'
+      'resident resident'
+      'house house';
+  }
+
+  @media (min-width: 1000px) {
+    grid-template-areas:
+      'now period'
+      'resident house';
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: minmax(280px, 3fr) repeat(2, minmax(0, 5fr));
+    // the lists of days span both rows; the last row takes what they need beyond the first card
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'now resident house'
+      'period resident house';
+  }
+}
+
+.tile--now {
+  grid-area: now;
+}
+
+.tile--period {
+  grid-area: period;
+}
+
+.tile--resident {
+  grid-area: resident;
+}
+
+.tile--house {
+  grid-area: house;
 }
 
 // every card here is about the household: its colour on the edge, the badge and the bars
 .tile {
   --app-domain: var(--app-domain-household);
-}
-
-// The two lists of days take a row of their own each, as wide as two cards and no wider: a bar
-// of a day stretched over a whole monitor reads worse, not better.
-.tile--wide {
-  grid-column: 1 / -1;
-  max-width: 636px;
 }
 
 // tighter than Material's 16 px all round: the tiles are read, not touched
@@ -168,7 +210,8 @@ mat-card-content {
 
 .day__head {
   justify-content: space-between;
-  margin-bottom: 3px;
+  // room for a badge above the bar: it has an outline of its own, which must not touch it
+  margin-bottom: 6px;
   font: var(--mat-sys-body-medium);
   color: var(--mat-sys-on-surface);
 }

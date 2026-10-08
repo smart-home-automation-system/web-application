@@ -181,6 +181,7 @@ for (const language of ['en', 'pl'] as const) {
             if (scenario === 'default') {
               await expect(page.getByTestId('house').locator('.day')).toHaveCount(7);
             }
+            await photoIsShown(page);
             await page.screenshot({
               path: shot(testInfo.project.name, scheme, language, `presence${suffix}`),
               fullPage: true,

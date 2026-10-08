@@ -13,6 +13,7 @@ argument of the script) - by as little as makes `npm run check:contrast` pass.
 | `home` | Overview | 2026-10-07, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `heating` | Heating | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `water` | Hot water | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
+| `presence` | Presence | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `boiler` | Boiler room | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 
 ## Prompts
@@ -65,6 +66,28 @@ title lies, is a little too bright for the light title of the dark scheme.
 The second picture for this view. The first - an empty tiled room with a walk-in shower and a
 large window - was turned down by the owner: nothing in it said "bathroom". A photo has to read
 as its place at a glance, so the prompt names the things that make it one.
+
+### `presence`
+
+> Photorealistic wide interior photograph of the entrance hall of a modern family home at dusk,
+> clearly a place people come and go through. The furniture and objects are spread across the
+> whole width of the frame, from the left edge to the right: a front door with a glass side
+> panel, a wooden bench with two pairs of shoes under it, a row of wall hooks with coats, a scarf
+> and a backpack, a tall mirror, a key shelf, a console table with a bowl and a lamp turned off,
+> an umbrella stand, a plant, a rug on the floor. No large empty wall, no large empty floor, no
+> large empty ceiling: every part of the picture shows something of the hall. Even, soft,
+> mid-toned light across the whole frame, especially along the top: no bright lamp, no black
+> door frame, no deep shadows at the top. No people, no text, no brand logos. Calm, tidy,
+> realistic interior photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-08 (HAS-203). Tones `22-237`: the lit ceiling in the top band is too bright for
+the light title of the dark scheme, and the top of the door frame too dark for the dark title of
+the light one.
+
+The owner's note for this and every later photo: **the things of the place are spread over the
+whole picture** - not half of it a wall, a floor or empty space. The prompt says so in words
+("from the left edge to the right", "no large empty wall").
 
 ### `boiler`
 

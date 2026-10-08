@@ -47,6 +47,7 @@ const pages: Page[] = [
   {
     path: 'presence',
     title: 'nav.presence',
+    data: { background: 'presence' },
     loadComponent: () => import('./features/presence/presence').then((m) => m.Presence),
   },
   {

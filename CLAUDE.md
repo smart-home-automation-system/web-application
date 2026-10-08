@@ -171,6 +171,14 @@ e2e/              # Playwright tests
 - **A card is as wide as its place allows, up to a cap** - never `width: fit-content`: sized by
   its content a card is a narrow strip while it holds only a progress bar or a failure, and
   narrower than its neighbours on a phone (the card of the boiler room was, in 0.8.0).
+- **A view fills the screen it is on before it asks to be scrolled** (owner, 2026-10-08,
+  HAS-203): the first presence page stacked its cards in a column of 636 px and had to be
+  scrolled next to a screen that was 70 % empty. A page with lists lays its cards out by named
+  grid areas per width of the window (`presence.scss`): one column on a phone, the lists side
+  by side in a window, three columns on a wide screen with the small cards stacked in the
+  first. Check a new view at 2560 x 1440 and at 1440 x 900 for both: empty halves, and a scroll
+  bar that the empty half would have made unnecessary. It does not undo the rule below - a
+  card that has one line to say is still not stretched.
 - **A card is as big as what it says** (owner, 2026-10-08, HAS-195): never stretched to the
   height of its neighbour (`align-items: start` on a grid of cards) or across a wide screen and
   left mostly empty. Where a box has to be taller than its text - the furnace next to two
@@ -422,6 +430,11 @@ the text never depends on it.
 - **A photo has to read as its place at a glance.** The first bathroom of HAS-195 - an empty
   tiled room with a shower - was turned down: name in the prompt the things that make the place
   (a washbasin, a mirror, a towel radiator with a towel).
+- **The things of the place are spread over the whole picture** (owner, 2026-10-08, HAS-203):
+  not half of it a wall, a floor or empty space. Say it in the prompt in so many words - list
+  the things "from the left edge to the right" and name what must not be there ("no large
+  empty wall, floor or ceiling"). The earlier prompts asked for "free wall area for the cards",
+  which is the opposite.
 - **A photo has to carry the title in both schemes.** The title lies on the top band of the
   picture, dark in the light scheme and light in the dark one, so that band has to be neither
   nearly black nor nearly white. Both photos of HAS-195 failed there (a boiler room is dark, a
