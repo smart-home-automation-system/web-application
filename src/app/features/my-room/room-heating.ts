@@ -55,12 +55,18 @@ export class RoomHeating {
   // the name is read when a call is made - by then the input is set, and it never changes
   protected readonly answer = inject(HeatingApi).watchRoom(() => this.room());
 
-  /** The room as the service answered it; `undefined` when the answer is not a room. */
-  protected readonly view = computed(() => toRoomViews([this.answer.value()]).at(0));
-
   /** The heating service has no room of this name: an answer, not an outage. */
   protected readonly unknownRoom = computed(
     () => this.answer.error()?.hasCode('NOT_FOUND_ROOM') === true,
+  );
+
+  /**
+   * The room as the service answered it; `undefined` when the answer is not a room - and when
+   * the service says it has no such room. The resource keeps its last answer over a failure,
+   * and a room that is gone must not go on showing its last temperature without a word of why.
+   */
+  protected readonly view = computed(() =>
+    this.unknownRoom() ? undefined : toRoomViews([this.answer.value()]).at(0),
   );
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {

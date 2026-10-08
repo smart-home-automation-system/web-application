@@ -43,7 +43,20 @@ test.describe('a resident with one room', () => {
   });
 
   test('never reaches a page where a temperature or a schedule could be set', async ({ page }) => {
-    for (const path of ['/heating', '/settings', '/presence', '/water', '/boiler', '/']) {
+    // every page of the application but their own and the error page - the picker and an
+    // address that leads nowhere included
+    for (const path of [
+      '/',
+      '/overview',
+      '/heating',
+      '/water',
+      '/boiler',
+      '/presence',
+      '/settings',
+      '/about',
+      '/profiles',
+      '/no/such/page',
+    ]) {
       await page.goto(path);
       await expect(page, path).toHaveURL(/\/room$/);
     }

@@ -80,9 +80,14 @@ describe('profiles in the application', () => {
   beforeEach(() => localStorage.removeItem(STORAGE_KEY));
 
   afterEach(() => {
-    // the page of a member asks the heating service for its room and for the switch of the
-    // house; what those calls show is the business of the page (my-room.spec), not of the profiles
-    http.match((request) => request.url.startsWith('/home/heating'));
+    // the page of a member reads the switch of the house and its room; what those two reads
+    // show is the business of the page (my-room.spec), not of the profiles. Reads only: a call
+    // that changes the house is never let through here
+    http.match(
+      (request) =>
+        request.method === 'GET' &&
+        (request.url === '/home/heating' || request.url.startsWith('/home/heating/rooms/')),
+    );
     http.verify();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('smart-home.language.Borys');

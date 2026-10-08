@@ -1,5 +1,12 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -46,7 +53,9 @@ export class MyRoom {
 
   /**
    * The room on screen: the one chosen, for as long as the profile has it - the registry may
-   * take a room away under an open page - and otherwise the first.
+   * take a room away under an open page - and otherwise the first. A choice that is gone is
+   * forgotten (the effect below), not merely hidden: hidden, it would pull the page back to
+   * that room by itself the day the registry gives it back.
    */
   protected readonly room = computed(() => {
     const rooms = this.rooms();
@@ -59,6 +68,15 @@ export class MyRoom {
     const room = this.room();
     return room === undefined ? [] : [room];
   });
+
+  constructor() {
+    effect(() => {
+      const chosen = this.chosen();
+      if (chosen !== undefined && !this.rooms().includes(chosen)) {
+        this.chosen.set(undefined);
+      }
+    });
+  }
 
   protected choose(room: string): void {
     this.chosen.set(room);

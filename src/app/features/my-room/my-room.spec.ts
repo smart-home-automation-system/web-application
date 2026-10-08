@@ -211,6 +211,31 @@ describe('MyRoom', () => {
       expect(shown!.querySelector('[role="alert"]')).toBeNull();
     });
 
+    // the resource keeps its last answer over a failure: a room that is gone since must not go
+    // on showing its last temperature without a word of why
+    it('says that the room is unknown also after it was answered before', async () => {
+      await page();
+      answer(lastAsked().resource, BEDROOM);
+      fail(
+        lastAsked().resource,
+        new ApiError('client', 404, [
+          { message: 'Room with provided name is not a part of home', code: 'NOT_FOUND_ROOM' },
+        ]),
+      );
+
+      const shown = await card();
+
+      expect(words(shown)).toContain('The heating service does not know this room');
+      expect(words(shown)).not.toContain('19.6');
+    });
+
+    it('draws no empty list of facts for a room with nothing to tell', async () => {
+      await page();
+      answer(lastAsked().resource, { name: 'bedroom', heaters: [] });
+
+      expect((await card())!.querySelector('dl')).toBeNull();
+    });
+
     // a 404 without the code is a route that is not there: a failure like any other
     it('tells a 404 without the code as a failure', async () => {
       await page();
@@ -296,6 +321,15 @@ describe('MyRoom', () => {
 
       expect(await switcher()).toBeNull();
       expect(lastAsked().name()).toBe('bedroom');
+      expect(words(await card())).toContain('bedroom');
+
+      // given back, the room does not take the page over again by itself
+      profile.set(resident('bedroom', 'wardrobe'));
+
+      expect(await options()).toEqual([
+        ['bedroom', 'true'],
+        ['wardrobe', 'false'],
+      ]);
       expect(words(await card())).toContain('bedroom');
     });
 

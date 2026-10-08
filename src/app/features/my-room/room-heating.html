@@ -28,32 +28,38 @@
             </p>
           }
 
-          <dl class="room__facts">
-            @if (shown.humidity !== undefined) {
-              <div class="room__fact" data-testid="room-humidity">
-                <dt>{{ t('myRoom.heating.humidity') }}</dt>
-                <dd>{{ shown.humidity | localNumber: WHOLE }}&nbsp;%</dd>
-              </div>
-            }
-            @if (shown.target !== undefined) {
-              <div class="room__fact" data-testid="room-target">
-                <dt>{{ t('heating.rooms.target') }}</dt>
-                <dd>{{ shown.target | localNumber: TARGET }}&nbsp;°C</dd>
-              </div>
-            } @else if (shown.heaters !== undefined && shown.heaters.length > 0) {
-              <div class="room__fact" data-testid="room-target">
-                <dt>{{ t('heating.rooms.target') }}</dt>
-                <dd class="room__fact--none">{{ t('heating.rooms.noTarget') }}</dd>
-              </div>
-            }
-          </dl>
+          @if (
+            shown.humidity !== undefined ||
+            shown.target !== undefined ||
+            (shown.heaters !== undefined && shown.heaters.length > 0)
+          ) {
+            <dl class="room__facts">
+              @if (shown.humidity !== undefined) {
+                <div class="room__fact" data-testid="room-humidity">
+                  <dt>{{ t('myRoom.heating.humidity') }}</dt>
+                  <dd>{{ shown.humidity | localNumber: WHOLE }}&nbsp;%</dd>
+                </div>
+              }
+              @if (shown.target !== undefined) {
+                <div class="room__fact" data-testid="room-target">
+                  <dt>{{ t('heating.rooms.target') }}</dt>
+                  <dd>{{ shown.target | localNumber: TARGET }}&nbsp;°C</dd>
+                </div>
+              } @else if (shown.heaters !== undefined && shown.heaters.length > 0) {
+                <div class="room__fact" data-testid="room-target">
+                  <dt>{{ t('heating.rooms.target') }}</dt>
+                  <dd class="room__fact--none">{{ t('heating.rooms.noTarget') }}</dd>
+                </div>
+              }
+            </dl>
+          }
 
           @if (shown.heaters === undefined) {
             <p class="room__detail">{{ t('heating.rooms.heatersUnknown') }}</p>
           } @else {
             @for (heater of shown.heaters; track $index) {
               <section class="heater" [attr.data-state]="state(heater)">
-                <h3 class="heater__name" [class.heater__name--on]="heater.working === true">
+                <h2 class="heater__name" [class.heater__name--on]="heater.working === true">
                   <mat-icon class="heater__icon" aria-hidden="true">{{
                     kindIcon(heater)
                   }}</mat-icon>
@@ -61,12 +67,12 @@
                   @if (heater.callsForHeat === true) {
                     <span class="badge">{{ t('heating.rooms.heater.callsForHeat') }}</span>
                   }
-                </h3>
+                </h2>
                 @if (heater.reportedAt | houseAge; as age) {
                   <p class="room__detail">{{ t('heating.pump.reported') }} {{ age }}</p>
                 }
 
-                <h4 class="heater__today">{{ t('myRoom.heating.today') }}</h4>
+                <h3 class="heater__today">{{ t('myRoom.heating.today') }}</h3>
                 @if (heater.periods === undefined) {
                   <p class="room__detail">{{ t('heating.rooms.schedule.unknown') }}</p>
                 } @else if (heater.periods.length > 0) {
