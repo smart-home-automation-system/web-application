@@ -84,9 +84,7 @@ test.describe('hot water', () => {
 });
 
 test.describe('boiler room', () => {
-  test('draws the furnace, the pumps and where the heat goes, with their state', async ({
-    page,
-  }) => {
+  test('draws the furnace and its two pumps, with their state', async ({ page }) => {
     await page.goto('/boiler');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Boiler room' })).toBeVisible();
@@ -94,15 +92,11 @@ test.describe('boiler room', () => {
     await expect(schematic.getByRole('heading', { level: 3 })).toHaveText([
       'Furnace',
       'Hot-water pump',
-      'Hot-water tank',
       'Heating pump',
-      'Heating circuits',
     ]);
     await expect(page.getByTestId('furnace')).toContainText('On');
     await expect(page.getByTestId('heating-pump')).toContainText('Running');
     await expect(page.getByTestId('hot-water-pump')).toContainText('Stopped');
-    await expect(page.getByTestId('heating')).toContainText('Heat flowing');
-    await expect(page.getByTestId('hot-water')).toContainText('No flow');
   });
 
   test('shows the last note of the service about a device, and how long ago it was', async ({
@@ -125,30 +119,65 @@ test.describe('boiler room', () => {
     await expect(page.getByTestId('furnace')).toBeVisible();
 
     await expect(page.locator('.pipe--to-heating-pump')).toHaveClass(/pipe--flowing/);
-    await expect(page.locator('.pipe--to-heating')).toHaveClass(/pipe--flowing/);
+    await expect(page.locator('.manifold__branch--down')).toHaveClass(/manifold--flowing/);
     await expect(page.locator('.pipe--to-hot-water-pump')).not.toHaveClass(/pipe--flowing/);
-    await expect(page.locator('.pipe--to-hot-water')).not.toHaveClass(/pipe--flowing/);
+    await expect(page.locator('.manifold__branch--up')).not.toHaveClass(/manifold--flowing/);
   });
 
   test('lays the schematic out for the width of the screen', async ({ page }, testInfo) => {
     await page.goto('/boiler');
     const furnace = await page.getByTestId('furnace').boundingBox();
     const pump = await page.getByTestId('heating-pump').boundingBox();
-    const circuit = await page.getByTestId('heating').boundingBox();
 
     if (testInfo.project.name === 'phone') {
       // from top to bottom
       expect(pump!.y).toBeGreaterThan(furnace!.y + furnace!.height);
-      expect(circuit!.y).toBeGreaterThan(pump!.y + pump!.height);
     } else {
       // from left to right
       expect(pump!.x).toBeGreaterThan(furnace!.x + furnace!.width);
-      expect(circuit!.x).toBeGreaterThan(pump!.x + pump!.width);
     }
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBe(0);
+  });
+
+  // The card is as wide as its place allows, up to what the schematic needs - whatever it holds.
+  // Sized by its content it once was a strip of 172 px on a phone while it held a progress bar.
+  test('keeps the width of its card whatever the card holds', async ({ page }, testInfo) => {
+    const widths = async () => {
+      const card = page.locator('.installation');
+      await expect(card.locator('mat-progress-bar')).toHaveCount(0);
+      return card.evaluate((element) => {
+        // the scrolling area of the shell: the element of the page itself is an inline box
+        const place = element.closest('main')!;
+        const style = getComputedStyle(place);
+        return {
+          card: element.getBoundingClientRect().width,
+          place: place.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+        };
+      });
+    };
+
+    await page.goto('/boiler');
+    await expect(page.getByTestId('furnace')).toBeVisible();
+    const drawn = await widths();
+
+    // with nothing in it but the explanation of a failed call
+    await page.evaluate(() => localStorage.setItem('mock-scenario', 'server-error'));
+    await page.reload();
+    await expect(page.locator('.installation').getByRole('alert')).toBeVisible();
+    const failed = await widths();
+
+    expect(failed.card).toBeCloseTo(drawn.card, 0);
+    if (testInfo.project.name === 'phone') {
+      // the whole width of the screen, like the cards of every other view
+      expect(drawn.card).toBeCloseTo(drawn.place, 0);
+    } else {
+      // no wider than its boxes need: a wide screen is not filled with empty boxes
+      expect(drawn.card).toBeLessThan(drawn.place - 100);
+      expect(drawn.card).toBeGreaterThan(400);
+    }
   });
 
   test('shows the devices as off, with nothing noted, just after a start of the service', async ({
