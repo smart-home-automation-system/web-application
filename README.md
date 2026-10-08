@@ -34,7 +34,7 @@ it holds no data and no logic of its own beyond presentation.
 
 It has the **application shell** - the layout and navigation, the foundation every dashboard is
 built on (API client, polling, error handling, house time, two languages, the profiles of the
-household), the mock API for development, and the delivery pipeline - and the first three
+household), the mock API for development, and the delivery pipeline - and the first four
 dashboards:
 
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
@@ -48,7 +48,14 @@ dashboards:
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
-Hot water and the boiler room are read-only. The landing page still shows a single tile - the
+- **Presence**: who of the household is at home now, since when, and how long ago the
+  detection last checked; the days of one resident as bars from 00:00 to 24:00 with the time at
+  home, the first arrival and the last departure; and the days of the house with the stretches
+  it stood empty - for today, 7 or 30 days, or two dates within the last 366 days. Only what
+  was observed is drawn: time nobody looked at is hatched and named as such, never shown as
+  absence.
+
+Hot water, the boiler room and the presence are read-only. The landing page still shows a single tile - the
 state of the heating system; the room view of the heating and the overview proper arrive with
 the following tasks.
 
@@ -180,7 +187,9 @@ in the browser console set `localStorage['mock-scenario']` to `offline` (no answ
 `server-error` (every call answers 502), `no-readings` (the services answer as they do just
 after a start, before anything was measured) or `writes-fail` (reads answer as usual, every
 change answers 500 - a heating switch the house did not carry out) and reload; remove the key
-to go back. The heating of the mock house can be switched: it lives in the memory of the page,
+to go back. The mock household lives by a routine worked out from the clock, with a history
+of twelve days and one member the detection has never seen. The heating of the mock house can
+be switched: it lives in the memory of the page,
 and a reload is the house as it started. **`npm start` talks to the real gateway - the switch
 pressed there switches the real heating.**
 
@@ -212,6 +221,10 @@ Endpoints used today:
 | `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating), after a confirmation. Its answer is not used: the state is read again |
 | `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
 | `GET` | `/home/heating/temperature/sensors` | Per room the time of the last reading, `stale` and `muted` (heating), polled every 60 s. A room that never reported is not in the answer |
+| `GET` | `/home/presence/residents/presence` | Who is at home now: per active member `present`, `since` and `lastCheckedAt` (presence), polled every 60 s. A member nothing is stored about comes as not present with no times - shown as "not observed yet", not as away |
+| `GET` | `/home/presence/residents/{name}/report?from=&to=` | The periods at home of one resident (presence). Asked when the resident or the period changes, then every 5 min |
+| `GET` | `/home/presence/residents/{name}/report/daily?from=&to=` | The days of that resident: time at home, first arrival, last departure, share (presence). Always asked together with the report above |
+| `GET` | `/home/presence/house/report?from=&to=` | The house as a timeline of occupied and empty stretches, and its days (presence). Asked when the period changes, then every 5 min |
 | `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation (hot water), polled every 30 s. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room), polled every 30 s |
@@ -243,6 +256,14 @@ What the application relies on, in every call:
   the state is read again, whatever the change answered, and the page shows that. A change
   that got no answer is told as "may not have been carried out", and the notice goes once the
   house is in the state that was asked for.
+- **The range of a report** is two local date-times of the house, from a midnight to the
+  midnight after the last day, at most 366 days; the running day is included, and the reports
+  end by themselves at the last check (`observedUntil`). The name of a resident is
+  percent-encoded into the path. `GET /home/presence/clients` is never called.
+- **Only the observed part of a report is drawn**: a day outside `observedFrom` ..
+  `observedUntil` gets no row, the part of a day outside it is hatched, and the page says where
+  the history begins. Time the detection was down *in the middle* of the history reads as empty
+  in the answer of the service itself - the page says so under the list of the house.
 - **Two things the heating page cannot know from the API**: after how long a sensor counts as
   silent (a setting of `heating-service`, a day unless changed - the page does not name the
   number), and *which* rooms are being heated - the answer is one flag for the whole house.
