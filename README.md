@@ -32,11 +32,20 @@ the whole house is managed, and for the phones of the household, where each memb
 own room. It is an Angular single-page application that talks only to `api-gateway-service`;
 it holds no data and no logic of its own beyond presentation.
 
-So far it is the **application shell**: the layout and navigation, the foundation every
-dashboard is built on (API client, polling, error handling, house time, two languages, the
-profiles of the household), the mock API for development, and the delivery pipeline. The landing
-page shows a single read-only tile - the switch of the heating system - which proves the path
-from the screen to a backend service. The dashboards themselves arrive with the following tasks.
+It has the **application shell** - the layout and navigation, the foundation every dashboard is
+built on (API client, polling, error handling, house time, two languages, the profiles of the
+household), the mock API for development, and the delivery pipeline - and the first two
+dashboards, both read-only:
+
+- **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
+  (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
+  circulation, and whether the water asks to be heated.
+- **Boiler room**: a schematic of the furnace, the two pumps it feeds and where each sends the
+  heat, with the state of every device, the last thing `boiler-service` noted about it and how
+  long ago that was.
+
+The landing page still shows a single tile - the switch of the heating system; the heating
+dashboards and the overview proper arrive with the following tasks.
 
 Everybody in the household has a **profile**, opened by a personal link and remembered in the
 browser: the administrator gets the whole application, a resident their own page - see
@@ -81,6 +90,9 @@ There is no login. A member of the household opens the application with a **pers
 `/u/<name>` - the name as it stands in the household registry, in any case - and the browser
 remembers them from then on. Without a remembered profile the application shows a **profile
 picker** with the active members; each entry is that member's personal link.
+
+On a phone the navigation is a bar at the bottom with five places. With more destinations than
+that - the administrator has six - it shows the first four and **More**, which lists the rest.
 
 | Role | What the interface offers |
 |---|---|
@@ -158,9 +170,10 @@ Both serve the application on `http://localhost:4200`. `proxy.conf.json` decides
 goes for `npm start`; point it elsewhere locally, and never commit a private host or address -
 this repository is public.
 
-The mock API can be switched into a failure mode, to look at the error states: in the browser
-console set `localStorage['mock-scenario']` to `offline` (no answer at all) or `server-error`
-(every call answers 502) and reload; remove the key to go back.
+The mock API can be switched into another mode, to look at the states that are hard to come by:
+in the browser console set `localStorage['mock-scenario']` to `offline` (no answer at all),
+`server-error` (every call answers 502) or `no-readings` (the services answer as they do just
+after a start, before anything was measured) and reload; remove the key to go back.
 
 Texts live in `src/app/i18n/` - `en.ts` is the source of the keys and `pl.ts` has to carry the
 same ones, which the compiler and a unit test both check.
@@ -187,6 +200,9 @@ Endpoints used today:
 | Method | Path | Used for |
 |---|---|---|
 | `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile), polled every 30 s |
+| `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation (hot water), polled every 30 s. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
+| `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
+| `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room), polled every 30 s |
 | `GET` | `/home/household/profiles` | The profiles of the household: the name, role and rooms of every active member, and nothing else (`database-service` 0.10.0 or later). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened |
 
 What the application relies on, in every call:
@@ -199,6 +215,15 @@ What the application relies on, in every call:
 - **Date-times** are `LocalDateTime` values: the wall-clock time of the house, without an offset.
   They are displayed exactly as sent and never converted to the zone of the browser, so a phone
   abroad on VPN still shows house time.
+- **How long ago** a date-time was is worked out in the time zone of the house
+  (`Europe/Warsaw`, in the configuration of the application): the value carries no offset, and
+  the age has to be the same on a phone abroad.
+- **Missing is not "off"**: a field the answer does not carry is shown as unknown - "no status
+  yet", "nothing measured yet" - never as a device that stands or water that is warm enough.
+- **Two things the hot water cannot know from the API**: the band of 38 / 42 °C is a copy of two
+  constants of `water-service`, which no endpoint exposes; and the temperatures carry no time of
+  measurement, so the page shows when it last *asked*, and a sensor that fell silent keeps
+  reading as current.
 - **Timeouts**: a call that gets no answer within 10 s is aborted and reported as a connection
   failure, so a backend that accepts a request and never answers cannot leave a view loading
   forever.
