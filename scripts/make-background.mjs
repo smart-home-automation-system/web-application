@@ -3,7 +3,14 @@
 // the picture, which `check-contrast.mjs` lays under the haze and the glass to prove the text
 // still reads. The prompt and the model behind a photo go into `public/backgrounds/README.md`.
 //
-//   node scripts/make-background.mjs <source.png|jpg> <name>
+//   node scripts/make-background.mjs <source.png|jpg> <name> [<black>-<white>]
+//
+// The optional third argument narrows the tones of the photo: its black becomes <black> and its
+// white <white> (0-255), everything in between follows in a straight line. A photo is laid under
+// a haze of the page colour in both schemes, and the title of the page lies directly on its top
+// band - a picture that is nearly black there cannot carry a dark title in the light scheme, one
+// that is nearly white cannot carry a light title in the dark one. Narrow the tones until
+// `npm run check:contrast` passes, no further, and record the range next to the prompt.
 //
 // The 2560 file stays under BUDGET: the quality is lowered until it does.
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -18,11 +25,24 @@ const ASPECT = 16 / 9;
 const BUDGET = 400 * 1024;
 const QUALITIES = [82, 76, 70, 64, 58, 52];
 
-const [source, name] = process.argv.slice(2);
-if (!source || !/^[a-z][a-z0-9-]*$/.test(name ?? '')) {
-  console.error('usage: node scripts/make-background.mjs <source> <name>  (name: a-z, 0-9, -)');
+const [source, name, tones] = process.argv.slice(2);
+const range = /^(\d{1,3})-(\d{1,3})$/
+  .exec(tones ?? '0-255')
+  ?.slice(1)
+  .map(Number);
+if (
+  !source ||
+  !/^[a-z][a-z0-9-]*$/.test(name ?? '') ||
+  !range ||
+  range[1] > 255 ||
+  range[0] >= range[1]
+) {
+  console.error(
+    'usage: node scripts/make-background.mjs <source> <name> [<black>-<white>]  (name: a-z, 0-9, -; tones: 0-255)',
+  );
   process.exit(1);
 }
+const [black, white] = range;
 
 mkdirSync(OUT, { recursive: true });
 // `.rotate()` applies the EXIF orientation, but `metadata()` reports the stored size: a photo
@@ -31,7 +51,10 @@ const stored = await sharp(source).metadata();
 const sideways = (stored.orientation ?? 1) >= 5;
 const width = sideways ? stored.height : stored.width;
 const height = sideways ? stored.width : stored.height;
-const image = sharp(source).rotate();
+// out = in * (white - black) / 255 + black
+const image = sharp(source)
+  .rotate()
+  .linear((white - black) / 255, black);
 if (width < WIDTHS[0]) {
   console.warn(`${source} is ${width} px wide; the 2560 variant will be upscaled.`);
 }
@@ -56,7 +79,9 @@ for (const target of WIDTHS) {
   console.log(`${file}: ${Math.round(encoded.length / 1024)} kB at quality ${quality}`);
 }
 if (sizes[WIDTHS[0]].bytes > BUDGET) {
-  console.error(`The ${WIDTHS[0]} variant does not fit ${BUDGET / 1024} kB even at quality ${QUALITIES.at(-1)}.`);
+  console.error(
+    `The ${WIDTHS[0]} variant does not fit ${BUDGET / 1024} kB even at quality ${QUALITIES.at(-1)}.`,
+  );
   process.exit(1);
 }
 
@@ -91,6 +116,7 @@ const hex = ([r, g, b]) => '#' + [r, g, b].map((c) => c.toString(16).padStart(2,
 
 const sidecar = {
   source: { width, height },
+  tones: { black, white },
   files: Object.fromEntries(WIDTHS.map((w) => [`${name}-${w}.webp`, sizes[w]])),
   ...extremes([0, info.height]),
   top: extremes([0, Math.ceil(info.height * TOP_BAND)]),

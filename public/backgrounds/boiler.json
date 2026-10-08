@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 45,
+    "white": 255
+  },
+  "files": {
+    "boiler-2560.webp": {
+      "bytes": 84008,
+      "quality": 82
+    },
+    "boiler-1280.webp": {
+      "bytes": 27686,
+      "quality": 82
+    }
+  },
+  "darkest": "#33363b",
+  "lightest": "#edd1b7",
+  "top": {
+    "darkest": "#33363b",
+    "lightest": "#d5b497"
+  }
+}

@@ -57,13 +57,26 @@ test.describe('application shell', () => {
     }
   });
 
-  test('navigates to the about page, which shows the running version', async ({ page }) => {
+  test('navigates to the about page, which shows the running version', async ({
+    page,
+  }, testInfo) => {
     await page.goto('/');
 
-    await page.getByRole('link', { name: 'About' }).click();
+    if (testInfo.project.name === 'phone') {
+      // the bar of a phone has no room for it: it is behind "More"
+      await page.getByRole('button', { name: 'More' }).click();
+      await page.getByRole('menuitem', { name: 'About' }).click();
+    } else {
+      await page.getByRole('link', { name: 'About' }).click();
+    }
 
     await expect(page).toHaveURL(/\/about$/);
-    await expect(page.getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
+    if (testInfo.project.name !== 'phone') {
+      await expect(page.getByRole('link', { name: 'About' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+    }
     await expect(page.getByTestId('app-version')).toHaveText('0.0.0-dev');
   });
 
@@ -107,7 +120,7 @@ test.describe('when the backend fails', () => {
     await expect(alert).toContainText('The server cannot be reached');
     await expect(page.getByText('No data received')).toBeVisible();
     // the shell keeps working without the backend
-    await expect(page.getByRole('link', { name: 'About' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Hot water' })).toBeVisible();
   });
 
   test('explains that the service is failing, without quoting it', async ({ page }) => {

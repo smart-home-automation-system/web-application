@@ -1,0 +1,110 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('hotWater.title') }}</h1>
+  </header>
+
+  <section class="tiles" [attr.aria-label]="t('hotWater.readings')">
+    <mat-card appearance="outlined" class="tile tile--tank card--domain" data-testid="tank">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>water_drop</mat-icon></div>
+        <mat-card-title>{{ t('hotWater.tank.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness
+            [lastUpdated]="temperatures.lastUpdated()"
+            [stale]="temperatures.stale()"
+          />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (temperatures.loading()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('hotWater.loading')" />
+        } @else {
+          @let water = tank();
+          @if (water !== undefined) {
+            <p class="tile__reading">{{ water | localNumber: oneDecimal }} °C</p>
+            <app-temperature-gauge
+              class="tile__gauge"
+              [value]="water"
+              [low]="band.low"
+              [high]="band.high"
+              [label]="t('hotWater.tank.gauge')"
+              [valueText]="
+                t('hotWater.tank.gaugeValue', {
+                  value: (water | localNumber: oneDecimal),
+                  low: band.low,
+                  high: band.high,
+                })
+              "
+            />
+            <p class="tile__detail">
+              {{ t('hotWater.tank.band', { low: band.low, high: band.high }) }}
+            </p>
+          } @else if (!temperatures.error()) {
+            <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
+          }
+          <app-api-error-strip [error]="temperatures.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="tile card--domain" data-testid="demand">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge">
+          <mat-icon>local_fire_department</mat-icon>
+        </div>
+        <mat-card-title>{{ t('hotWater.heating.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="demand.lastUpdated()" [stale]="demand.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (demand.loading()) {
+          <mat-progress-bar
+            mode="indeterminate"
+            [attr.aria-label]="t('hotWater.heating.loading')"
+          />
+        } @else {
+          @let needed = heatingNeeded();
+          @if (needed !== undefined) {
+            <p class="tile__state" [class.tile__state--on]="needed">
+              <mat-icon>{{ needed ? 'mode_heat' : 'check_circle' }}</mat-icon>
+              {{ t(needed ? 'hotWater.heating.needed' : 'hotWater.heating.notNeeded') }}
+            </p>
+          } @else if (!demand.error()) {
+            <p class="tile__detail">{{ t('hotWater.heating.unknown') }}</p>
+          }
+          <app-api-error-strip [error]="demand.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="tile card--domain" data-testid="circulation">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>cycle</mat-icon></div>
+        <mat-card-title>{{ t('hotWater.circulation.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness
+            [lastUpdated]="temperatures.lastUpdated()"
+            [stale]="temperatures.stale()"
+          />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (temperatures.loading()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('hotWater.loading')" />
+        } @else {
+          @let loop = circulation();
+          @if (loop !== undefined) {
+            <p class="tile__reading">{{ loop | localNumber: oneDecimal }} °C</p>
+          } @else if (!temperatures.error()) {
+            <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
+          }
+          <app-api-error-strip [error]="temperatures.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+  </section>
+</ng-container>

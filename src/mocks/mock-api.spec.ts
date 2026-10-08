@@ -8,9 +8,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
+import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import { HEATING_STATUS } from './heating.fixtures';
 import { HOUSEHOLD_PROFILES } from './household.fixtures';
 import { mockApiInterceptors } from './mock-api';
+import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
 
 describe('mock API', () => {
   let http: HttpClient;
@@ -41,6 +43,48 @@ describe('mock API', () => {
 
   it('answers the household profiles from their fixture', async () => {
     expect(await firstValueFrom(http.get('/home/household/profiles'))).toEqual(HOUSEHOLD_PROFILES);
+  });
+
+  it('answers the hot water and the boiler room from their fixtures', async () => {
+    expect(await firstValueFrom(http.get('/home/water/status/temperature'))).toEqual(
+      WATER_TEMPERATURES,
+    );
+    expect(await firstValueFrom(http.get('/home/water/status/active'))).toEqual(
+      WATER_HEATING_DEMAND,
+    );
+    const boiler = (await firstValueFrom(http.get('/home/boiler/status'))) as ReturnType<
+      typeof boilerStatus
+    >;
+    expect(Object.keys(boiler.pumps ?? {}).sort()).toEqual(['heating', 'hot_water']);
+    expect(boiler.furnace?.working).toBe(true);
+  });
+
+  // the service notes every device once a minute: a fixed time would read as a boiler room
+  // that stopped reporting long ago
+  it('dates the notes of the boiler room a moment before the call, on the clock of the house', () => {
+    const status = boilerStatus(new Date('2026-07-15T10:00:30Z'));
+
+    expect(status.furnace?.lastMessageReply?.timestamp).toBe('2026-07-15T12:00:10.596721');
+    expect(status.pumps?.heating?.lastMessageReply?.timestamp).toBe('2026-07-15T11:57:25.596721');
+  });
+
+  describe('in the scenario of services that have just started', () => {
+    beforeEach(() => localStorage.setItem('mock-scenario', 'no-readings'));
+
+    // exactly what water-service does before its first reading: 200 and no body
+    it('answers the temperatures with an empty 200', async () => {
+      expect(await firstValueFrom(http.get('/home/water/status/temperature'))).toBeNull();
+    });
+
+    it('answers the boiler room with devices nothing is noted about', async () => {
+      expect(await firstValueFrom(http.get('/home/boiler/status'))).toEqual(
+        BOILER_STATUS_BEFORE_FIRST_LOOK,
+      );
+    });
+
+    it('answers everything else as usual', async () => {
+      expect(await firstValueFrom(http.get('/home/heating'))).toEqual(HEATING_STATUS);
+    });
   });
 
   // the registry itself is not something the application asks for: it carries phones and devices

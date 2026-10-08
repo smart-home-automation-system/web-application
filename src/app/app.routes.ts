@@ -27,6 +27,18 @@ const pages: Page[] = [
     loadComponent: () => import('./features/overview/overview').then((m) => m.Overview),
   },
   {
+    path: 'water',
+    title: 'nav.hotWater',
+    data: { background: 'water' },
+    loadComponent: () => import('./features/hot-water/hot-water').then((m) => m.HotWater),
+  },
+  {
+    path: 'boiler',
+    title: 'nav.boilerRoom',
+    data: { background: 'boiler' },
+    loadComponent: () => import('./features/boiler-room/boiler-room').then((m) => m.BoilerRoom),
+  },
+  {
     path: 'room',
     title: 'nav.myRoom',
     data: { access: 'member' },

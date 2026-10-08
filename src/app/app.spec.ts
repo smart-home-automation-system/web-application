@@ -42,8 +42,9 @@ describe('application routing', () => {
       side: [...page().querySelectorAll('.shell__side-nav a')].map((a) =>
         a.querySelector('.mat-mdc-list-item-title')?.textContent?.trim(),
       ),
-      bottom: [...page().querySelectorAll('.shell__bottom-nav a')].map((a) =>
-        a.querySelector('.shell__bottom-label')?.textContent?.trim(),
+      // the entries of the bar: links, and the "More" button once there are more than fit
+      bottom: [...page().querySelectorAll('.shell__bottom-nav .shell__bottom-label')].map((label) =>
+        label.textContent?.trim(),
       ),
     };
   }
@@ -64,16 +65,50 @@ describe('application routing', () => {
     expect(page().querySelector('h1')?.textContent).toContain('Overview');
   });
 
-  it('lists every destination in both navigations', async () => {
+  // the bar of a phone has five places: six destinations leave the last one to "More"
+  it('lists every destination at the side, and as many as fit in the bottom bar', async () => {
     await harness.navigateByUrl('/about');
 
     expect(navigationLabels()).toEqual({
-      side: ['Overview', 'My room', 'Settings', 'About'],
-      bottom: ['Overview', 'My room', 'Settings', 'About'],
+      side: ['Overview', 'Hot water', 'Boiler room', 'My room', 'Settings', 'About'],
+      bottom: ['Overview', 'Hot water', 'Boiler room', 'My room', 'More'],
     });
   });
 
+  it('lists the destinations that did not fit behind "More"', async () => {
+    await harness.navigateByUrl('/water');
+    const http = TestBed.inject(HttpTestingController);
+    await vi.waitFor(() => http.expectOne('/home/water/status/temperature'));
+    http.expectOne('/home/water/status/active');
+    const more = page().querySelector<HTMLButtonElement>('.shell__bottom-more')!;
+    expect(more.classList).not.toContain('shell__bottom-link--active');
+
+    more.click();
+    await settle();
+
+    const offered = [...document.querySelectorAll<HTMLAnchorElement>('a[mat-menu-item]')];
+    expect(offered.map((entry) => entry.getAttribute('href'))).toEqual(['/settings', '/about']);
+    expect(
+      offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
+    ).toEqual(['Settings', 'About']);
+    document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
+  });
+
   it('marks the current destination', async () => {
+    await harness.navigateByUrl('/boiler');
+    const http = TestBed.inject(HttpTestingController);
+    await vi.waitFor(() => http.expectOne('/home/boiler/status'));
+    harness.detectChanges();
+
+    const current = [...page().querySelectorAll('[aria-current="page"]')].map((a) =>
+      a.getAttribute('href'),
+    );
+
+    expect(current).toEqual(['/boiler', '/boiler']);
+  });
+
+  // a page behind "More" has no entry of its own in the bar: the button stands for it
+  it('marks "More" as the open entry while a page behind it is open', async () => {
     await harness.navigateByUrl('/about');
     harness.detectChanges();
 
@@ -81,7 +116,10 @@ describe('application routing', () => {
       a.getAttribute('href'),
     );
 
-    expect(current).toEqual(['/about', '/about']);
+    expect(current).toEqual(['/about']);
+    expect(page().querySelector('.shell__bottom-more')?.classList).toContain(
+      'shell__bottom-link--active',
+    );
   });
 
   it('moves the focus to the content from the skip link, without leaving the page', async () => {
@@ -129,8 +167,8 @@ describe('application routing', () => {
       expect(page().querySelector('app-about')).toBe(content);
       expect(page().querySelector('h1')?.textContent).toContain('O aplikacji');
       expect(navigationLabels()).toEqual({
-        side: ['Przegląd', 'Mój pokój', 'Ustawienia', 'O aplikacji'],
-        bottom: ['Przegląd', 'Mój pokój', 'Ustawienia', 'O aplikacji'],
+        side: ['Przegląd', 'Ciepła woda', 'Kotłownia', 'Mój pokój', 'Ustawienia', 'O aplikacji'],
+        bottom: ['Przegląd', 'Ciepła woda', 'Kotłownia', 'Mój pokój', 'Więcej'],
       });
       expect(page().querySelector('[data-testid="app-built"]')?.textContent).toContain(
         'build lokalny',

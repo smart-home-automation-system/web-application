@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 36,
+    "white": 232
+  },
+  "files": {
+    "water-2560.webp": {
+      "bytes": 91372,
+      "quality": 82
+    },
+    "water-1280.webp": {
+      "bytes": 28358,
+      "quality": 82
+    }
+  },
+  "darkest": "#263b63",
+  "lightest": "#ded5d1",
+  "top": {
+    "darkest": "#373b45",
+    "lightest": "#e1d2c0"
+  }
+}

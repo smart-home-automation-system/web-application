@@ -9,9 +9,19 @@ export interface AppConfig {
    * connection that will never answer.
    */
   readonly requestTimeoutMs: number;
+  /**
+   * The time zone of the house (IANA name). The backend sends its date-times as the wall-clock
+   * time there, without an offset; showing one needs no zone, but telling how long ago it was
+   * does - see `houseInstant`.
+   */
+  readonly houseTimeZone: string;
 }
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG', {
   providedIn: 'root',
-  factory: () => ({ apiBasePath: '/home', requestTimeoutMs: 10_000 }),
+  factory: () => ({
+    apiBasePath: '/home',
+    requestTimeoutMs: 10_000,
+    houseTimeZone: 'Europe/Warsaw',
+  }),
 });

@@ -258,6 +258,15 @@ $panel-width: 220px;
   }
 }
 
+// the "More" button is one of the bar's entries: a button only because it opens a list
+.shell__bottom-more {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
 .shell__bottom-icon {
   display: flex;
 }

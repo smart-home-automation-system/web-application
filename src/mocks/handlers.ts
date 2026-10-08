@@ -1,7 +1,9 @@
 import { HttpRequest } from '@angular/common/http';
 
+import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import { HEATING_STATUS } from './heating.fixtures';
 import { HOUSEHOLD_PROFILES } from './household.fixtures';
+import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
 
 export interface MockReply {
   readonly status: number;
@@ -12,7 +14,8 @@ export interface MockHandler {
   readonly method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   /** Full path as the browser sends it, base path included. */
   readonly path: string;
-  reply(request: HttpRequest<unknown>): MockReply;
+  /** `fresh` is true in the scenario of services that have just started and know nothing yet. */
+  reply(request: HttpRequest<unknown>, fresh: boolean): MockReply;
 }
 
 /**
@@ -25,5 +28,24 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/household/profiles',
     reply: () => ({ status: 200, body: HOUSEHOLD_PROFILES }),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/status/temperature',
+    // before its first reading water-service answers 200 with no body at all
+    reply: (_, fresh) => ({ status: 200, body: fresh ? null : WATER_TEMPERATURES }),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/status/active',
+    reply: () => ({ status: 200, body: WATER_HEATING_DEMAND }),
+  },
+  {
+    method: 'GET',
+    path: '/home/boiler/status',
+    reply: (_, fresh) => ({
+      status: 200,
+      body: fresh ? BOILER_STATUS_BEFORE_FIRST_LOOK : boilerStatus(),
+    }),
   },
 ];

@@ -52,12 +52,13 @@ test.describe('without a profile', () => {
 
     await expect(page).toHaveURL(/\/overview$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
-    expect(await destinations(page, testInfo.project.name)).toEqual([
-      'Overview',
-      'My room',
-      'Settings',
-      'About',
-    ]);
+    // six destinations: all of them at the side, and in the bar of a phone the first four with
+    // "More" for the rest
+    expect(await destinations(page, testInfo.project.name)).toEqual(
+      testInfo.project.name === 'phone'
+        ? ['Overview', 'Hot water', 'Boiler room', 'My room', 'More']
+        : ['Overview', 'Hot water', 'Boiler room', 'My room', 'Settings', 'About'],
+    );
     await expect(page.locator('.shell__profile')).toContainText('Aurelia');
   });
 
@@ -102,6 +103,10 @@ test.describe('without a profile', () => {
       page.getByRole('heading', { level: 1, name: 'The profile could not be opened' }),
     ).toBeVisible();
     await expect(page.getByRole('alert')).toContainText('The server cannot be reached');
+    // The banner is up once the application has asked a second time. Not before: a question on
+    // its way is shared, so a tap made meanwhile would get the answer of the one sent while the
+    // house was still out of reach.
+    await expect(page.getByTestId('offline-notice')).toBeVisible();
 
     await page.evaluate(() => localStorage.removeItem('mock-scenario'));
     // the page's own button; the banner above the page offers the same

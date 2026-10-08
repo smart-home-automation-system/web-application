@@ -486,7 +486,14 @@ describe('profiles in the application', () => {
       await start(AURELIA);
       await harness.navigateByUrl('/about');
 
-      expect(sideNavigation()).toEqual(['Overview', 'My room', 'Settings', 'About']);
+      expect(sideNavigation()).toEqual([
+        'Overview',
+        'Hot water',
+        'Boiler room',
+        'My room',
+        'Settings',
+        'About',
+      ]);
       const profile = page().querySelector<HTMLAnchorElement>('a.shell__profile');
       expect(profile?.getAttribute('href')).toBe('/profiles');
       expect(profile?.textContent).toContain('Aurelia');
