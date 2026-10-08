@@ -121,6 +121,14 @@ e2e/              # Playwright tests
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
+- **A card is as big as what it says** (owner, 2026-10-08, HAS-195): never stretched to the
+  height of its neighbour (`align-items: start` on a grid of cards) or across a wide screen and
+  left mostly empty. Where a box has to be taller than its text - the furnace next to two
+  pumps - the content sits in its middle. Look at the rendered page for empty halves before
+  calling a view done; no check finds them.
+- **A view is shown to the owner before it is called ready**: start a dev server and give a
+  direct link per changed view, with how to reach its special states. A description and the
+  screenshot artifact are not enough.
 
 ## Profiles
 
@@ -361,6 +369,9 @@ the text never depends on it.
   than the top band of the photo is not covered either. The owner chose the thin haze and the
   bare title over the lead sentences and the glass behind the title (2026-10-07), both of which
   were tried and found to waste the room.
+- **A photo has to read as its place at a glance.** The first bathroom of HAS-195 - an empty
+  tiled room with a shower - was turned down: name in the prompt the things that make the place
+  (a washbasin, a mirror, a towel radiator with a towel).
 - **A photo has to carry the title in both schemes.** The title lies on the top band of the
   picture, dark in the light scheme and light in the dark one, so that band has to be neither
   nearly black nor nearly white. Both photos of HAS-195 failed there (a boiler room is dark, a
