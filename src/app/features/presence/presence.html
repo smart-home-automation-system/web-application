@@ -1,0 +1,312 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('presence.title') }}</h1>
+  </header>
+
+  <div class="cards">
+    <mat-card appearance="outlined" class="tile card--domain" data-testid="now">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>location_home</mat-icon></div>
+        <mat-card-title>{{ t('presence.now.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="now.lastUpdated()" [stale]="now.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (now.loading()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('presence.now.loading')" />
+        } @else {
+          @if (residents().length > 0) {
+            <ul class="residents">
+              @for (resident of residents(); track resident.name) {
+                <li class="resident" [attr.data-state]="resident.state">
+                  <mat-icon class="resident__icon">{{ stateIcons[resident.state] }}</mat-icon>
+                  <!-- a name of the registry: printed as it is, never a translation parameter -->
+                  <span class="resident__name">{{ resident.name }}</span>
+                  <span class="resident__state">{{ t(stateLabels[resident.state]) }}</span>
+                  <span class="resident__detail">
+                    @if (resident.since; as since) {
+                      {{ t('presence.now.since', { time: since | houseDateTime }) }}
+                    }
+                    @if (resident.lastCheckedAt | houseAge; as age) {
+                      <span
+                        class="resident__checked"
+                        [class.resident__checked--late]="resident.late"
+                      >
+                        @if (resident.late) {
+                          <mat-icon class="resident__late">warning</mat-icon>
+                        }
+                        {{ t('presence.now.checked', { age }) }}
+                      </span>
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+          } @else if (!now.error()) {
+            <p class="tile__detail">{{ t('presence.now.none') }}</p>
+          }
+          <app-api-error-strip [error]="now.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="tile tile--period card--domain" data-testid="period">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>date_range</mat-icon></div>
+        <mat-card-title>{{ t('presence.range.title') }}</mat-card-title>
+        <mat-card-subtitle>{{ t('presence.range.hint') }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <mat-button-toggle-group
+          class="period__presets"
+          hideSingleSelectionIndicator
+          [attr.aria-label]="t('presence.range.presets')"
+          [value]="preset()"
+          (change)="choosePreset($event.value)"
+        >
+          @for (option of presets; track option.value) {
+            <mat-button-toggle [value]="option.value">{{ t(option.label) }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+
+        <mat-form-field class="period__dates" appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ t('presence.range.dates') }}</mat-label>
+          <mat-date-range-input
+            [formGroup]="dates"
+            [rangePicker]="picker"
+            [min]="earliest()"
+            [max]="latest()"
+            (click)="picker.open()"
+          >
+            <!-- Chosen in the calendar, not typed: the control reads typed digits the American
+                 way, month first, whatever the language - 05/10 would be the tenth of May. -->
+            <input
+              matStartDate
+              readonly
+              formControlName="first"
+              [attr.aria-label]="t('presence.range.first')"
+            />
+            <input
+              matEndDate
+              readonly
+              formControlName="last"
+              [attr.aria-label]="t('presence.range.last')"
+            />
+          </mat-date-range-input>
+          <mat-datepicker-toggle matIconSuffix [for]="picker" />
+          <mat-date-range-picker #picker (closed)="pickDates()" />
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="tile tile--wide card--domain" data-testid="resident">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>person</mat-icon></div>
+        <mat-card-title>{{ t('presence.resident.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="history.lastUpdated()" [stale]="history.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (residents().length > 1) {
+          <mat-button-toggle-group
+            class="who"
+            hideSingleSelectionIndicator
+            [attr.aria-label]="t('presence.resident.choose')"
+            [value]="resident()"
+            (change)="chooseResident($event.value)"
+          >
+            @for (person of residents(); track person.name) {
+              <mat-button-toggle [value]="person.name">{{ person.name }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        }
+
+        @let answered = shownHistory();
+        @if (resident() === undefined) {
+          @if (now.loading()) {
+            <mat-progress-bar
+              mode="indeterminate"
+              [attr.aria-label]="t('presence.resident.loading')"
+            />
+          } @else {
+            <p class="tile__detail">{{ t('presence.resident.nobody') }}</p>
+          }
+        } @else if (answered === undefined && !history.error()) {
+          <mat-progress-bar
+            mode="indeterminate"
+            [attr.aria-label]="t('presence.resident.loading')"
+          />
+        } @else {
+          @if (answered !== undefined) {
+            @if (residentDays().length > 0) {
+              @if (residentObservedSince(); as since) {
+                <p class="tile__detail days__note" data-testid="resident-observed-since">
+                  {{ t('presence.observedSince', { time: since | houseDateTime }) }}
+                </p>
+              }
+              <div class="scale" aria-hidden="true">
+                <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+              </div>
+              <ul class="days">
+                @for (day of residentDays(); track day.lane.date) {
+                  <li class="day" [attr.data-date]="day.lane.date">
+                    <p class="day__head">
+                      <span class="day__date">{{ day.lane.at | houseDateTime: dayFormat }}</span>
+                      <span class="day__figures">
+                        @if (day.atHome; as atHome) {
+                          <app-presence-duration [duration]="atHome" />
+                        }
+                        @if (day.percentage !== undefined) {
+                          <span class="day__share"
+                            >{{ day.percentage | localNumber: percent }} %</span
+                          >
+                        }
+                      </span>
+                    </p>
+                    <app-day-lane
+                      [lane]="day.lane"
+                      filledLabel="presence.resident.lane"
+                      emptyLabel="presence.resident.laneNone"
+                    />
+                    <p class="day__foot">
+                      @if (day.firstArrival; as arrival) {
+                        <span>{{
+                          t('presence.resident.firstArrival', {
+                            time: arrival | houseDateTime: timeFormat,
+                          })
+                        }}</span>
+                      }
+                      @if (day.lastDeparture; as departure) {
+                        <span>{{
+                          t('presence.resident.lastDeparture', {
+                            time: departure | houseDateTime: timeFormat,
+                          })
+                        }}</span>
+                      }
+                      @if (day.stillAtHome) {
+                        <span class="day__open">{{ t('presence.resident.stillAtHome') }}</span>
+                      }
+                    </p>
+                  </li>
+                }
+              </ul>
+              <p class="legend">
+                <span class="legend__item"
+                  ><span class="legend__swatch legend__swatch--filled"></span
+                  >{{ t('presence.legend.atHome') }}</span
+                >
+                <span class="legend__item"
+                  ><span class="legend__swatch legend__swatch--observed"></span
+                  >{{ t('presence.legend.away') }}</span
+                >
+                <span class="legend__item"
+                  ><span class="legend__swatch legend__swatch--unobserved"></span
+                  >{{ t('presence.legend.notObserved') }}</span
+                >
+                <span class="legend__item"
+                  ><span class="legend__swatch legend__swatch--open"></span
+                  >{{ t('presence.legend.open') }}</span
+                >
+              </p>
+            } @else {
+              <p class="tile__detail" data-testid="resident-nothing">
+                {{ t('presence.resident.nothing') }}
+              </p>
+            }
+          }
+          <app-api-error-strip [error]="history.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="tile tile--wide card--domain" data-testid="house">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>house</mat-icon></div>
+        <mat-card-title>{{ t('presence.house.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="house.lastUpdated()" [stale]="house.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @let occupancy = shownHouse();
+        @if (occupancy === undefined && !house.error()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('presence.house.loading')" />
+        } @else {
+          @if (occupancy !== undefined) {
+            @if (houseDays().length > 0) {
+              @if (houseObservedSince(); as since) {
+                <p class="tile__detail days__note" data-testid="house-observed-since">
+                  {{ t('presence.observedSince', { time: since | houseDateTime }) }}
+                </p>
+              }
+              <div class="scale" aria-hidden="true">
+                <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+              </div>
+              <ul class="days">
+                @for (day of houseDays(); track day.lane.date) {
+                  <li class="day" [attr.data-date]="day.lane.date">
+                    <p class="day__head">
+                      <span class="day__date">{{ day.lane.at | houseDateTime: dayFormat }}</span>
+                      <span class="day__figures">
+                        @if (day.wasEmpty === true) {
+                          <span class="badge badge--empty">{{ t('presence.house.wasEmpty') }}</span>
+                        } @else if (day.wasEmpty === false) {
+                          <span class="badge">{{ t('presence.house.neverEmpty') }}</span>
+                        }
+                      </span>
+                    </p>
+                    <app-day-lane
+                      [lane]="day.lane"
+                      filledLabel="presence.house.lane"
+                      emptyLabel="presence.house.laneNone"
+                    />
+                    <p class="day__foot">
+                      @if (day.occupied; as occupied) {
+                        <span
+                          >{{ t('presence.house.occupied') }}&ngsp;<app-presence-duration
+                            [duration]="occupied"
+                        /></span>
+                      }
+                      @if (day.empty; as empty) {
+                        <span
+                          >{{ t('presence.house.empty') }}&ngsp;<app-presence-duration
+                            [duration]="empty"
+                        /></span>
+                      }
+                    </p>
+                  </li>
+                }
+              </ul>
+              <p class="legend">
+                <span class="legend__item"
+                  ><span class="legend__swatch legend__swatch--filled"></span
+                  >{{ t('presence.legend.occupied') }}</span
+                >
+                <span class="legend__item"
+                  ><span class="legend__swatch legend__swatch--observed"></span
+                  >{{ t('presence.legend.empty') }}</span
+                >
+                <span class="legend__item"
+                  ><span class="legend__swatch legend__swatch--unobserved"></span
+                  >{{ t('presence.legend.notObserved') }}</span
+                >
+              </p>
+              <p class="tile__detail">{{ t('presence.house.gapNote') }}</p>
+            } @else {
+              <p class="tile__detail" data-testid="house-nothing">
+                {{ t('presence.house.nothing') }}
+              </p>
+            }
+          }
+          <app-api-error-strip [error]="house.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+</ng-container>

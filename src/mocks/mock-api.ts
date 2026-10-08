@@ -61,11 +61,18 @@ function answer(
   path: string,
   fresh: boolean,
 ): Observable<HttpEvent<unknown>> {
-  const handler = MOCK_HANDLERS.find(
-    (candidate) => candidate.method === request.method && candidate.path === path,
-  );
+  const matched = MOCK_HANDLERS.flatMap((handler) => {
+    if (handler.method !== request.method) {
+      return [];
+    }
+    if (typeof handler.path === 'string') {
+      return handler.path === path ? [{ handler, caught: [] as string[] }] : [];
+    }
+    const match = handler.path.exec(path);
+    return match ? [{ handler, caught: match.slice(1) }] : [];
+  }).at(0);
   // the same answer the gateway gives for a path nobody serves
-  const reply: MockReply = handler?.reply(request, fresh) ?? {
+  const reply: MockReply = matched?.handler.reply(request, fresh, matched.caught) ?? {
     status: 404,
     body: { errors: [{ message: `No static resource for request '${path}'.` }] },
   };

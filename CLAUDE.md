@@ -80,6 +80,18 @@ e2e/              # Playwright tests
   not hidden by a computed - a hidden question came back by itself with the next change). A template
   reference must not carry the name of a method the template calls (`#cancel` next to
   `cancel()` does not compile).
+- **A report somebody can change the question of carries its question** (HAS-203, presence):
+  the resource of a report for a period or a person answers `Answered<Q, T>` - the answer with
+  the query it was asked for (`PresenceApi.watchHouse(() => range())`). The resource asks again
+  when the query changes, but until the new answer arrives it still holds the old one; the view
+  shows a value only while `answered.query === query()` and a progress bar otherwise. Without
+  it the days of one resident stand under the name of another for the length of a call. The
+  query has to be a signal with an `equal`, so that the same question is the same object.
+- **Only what was observed is drawn.** The reports of `presence-service` say from when to when
+  their history covers the period (`observedFrom`, `observedUntil`). A day outside it gets no
+  row, the part of a day outside it is hatched, and the page says in words where the history
+  begins - never "away" or "empty" for time nobody looked at. (Time the detection was down *in
+  the middle* of the history reads as empty in the answer itself; the page says that too.)
 - **The service worker never sees a backend call**: `ApiClient` sends `ngsw-bypass` with every
   request. Never call the backend around `ApiClient`, and never add a data group to
   `ngsw-config.json` - see "Installed application" below.
@@ -473,9 +485,25 @@ dependency on the profiles (or on HTTP) and a unit test gets one language for th
 - **A control is named by what is written on it.** An `aria-label` replaces the visible text in
   the accessible name; where a button shows text (the `EN` of the language button) add the rest
   as `.visually-hidden` text inside it instead, with `&ngsp;` so the words do not run together.
-- **Angular Material's own labels** (paginator, date picker) are translated in
-  `core/i18n/material-intl.ts`, which also gives the date picker the locale. A Material control
-  with built-in texts used for the first time (sort header, stepper) gets its `…Intl` class there.
+- **Angular Material's own labels** are translated by an `…Intl` class that follows the language
+  (`followLanguage`): the calendar in `core/i18n/calendar.ts`, which also gives it the locale,
+  the paginator in `core/i18n/material-intl.ts`. **They are provided by the component that has
+  the control** - `providers: [provideCalendar()]` in its decorator - **never by the
+  configuration of the application**: a Material package named there is in the graph of the
+  first page, and the moment any view uses a part of it (the paginator alone names the form
+  field, the select and the forms) the bundler moves that part into the first download. The
+  calendar in the configuration cost 258 kB of the initial bundle (HAS-203). A Material control
+  with built-in texts used for the first time gets its `…Intl` class and its `provide…()` the
+  same way. After adding a Material module, **read the "Initial total" of `npm run build`**: the
+  budget is a warning that nothing fails on.
+- **A date field is chosen in the calendar, never typed** (`readonly` inputs, the field opens
+  the calendar): the native date adapter reads typed digits with `Date.parse` - month first, in
+  every language - so `05/10/2026` typed into an en-GB field is the tenth of May.
+- **Several pieces of text side by side** (a date, a length of time, a share in one row) need
+  white space between them, which Angular strips from a template: `&ngsp;` between two, or
+  `preserveWhitespaces: true` on a component whose rows are made of them (`Presence`). Stripped,
+  a screen reader and the clipboard get "Thu 8 Oct15 h 10 min" - and so does a unit test, which
+  is how it shows.
 - **Tests**: `provideI18nTesting()` in the providers of any unit test that renders a template —
   it is the real i18n, so the test reads what a user reads — and `await useLanguage('pl')` to
   switch (`src/testing/i18n.ts`). In Playwright: `startIn(page, 'pl')` (`e2e/support.ts`).
@@ -500,6 +528,12 @@ up in a production build.
   empty 200, devices nothing is noted about, no sensor) - a handler gets it as its second
   argument (`fresh`). `writes-fail` answers every read as usual and every other call with a
   500: the way to look at a switch the house did not carry out.
+- **The mock household lives by the clock**: the presence fixtures are a small simulation - a
+  routine per member, a history that begins twelve days before the call and ends at a last
+  check a moment ago, one member never seen. A browser test of it pins the clock
+  (`page.clock.setFixedTime`), or its expectations depend on the weekday it runs on.
+- A handler's `path` may be a pattern, for a path with a name in it; what its groups caught is
+  the third argument of `reply`.
 - **The mock house can be switched**: `POST /home/heating` changes what the next reads answer,
   in the memory of the page - a reload is the house as it started. A fixture that a write
   changes is a function over that state (`heatingStatus()`), with a reset for the unit tests.

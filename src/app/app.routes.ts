@@ -45,6 +45,11 @@ const pages: Page[] = [
     loadComponent: () => import('./features/boiler-room/boiler-room').then((m) => m.BoilerRoom),
   },
   {
+    path: 'presence',
+    title: 'nav.presence',
+    loadComponent: () => import('./features/presence/presence').then((m) => m.Presence),
+  },
+  {
     path: 'room',
     title: 'nav.myRoom',
     data: { access: 'member' },

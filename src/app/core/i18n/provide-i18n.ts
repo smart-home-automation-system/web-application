@@ -6,15 +6,11 @@ import {
   isDevMode,
   provideAppInitializer,
 } from '@angular/core';
-import { provideNativeDateAdapter } from '@angular/material/core';
-import { MatDatepickerIntl } from '@angular/material/datepicker';
-import { MatPaginatorIntl } from '@angular/material/paginator';
 import { Translation, TranslocoLoader, provideTransloco } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 
 import { LanguageStore } from './language-store';
 import { DEFAULT_LANGUAGE, LANGUAGES, MESSAGES_LOADER, isLanguageCode } from './languages';
-import { TranslatedDatepickerIntl, TranslatedPaginatorIntl } from './material-intl';
 
 /** Hands Transloco the texts of a language; where they come from is `MESSAGES_LOADER`'s call. */
 @Injectable()
@@ -46,8 +42,5 @@ export function provideI18n(): (Provider | EnvironmentProviders)[] {
     }),
     // the language chosen earlier is in place before the first page renders: no flash of English
     provideAppInitializer(() => inject(LanguageStore).restore()),
-    provideNativeDateAdapter(),
-    { provide: MatPaginatorIntl, useClass: TranslatedPaginatorIntl },
-    { provide: MatDatepickerIntl, useClass: TranslatedDatepickerIntl },
   ];
 }
