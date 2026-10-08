@@ -38,8 +38,11 @@ household), the mock API for development, and the delivery pipeline - and the fi
 dashboards:
 
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
-  now, and the temperature sensors - when each room last reported, which sensor has fallen
-  silent and which is left out of the alerts. The switch is the one control of the application
+  now, the pump of the floor heating, **the rooms of the house** floor by floor - the
+  temperature of each with the age of its reading, the temperature its schedule asks for right
+  now, and its heaters with what their relays last reported; a room opens into the week of its
+  heaters, read-only - and the temperature sensors: when each room last reported, which sensor
+  has fallen silent and which is left out of the alerts. The switch is the one control of the application
   that changes the house: it asks before it acts, and what it shows afterwards is what the
   house answers when asked again, never what was clicked.
 - **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
@@ -56,8 +59,7 @@ dashboards:
   absence.
 
 Hot water, the boiler room and the presence are read-only. The landing page still shows a single tile - the
-state of the heating system; the room view of the heating and the overview proper arrive with
-the following tasks.
+state of the heating system; the overview proper arrives with a following task.
 
 Everybody in the household has a **profile**, opened by a personal link and remembered in the
 browser: the administrator gets the whole application, a resident their own page - see
@@ -220,6 +222,8 @@ Endpoints used today:
 | `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating), polled every 30 s, and once more right after every change of the switch |
 | `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating), after a confirmation. Its answer is not used: the state is read again |
 | `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
+| `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating), polled every 30 s. Needs `heating-service` 1.8.0 or later |
+| `GET` | `/home/heating/floor-pump` | What the relay of the floor heating pump last reported (heating), polled every 30 s |
 | `GET` | `/home/heating/temperature/sensors` | Per room the time of the last reading, `stale` and `muted` (heating), polled every 60 s. A room that never reported is not in the answer |
 | `GET` | `/home/presence/residents/presence` | Who is at home now: per active member `present`, `since` and `lastCheckedAt` (presence), polled every 60 s. A member nothing is stored about comes as not present with no times - shown as "not observed yet", not as away |
 | `GET` | `/home/presence/residents/{name}/report?from=&to=` | The periods at home of one resident (presence). Asked when the resident or the period changes, then every 5 min |
@@ -264,6 +268,20 @@ What the application relies on, in every call:
   `observedUntil` gets no row, the part of a day outside it is hatched, and the page says where
   the history begins. Time the detection was down *in the middle* of the history reads as empty
   in the answer of the service itself - the page says so under the list of the house.
+- **What the rooms show is what `heating-service` says, and nothing it leaves out is guessed.**
+  The service omits whatever it has not measured, heard from a relay or decided yet: such a
+  heater reads "no status yet", such a room "No reading yet" - never "off" or a zero. Right
+  after a deploy of `heating-service` most rooms therefore show a temperature and heaters
+  without a status, until their sensors report again. The **target** is the service's
+  `scheduledTemperature` (for a room with two heaters the higher one); the page works nothing
+  out from the schedules with the clock of the browser. **"Calls for heat"** is the service's
+  `inSchedule`: a period is on *and* the room is colder than it asks - with the heating
+  switched off a heater can call for heat and stay off. The week of a heater is placed by the
+  clock of the house, also on a phone abroad. A period the page cannot draw - an unknown day, a
+  cooling period - is counted under the week, not dropped in silence.
+- **Which room is on which floor is a list in this application** (`FLOORS`,
+  `features/heating/room-views.ts`), by the room identifiers of `smart-home-sdk`; the service
+  knows no floors. A room the list does not name is shown all the same, under "Other".
 - **Two things the heating page cannot know from the API**: after how long a sensor counts as
   silent (a setting of `heating-service`, a day unless changed - the page does not name the
   number), and *which* rooms are being heated - the answer is one flag for the whole house.
