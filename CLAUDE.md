@@ -54,7 +54,12 @@ e2e/              # Playwright tests
   replaces that function and nothing else.
 - **Every polled view shows its freshness**: `<app-data-freshness>` with the resource's
   `lastUpdated` and `stale`. A value without its age reads as current when the backend has been
-  down for an hour. On an error the last value stays on screen, marked stale, next to the message.
+  down for an hour. On an error the last value stays on screen, marked stale, next to the
+  message - `<app-api-error-strip [error]="resource.error()" />` (`shared/api-error/`), the one
+  way a failed call is told inside a card. **One resource, one card**: two values of the same
+  call share a card, or its freshness and its failure are told twice (the two temperatures of
+  the hot water did, until a review). The freshness is that of the *call*: where the answer
+  carries no time of its own (`water/status/temperature`), say so in the data-access class.
 - **The service worker never sees a backend call**: `ApiClient` sends `ngsw-bypass` with every
   request. Never call the backend around `ApiClient`, and never add a data group to
   `ngsw-config.json` - see "Installed application" below.
@@ -73,15 +78,26 @@ e2e/              # Playwright tests
 - **Date-times from the backend are house wall-clock times** (`LocalDateTime`, no offset). Never
   `new Date(text)` and never Angular's `date` pipe on them — both shift the value into the
   browser zone. Display with the `houseDateTime` pipe. Computing the *age* of such a value needs
-  the zone of the house (an offset has to come from somewhere); that conversion does not exist
-  yet and is added, with tests around both DST changes, by the first view that shows one.
+  the zone of the house (an offset has to come from somewhere): `houseInstant`
+  (`core/time/house-date-time.ts`, the zone is `APP_CONFIG.houseTimeZone`), tested around both
+  DST changes. In a template use the `houseAge` pipe ("3 min ago"); do not write a second
+  conversion.
 - **The API types are promises, not checks**: `ApiClient.get<T>` validates nothing. Model a field
   as optional wherever the backend may omit it (`@JsonInclude(NON_NULL)` is common there), and
-  take the shape from a real answer of the gateway, not from the Java class name.
+  take the shape from a real answer of the gateway, not from the Java class name (the Java field
+  `isWorking` of `boiler-service` is `working` in the JSON). **What the answer does not say is
+  shown as unknown, never as the falsy value**: a device without `working` is "no status yet",
+  not "off" (`toDeviceView`); a temperature that is not a finite number is "nothing measured
+  yet" - and that includes whatever is *derived* from such a field one element further on (the
+  pipe and the circuit behind a pump of unknown state). A 200 without a body arrives as `null`:
+  model it (`PollingResource<T | null>`) and decide what the page shows for it.
 - **Routes**: lazy-loaded with `loadComponent`, each with a `title` — the **key** of its text,
   not the text. **No route may start with `home`** — the ingress sends `/home` to the API gateway
   (a test pins this). A new destination goes into `NAV_ITEMS` (`core/layout/navigation.ts`, label
-  as a key) together with its route; the phone layout shows them in a bottom bar that holds five.
+  as a key) together with its route. **The order is the priority on a phone**: its bottom bar has
+  five places, and with more entries than that it shows the first four and "More" for the rest
+  (`splitForBottomBar`; owner's choice, 2026-10-08) - so what is opened daily goes first, the
+  settings and the build last. A page behind "More" marks the button as the open entry.
 - **Layout**: the shell renders both navigations and CSS shows one (side list from 840 px, bottom
   bar below). Use the `--mat-sys-*` variables for every colour and font — never a literal — so
   themes can change them. Global building blocks (`.page-header`, `.message-page`) are in
@@ -300,6 +316,11 @@ season. Both are nothing but values of CSS variables, in two files:
   eight variants. A new combination of foreground and background — text on a surface level not
   listed yet — is added to `PAIRS` in `scripts/check-contrast.mjs`. Text in the primary colour
   on a *tinted* background does not pass in every season: use the `on-…-container` colour there.
+- **A browser tab that is hidden makes no calls** (`pollingResource`), and a tab opened by a
+  tool in the background is hidden from its first moment: the page then shows its progress bars
+  for good. Verifying against the cluster is done with a browser that shows the page - the
+  Playwright script pattern of HAS-195 (seed the profile, open the page, print what it shows
+  next to what the API answers), not a background tab.
 - **Tests**: Playwright pins the date with `page.clock` (a test that depends on the season must
   not depend on the day it runs) and starts in a variant with `startWithTheme(page, …)`. In a
   unit test `ThemeStore` works without styles and without `matchMedia`; stub the latter to test
@@ -340,9 +361,18 @@ the text never depends on it.
   than the top band of the photo is not covered either. The owner chose the thin haze and the
   bare title over the lead sentences and the glass behind the title (2026-10-07), both of which
   were tried and found to waste the room.
+- **A photo has to carry the title in both schemes.** The title lies on the top band of the
+  picture, dark in the light scheme and light in the dark one, so that band has to be neither
+  nearly black nor nearly white. Both photos of HAS-195 failed there (a boiler room is dark, a
+  bathroom has a black window frame next to a strip of light). The third argument of
+  `make-background.mjs`, `<black>-<white>`, narrows the tones of the photo; narrow them by the
+  least that makes `check:contrast` pass and record the range next to the prompt. Ask for
+  "even, mid-toned light at the top of the frame" in the prompt and it may not be needed.
+- **`confirm-generation` of the Superdesign CLI can time out while the generation succeeds.** It
+  is idempotent: look with `get-generation <id> --wait`, never quote again.
 - **Adding a photo**: generate the source (Superdesign, `npx --yes @superdesign/cli@latest
   generate-image`; the owner logs in once and confirms the quote), run
-  `node scripts/make-background.mjs <source> <name>` — it writes `public/backgrounds/<name>-2560.webp`
+  `node scripts/make-background.mjs <source> <name> [<black>-<white>]` — it writes `public/backgrounds/<name>-2560.webp`
   (at most 400 kB), `-1280.webp` and `<name>.json` (the two patches) — add the name to
   `BACKGROUNDS`, name it in the route, and record the prompt and the model in
   `public/backgrounds/README.md`. The files are not hashed, so nginx serves them `no-cache`: a
@@ -427,7 +457,11 @@ up in a production build.
   typed with the data-access model — a new call without one answers 404, like the gateway.
 - Fixtures mirror real gateway answers in shape and use **invented names and values only**:
   this repository is public, the household is not.
-- Failure modes: `localStorage['mock-scenario']` = `offline` | `server-error`.
+- Scenarios: `localStorage['mock-scenario']` = `offline` | `server-error` | `no-readings` - the
+  last one is no failure: the services answer as just after a start (an empty 200, devices
+  nothing is noted about). A handler gets it as its second argument (`fresh`).
+- A fixture with a time in it that the page shows as an *age* is a function of "now"
+  (`boilerStatus()`): a fixed time reads as a service that stopped reporting.
 - Playwright runs against the mock API, so a browser test can never switch a real device.
   **Never point a test at the cluster for anything that writes** (the heating switch, the
   household registry); reading is fine.
