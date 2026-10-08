@@ -1,0 +1,116 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('boilerRoom.title') }}</h1>
+  </header>
+
+  <!-- One sheet of glass under the whole schematic: the devices and the pipes are drawn on it,
+       so everything written here is text on glass. -->
+  <mat-card appearance="outlined" class="installation">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>water_heater</mat-icon></div>
+      <mat-card-title>{{ t('boilerRoom.installation') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="status.lastUpdated()" [stale]="status.stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (status.loading()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('boilerRoom.loading')" />
+      } @else {
+        @if (status.lastUpdated() !== undefined) {
+          @let hotWater = hotWaterPump();
+          @let heating = heatingPump();
+          <div class="schematic" role="group" [attr.aria-label]="t('boilerRoom.schematic')">
+            <app-boiler-device
+              class="schematic__furnace"
+              data-testid="furnace"
+              icon="local_fire_department"
+              name="boilerRoom.furnace"
+              onLabel="boilerRoom.on"
+              offLabel="boilerRoom.off"
+              [device]="furnace()"
+            />
+
+            <!-- On a wide screen the furnace stands between its two pumps, as tall as what it
+                 says, and one pipe leaves it and forks. (On a phone it lies above them, and the
+                 two straight pipes below are drawn instead.) -->
+            <span class="manifold" aria-hidden="true">
+              <span
+                class="manifold__stub"
+                [class.manifold--flowing]="hotWater.working === true || heating.working === true"
+              ></span>
+              <span
+                class="manifold__branch manifold__branch--up"
+                [class.manifold--flowing]="hotWater.working === true"
+              ></span>
+              <span
+                class="manifold__branch manifold__branch--down"
+                [class.manifold--flowing]="heating.working === true"
+              ></span>
+            </span>
+
+            <span
+              class="pipe pipe--to-hot-water-pump"
+              [class.pipe--flowing]="hotWater.working === true"
+            ></span>
+            <app-boiler-device
+              class="schematic__hot-water-pump"
+              data-testid="hot-water-pump"
+              icon="water_pump"
+              name="boilerRoom.hotWaterPump"
+              onLabel="boilerRoom.running"
+              offLabel="boilerRoom.stopped"
+              [device]="hotWater"
+            />
+            <span
+              class="pipe pipe--to-hot-water"
+              [class.pipe--flowing]="hotWater.working === true"
+            ></span>
+            <div
+              class="circuit schematic__hot-water"
+              data-testid="hot-water"
+              [class.circuit--supplied]="hotWater.working === true"
+            >
+              <mat-icon class="circuit__icon">shower</mat-icon>
+              <h3 class="circuit__name">{{ t('boilerRoom.hotWater') }}</h3>
+              <p class="circuit__state">
+                {{ t(flow(hotWater)) }}
+              </p>
+            </div>
+
+            <span
+              class="pipe pipe--to-heating-pump"
+              [class.pipe--flowing]="heating.working === true"
+            ></span>
+            <app-boiler-device
+              class="schematic__heating-pump"
+              data-testid="heating-pump"
+              icon="water_pump"
+              name="boilerRoom.heatingPump"
+              onLabel="boilerRoom.running"
+              offLabel="boilerRoom.stopped"
+              [device]="heating"
+            />
+            <span
+              class="pipe pipe--to-heating"
+              [class.pipe--flowing]="heating.working === true"
+            ></span>
+            <div
+              class="circuit schematic__heating"
+              data-testid="heating"
+              [class.circuit--supplied]="heating.working === true"
+            >
+              <mat-icon class="circuit__icon">mode_heat</mat-icon>
+              <h3 class="circuit__name">{{ t('boilerRoom.heating') }}</h3>
+              <p class="circuit__state">
+                {{ t(flow(heating)) }}
+              </p>
+            </div>
+          </div>
+        }
+        <app-api-error-strip [error]="status.error()" />
+      }
+    </mat-card-content>
+  </mat-card>
+</ng-container>

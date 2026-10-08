@@ -1,6 +1,6 @@
 import { Page, expect, test as base } from '@playwright/test';
 
-export type MockScenario = 'default' | 'offline' | 'server-error';
+export type MockScenario = 'default' | 'offline' | 'server-error' | 'no-readings';
 export type Language = 'en' | 'pl';
 
 /** Switches the mock API into a failure mode before the application starts. */

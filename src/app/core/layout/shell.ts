@@ -10,6 +10,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from '@angular/material/menu';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { filter } from 'rxjs';
@@ -18,7 +19,7 @@ import { PROFILES_PATH, accessOf, redirectFor } from '../profile/access';
 import { ProfileStore } from '../profile/profile-store';
 import { APP_NAME } from './app-title-strategy';
 import { LanguageMenu } from './language-menu';
-import { NAV_ITEMS } from './navigation';
+import { NAV_ITEMS, splitForBottomBar } from './navigation';
 import { Notices } from './notices';
 import { ViewBackground } from './view-background';
 
@@ -31,7 +32,8 @@ import { ViewBackground } from './view-background';
  * never jumps while JavaScript measures the screen.
  *
  * The navigation lists what the active profile may open: everything for the administrator, their
- * own page for a resident, nothing while nobody is chosen.
+ * own page for a resident, nothing while nobody is chosen. The bottom bar has five places; with
+ * more entries than that its last place is a "More" button listing the rest.
  */
 @Component({
   selector: 'app-shell',
@@ -41,6 +43,7 @@ import { ViewBackground } from './view-background';
     RouterLinkActive,
     MatButtonModule,
     MatListModule,
+    MatMenuModule,
     MatIconModule,
     TranslocoDirective,
     LanguageMenu,
@@ -59,6 +62,19 @@ export class Shell {
   protected readonly navItems = computed(() =>
     NAV_ITEMS.filter((item) => redirectFor(item.access, this.profile()) === undefined),
   );
+  /** The bottom bar of a phone: the entries it has room for, and the rest behind "More". */
+  protected readonly bottomBar = computed(() => splitForBottomBar(this.navItems()));
+  /** The navigation that ended last; `undefined` until the first one has. */
+  private readonly arrived = toSignal(
+    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)),
+  );
+  /** True while the open page is one of those behind "More": the button is then the open entry. */
+  protected readonly moreIsOpen = computed(() => {
+    const path = (this.arrived()?.urlAfterRedirects ?? this.router.url).split(/[?#]/)[0];
+    return this.bottomBar().more.some(
+      (item) => path === item.path || path.startsWith(`${item.path}/`),
+    );
+  });
 
   constructor() {
     // The guard judged the open page by the profile of that moment. A profile can change under
@@ -67,12 +83,9 @@ export class Shell {
     // may no longer see is left. It is asked at the end of every navigation too: a profile that
     // changes while a page is on its way was judged by the guard before the change, and by this
     // check on the page being left.
-    const arrived = toSignal(
-      this.router.events.pipe(filter((event) => event instanceof NavigationEnd)),
-    );
     effect(() => {
       const profile = this.profile();
-      arrived();
+      this.arrived();
       untracked(() => {
         const target = redirectFor(accessOf(this.router.routerState.snapshot.root), profile);
         if (target !== undefined) {

@@ -1,0 +1,99 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+  max-width: 960px;
+  // A card is as tall as what it has to say. Stretched to the tallest card of its row, a card
+  // with one line in it was mostly empty (owner, 2026-10-08).
+  align-items: start;
+}
+
+// every card here is of the hot-water domain: its colour on the edge, the badge and the gauge
+.tile {
+  --app-domain: var(--app-domain-water);
+}
+
+// the temperatures are what the page is about: twice the width, so the gauge has room for
+// its scale
+.tile--tank {
+  grid-column: span 2;
+
+  @media (max-width: 640px) {
+    grid-column: 1 / -1;
+  }
+}
+
+// tighter than Material's 16 px all round: the tiles are read, not touched
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.tile__reading {
+  margin: 0;
+  font: var(--mat-sys-display-small);
+  letter-spacing: var(--mat-sys-display-small-tracking);
+  color: var(--mat-sys-on-surface);
+  // the digits keep their width, so the number does not shake when it changes
+  font-variant-numeric: tabular-nums;
+}
+
+// the second temperature of the same call: a line under the first, not a card of its own
+.tile__second {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-surface-variant);
+
+  // alone in the card - the tank has no reading - it needs no line above it
+  &:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.tile__second-reading {
+  margin-left: auto;
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.tile__gauge {
+  display: block;
+  max-width: 560px;
+  margin-top: 12px;
+}
+
+.tile__state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// On a domain card the text is `on-surface` or its variant - the two colours the contrast check
+// knows on the wash of a domain. What tells "heating needed" from "warm enough" is the stronger
+// colour, the icon and the words, not a hue.
+.tile__state--on {
+  color: var(--mat-sys-on-surface);
+}
+
+.tile__detail {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}

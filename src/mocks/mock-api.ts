@@ -15,9 +15,10 @@ import { MOCK_HANDLERS, MockReply } from './handlers';
  *
  * A scenario switches the whole API into a failure mode, so error states can be looked at and
  * tested: set `localStorage['mock-scenario']` to `offline` (no answer at all) or `server-error`
- * (every call answers 502) and reload.
+ * (every call answers 502) and reload. A third one, `no-readings`, is not a failure: the
+ * services answer as they do just after a start, before they measured or looked at anything.
  */
-export type MockScenario = 'default' | 'offline' | 'server-error';
+export type MockScenario = 'default' | 'offline' | 'server-error' | 'no-readings';
 
 // check-bundle.mjs looks for this text: it must never show up in a production bundle
 const MARKER = 'smart-home-mock-api-enabled';
@@ -38,19 +39,25 @@ const mockApiInterceptor: HttpInterceptorFn = (request, next) => {
       return fail(request, 502, {
         errors: [{ message: 'Mock scenario: the service behind the gateway is failing' }],
       });
+    case 'no-readings':
+      return answer(request, path, true);
     default:
-      return answer(request, path);
+      return answer(request, path, false);
   }
 };
 
 export const mockApiInterceptors: readonly HttpInterceptorFn[] = [mockApiInterceptor];
 
-function answer(request: HttpRequest<unknown>, path: string): Observable<HttpEvent<unknown>> {
+function answer(
+  request: HttpRequest<unknown>,
+  path: string,
+  fresh: boolean,
+): Observable<HttpEvent<unknown>> {
   const handler = MOCK_HANDLERS.find(
     (candidate) => candidate.method === request.method && candidate.path === path,
   );
   // the same answer the gateway gives for a path nobody serves
-  const reply: MockReply = handler?.reply(request) ?? {
+  const reply: MockReply = handler?.reply(request, fresh) ?? {
     status: 404,
     body: { errors: [{ message: `No static resource for request '${path}'.` }] },
   };
@@ -71,7 +78,9 @@ function fail(request: HttpRequest<unknown>, status: number, error: unknown): Ob
 function scenario(): MockScenario {
   try {
     const stored = localStorage.getItem('mock-scenario');
-    return stored === 'offline' || stored === 'server-error' ? stored : 'default';
+    return stored === 'offline' || stored === 'server-error' || stored === 'no-readings'
+      ? stored
+      : 'default';
   } catch {
     return 'default';
   }

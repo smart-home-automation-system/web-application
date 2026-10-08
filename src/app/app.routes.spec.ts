@@ -44,10 +44,14 @@ describe('routes', () => {
 
   // `data` has an index signature, so a misspelled key would type-check and the view would
   // silently show the plain glow
-  it('name the photo of the overview under the key the background layer reads', () => {
-    const overview = (routes[0].children ?? []).find((route) => route.path === 'overview');
+  it.each([
+    ['overview', 'home'],
+    ['water', 'water'],
+    ['boiler', 'boiler'],
+  ])('name the photo of /%s under the key the background layer reads', (path, photo) => {
+    const page = (routes[0].children ?? []).find((route) => route.path === path);
 
-    expect(overview?.data).toEqual({ background: 'home' });
+    expect(page?.data).toEqual({ background: photo });
   });
 
   it('put every page behind the guard of the profiles', () => {

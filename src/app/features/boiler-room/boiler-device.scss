@@ -1,0 +1,77 @@
+// A box on the glass of the card around the schematic: no surface of its own, so its text is
+// text on glass - and, once the device runs, on the wash of the domain, the other background
+// `check:contrast` knows for `on-surface` and its variant.
+:host {
+  // What the box says sits in its middle: the furnace is as tall as both pumps next to it, and
+  // with its text at the top more than half of it was empty (owner, 2026-10-08).
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  // where the schematic makes a box wider than its text, it centres the text (--device-*)
+  text-align: var(--device-text, start);
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 55%, transparent);
+  border-radius: var(--mat-sys-corner-small);
+  transition:
+    border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+:host(.device--working) {
+  border-color: var(--app-domain);
+  background-color: color-mix(in srgb, var(--app-domain) 18%, transparent);
+}
+
+.device__head {
+  display: flex;
+  justify-content: var(--device-head, flex-start);
+  align-items: center;
+  gap: 8px;
+}
+
+.device__icon {
+  flex: none;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+:host(.device--working) .device__icon {
+  color: var(--mat-sys-on-surface);
+  font-variation-settings: 'FILL' 1;
+}
+
+.device__name {
+  min-width: 0;
+  margin: 0;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-surface);
+}
+
+.device__state {
+  margin: 6px 0 0;
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+:host(.device--working) .device__state {
+  color: var(--mat-sys-on-surface);
+}
+
+.device__message,
+.device__age {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+  overflow-wrap: anywhere;
+}
+
+.device__age {
+  margin-top: 0;
+}

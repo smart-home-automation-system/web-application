@@ -1,3 +1,5 @@
+import { Page } from '@playwright/test';
+
 import {
   Language,
   expect,
@@ -19,6 +21,9 @@ const TEXTS = {
     myRoom: 'My room',
     noProfile: 'This link does not open a profile',
     install: 'Add to the Home Screen',
+    warmEnough: 'Warm enough',
+    furnace: 'Furnace',
+    more: 'More',
     offline: 'No connection to the house',
   },
   pl: {
@@ -27,6 +32,9 @@ const TEXTS = {
     myRoom: 'Mój pokój',
     noProfile: 'Ten link nie otwiera żadnego profilu',
     install: 'Dodaj do ekranu początkowego',
+    warmEnough: 'Wystarczająco ciepła',
+    furnace: 'Piec',
+    more: 'Więcej',
     offline: 'Brak połączenia z domem',
   },
 } as const;
@@ -62,6 +70,54 @@ for (const language of ['en', 'pl'] as const) {
         await expect(page.getByTestId('offline-notice')).toContainText(/\d{2}:\d{2}/);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-connection-lost'),
+        });
+      });
+
+      // the two dashboards, each in its usual state, just after a start of its service (nothing
+      // measured or noted yet) and while the service fails
+      for (const [scenario, suffix] of [
+        ['default', ''],
+        ['no-readings', '-no-readings'],
+        ['server-error', '-failing'],
+      ] as const) {
+        test(`hot water${suffix}`, async ({ page }, testInfo) => {
+          await useScenario(page, scenario);
+          await page.goto('/water');
+          await expect(page.getByTestId('demand').locator('mat-progress-bar')).toHaveCount(0);
+          await expect(page.getByTestId('temperatures').locator('mat-progress-bar')).toHaveCount(0);
+          if (scenario === 'default') {
+            await expect(page.getByText(TEXTS[language].warmEnough)).toBeVisible();
+          }
+          await photoIsShown(page);
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, `hot-water${suffix}`),
+          });
+        });
+
+        test(`boiler room${suffix}`, async ({ page }, testInfo) => {
+          await useScenario(page, scenario);
+          await page.goto('/boiler');
+          await expect(page.locator('.installation mat-progress-bar')).toHaveCount(0);
+          if (scenario !== 'server-error') {
+            await expect(
+              page.getByRole('heading', { name: TEXTS[language].furnace }),
+            ).toBeVisible();
+          }
+          await photoIsShown(page);
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, `boiler-room${suffix}`),
+          });
+        });
+      }
+
+      // only a phone has the bar, and only the bar has "More"
+      test('navigation, what did not fit in the bottom bar', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'phone', 'the bottom bar is the navigation of a phone');
+        await page.goto('/water');
+        await page.getByRole('button', { name: TEXTS[language].more }).click();
+        await expect(page.locator('.mat-mdc-menu-panel')).toHaveCSS('opacity', '1');
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'navigation-more'),
         });
       });
 
@@ -143,6 +199,11 @@ for (const language of ['en', 'pl'] as const) {
       });
     });
   }
+}
+
+/** The photo behind the view fades in once its file has arrived: wait until it is fully there. */
+async function photoIsShown(page: Page): Promise<void> {
+  await expect(page.locator('.view-background__photo--shown')).toHaveCSS('opacity', '1');
 }
 
 function shot(project: string, scheme: string, language: Language, name: string): string {

@@ -5,6 +5,8 @@ import { dateTimeFormat } from '../i18n/intl-formats';
  * (`2026-10-05T12:30:15.123456`). They are shown exactly as sent - never converted to the zone
  * of the browser, so a phone abroad on VPN still shows house time. `new Date(text)` would read
  * such a value in the browser zone, which is why nothing here uses it.
+ *
+ * The one thing that does need a zone is the *age* of such a value: `houseInstant`.
  */
 export interface HouseDateTime {
   readonly year: number;
@@ -51,6 +53,54 @@ export function formatHouseDateTime(
   options: Intl.DateTimeFormatOptions = DEFAULT_DATE_TIME_FORMAT,
 ): string {
   return dateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(wallClockAsUtc(value));
+}
+
+/**
+ * The instant - epoch milliseconds - at which the clocks of the house showed this value. Needed
+ * for one thing only: how long ago something was. Showing the value itself never goes through
+ * here.
+ *
+ * The offset of a zone depends on the instant, which is what is being looked for, so it is found
+ * in two steps: the offset at a first guess, then the offset at the instant that guess leads to.
+ * Twice a year the wall clock is not a clock: an hour that does not exist when summer time
+ * starts (it reads as the same time an hour later) and an hour that happens twice when it ends
+ * (it reads as the second one, the later instant). Either way the age is off by at most that
+ * hour, once, at night.
+ */
+export function houseInstant(value: HouseDateTime, timeZone: string): number {
+  const wallClock = wallClockAsUtc(value);
+  const offsetAt = (instant: number) => wallClockIn(timeZone, instant) - instant;
+  const guess = wallClock - offsetAt(wallClock);
+  return wallClock - offsetAt(guess);
+}
+
+/** What the clocks of the zone show at the instant, placed on the UTC timeline. */
+function wallClockIn(timeZone: string, instant: number): number {
+  const parts = dateTimeFormat('en-GB', zoneClock(timeZone)).formatToParts(instant);
+  const field = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  return Date.UTC(
+    field('year'),
+    field('month') - 1,
+    field('day'),
+    field('hour'),
+    field('minute'),
+    field('second'),
+  );
+}
+
+/** Every field of the clock as digits, on a 24-hour clock. */
+function zoneClock(timeZone: string): Intl.DateTimeFormatOptions {
+  return {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  };
 }
 
 function wallClockAsUtc(value: HouseDateTime): number {

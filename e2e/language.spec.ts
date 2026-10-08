@@ -35,7 +35,7 @@ test.describe('language', () => {
     // the date follows the language too: Polish month, 24-hour clock
     await expect(tile.getByText('Włączono: 28 wrz 2026, 06:45')).toBeVisible();
     await expect(tile.getByText(/^Zaktualizowano/)).toBeVisible();
-    await expect(page.getByRole('link', { name: 'O aplikacji' }).first()).toBeAttached();
+    await expect(page.getByRole('link', { name: 'Kotłownia' }).first()).toBeAttached();
     await expect(page).toHaveTitle('Przegląd · Smart Home');
     await expect(page.locator('html')).toHaveAttribute('lang', 'pl');
     await expect(page.getByRole('button', { name: 'Zmień język' })).toContainText('PL');
