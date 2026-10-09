@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 46,
+    "white": 255
+  },
+  "files": {
+    "room-2560.webp": {
+      "bytes": 207224,
+      "quality": 82
+    },
+    "room-1280.webp": {
+      "bytes": 61810,
+      "quality": 82
+    }
+  },
+  "darkest": "#352e2e",
+  "lightest": "#d9d6e3",
+  "top": {
+    "darkest": "#37372e",
+    "lightest": "#e7c9b9"
+  }
+}

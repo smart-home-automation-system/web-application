@@ -3,7 +3,7 @@
  * and `<name>-1280.webp`, made by `scripts/make-background.mjs`. A route names its photo in
  * `data.background`; a route without one shows the plain glow.
  */
-export const BACKGROUNDS = ['home', 'heating', 'water', 'boiler', 'presence'] as const;
+export const BACKGROUNDS = ['home', 'heating', 'water', 'boiler', 'presence', 'room'] as const;
 
 export type BackgroundName = (typeof BACKGROUNDS)[number];
 
