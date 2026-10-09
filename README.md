@@ -63,9 +63,10 @@ dashboards:
   the age of its reading, the humidity when the heating service reports one, the temperature
   the schedule asks for right now, each heater with what its relay last reported, and the
   schedule of today. All of it is read-only; setting a temperature or a schedule is not part of
-  this application for anybody yet, and will be the administrator's alone. Under the room
-  stands the switch of the heating of the whole house - the same card as on the heating
-  dashboard, and the one thing a resident can change.
+  this application for anybody yet, and will be the administrator's alone. The page has no
+  control - except for a member the household registry grants the permission
+  `heating_switch`: that member also gets the switch of the heating of the whole house here,
+  the same card as on the heating dashboard.
 
 Hot water, the boiler room and the presence are read-only. The landing page still shows a single tile - the
 state of the heating system; the overview proper arrives with a following task.
@@ -120,7 +121,14 @@ that - the administrator has six - it shows the first four and **More**, which l
 | Role | What the interface offers |
 |---|---|
 | `admin` | Every page. The name in the panel leads to the picker, to look at the application as somebody else; the own link leads back. |
-| `resident` | The "My room" page only - their rooms, read-only, and the switch of the heating of the whole house. Every other address - typed by hand included - leads there, and other profiles are not offered. |
+| `resident` | The "My room" page only - their rooms, read-only. Every other address - typed by hand included - leads there, and other profiles are not offered. |
+
+Next to the role the registry can grant a member a **permission** - one thing beyond what the
+role gives. There is one so far, `heating_switch`: the switch of the heating of the whole house
+on the member's own "My room" page (`PUT /home/household/member/{name}/permissions` of
+`database-service` grants and withdraws it). Without it the page has no switch, for a resident
+and for the administrator alike - the administrator switches the heating on its dashboard. A
+permission, like a role, decides what is offered and is no access control.
 
 A resident's profile is left only by opening another personal link. Where there is no address
 bar to type one into - the application installed on the home screen of a phone - a profile
@@ -228,8 +236,8 @@ Endpoints used today:
 
 | Method | Path | Used for |
 |---|---|---|
-| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating, my room), polled every 30 s, and once more right after every change of the switch |
-| `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating, my room), after a confirmation. Its answer is not used: the state is read again |
+| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating, and my room for a member with `heating_switch`), polled every 30 s, and once more right after every change of the switch |
+| `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating, and my room for a member with `heating_switch`), after a confirmation. Its answer is not used: the state is read again |
 | `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
 | `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating), polled every 30 s. Needs `heating-service` 1.8.0 or later |
 | `GET` | `/home/heating/rooms/{name}` | One room, by the identifier the registry gives a profile (my room), polled every 30 s for the room on screen. A 404 with the code `NOT_FOUND_ROOM` is shown as "the heating service does not know this room" |

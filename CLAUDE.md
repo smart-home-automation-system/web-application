@@ -196,8 +196,12 @@ e2e/              # Playwright tests
   the code stays a failure; **the choice of a room that is gone is forgotten in an effect**, not
   hidden by a computed (hidden, it pulled the page back by itself when the room returned -
   found in review, the lesson of the heating switch again); and **nothing about a room can be
-  pressed** - the one control of the page is the shared switch of the house, and
-  `my-room.spec` lists every control there is: a new one fails that test on purpose. A unit
+  pressed** - `my-room.spec` lists every control there is, and a new one fails that test on
+  purpose. **The switch of the heating of the whole house is on this page only for a member
+  with the permission `heating_switch`** (owner, 2026-10-09): `HouseHeating` is rendered under
+  `hasPermission(profile, 'heating_switch')`, and it is a component of its own so that the
+  state of the switch is not even asked for without it. Not the role decides - the
+  administrator has no switch here either. A unit
   test that renders `/room` through the real routes (`profile-pages.spec`) lets the two reads
   of the page pass - `GET` only, so that a call that changes the house never slips through.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
@@ -251,6 +255,15 @@ access control** — the README says so plainly, and nothing here may be describ
   effect whenever the profile changes — the registry answering with another role, another tab
   opening somebody else's link — so a page its viewer may no longer see is left. Do not add a
   second rule next to it.
+- **A permission is what the registry grants one member beyond their role**
+  (`Profile.permissions`, `MemberPermission` of `smart-home-sdk` 1.6.0, served by
+  `database-service` from 0.11.0; an older registry sends none). Ask with
+  `hasPermission(profile, '…')` and nowhere compare a name: who may do what lives in the
+  registry, never in this repository. The field is absent from a profile nothing was granted
+  to, a value this version does not know is carried along and opens nothing, and
+  `sameProfile` compares the permissions - without that a grant or a withdrawal would never
+  replace the profile an open browser remembers. A control behind a permission is rendered
+  under `hasPermission` and polls nothing while it is not there.
 - **A resident** reaches `/room` and the pages open to `anyone`; everything else, the picker
   included, redirects to `/room`. A role the application does not know reads as `resident`, the
   one that reaches the least. **The administrator** reaches everything; the name in the panel
