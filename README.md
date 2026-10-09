@@ -67,6 +67,17 @@ dashboards:
   control - except for a member the household registry grants the permission
   `heating_switch`: that member also gets the switch of the heating of the whole house here,
   the same card as on the heating dashboard.
+- **Household**: the administration of the household registry, the administrator's. Everybody
+  the registry holds, switched off or not, with their phone, role, rooms, permissions and
+  devices - and the forms to add a member, change one, switch one off and on, remove one, and
+  to add, change and remove the devices the presence detection looks for. Each active member
+  has their **personal link** there, with a **QR code** to scan with the phone. What the
+  registry would refuse is said before anything is sent (a name of 3 to 50 characters, a phone
+  number in the international format, a MAC address, and that a name, a phone number and a MAC
+  address belong to one member); removing a member or a device asks first. Nothing is shown as
+  done before the registry says so: a change is sent, the registry is read again, and the page
+  shows that answer. The member using the page cannot rename, demote, switch off or remove
+  themselves there - the browser would lose its own profile.
 
 Hot water, the boiler room and the presence are read-only. The landing page still shows a single tile - the
 state of the heating system; the overview proper arrives with a following task.
@@ -125,8 +136,8 @@ that - the administrator has six - it shows the first four and **More**, which l
 
 Next to the role the registry can grant a member a **permission** - one thing beyond what the
 role gives. There is one so far, `heating_switch`: the switch of the heating of the whole house
-on the member's own "My room" page (`PUT /home/household/member/{name}/permissions` of
-`database-service` grants and withdraws it). Without it the page has no switch, for a resident
+on the member's own "My room" page. The administrator grants and withdraws it on the Household
+page (`PUT /home/household/member/{name}/permissions` of `database-service`). Without it the page has no switch, for a resident
 and for the administrator alike - the administrator switches the heating on its dashboard. A
 permission, like a role, decides what is offered and is no access control.
 
@@ -138,8 +149,9 @@ The role and the rooms come from the household registry (`database-service`), ne
 application: they are read when a profile is opened, remembered with it, and read again at every
 start and whenever the page comes back into view, so a change in the registry takes effect with
 the next visit - also under an open page. The application asks for the profiles only - the name,
-the role and the rooms of the members who are active - and never downloads the rest of the
-registry (phone numbers, devices). A member who is switched off or removed there is not in that
+the role and the rooms of the members who are active - and does not download the rest of the
+registry (phone numbers, devices); the one exception is the Household page of the
+administrator, which is the administration of exactly that. A member who is switched off or removed there is not in that
 answer and loses the profile; a link that names such a member,
 or nobody, ends on a message that says so. While the backend is away the application keeps
 working as the member it remembers.
@@ -158,7 +170,9 @@ and is led to the picker (from the install steps: to the message that the link o
 > one place for it (`src/app/core/profile/`), so no feature changes when it comes.
 
 In the mock API the household is Aurelia (administrator), Borys, Celina and Damian (residents
-with one room, two rooms and none): `/u/aurelia`, `/u/borys`.
+with one room, two rooms and none): `/u/aurelia`, `/u/borys` - and Emil, who is switched off
+and so has no profile. The Household page changes that household in the memory of the page; a
+reload is the household as it started.
 
 # On the phone
 
@@ -250,7 +264,17 @@ Endpoints used today:
 | `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation (hot water), polled every 30 s. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room), polled every 30 s |
-| `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the switch on "My room"). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened |
+| `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the switch on "My room"). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened - and after every change made on the Household page |
+| `GET` | `/home/household` | The whole registry - every member, switched off or not, with phone, role, rooms, permissions and devices (household). By the Household page only, polled every 60 s while it is open and read again after every change |
+| `POST` | `/home/household/member` | Adds a member, with role, rooms and permissions (household) |
+| `PATCH` | `/home/household/member/{name}` | Changes the name, the phone and the role of a member (household). Sent only when one of them changed |
+| `PUT` | `/home/household/member/{name}/rooms` | Replaces the rooms of a member, in display order (household). Sent only when the list changed |
+| `PUT` | `/home/household/member/{name}/permissions` | Replaces the permissions of a member (household). Sent only when the list changed; needs `database-service` 0.11.0 or later |
+| `POST` | `/home/household/member/{name}/activate`, `.../deactivate` | Switches a member on or off (household) |
+| `DELETE` | `/home/household/member/{name}` | Removes a member with their devices (household), after a confirmation |
+| `POST` | `/home/household/member/{name}/device` | Adds a device to a member (household) |
+| `PATCH` | `/home/household/member/{name}/device?mac=` | Changes the device a member has under that MAC address (household) |
+| `DELETE` | `/home/household/member/{name}/device?mac=` | Removes that device (household), after a confirmation |
 
 What the application relies on, in every call:
 
@@ -258,7 +282,13 @@ What the application relies on, in every call:
   The status survives any body - none, HTML from a proxy, JSON of another shape - and what a
   failing service (5xx) says about itself is never shown on screen. The message of a refused
   request (4xx) is shown exactly as sent - in English, also when the interface is Polish, and
-  never run through the translations.
+  never run through the translations. Where a refusal carries a `code` the page knows, the page
+  says it in its own words instead, in the language of the interface: the Household page does
+  for the five codes of the household registry (`NOT_FOUND_HOUSEHOLD_MEMBER`,
+  `HOUSEHOLD_CONFLICT`, `INVALID_HOUSEHOLD_MEMBER`, `DEVICE_EXIST`, `NOT_FOUND_MEMBER_DEVICE`).
+- **The changes of the household registry go one after the other**, and never two at a time:
+  every write there stores the whole row. The answer of a write is not used - the registry is
+  read again - and a write that got no answer is told as "may have been carried out".
 - **Date-times** are `LocalDateTime` values: the wall-clock time of the house, without an offset.
   They are displayed exactly as sent and never converted to the zone of the browser, so a phone
   abroad on VPN still shows house time.
