@@ -222,10 +222,11 @@ describe('Household', () => {
     expect(failure.textContent).not.toContain('was not carried out');
   });
 
-  // A change that stops halfway has written its first calls. The next attempt is measured by
-  // the member as the registry has them now: measured by the member the form was opened with,
-  // the permission granted by the failed attempt and taken back in the form would stay granted.
-  it('measures a second attempt by what the first one left in the registry', async () => {
+  // A change that stops halfway has written its first calls, and the card may not know: here
+  // the registry is read back as it was before. The next attempt sends the whole form -
+  // measured by the member on the card, the permission granted by the failed attempt and
+  // taken back in the form would stay granted, on a card that closed as saved.
+  it('sends the whole form in the attempt after one that failed', async () => {
     answerTheRegistryWith([AURELIA, BORYS]);
     button(card('Borys'), 'Edit')!.click();
     fixture.detectChanges();
@@ -247,7 +248,7 @@ describe('Household', () => {
       .expectOne({ method: 'PATCH', url: '/home/household/member/Borys' })
       .flush({ errors: [{ message: 'refused' }] }, { status: 400, statusText: 'Bad Request' });
     await settled();
-    answerTheRegistryWith([AURELIA, { ...BORYS, permissions: ['heating_switch'] }]);
+    answerTheRegistryWith([AURELIA, BORYS]);
     await settled();
     answerTheProfiles();
     fixture.detectChanges();
@@ -259,6 +260,8 @@ describe('Household', () => {
     button(card('Borys'), 'Save')!.click();
     await settled();
 
+    http.expectOne({ method: 'PUT', url: '/home/household/member/Borys/rooms' }).flush({});
+    await settled();
     const taken = http.expectOne({
       method: 'PUT',
       url: '/home/household/member/Borys/permissions',

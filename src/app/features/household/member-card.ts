@@ -106,6 +106,8 @@ export class MemberCard {
   /** A change asked for in this card is on its way. */
   protected readonly saving = signal(false);
   protected readonly codeShown = signal(false);
+  /** The form of the card was sent and not carried out: what the registry kept of it is not known. */
+  private attemptFailed = false;
 
   /** A change is on its way, from this card or another: one at a time. */
   protected readonly busy = computed(() => this.registry().changing());
@@ -169,6 +171,7 @@ export class MemberCard {
 
   protected open(panel: Panel): void {
     this.failure.set(undefined);
+    this.attemptFailed = false;
     this.panel.set(panel);
     if (panel.kind === 'remove' || panel.kind === 'remove-device') {
       // the button that was pressed is gone with the question: the safe answer takes the focus
@@ -183,13 +186,14 @@ export class MemberCard {
   }
 
   /**
-   * Saves the form against the member **as the registry has them now**, not as the form was
-   * opened with: a change that stopped halfway has already written its first calls, and the
-   * next attempt has to be measured by what the registry kept of them - or a room added by the
+   * Saves what the form changed - and **the whole form once an attempt has failed**. A change
+   * that stopped halfway has written its first calls, and what the registry kept of them is
+   * not known for certain: the read after it can fail too, and a call that got no answer can
+   * be carried out after that read. Measured by the member on the card, a room added by the
    * failed attempt and taken back in the form would never be taken back in the registry.
    */
   protected save(details: MemberDetails): void {
-    void this.run(this.registry().update(this.member(), details));
+    void this.run(this.registry().update(this.member(), details, this.attemptFailed), true);
   }
 
   protected setActive(active: boolean): void {
@@ -223,7 +227,7 @@ export class MemberCard {
    * member again - as the registry has them now; not carried out, the form or the question
    * stays, with the reason.
    */
-  private async run(change: Promise<ChangeOutcome>): Promise<void> {
+  private async run(change: Promise<ChangeOutcome>, ofTheForm = false): Promise<void> {
     this.failure.set(undefined);
     this.saving.set(true);
     const outcome = await change;
@@ -232,6 +236,7 @@ export class MemberCard {
       this.panel.set(VIEW);
     } else {
       this.failure.set(outcome.failure);
+      this.attemptFailed ||= ofTheForm;
     }
   }
 }

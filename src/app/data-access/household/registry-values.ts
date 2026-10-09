@@ -1,4 +1,4 @@
-import { MemberPermission, MemberRole } from '../../core/profile/profile';
+import type { MemberPermission, MemberRole } from '../../core/profile/profile';
 
 /**
  * The values the registry accepts where it takes one of a fixed set - copies of the enums of
