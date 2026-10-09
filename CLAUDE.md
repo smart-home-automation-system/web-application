@@ -222,17 +222,21 @@ e2e/              # Playwright tests
     or the profile itself of the person on the page is what was just changed. With
     `ProfileStore.refreshAfterChange()`, not `refresh()`: that one shares a call already under
     way, whose answer may have left the registry before the change (found in review).
-  - **A form is measured by the member it was opened with**, not by the member of the moment
-    it is saved (`MemberCard.editedFrom`): the registry is polled under the open form, and
-    measured by the fresh member a room granted elsewhere meanwhile reads as a change of the
-    form - and is written back to what it was, with a 200 (found in review).
+  - **A form is measured by the member as the registry has them when it is saved**, not by the
+    member it was opened with: a change that stops halfway has written its first calls, and the
+    second attempt must see them - measured by the old member, a room added by the failed
+    attempt and taken back in the form stayed in the registry, on a card that closed as saved
+    (0.13.0 did that; found in the second review). The other side of it is accepted by the
+    owner (2026-10-09): the registry is never changed from this page and from another tool at
+    the same time, so nothing here guards a form against a second writer.
   - **A control keeps the verdict of its last change**: a validator that reads the registry is
     not run again when the registry changes. A form calls `updateValueAndValidity()` on its
     controls before it sends (found in review).
   - **A name spelled anew is the same member** (`borys` to `Borys`): the link and the profile
     find a member whatever the case - `ProfileStore` reconciles by `sameName` since this task -
     so only the presence history, kept under the name as written, stays behind; the form has a
-    warning of its own for that.
+    warning of its own for that. The language the member chose is kept under the name too, so
+    `LanguageStore` moves it to the new spelling when the owner changes by its case alone.
   - **The member of the active profile cannot be renamed, demoted, switched off or removed
     there**: each would take the profile the browser remembers, or close the page to its user.
     That, too, is the interface being careful, not a rule the registry knows.

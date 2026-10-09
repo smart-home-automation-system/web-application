@@ -140,9 +140,6 @@ export class MemberCard {
       ),
   );
 
-  /** The member as the form of the card was opened with - what its changes are measured by. */
-  private editedFrom: HouseholdMember | undefined;
-
   protected readonly icon = computed(() => {
     if (!this.active()) {
       return 'person_off';
@@ -172,9 +169,6 @@ export class MemberCard {
 
   protected open(panel: Panel): void {
     this.failure.set(undefined);
-    if (panel.kind === 'edit') {
-      this.editedFrom = this.member();
-    }
     this.panel.set(panel);
     if (panel.kind === 'remove' || panel.kind === 'remove-device') {
       // the button that was pressed is gone with the question: the safe answer takes the focus
@@ -189,13 +183,13 @@ export class MemberCard {
   }
 
   /**
-   * Saves the form against the member **as the form was opened with**, not as the registry has
-   * them now: only what somebody changed in the form is sent. Compared with the member of this
-   * moment, a room or a permission granted elsewhere while the form was open would read as a
-   * change of the form - and be written back to what it was.
+   * Saves the form against the member **as the registry has them now**, not as the form was
+   * opened with: a change that stopped halfway has already written its first calls, and the
+   * next attempt has to be measured by what the registry kept of them - or a room added by the
+   * failed attempt and taken back in the form would never be taken back in the registry.
    */
   protected save(details: MemberDetails): void {
-    void this.run(this.registry().update(this.editedFrom ?? this.member(), details));
+    void this.run(this.registry().update(this.member(), details));
   }
 
   protected setActive(active: boolean): void {

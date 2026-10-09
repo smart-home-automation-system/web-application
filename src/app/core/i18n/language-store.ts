@@ -152,8 +152,17 @@ export class LanguageStore {
       if (owner === known) {
         return;
       }
+      const before = known;
       known = owner;
       untracked(() => {
+        if (before !== undefined && owner !== undefined && sameMember(before, owner)) {
+          // the same member, spelled anew in the registry: their choice moves to the new name
+          const kept = readStored(keyOf(before));
+          if (kept !== undefined) {
+            store(keyOf(owner), kept);
+          }
+          return;
+        }
         const language = this.chosen();
         if (language !== this.active()) {
           void this.change(language, false);
@@ -168,6 +177,15 @@ export class LanguageStore {
     this.document.documentElement.lang = language;
     this.active.set(language);
   }
+}
+
+/**
+ * One member under two spellings: the registry tells names apart whatever their case, and so does
+ * the profile. Folded here, not borrowed from the profiles - the i18n does not depend on them.
+ */
+function sameMember(left: string, right: string): boolean {
+  const fold = (name: string) => name.trim().normalize('NFC').toLowerCase();
+  return fold(left) === fold(right);
 }
 
 function keyOf(owner: string | undefined): string {

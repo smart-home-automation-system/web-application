@@ -222,39 +222,53 @@ describe('Household', () => {
     expect(failure.textContent).not.toContain('was not carried out');
   });
 
-  // The form is measured by the member it was opened with. Measured by the member of the
-  // moment of saving, what somebody else changed meanwhile would read as a change of the form
-  // and be written back to what it was.
-  it('does not undo what changed in the registry while the form was open', async () => {
-    const borys = { ...BORYS, rooms: ['loft'] };
-    answerTheRegistryWith([AURELIA, borys]);
+  // A change that stops halfway has written its first calls. The next attempt is measured by
+  // the member as the registry has them now: measured by the member the form was opened with,
+  // the permission granted by the failed attempt and taken back in the form would stay granted.
+  it('measures a second attempt by what the first one left in the registry', async () => {
+    answerTheRegistryWith([AURELIA, BORYS]);
     button(card('Borys'), 'Edit')!.click();
     fixture.detectChanges();
 
-    // meanwhile, from another browser: a second room and a permission
-    vi.advanceTimersByTime(60_000);
-    http
-      .expectOne({ method: 'GET', url: '/home/household' })
-      .flush([AURELIA, { ...borys, rooms: ['loft', 'office'], permissions: ['heating_switch'] }]);
-    fixture.detectChanges();
-
+    const permission = () =>
+      card('Borys').querySelector<HTMLElement>('mat-slide-toggle button[role="switch"]')!;
     const phone = card('Borys').querySelectorAll('input')[1];
+    permission().click();
     phone.value = '+48500100199';
     phone.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
     button(card('Borys'), 'Save')!.click();
     await settled();
 
-    // the phone, and nothing about the rooms or the permissions (`http.verify()` would
-    // find a call for them)
-    const call = http.expectOne({ method: 'PATCH', url: '/home/household/member/Borys' });
-    expect(call.request.body).toEqual({
-      name: 'Borys',
-      phone: '+48500100199',
-      role: 'resident',
-    });
-    call.flush({});
+    // the permission is granted, the phone is refused
+    http.expectOne({ method: 'PUT', url: '/home/household/member/Borys/permissions' }).flush({});
     await settled();
-    answerTheRegistryWith([AURELIA, borys]);
+    http
+      .expectOne({ method: 'PATCH', url: '/home/household/member/Borys' })
+      .flush({ errors: [{ message: 'refused' }] }, { status: 400, statusText: 'Bad Request' });
+    await settled();
+    answerTheRegistryWith([AURELIA, { ...BORYS, permissions: ['heating_switch'] }]);
+    await settled();
+    answerTheProfiles();
+    fixture.detectChanges();
+    expect(card('Borys').querySelector('app-member-form')).not.toBeNull();
+
+    // second attempt: the permission taken back in the form, the phone as it was refused
+    permission().click();
+    fixture.detectChanges();
+    button(card('Borys'), 'Save')!.click();
+    await settled();
+
+    const taken = http.expectOne({
+      method: 'PUT',
+      url: '/home/household/member/Borys/permissions',
+    });
+    expect(taken.request.body).toEqual([]);
+    taken.flush({});
+    await settled();
+    http.expectOne({ method: 'PATCH', url: '/home/household/member/Borys' }).flush({});
+    await settled();
+    answerTheRegistryWith([AURELIA, { ...BORYS, phone: '+48500100199' }]);
     await settled();
     answerTheProfiles();
   });

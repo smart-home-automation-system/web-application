@@ -311,6 +311,21 @@ describe('LanguageStore, with household profiles', () => {
     expect(document.documentElement.lang).toBe('pl');
   });
 
+  // the registry spelled the name anew (`borys` to `Borys`): the same person, the same choice
+  it('keeps the language of a member whose name is spelled anew', async () => {
+    owner.set('borys');
+    const store = create({ members: { borys: 'pl' } });
+    await store.restore();
+    await settle();
+
+    owner.set('Borys');
+    await settle();
+
+    expect(store.language()).toBe('pl');
+    expect(localStorage.getItem(`${STORAGE_KEY}.Borys`)).toBe('pl');
+    localStorage.removeItem(`${STORAGE_KEY}.borys`);
+  });
+
   // the application can change hands while the texts are on their way
   it('remembers a choice for who made it when somebody else takes over before it arrives', async () => {
     const download = new Subject<Messages>();
