@@ -59,6 +59,7 @@ const pages: Page[] = [
   {
     path: 'household',
     title: 'nav.household',
+    data: { background: 'household' },
     loadComponent: () => import('./features/household/household').then((m) => m.Household),
   },
   {

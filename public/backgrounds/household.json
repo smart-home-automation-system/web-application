@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 6,
+    "white": 255
+  },
+  "files": {
+    "household-2560.webp": {
+      "bytes": 228876,
+      "quality": 82
+    },
+    "household-1280.webp": {
+      "bytes": 75976,
+      "quality": 82
+    }
+  },
+  "darkest": "#100606",
+  "lightest": "#dfc6af",
+  "top": {
+    "darkest": "#42322b",
+    "lightest": "#dfc6af"
+  }
+}
