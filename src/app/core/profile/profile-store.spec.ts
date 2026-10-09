@@ -178,6 +178,42 @@ describe('ProfileStore', () => {
       expect(remembered()).toEqual({ name: 'Borys', role: 'resident', rooms: ['loft'] });
     });
 
+    // what the registry grants a member beyond the role reaches an open page the same way
+    describe('the permissions of the member', () => {
+      const GRANTED = {
+        name: 'Borys',
+        role: 'resident',
+        rooms: ['loft'],
+        permissions: ['heating_switch'],
+      };
+
+      it('takes over a permission the registry granted, and remembers it', async () => {
+        registry = () => of([GRANTED]);
+        const store = create({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+
+        await store.refresh();
+
+        expect(store.profile()).toEqual(GRANTED);
+        expect(remembered()).toEqual(GRANTED);
+      });
+
+      it('drops a permission the registry took away, from the profile and from the storage', async () => {
+        const store = create(GRANTED);
+        expect(store.profile()?.permissions).toEqual(['heating_switch']);
+
+        await store.refresh();
+
+        expect(store.profile()).toEqual({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+        expect(remembered()).toEqual({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+      });
+
+      it('starts with the permission remembered, before the registry is asked', () => {
+        const store = create(GRANTED);
+
+        expect(store.profile()).toEqual(GRANTED);
+      });
+    });
+
     // the registry answers with its active members only: switched off and gone look the same
     it('forgets a member who is no longer in the answer', async () => {
       const store = create({ name: 'Emil', role: 'resident', rooms: [] });
@@ -303,6 +339,23 @@ describe('ProfileStore', () => {
       window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
 
       expect(store.profile()?.name).toBe('Aurelia');
+    });
+
+    it('takes over a permission another tab learned of', () => {
+      const store = create({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          name: 'Borys',
+          role: 'resident',
+          rooms: ['loft'],
+          permissions: ['heating_switch'],
+        }),
+      );
+
+      window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+
+      expect(store.profile()?.permissions).toEqual(['heating_switch']);
     });
 
     it('loses the profile when the storage is cleared', () => {

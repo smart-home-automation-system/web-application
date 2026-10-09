@@ -177,6 +177,13 @@ describe('sameProfile', () => {
     expect(sameProfile(borys, granted)).toBe(false);
     expect(sameProfile(granted, borys)).toBe(false);
     expect(sameProfile(granted, { ...borys, permissions: ['heating_switch'] })).toBe(false);
+    // a set, not a count: a permission named twice is not two permissions
+    expect(
+      sameProfile(
+        { ...borys, permissions: ['heating_switch', 'heating_switch'] },
+        { ...borys, permissions: ['heating_switch', 'another'] },
+      ),
+    ).toBe(false);
     // nothing granted is nothing granted, said either way
     expect(sameProfile(borys, { ...borys, permissions: [] })).toBe(true);
   });

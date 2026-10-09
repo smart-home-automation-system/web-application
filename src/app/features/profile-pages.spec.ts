@@ -80,13 +80,11 @@ describe('profiles in the application', () => {
   beforeEach(() => localStorage.removeItem(STORAGE_KEY));
 
   afterEach(() => {
-    // the page of a member reads the switch of the house and its room; what those two reads
-    // show is the business of the page (my-room.spec), not of the profiles. Reads only: a call
-    // that changes the house is never let through here
+    // the page of a member reads its room; what that read shows is the business of the page
+    // (my-room.spec), not of the profiles. Nobody here has the permission for the switch of the
+    // house, so neither its state nor a change of it is let through
     http.match(
-      (request) =>
-        request.method === 'GET' &&
-        (request.url === '/home/heating' || request.url.startsWith('/home/heating/rooms/')),
+      (request) => request.method === 'GET' && request.url.startsWith('/home/heating/rooms/'),
     );
     http.verify();
     localStorage.removeItem(STORAGE_KEY);

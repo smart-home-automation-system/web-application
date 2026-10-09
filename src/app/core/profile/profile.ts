@@ -103,7 +103,11 @@ export function sameProfile(left: Profile | undefined, right: Profile | undefine
 }
 
 function samePermissions(left: readonly string[], right: readonly string[]): boolean {
-  return left.length === right.length && left.every((permission) => right.includes(permission));
+  // both ways: a list that names a permission twice must not pass for a longer one
+  return (
+    left.every((permission) => right.includes(permission)) &&
+    right.every((permission) => left.includes(permission))
+  );
 }
 
 function normalise(name: string): string {
