@@ -193,7 +193,11 @@ describe('profiles in the application', () => {
       await registryAnswers();
       await vi.waitFor(() => expect(url()).toBe('/room'));
 
-      expect(page().querySelector('h1')?.textContent).toContain('My room');
+      // the address is there a moment before the page under it is drawn: waited for as well,
+      // or the test depends on how fast the machine is (it failed on the CI runner only)
+      await vi.waitFor(() =>
+        expect(page().querySelector('h1')?.textContent ?? '').toContain('My room'),
+      );
       expect(page().querySelector('.shell__profile')?.textContent).toContain('Borys');
     });
 
