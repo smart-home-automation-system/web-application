@@ -501,6 +501,7 @@ describe('profiles in the application', () => {
         'Boiler room',
         'Presence',
         'My room',
+        'Household',
         'Settings',
         'About',
       ]);

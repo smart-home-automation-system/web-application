@@ -332,6 +332,32 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the administration of the household: the registry as it is, a member being changed
+      // with a question open in another card, and a refusal of the form
+      test('household', async ({ page }, testInfo) => {
+        await page.goto('/household');
+        await expect(page.getByTestId('member')).toHaveCount(5);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'household'),
+        });
+
+        await page.locator('[data-member="Celina"] .block__action').last().click();
+        await expect(page.locator('[data-member="Celina"]').getByRole('img')).toBeVisible();
+        await page.locator('[data-member="Borys"] .member__actions button').first().click();
+        await page.locator('[data-member="Borys"] input').first().fill('Bo');
+        await page.locator('[data-member="Borys"] input').last().fill('500 100 102');
+        await page.locator('[data-member="Borys"] button[type="submit"]').click();
+        await page.locator('[data-member="Damian"] .member__actions button').last().click();
+        await expect(page.locator('[data-member="Damian"]').getByRole('group')).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'household-editing'),
+        });
+        // the form is taller than the window: the card by itself
+        await page.locator('[data-member="Borys"]').screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'household-form'),
+        });
+      });
+
       test('language menu', async ({ page }, testInfo) => {
         await page.goto('/');
         await expect(page.getByText(TEXTS[language].enabled)).toBeVisible();

@@ -1,0 +1,243 @@
+<ng-container *transloco="let t">
+  @let shown = panel();
+  <mat-card
+    appearance="outlined"
+    class="member card--domain"
+    [class.member--off]="!active()"
+    data-testid="member"
+    [attr.data-member]="member().name"
+  >
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge">
+        <mat-icon>{{ icon() }}</mat-icon>
+      </div>
+      <!-- the name is the member's own: printed as it is, never through the translations -->
+      <mat-card-title>{{ member().name }}</mat-card-title>
+      <mat-card-subtitle>
+        @if (member().role; as role) {
+          @let label = roleLabel(role);
+          <span>{{ label ? t(label) : role }}</span>
+        }
+        @if (own()) {
+          <span class="member__tag">{{ t('household.member.you') }}</span>
+        }
+        @if (!active()) {
+          <span class="member__tag member__tag--off" data-testid="switched-off">{{
+            t('household.member.switchedOff')
+          }}</span>
+        }
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (shown.kind === 'edit') {
+        <app-member-form
+          [member]="member()"
+          [others]="others()"
+          [own]="own()"
+          [busy]="busy()"
+          [failure]="failure()"
+          (saved)="save($event)"
+          (cancelled)="close()"
+        />
+      } @else {
+        <dl class="facts">
+          <dt>{{ t('household.member.phone') }}</dt>
+          <dd data-testid="phone">{{ member().phone ?? t('household.member.unknown') }}</dd>
+
+          <dt>{{ t('household.member.rooms') }}</dt>
+          <dd data-testid="rooms">
+            @for (room of member().rooms ?? []; track room) {
+              <span class="chip">{{ room }}</span>
+            } @empty {
+              {{ t('household.member.none') }}
+            }
+          </dd>
+
+          <dt>{{ t('household.member.permissions') }}</dt>
+          <dd data-testid="permissions">
+            @for (permission of member().permissions ?? []; track permission) {
+              @let label = permissionLabel(permission);
+              <span class="chip">{{ label ? t(label) : permission }}</span>
+            } @empty {
+              {{ t('household.member.none') }}
+            }
+          </dd>
+        </dl>
+
+        <section class="block" [attr.aria-labelledby]="id + '-devices'">
+          <h3 class="block__title" [id]="id + '-devices'">{{ t('household.member.devices') }}</h3>
+          @if (devices().length > 0) {
+            <ul class="devices">
+              @for (device of devices(); track device.mac ?? $index) {
+                <li class="device" data-testid="device">
+                  <span class="device__name">{{
+                    device.name ?? t('household.member.unknown')
+                  }}</span>
+                  <span class="device__mac">{{ device.mac ?? t('household.member.unknown') }}</span>
+                  @if (device.mac; as mac) {
+                    <button
+                      matIconButton
+                      type="button"
+                      [disabled]="busy()"
+                      (click)="open({ kind: 'edit-device', mac })"
+                    >
+                      <mat-icon>edit</mat-icon>
+                      <span class="visually-hidden"
+                        >{{ t('household.member.editDevice') }}&ngsp;{{ device.name }}</span
+                      >
+                    </button>
+                    <button
+                      matIconButton
+                      type="button"
+                      [disabled]="busy()"
+                      (click)="open({ kind: 'remove-device', mac })"
+                    >
+                      <mat-icon>delete</mat-icon>
+                      <span class="visually-hidden"
+                        >{{ t('household.member.removeDevice') }}&ngsp;{{ device.name }}</span
+                      >
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="block__note">{{ t('household.member.noDevices') }}</p>
+          }
+
+          @if (shown.kind === 'add-device') {
+            <app-device-form
+              [otherNames]="otherDeviceNames()"
+              [otherMacs]="otherMacs()"
+              [busy]="busy()"
+              [failure]="failure()"
+              (saved)="addDevice($event)"
+              (cancelled)="close()"
+            />
+          } @else if (shown.kind === 'edit-device') {
+            <app-device-form
+              [device]="deviceOf(shown.mac)"
+              [otherNames]="otherDeviceNames(shown.mac)"
+              [otherMacs]="otherMacs(shown.mac)"
+              [busy]="busy()"
+              [failure]="failure()"
+              (saved)="saveDevice(shown.mac, $event)"
+              (cancelled)="close()"
+            />
+          } @else if (shown.kind === 'remove-device') {
+            <div class="question" role="group" [attr.aria-labelledby]="id + '-question'">
+              <p [id]="id + '-question'">
+                {{ t('household.member.confirmRemoveDevice') }}&ngsp;<strong>{{
+                  deviceOf(shown.mac)?.name
+                }}</strong>
+              </p>
+              <div class="question__answers">
+                <button #cancelButton matButton type="button" [disabled]="busy()" (click)="close()">
+                  {{ t('household.form.cancel') }}
+                </button>
+                <button
+                  matButton="filled"
+                  type="button"
+                  [disabled]="busy()"
+                  (click)="removeDevice(shown.mac)"
+                >
+                  {{ t('household.member.remove') }}
+                </button>
+              </div>
+            </div>
+          } @else if (shown.kind === 'view') {
+            <button
+              matButton
+              type="button"
+              class="block__action"
+              [disabled]="busy()"
+              (click)="open({ kind: 'add-device' })"
+            >
+              <mat-icon>add</mat-icon>
+              {{ t('household.member.addDevice') }}
+            </button>
+          }
+        </section>
+
+        <section class="block" [attr.aria-labelledby]="id + '-link'">
+          <h3 class="block__title" [id]="id + '-link'">{{ t('household.link.title') }}</h3>
+          @if (active()) {
+            <a class="link" data-testid="personal-link" [href]="link()">{{ link() }}</a>
+            <button
+              matButton
+              type="button"
+              class="block__action"
+              [attr.aria-expanded]="codeShown()"
+              (click)="codeShown.set(!codeShown())"
+            >
+              <mat-icon>qr_code_2</mat-icon>
+              {{ t(codeShown() ? 'household.link.hideCode' : 'household.link.showCode') }}
+            </button>
+            @if (codeShown()) {
+              <app-qr-code class="code" [text]="link()" [label]="t('household.link.code')" />
+              <p class="block__note">{{ t('household.link.hint') }}</p>
+            }
+          } @else {
+            <p class="block__note">{{ t('household.link.none') }}</p>
+          }
+        </section>
+
+        @if (shown.kind === 'remove') {
+          <div class="question" role="group" [attr.aria-labelledby]="id + '-question'">
+            <p [id]="id + '-question'">{{ t('household.member.confirmRemove') }}</p>
+            <div class="question__answers">
+              <button #cancelButton matButton type="button" [disabled]="busy()" (click)="close()">
+                {{ t('household.form.cancel') }}
+              </button>
+              <button matButton="filled" type="button" [disabled]="busy()" (click)="remove()">
+                {{ t('household.member.remove') }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (saving() && shown.kind !== 'add-device' && shown.kind !== 'edit-device') {
+          <mat-progress-bar
+            class="member__progress"
+            mode="indeterminate"
+            [attr.aria-label]="t('household.change.saving')"
+          />
+        }
+        <!-- a form shows its own failure; this one is for a question and for the switch -->
+        @if (shown.kind !== 'add-device' && shown.kind !== 'edit-device') {
+          @if (failure(); as failed) {
+            <app-api-error-strip
+              data-testid="change-failure"
+              [error]="failed"
+              [summary]="t(summary(failed))"
+              [describeWith]="describe"
+            />
+          }
+        }
+      }
+    </mat-card-content>
+
+    @if (shown.kind === 'view') {
+      <mat-card-actions class="member__actions">
+        <button
+          matButton="outlined"
+          type="button"
+          [disabled]="busy()"
+          (click)="open({ kind: 'edit' })"
+        >
+          <mat-icon>edit</mat-icon>
+          {{ t('household.member.edit') }}
+        </button>
+        @if (!own()) {
+          <button matButton type="button" [disabled]="busy()" (click)="setActive(!active())">
+            {{ t(active() ? 'household.member.switchOff' : 'household.member.switchOn') }}
+          </button>
+          <button matButton type="button" [disabled]="busy()" (click)="open({ kind: 'remove' })">
+            {{ t('household.member.remove') }}
+          </button>
+        }
+      </mat-card-actions>
+    }
+  </mat-card>
+</ng-container>

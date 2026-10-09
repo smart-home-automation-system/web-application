@@ -17,6 +17,7 @@ export const en = {
     boilerRoom: 'Boiler room',
     presence: 'Presence',
     myRoom: 'My room',
+    household: 'Household',
     more: 'More',
     settings: 'Settings',
     about: 'About',
@@ -287,6 +288,106 @@ export const en = {
       today: 'Schedule for today',
       unknownRoom: 'The heating service does not know this room, so it has nothing to show for it.',
       noAnswer: 'The heating service did not answer with the room.',
+    },
+  },
+  // the administration of the household registry
+  household: {
+    title: 'Household',
+    registry: {
+      title: 'Registry',
+      loading: 'Loading the household registry',
+      unreadable: 'The registry did not answer with its members.',
+      empty: 'Nobody is registered in the household yet.',
+      add: 'Add a member',
+      newMember: 'New member',
+    },
+    member: {
+      you: 'You',
+      switchedOff: 'Switched off',
+      phone: 'Phone',
+      rooms: 'Rooms',
+      permissions: 'Permissions',
+      none: 'None',
+      unknown: 'Not given',
+      devices: 'Devices',
+      noDevices: 'No device yet. Without one the presence of this member is not detected.',
+      addDevice: 'Add a device',
+      editDevice: 'Edit the device',
+      removeDevice: 'Remove the device',
+      confirmRemoveDevice: 'Remove this device?',
+      edit: 'Edit',
+      switchOff: 'Switch off',
+      switchOn: 'Switch on',
+      remove: 'Remove',
+      confirmRemove:
+        'Remove this member from the registry, with their devices? This cannot be undone.',
+    },
+    link: {
+      title: 'Personal link',
+      showCode: 'Show the QR code',
+      hideCode: 'Hide the QR code',
+      code: 'QR code of the personal link',
+      hint: 'Scan it with the camera of the phone, then add the page to the Home Screen.',
+      none: 'A member who is switched off has no profile, so no personal link either.',
+    },
+    form: {
+      name: 'Name',
+      phone: 'Phone',
+      phoneHint: 'International format, for example +48500100200',
+      role: 'Role',
+      rooms: 'Rooms',
+      permissions: 'Permissions',
+      save: 'Save',
+      add: 'Add',
+      cancel: 'Cancel',
+      ownLimits:
+        'This is your own profile: the name and the role cannot be changed here, and it cannot be switched off or removed.',
+      renamed:
+        'A new name changes the personal link: the old link and the icon on the phone stop working, and the presence history stays under the old name.',
+    },
+    rooms: {
+      chosen: 'Rooms of the member, in the order they are shown',
+      offered: 'Rooms that can be added',
+      none: 'No room assigned.',
+      moveUp: 'Move up:',
+      moveDown: 'Move down:',
+      take: 'Take away:',
+      add: 'Add:',
+    },
+    permission: {
+      heatingSwitch: 'May switch the heating of the whole house',
+    },
+    device: {
+      name: 'Name of the device',
+      mac: 'MAC address',
+      macHint: 'As the network shows it, for example 0a:1b:2c:3d:4e:5f',
+    },
+    change: {
+      saving: 'Saving the change',
+      failed: 'The change was not carried out.',
+      noAnswer:
+        'The change got no answer and may have been carried out all the same. Compare with the registry.',
+    },
+    problem: {
+      nameLength: 'A name has 3 to 50 characters.',
+      nameTaken: 'Another member already has this name.',
+      phoneFormat:
+        'A phone number starts with + and the country code and has 8 to 15 digits, for example +48500100200.',
+      phoneTaken: 'Another member already has this phone number.',
+      deviceName: 'Give the device a name of up to 50 characters.',
+      deviceNameTaken: 'This member already has a device of this name.',
+      macFormat: 'A MAC address is six pairs of the characters 0-9 and a-f, separated by colons.',
+      macTaken: 'A device with this MAC address is already registered.',
+    },
+    // what the registry refuses, by the code of its answer
+    error: {
+      memberNotFound: 'This member is no longer in the registry.',
+      memberConflict: 'Another member already has this name or this phone number.',
+      memberInvalid:
+        'The registry refused the rooms or the permissions: one of them is listed twice or is missing.',
+      deviceExists:
+        'This MAC address is already registered, or the member already has a device of this name.',
+      deviceNotFound: 'This device is no longer in the registry.',
     },
   },
   settings: {

@@ -46,6 +46,10 @@ export class ApiClient {
     return this.guard(this.http.patch<T>(this.url(path), body, this.options(params)));
   }
 
+  put<T>(path: string, body: unknown, params?: ApiParams): Observable<T> {
+    return this.guard(this.http.put<T>(this.url(path), body, this.options(params)));
+  }
+
   delete<T>(path: string, params?: ApiParams): Observable<T> {
     return this.guard(this.http.delete<T>(this.url(path), this.options(params)));
   }

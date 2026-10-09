@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 import { ApiError } from '../../core/api/api-error';
+import { DisplayText } from '../../i18n/messages';
 import { DisplayTextPipe } from '../display-text/display-text.pipe';
 import { describeApiError } from './describe-api-error';
 
@@ -24,7 +25,7 @@ import { describeApiError } from './describe-api-error';
           @if (summary(); as what) {
             {{ what }}&ngsp;
           }
-          {{ describe(failure) | displayText }}
+          {{ describeWith()(failure) | displayText }}
         </span>
       </p>
     }
@@ -54,5 +55,9 @@ export class ApiErrorStrip {
   readonly error = input.required<ApiError | undefined>();
   /** What failed, in the active language; left out where the card itself says it. */
   readonly summary = input<string>();
-  protected readonly describe = describeApiError;
+  /**
+   * How the failure is worded. A view whose backend names its refusals with a `code` passes a
+   * function that knows them (`describeHouseholdError`); everything else is told the one way.
+   */
+  readonly describeWith = input<(error: ApiError) => DisplayText>(describeApiError);
 }

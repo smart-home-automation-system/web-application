@@ -1,0 +1,165 @@
+.member {
+  --app-domain: var(--app-domain-household);
+}
+
+mat-card-subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.member__tag {
+  padding: 0 8px;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  font: var(--mat-sys-label-medium);
+  line-height: 1.25rem;
+}
+
+.member__tag--off {
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface);
+}
+
+mat-card-content {
+  padding-top: 8px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0;
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.chip {
+  padding: 0 8px;
+  border-radius: var(--mat-sys-corner-full);
+  // the pair Material uses for whatever is selected: a tint of the season with a text made for it
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 16px;
+
+  app-device-form {
+    align-self: stretch;
+    margin-top: 8px;
+  }
+}
+
+.block__title {
+  margin: 0 0 4px;
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.block__note {
+  margin: 0;
+  max-width: 48ch;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// a text button starts at the edge of the card, like the text above it
+.block__action {
+  margin-left: -12px;
+}
+
+.devices {
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.device {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  column-gap: 2px;
+}
+
+.device__name {
+  grid-row: 1;
+  grid-column: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.device__mac {
+  grid-row: 2;
+  grid-column: 1;
+  font:
+    0.8125rem ui-monospace,
+    'Cascadia Mono',
+    Consolas,
+    monospace;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.device button {
+  grid-row: 1 / span 2;
+}
+
+.link {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--mat-sys-on-primary-container);
+}
+
+.code {
+  width: min(100%, 220px);
+  margin: 4px 0 8px;
+}
+
+.question {
+  align-self: stretch;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-surface-container-highest);
+
+  p {
+    margin: 0 0 8px;
+  }
+}
+
+.question__answers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.member__progress {
+  margin-top: 12px;
+}
+
+.member__actions {
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 8px 16px 16px;
+}

@@ -1,0 +1,80 @@
+<ng-container *transloco="let t">
+  <form class="form" novalidate (submit)="$event.preventDefault(); submit()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ t('household.form.name') }}</mat-label>
+      <input matInput autocomplete="off" maxlength="60" [formControl]="name" />
+      @if (problemOf(name); as problem) {
+        <mat-error>{{ t(problem) }}</mat-error>
+      }
+    </mat-form-field>
+    @if (own()) {
+      <p class="form__note">{{ t('household.form.ownLimits') }}</p>
+    }
+    @if (renaming()) {
+      <p class="form__warning" data-testid="rename-warning">{{ t('household.form.renamed') }}</p>
+    }
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ t('household.form.phone') }}</mat-label>
+      <input matInput type="tel" autocomplete="off" maxlength="30" [formControl]="phone" />
+      <mat-hint>{{ t('household.form.phoneHint') }}</mat-hint>
+      @if (problemOf(phone); as problem) {
+        <mat-error>{{ t(problem) }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="form__group" role="group" [attr.aria-labelledby]="id + '-role'">
+      <h3 class="form__label" [id]="id + '-role'">{{ t('household.form.role') }}</h3>
+      <mat-button-toggle-group
+        hideSingleSelectionIndicator
+        [attr.aria-labelledby]="id + '-role'"
+        [value]="role()"
+        [disabled]="own() || busy()"
+        (change)="role.set($event.value)"
+      >
+        @for (one of roles; track one) {
+          <mat-button-toggle [value]="one">{{ t(roleLabels[one]) }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="form__group" role="group" [attr.aria-labelledby]="id + '-rooms'">
+      <h3 class="form__label" [id]="id + '-rooms'">{{ t('household.form.rooms') }}</h3>
+      <app-rooms-picker [(rooms)]="rooms" [disabled]="busy()" />
+    </div>
+
+    <div class="form__group" role="group" [attr.aria-labelledby]="id + '-permissions'">
+      <h3 class="form__label" [id]="id + '-permissions'">{{ t('household.form.permissions') }}</h3>
+      @for (permission of knownPermissions; track permission) {
+        <mat-slide-toggle
+          [checked]="permissions().includes(permission)"
+          [disabled]="busy()"
+          (change)="grant(permission, $event.checked)"
+        >
+          {{ t(permissionLabels[permission]) }}
+        </mat-slide-toggle>
+      }
+    </div>
+
+    @if (busy()) {
+      <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('household.change.saving')" />
+    }
+    @if (failure(); as failed) {
+      <app-api-error-strip
+        data-testid="change-failure"
+        [error]="failed"
+        [summary]="t(summary(failed))"
+        [describeWith]="describe"
+      />
+    }
+
+    <div class="form__actions">
+      <button matButton type="button" [disabled]="busy()" (click)="cancelled.emit()">
+        {{ t('household.form.cancel') }}
+      </button>
+      <button matButton="filled" type="submit" [disabled]="busy()">
+        {{ t(member() ? 'household.form.save' : 'household.form.add') }}
+      </button>
+    </div>
+  </form>
+</ng-container>
