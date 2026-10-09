@@ -26,8 +26,8 @@ import {
   HouseholdRegistry,
   MemberDetails,
 } from '../../data-access/household/household-api';
-import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
+import { permissionLabel, roleLabel } from '../../shared/member-labels/member-labels';
 import { QrCode } from '../../shared/qr-code/qr-code';
 import { DeviceForm } from './device-form';
 import { changeSummary, describeHouseholdError } from './household-errors';
@@ -44,15 +44,6 @@ type Panel =
   | { readonly kind: 'remove-device'; readonly mac: string };
 
 const VIEW: Panel = { kind: 'view' };
-
-const ROLE_LABELS: Readonly<Record<string, MessageKey>> = {
-  admin: 'profiles.role.admin',
-  resident: 'profiles.role.resident',
-};
-
-const PERMISSION_LABELS: Readonly<Record<string, MessageKey>> = {
-  heating_switch: 'household.permission.heatingSwitch',
-};
 
 /**
  * One member of the household as the registry holds them, with everything the administrator
@@ -106,6 +97,8 @@ export class MemberCard {
 
   protected readonly describe = describeHouseholdError;
   protected readonly summary = changeSummary;
+  protected readonly roleLabel = roleLabel;
+  protected readonly permissionLabel = permissionLabel;
 
   protected readonly panel = signal<Panel>(VIEW);
   /** Why the last change asked for in this card was not carried out. */
@@ -124,6 +117,31 @@ export class MemberCard {
   );
   protected readonly devices = computed(() => this.member().devices ?? []);
   protected readonly link = computed(() => memberLink(this.origin, this.member().name));
+
+  /** The address of the device being edited; a new device has none yet. */
+  private readonly editedMac = computed(() => {
+    const panel = this.panel();
+    return panel.kind === 'edit-device' ? panel.mac : undefined;
+  });
+
+  /** The names of the member's devices other than the one being edited. */
+  protected readonly otherDeviceNames = computed(() =>
+    this.devices().flatMap((device) =>
+      device.mac === this.editedMac() || device.name === undefined ? [] : [device.name],
+    ),
+  );
+
+  /** Every address in the registry other than that of the device being edited. */
+  protected readonly otherMacs = computed(() =>
+    this.members()
+      .flatMap((member) => member.devices ?? [])
+      .flatMap((device) =>
+        device.mac === undefined || device.mac === this.editedMac() ? [] : [device.mac],
+      ),
+  );
+
+  /** The member as the form of the card was opened with - what its changes are measured by. */
+  private editedFrom: HouseholdMember | undefined;
 
   protected readonly icon = computed(() => {
     if (!this.active()) {
@@ -147,35 +165,16 @@ export class MemberCard {
     });
   }
 
-  protected roleLabel(role: string): MessageKey | undefined {
-    return ROLE_LABELS[role];
-  }
-
-  protected permissionLabel(permission: string): MessageKey | undefined {
-    return PERMISSION_LABELS[permission];
-  }
-
   /** The device a form or a question of this card is about. */
   protected deviceOf(mac: string) {
     return this.devices().find((device) => device.mac === mac);
   }
 
-  /** The names of the member's devices other than the one being edited. */
-  protected otherDeviceNames(mac?: string): string[] {
-    return this.devices().flatMap((device) =>
-      device.mac === mac || device.name === undefined ? [] : [device.name],
-    );
-  }
-
-  /** Every address in the registry other than that of the device being edited. */
-  protected otherMacs(mac?: string): string[] {
-    return this.members()
-      .flatMap((member) => member.devices ?? [])
-      .flatMap((device) => (device.mac === undefined || device.mac === mac ? [] : [device.mac]));
-  }
-
   protected open(panel: Panel): void {
     this.failure.set(undefined);
+    if (panel.kind === 'edit') {
+      this.editedFrom = this.member();
+    }
     this.panel.set(panel);
     if (panel.kind === 'remove' || panel.kind === 'remove-device') {
       // the button that was pressed is gone with the question: the safe answer takes the focus
@@ -189,8 +188,14 @@ export class MemberCard {
     this.open(VIEW);
   }
 
+  /**
+   * Saves the form against the member **as the form was opened with**, not as the registry has
+   * them now: only what somebody changed in the form is sent. Compared with the member of this
+   * moment, a room or a permission granted elsewhere while the form was open would read as a
+   * change of the form - and be written back to what it was.
+   */
   protected save(details: MemberDetails): void {
-    void this.run(this.registry().update(this.member(), details));
+    void this.run(this.registry().update(this.editedFrom ?? this.member(), details));
   }
 
   protected setActive(active: boolean): void {
@@ -206,6 +211,12 @@ export class MemberCard {
   }
 
   protected saveDevice(mac: string, device: DeviceDetails): void {
+    const before = this.deviceOf(mac);
+    if (before?.name === device.name && before.mac === device.mac) {
+      // nothing was changed: no write for it, like a member saved as they were
+      this.close();
+      return;
+    }
     void this.run(this.registry().updateDevice(this.member().name, mac, device));
   }
 

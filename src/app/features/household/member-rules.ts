@@ -77,8 +77,10 @@ export function macProblem(text: string, others: readonly string[]): MessageKey 
 }
 
 /**
- * A rule as the validator of a form control. `others` is read at every check, so the rule
- * follows a registry that changed while the form was open.
+ * A rule as the validator of a form control. `others` is read at every check - but a control
+ * is checked when its value changes, not when the registry does: a form calls
+ * `updateValueAndValidity()` on its controls before it sends, so that what it sends was
+ * checked against the registry as it is then.
  */
 export function rule(
   problem: (text: string, others: readonly string[]) => MessageKey | undefined,

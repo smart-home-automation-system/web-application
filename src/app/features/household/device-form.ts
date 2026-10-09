@@ -132,6 +132,10 @@ export class DeviceForm implements OnInit {
   protected submit(): void {
     this.name.markAsTouched();
     this.mac.markAsTouched();
+    // checked again now: a control keeps the verdict of its last change, and the registry may
+    // have changed since - by a change of this very form that got no answer, for one
+    this.name.updateValueAndValidity();
+    this.mac.updateValueAndValidity();
     if (this.name.invalid || this.mac.invalid || this.busy()) {
       return;
     }

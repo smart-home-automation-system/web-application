@@ -19,8 +19,9 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { ApiError } from '../../core/api/api-error';
 import { HouseholdMember, MemberDetails } from '../../data-access/household/household-api';
 import { MEMBER_PERMISSIONS, MEMBER_ROLES } from '../../data-access/household/registry-values';
-import { MessageKey } from '../../i18n/messages';
+import { sameName } from '../../core/profile/profile';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
+import { PERMISSION_LABELS, ROLE_LABELS } from '../../shared/member-labels/member-labels';
 import { changeSummary, describeHouseholdError } from './household-errors';
 import {
   nameProblem,
@@ -31,15 +32,6 @@ import {
   rule,
 } from './member-rules';
 import { RoomsPicker } from './rooms-picker';
-
-const ROLE_LABELS: Readonly<Record<(typeof MEMBER_ROLES)[number], MessageKey>> = {
-  admin: 'profiles.role.admin',
-  resident: 'profiles.role.resident',
-};
-
-const PERMISSION_LABELS: Readonly<Record<(typeof MEMBER_PERMISSIONS)[number], MessageKey>> = {
-  heating_switch: 'household.permission.heatingSwitch',
-};
 
 /**
  * The form of a member - a new one, or `member` as the registry holds them now. It checks what
@@ -117,13 +109,23 @@ export class MemberForm implements OnInit {
   /** What the name field holds, as a signal - a form control is none. */
   private readonly typedName = signal('');
 
+  /** The name the member had when the form was opened. */
+  private readonly nameBefore = signal<string | undefined>(undefined);
+
   /**
-   * The name of an existing member is about to change. Their personal link is built from it and
-   * the presence history is kept under it, so the form says what follows before it is saved.
+   * What is about to happen to the name of an existing member, said in the form before it is
+   * saved. A new `name` is a new person to everything keyed by it: the personal link, the
+   * icon on the phone, the presence history. Another `spelling` - only the case differs -
+   * keeps the link and the profile, which find a member whatever the case; the presence
+   * history, kept under the name exactly as written, still stays under the old one.
    */
-  protected readonly renaming = computed(() => {
-    const before = this.member()?.name;
-    return before !== undefined && normaliseName(this.typedName()) !== before;
+  protected readonly renaming = computed((): 'name' | 'spelling' | undefined => {
+    const before = this.nameBefore();
+    const typed = normaliseName(this.typedName());
+    if (before === undefined || typed === before) {
+      return undefined;
+    }
+    return sameName(typed, before) ? 'spelling' : 'name';
   });
 
   constructor() {
@@ -136,6 +138,7 @@ export class MemberForm implements OnInit {
       this.role.set('resident');
       return;
     }
+    this.nameBefore.set(member.name);
     this.name.setValue(member.name);
     this.phone.setValue(member.phone ?? '');
     this.role.set(member.role);
@@ -156,6 +159,10 @@ export class MemberForm implements OnInit {
   protected submit(): void {
     this.name.markAsTouched();
     this.phone.markAsTouched();
+    // checked again now: a control keeps the verdict of its last change, and the registry -
+    // what a name and a phone number must not repeat - may have changed since
+    this.name.updateValueAndValidity();
+    this.phone.updateValueAndValidity();
     // a disabled control is neither valid nor invalid: the own name is not checked, nor changed
     if (this.name.invalid || this.phone.invalid || this.busy()) {
       return;

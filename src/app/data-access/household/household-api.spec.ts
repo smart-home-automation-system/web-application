@@ -24,6 +24,8 @@ const DETAILS = {
 describe('HouseholdApi, the registry', () => {
   let http: HttpTestingController;
   let registry: HouseholdRegistry;
+  /** Called by the registry when a change is over. */
+  let afterChange: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -31,7 +33,10 @@ describe('HouseholdApi, the registry', () => {
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
-    registry = TestBed.runInInjectionContext(() => TestBed.inject(HouseholdApi).watchRegistry());
+    afterChange = vi.fn<() => void>();
+    registry = TestBed.runInInjectionContext(() =>
+      TestBed.inject(HouseholdApi).watchRegistry(afterChange),
+    );
     answerTheRegistryWith([BORYS]);
   });
 
@@ -178,16 +183,14 @@ describe('HouseholdApi, the registry', () => {
     it('stops at the call that failed, and says why', async () => {
       const change = registry.update(BORYS, { ...DETAILS, name: 'Bogdan', rooms: [] });
       await settled();
-      http
-        .expectOne({ method: 'PUT', url: '/home/household/member/Borys/rooms' })
-        .flush(
-          {
-            errors: [
-              { message: 'Household member [Borys] not found', code: 'NOT_FOUND_HOUSEHOLD_MEMBER' },
-            ],
-          },
-          { status: 404, statusText: 'Not Found' },
-        );
+      http.expectOne({ method: 'PUT', url: '/home/household/member/Borys/rooms' }).flush(
+        {
+          errors: [
+            { message: 'Household member [Borys] not found', code: 'NOT_FOUND_HOUSEHOLD_MEMBER' },
+          ],
+        },
+        { status: 404, statusText: 'Not Found' },
+      );
       await settled();
       // the name was never sent
       http.expectNone({ method: 'PATCH', url: '/home/household/member/Borys' });
@@ -283,6 +286,38 @@ describe('HouseholdApi, the registry', () => {
       await settled();
       answerTheRegistryWith([BORYS]);
       await first;
+      // one change was made, and one is followed up
+      expect(afterChange).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // whatever has to follow every change - the page asks for the profiles
+  describe('what follows a change', () => {
+    it('is called once the registry was read again, not before', async () => {
+      const change = registry.setActive('Borys', false);
+      await settled();
+      http.expectOne({ method: 'POST', url: '/home/household/member/Borys/deactivate' }).flush({});
+      await settled();
+      expect(afterChange).not.toHaveBeenCalled();
+
+      answerTheRegistryWith([BORYS]);
+      await change;
+
+      expect(afterChange).toHaveBeenCalledTimes(1);
+    });
+
+    // a change that got no answer may have been carried out
+    it('is called after a change that failed, too', async () => {
+      const change = registry.remove('Borys');
+      await settled();
+      http
+        .expectOne({ method: 'DELETE', url: '/home/household/member/Borys' })
+        .error(new ProgressEvent('error'));
+      await settled();
+      answerTheRegistryWith([BORYS]);
+      await change;
+
+      expect(afterChange).toHaveBeenCalledTimes(1);
     });
   });
 });

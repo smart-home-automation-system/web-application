@@ -100,6 +100,10 @@ test.describe('changing a member', () => {
     await borys.getByRole('button', { name: 'Edit', exact: true }).click();
     await expect(borys.getByTestId('rename-warning')).toHaveCount(0);
 
+    // only the spelling: the link finds a member whatever the case, the presence history does not
+    await borys.getByLabel('Name').fill('BORYS');
+    await expect(borys.getByTestId('rename-warning')).toContainText('keeps working');
+
     await borys.getByLabel('Name').fill('Bogdan');
     await expect(borys.getByTestId('rename-warning')).toContainText('the old link');
     await borys.getByRole('button', { name: 'Save' }).click();

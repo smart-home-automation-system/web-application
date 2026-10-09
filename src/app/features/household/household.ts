@@ -10,10 +10,8 @@ import { sameName } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
 import { isRecord } from '../../core/util/is-record';
 import {
-  ChangeOutcome,
   HouseholdApi,
   HouseholdMember,
-  HouseholdRegistry,
   MemberDetails,
 } from '../../data-access/household/household-api';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
@@ -54,9 +52,9 @@ import { MemberForm } from './member-form';
 })
 export class Household {
   private readonly profiles = inject(ProfileStore);
-  protected readonly registry = thenAskForTheProfiles(
-    inject(HouseholdApi).watchRegistry(),
-    this.profiles,
+  // Asked for anew, never an answer already on its way: that one may predate the change.
+  protected readonly registry = inject(HouseholdApi).watchRegistry(
+    () => void this.profiles.refreshAfterChange(),
   );
 
   /**
@@ -101,27 +99,4 @@ export class Household {
       this.addFailure.set(outcome.failure);
     }
   }
-}
-
-/**
- * The registry, with every change followed by a read of the profiles: the role, the rooms and
- * the permissions of the member using this browser, and whether they have a profile at all,
- * are what was just changed. Also after a change that failed - one that got no answer may have
- * been carried out.
- */
-function thenAskForTheProfiles(
-  registry: HouseholdRegistry,
-  profiles: ProfileStore,
-): HouseholdRegistry {
-  const then = (change: Promise<ChangeOutcome>) => change.finally(() => void profiles.refresh());
-  return {
-    ...registry,
-    add: (member) => then(registry.add(member)),
-    update: (before, member) => then(registry.update(before, member)),
-    setActive: (name, active) => then(registry.setActive(name, active)),
-    remove: (name) => then(registry.remove(name)),
-    addDevice: (member, device) => then(registry.addDevice(member, device)),
-    updateDevice: (member, mac, device) => then(registry.updateDevice(member, mac, device)),
-    removeDevice: (member, mac) => then(registry.removeDevice(member, mac)),
-  };
 }

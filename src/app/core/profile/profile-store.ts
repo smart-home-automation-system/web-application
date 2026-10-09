@@ -65,6 +65,18 @@ export class ProfileStore {
   }
 
   /**
+   * Asks the registry after something changed it. Unlike `refresh()` it never settles for a
+   * call already under way - that one may have been answered before the change - but waits for
+   * it and asks anew.
+   */
+  async refreshAfterChange(): Promise<boolean> {
+    if (this.inFlight !== undefined) {
+      await this.inFlight;
+    }
+    return this.refresh();
+  }
+
+  /**
    * Opens the profile of a member, by the name a personal link carries. The registry is asked
    * first, so only somebody who is in it, and active, gets a profile. The one exception is the
    * member this browser already remembers: their own link is the address the installed
@@ -113,7 +125,9 @@ export class ProfileStore {
   private reconcile(members: readonly Profile[]): void {
     const current = this.active();
     if (current !== undefined) {
-      this.use(members.find((candidate) => candidate.name === current.name));
+      // by the name whatever its case, the way a personal link finds a member: a spelling
+      // corrected in the registry ("borys" to "Borys") is the same person, not somebody gone
+      this.use(members.find((candidate) => sameName(candidate.name, current.name)));
     }
   }
 

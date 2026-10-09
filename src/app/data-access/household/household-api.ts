@@ -131,13 +131,17 @@ export class HouseholdApi {
    * **For the administration page and nothing else**: every other view learns about the
    * household from `profiles()`.
    *
+   * `afterChange` is called when a change is over - carried out or not, the registry read
+   * again - for whatever has to follow every change; a change refused because another one was
+   * under way made no call and is followed by nothing.
+   *
    * Call in an injection context: the polling lives as long as the caller. A change that is on
    * its way when the caller goes is not aborted with it - a write cut off halfway is carried
    * out or not, and nobody would know which. What does cut it off is the time limit of
    * `ApiClient`: such a change fails as `network`, which says "no answer", not "not carried
    * out".
    */
-  watchRegistry(): HouseholdRegistry {
+  watchRegistry(afterChange?: () => void): HouseholdRegistry {
     const registry = pollingResource(
       () => this.api.get<readonly HouseholdMember[] | null>('/household'),
       { intervalMs: POLL_REGISTRY_EVERY_MS },
@@ -160,6 +164,8 @@ export class HouseholdApi {
       }
       await registry.refresh();
       changing.set(false);
+      // also after a change that failed: one that got no answer may have been carried out
+      afterChange?.();
       return failure === undefined ? CARRIED_OUT : { carriedOut: false, failure };
     };
 

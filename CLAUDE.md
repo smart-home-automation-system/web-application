@@ -215,10 +215,24 @@ e2e/              # Playwright tests
     changed, the name last: until then the member answers to the name the card is tracked by,
     so a change that stops halfway leaves its failure on a card that still exists.
   - **A card must not `emit` after a change**: the change may have removed the card (a member
-    removed, renamed), and an output of a destroyed component throws. What has to follow a
-    change is wrapped around the resource by the page (`thenAskForTheProfiles`).
+    removed, renamed), and an output of a destroyed component throws. What has to follow every
+    change is the one argument of `watchRegistry(afterChange)` - one place, so a change added
+    later cannot be left out of it.
   - **After every change the profiles are asked for again** - a role, the rooms, a permission
-    or the profile itself of the person on the page is what was just changed.
+    or the profile itself of the person on the page is what was just changed. With
+    `ProfileStore.refreshAfterChange()`, not `refresh()`: that one shares a call already under
+    way, whose answer may have left the registry before the change (found in review).
+  - **A form is measured by the member it was opened with**, not by the member of the moment
+    it is saved (`MemberCard.editedFrom`): the registry is polled under the open form, and
+    measured by the fresh member a room granted elsewhere meanwhile reads as a change of the
+    form - and is written back to what it was, with a 200 (found in review).
+  - **A control keeps the verdict of its last change**: a validator that reads the registry is
+    not run again when the registry changes. A form calls `updateValueAndValidity()` on its
+    controls before it sends (found in review).
+  - **A name spelled anew is the same member** (`borys` to `Borys`): the link and the profile
+    find a member whatever the case - `ProfileStore` reconciles by `sameName` since this task -
+    so only the presence history, kept under the name as written, stays behind; the form has a
+    warning of its own for that.
   - **The member of the active profile cannot be renamed, demoted, switched off or removed
     there**: each would take the profile the browser remembers, or close the page to its user.
     That, too, is the interface being careful, not a rule the registry knows.

@@ -337,6 +337,8 @@ export const pl: Messages = {
       cancel: 'Anuluj',
       ownLimits:
         'To twój własny profil: imienia i roli nie można tu zmienić, nie można go też wyłączyć ani usunąć.',
+      respelled:
+        'Osobisty link działa dalej. Historia obecności jest prowadzona pod imieniem zapisanym dokładnie tak samo, więc zostanie pod starą pisownią.',
       renamed:
         'Nowe imię zmienia osobisty link: stary link i ikona na telefonie przestaną działać, a historia obecności zostanie pod starym imieniem.',
     },

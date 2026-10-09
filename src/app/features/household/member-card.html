@@ -118,8 +118,8 @@
           } @else if (shown.kind === 'edit-device') {
             <app-device-form
               [device]="deviceOf(shown.mac)"
-              [otherNames]="otherDeviceNames(shown.mac)"
-              [otherMacs]="otherMacs(shown.mac)"
+              [otherNames]="otherDeviceNames()"
+              [otherMacs]="otherMacs()"
               [busy]="busy()"
               [failure]="failure()"
               (saved)="saveDevice(shown.mac, $event)"

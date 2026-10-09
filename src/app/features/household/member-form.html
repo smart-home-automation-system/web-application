@@ -10,8 +10,15 @@
     @if (own()) {
       <p class="form__note">{{ t('household.form.ownLimits') }}</p>
     }
-    @if (renaming()) {
-      <p class="form__warning" data-testid="rename-warning">{{ t('household.form.renamed') }}</p>
+    @switch (renaming()) {
+      @case ('name') {
+        <p class="form__warning" data-testid="rename-warning">{{ t('household.form.renamed') }}</p>
+      }
+      @case ('spelling') {
+        <p class="form__warning" data-testid="rename-warning">
+          {{ t('household.form.respelled') }}
+        </p>
+      }
     }
 
     <mat-form-field appearance="outline" subscriptSizing="dynamic">

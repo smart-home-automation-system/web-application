@@ -222,6 +222,55 @@ describe('Household', () => {
     expect(failure.textContent).not.toContain('was not carried out');
   });
 
+  // The form is measured by the member it was opened with. Measured by the member of the
+  // moment of saving, what somebody else changed meanwhile would read as a change of the form
+  // and be written back to what it was.
+  it('does not undo what changed in the registry while the form was open', async () => {
+    const borys = { ...BORYS, rooms: ['loft'] };
+    answerTheRegistryWith([AURELIA, borys]);
+    button(card('Borys'), 'Edit')!.click();
+    fixture.detectChanges();
+
+    // meanwhile, from another browser: a second room and a permission
+    vi.advanceTimersByTime(60_000);
+    http
+      .expectOne({ method: 'GET', url: '/home/household' })
+      .flush([AURELIA, { ...borys, rooms: ['loft', 'office'], permissions: ['heating_switch'] }]);
+    fixture.detectChanges();
+
+    const phone = card('Borys').querySelectorAll('input')[1];
+    phone.value = '+48500100199';
+    phone.dispatchEvent(new Event('input'));
+    button(card('Borys'), 'Save')!.click();
+    await settled();
+
+    // the phone, and nothing about the rooms or the permissions (`http.verify()` would
+    // find a call for them)
+    const call = http.expectOne({ method: 'PATCH', url: '/home/household/member/Borys' });
+    expect(call.request.body).toEqual({
+      name: 'Borys',
+      phone: '+48500100199',
+      role: 'resident',
+    });
+    call.flush({});
+    await settled();
+    answerTheRegistryWith([AURELIA, borys]);
+    await settled();
+    answerTheProfiles();
+  });
+
+  it('makes no call for a device saved as it was', async () => {
+    answerTheRegistryWith([AURELIA, BORYS]);
+
+    button(card('Aurelia'), 'Edit the device Phone')!.click();
+    fixture.detectChanges();
+    expect(card('Aurelia').querySelector('app-device-form')).not.toBeNull();
+    button(card('Aurelia'), 'Save')!.click();
+    await settled();
+
+    expect(card('Aurelia').querySelector('app-device-form')).toBeNull();
+  });
+
   it('adds a member from the form, and refuses one whose name is taken without a call', async () => {
     answerTheRegistryWith([AURELIA, BORYS]);
     button(page(), 'Add a member')!.click();
