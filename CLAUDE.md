@@ -202,8 +202,9 @@ e2e/              # Playwright tests
   `hasPermission(profile, 'heating_switch')`, and it is a component of its own so that the
   state of the switch is not even asked for without it. Not the role decides - the
   administrator has no switch here either. A unit
-  test that renders `/room` through the real routes (`profile-pages.spec`) lets the two reads
-  of the page pass - `GET` only, so that a call that changes the house never slips through.
+  test that renders `/room` through the real routes (`profile-pages.spec`) lets the one read
+  of the page pass - the room, `GET` only: nobody there has the permission, so a call to the
+  switch of the house, read or write, fails the test.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

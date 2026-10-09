@@ -250,7 +250,7 @@ Endpoints used today:
 | `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation (hot water), polled every 30 s. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room), polled every 30 s |
-| `GET` | `/home/household/profiles` | The profiles of the household: the name, role and rooms of every active member, and nothing else (`database-service` 0.10.0 or later). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened |
+| `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the switch on "My room"). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened |
 
 What the application relies on, in every call:
 
