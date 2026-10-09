@@ -187,9 +187,7 @@ export class LanguageStore {
   }
 
   private isSame(left: string | undefined, right: string | undefined): boolean {
-    return left === undefined || right === undefined
-      ? left === right
-      : left === right || this.sameOwner(left, right);
+    return left === undefined || right === undefined ? left === right : this.sameOwner(left, right);
   }
 
   private activate(language: LanguageCode): void {

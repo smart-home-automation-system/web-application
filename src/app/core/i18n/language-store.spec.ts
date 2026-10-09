@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { TranslocoService } from '@jsverse/transloco';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
 
+import { sameName } from '../profile/profile';
 import { provideI18nTesting } from '../../../testing/i18n';
 import { en } from '../../i18n/en';
 import { Messages } from '../../i18n/messages';
@@ -242,10 +243,8 @@ describe('LanguageStore, with household profiles', () => {
       providers: [
         provideI18nTesting(),
         { provide: LANGUAGE_OWNER, useValue: owner },
-        {
-          provide: SAME_LANGUAGE_OWNER,
-          useValue: (left: string, right: string) => left.toLowerCase() === right.toLowerCase(),
-        },
+        // the rule the application binds (`app.config.ts`)
+        { provide: SAME_LANGUAGE_OWNER, useValue: sameName },
       ],
     });
     if (stored.device !== undefined) {

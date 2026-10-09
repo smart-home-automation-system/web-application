@@ -222,11 +222,20 @@ describe('Household', () => {
     expect(failure.textContent).not.toContain('was not carried out');
   });
 
-  // A change that stops halfway has written its first calls, and the card may not know: here
-  // the registry is read back as it was before. The next attempt sends the whole form -
-  // measured by the member on the card, the permission granted by the failed attempt and
-  // taken back in the form would stay granted, on a card that closed as saved.
-  it('sends the whole form in the attempt after one that failed', async () => {
+  // A change that stops halfway has written its first calls, and the card may or may not
+  // know: the registry is read back with the permission the failed attempt granted, or as it
+  // was before. Either way the next attempt sends the whole form - the permission taken back
+  // in the form must not stay granted on a card that closes as saved. Closing the form and
+  // opening it again in between changes nothing about that.
+  it.each([
+    { readBack: 'what the failed attempt wrote', granted: true, reopened: false },
+    { readBack: 'the member as before', granted: false, reopened: false },
+    {
+      readBack: 'the member as before, the form closed and opened',
+      granted: false,
+      reopened: true,
+    },
+  ])('sends the whole form after a failed attempt: $readBack', async ({ granted, reopened }) => {
     answerTheRegistryWith([AURELIA, BORYS]);
     button(card('Borys'), 'Edit')!.click();
     fixture.detectChanges();
@@ -248,14 +257,28 @@ describe('Household', () => {
       .expectOne({ method: 'PATCH', url: '/home/household/member/Borys' })
       .flush({ errors: [{ message: 'refused' }] }, { status: 400, statusText: 'Bad Request' });
     await settled();
-    answerTheRegistryWith([AURELIA, BORYS]);
+    answerTheRegistryWith([
+      AURELIA,
+      granted ? { ...BORYS, permissions: ['heating_switch'] } : BORYS,
+    ]);
     await settled();
     answerTheProfiles();
     fixture.detectChanges();
     expect(card('Borys').querySelector('app-member-form')).not.toBeNull();
 
-    // second attempt: the permission taken back in the form, the phone as it was refused
-    permission().click();
+    // second attempt: the permission not granted in the form, another phone
+    if (reopened) {
+      // the new form starts from the card, which shows no permission
+      button(card('Borys'), 'Cancel')!.click();
+      fixture.detectChanges();
+      button(card('Borys'), 'Edit')!.click();
+      fixture.detectChanges();
+      const again = card('Borys').querySelectorAll('input')[1];
+      again.value = '+48500100199';
+      again.dispatchEvent(new Event('input'));
+    } else {
+      permission().click();
+    }
     fixture.detectChanges();
     button(card('Borys'), 'Save')!.click();
     await settled();

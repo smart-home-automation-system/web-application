@@ -228,7 +228,8 @@ e2e/              # Playwright tests
     after it can fail too, and a call without an answer can be carried out after that read.
     Measured by the member on the card, a room added by the failed attempt and taken back in
     the form stayed in the registry, on a card that closed as saved (0.13.0 did that; found in
-    the second review). A first attempt is measured by the member on the card. Accepted by the
+    the second review). A first attempt is measured by the member on the card; the flag stays
+    until a save is carried out, also across a form closed and opened again. Accepted by the
     owner (2026-10-09): the registry is never changed from this page and from another tool at
     the same time, so nothing here guards a form against a second writer.
   - **A control keeps the verdict of its last change**: a validator that reads the registry is
