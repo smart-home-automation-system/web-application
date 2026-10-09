@@ -1,0 +1,45 @@
+// Made for the phone: one column, the cards of the room first and the switch of the house under
+// them. In a window the cards stand side by side, each as tall as what it says and no wider
+// than a card reads well.
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 480px));
+  }
+}
+
+// the rooms of the member, above the cards; the names wrap rather than push the page wide
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 12px;
+}
+
+// an identifier of the backend ("living room"), shown as a name
+.switcher__room {
+  text-transform: capitalize;
+}
+
+.none {
+  --app-domain: var(--app-domain-household);
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.none__text {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}

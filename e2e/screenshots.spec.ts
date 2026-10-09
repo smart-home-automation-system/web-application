@@ -289,10 +289,46 @@ for (const language of ['en', 'pl'] as const) {
       test.describe('as a resident', () => {
         test.use({ profile: 'resident-two-rooms' });
 
+        // a Thursday afternoon of the house: the schedule of "today" depends on the day
         test('my room', async ({ page }, testInfo) => {
+          await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
           await page.goto('/');
           await expect(page.getByRole('heading', { name: TEXTS[language].myRoom })).toBeVisible();
+          await expect(page.getByTestId('room-temperature')).toBeVisible();
+          await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
           await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'my-room') });
+
+          await page.getByTestId('room-switcher').getByRole('radio').last().click();
+          await expect(page.getByTestId('room-heating')).toContainText('wardrobe');
+          await expect(page.getByTestId('room-temperature')).toBeVisible();
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'my-room-second'),
+          });
+        });
+      });
+
+      test.describe('as a resident without a room', () => {
+        test.use({ profile: 'resident-no-room' });
+
+        test('my room, none assigned', async ({ page }, testInfo) => {
+          await page.goto('/');
+          await expect(page.getByTestId('no-rooms')).toBeVisible();
+          await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'my-room-none'),
+          });
+        });
+      });
+
+      test.describe('as the administrator', () => {
+        test('my room, two heaters', async ({ page }, testInfo) => {
+          await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+          await page.goto('/room');
+          await page.getByTestId('room-switcher').getByRole('radio').last().click();
+          await expect(page.getByTestId('room-heating').locator('.week__day')).toHaveCount(2);
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'my-room-heaters'),
+          });
         });
       });
 

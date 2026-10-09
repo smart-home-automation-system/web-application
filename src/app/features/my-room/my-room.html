@@ -1,0 +1,43 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('myRoom.title') }}</h1>
+  </header>
+
+  @if (rooms().length > 1) {
+    <!-- the identifiers of the registry, printed as they are: never a translation -->
+    <mat-button-toggle-group
+      class="switcher"
+      data-testid="room-switcher"
+      hideSingleSelectionIndicator
+      [attr.aria-label]="t('myRoom.switcher')"
+      [value]="room()"
+      (change)="choose($event.value)"
+    >
+      @for (option of rooms(); track option) {
+        <mat-button-toggle class="switcher__room" [value]="option">{{ option }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  }
+
+  <section class="cards" [attr.aria-label]="t('myRoom.cards')">
+    @for (room of shown(); track room) {
+      @for (capability of capabilities; track capability.id) {
+        <ng-container *ngComponentOutlet="capability.component; inputs: { room }" />
+      }
+    } @empty {
+      <mat-card appearance="outlined" class="none card--domain" data-testid="no-rooms">
+        <mat-card-header>
+          <div mat-card-avatar class="domain-badge"><mat-icon>bed</mat-icon></div>
+          <mat-card-title>{{ t('myRoom.noRoomsTitle') }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="none__text">{{ t('myRoom.noRooms') }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    @if (switchesHeating()) {
+      <app-house-heating />
+    }
+  </section>
+</ng-container>

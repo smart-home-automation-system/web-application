@@ -1,5 +1,4 @@
 import { isRecord } from '../../core/util/is-record';
-import { MessageKey } from '../../i18n/messages';
 
 /** A period of a heater's week, read out of the answer. Times are minutes since midnight. */
 export interface SchedulePeriod {
@@ -41,6 +40,8 @@ export interface RoomView {
   readonly temperature?: number;
   /** House wall-clock time of that reading. */
   readonly measuredAt?: string;
+  /** Relative humidity in per cent; `undefined` unless the service reports one. */
+  readonly humidity?: number;
   /**
    * What the schedules ask for right now, by the clock of the service - the highest of its
    * heaters. `undefined` when no period is on.
@@ -127,6 +128,7 @@ export function toRoomViews(answer: unknown): RoomView[] {
     }
     const reading = isRecord(entry['temperature']) ? entry['temperature'] : {};
     const temperature = finite(reading['value']);
+    const humidity = isRecord(entry['humidity']) ? finite(entry['humidity']['value']) : undefined;
     const list = entry['heaters'];
     const targets = Array.isArray(list)
       ? list.flatMap((heater: unknown) => {
@@ -140,6 +142,7 @@ export function toRoomViews(answer: unknown): RoomView[] {
         temperature,
         // the time of a reading says nothing without the reading
         measuredAt: temperature === undefined ? undefined : text(reading['updatedAt']),
+        humidity,
         // not Math.max(...targets): a list as long as the answer makes it must not be spread
         target: targets.reduce<number | undefined>(
           (highest, target) => (highest === undefined || target > highest ? target : highest),
@@ -149,52 +152,6 @@ export function toRoomViews(answer: unknown): RoomView[] {
       },
     ];
   });
-}
-
-/** A part of the house with its rooms, as a section of the page. */
-export interface FloorView {
-  readonly id: string;
-  readonly label: MessageKey;
-  readonly rooms: readonly RoomView[];
-}
-
-/**
- * Which room lies where. The service knows rooms, not floors: this list is the one place that
- * does, by the identifiers of `RoomName` in `smart-home-sdk`. The order is the order on the
- * page, within a floor too.
- */
-export const FLOORS: readonly { id: string; label: MessageKey; rooms: readonly string[] }[] = [
-  {
-    id: 'ground',
-    label: 'heating.rooms.floor.ground',
-    rooms: ['living room', 'cinema', 'bathroom down', 'entrance', 'garage'],
-  },
-  {
-    id: 'upper',
-    label: 'heating.rooms.floor.upper',
-    rooms: ['office', 'tobi', 'livia', 'bedroom', 'wardrobe', 'bathroom up'],
-  },
-  { id: 'attic', label: 'heating.rooms.floor.attic', rooms: ['loft'] },
-  { id: 'outside', label: 'heating.rooms.floor.outside', rooms: ['sanctum', 'sauna', 'garden'] },
-];
-
-/**
- * The rooms by floor, in the order of `FLOORS`; a floor without a room in the answer is left
- * out. A room the list does not know - one added to the house since - is not dropped: it goes
- * into a last group of its own, in the order of the service.
- */
-export function groupByFloor(rooms: readonly RoomView[]): FloorView[] {
-  const placed = new Set<RoomView>();
-  const floors = FLOORS.map(({ id, label, rooms: names }): FloorView => {
-    const here = names.flatMap((name) => rooms.filter((room) => room.name === name));
-    here.forEach((room) => placed.add(room));
-    return { id, label, rooms: here };
-  });
-  const elsewhere = rooms.filter((room) => !placed.has(room));
-  return [
-    ...floors,
-    { id: 'other', label: 'heating.rooms.floor.other' as const, rooms: elsewhere },
-  ].filter((floor) => floor.rooms.length > 0);
 }
 
 /** One period of one day, placed on the day: where it starts and how long it is, in per cent. */

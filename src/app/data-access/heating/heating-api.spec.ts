@@ -171,6 +171,68 @@ describe('HeatingApi', () => {
     expect(sensors.value()).toHaveLength(1);
   });
 
+  describe('one room', () => {
+    function watch(name: () => string) {
+      const room = TestBed.runInInjectionContext(() => TestBed.inject(HeatingApi).watchRoom(name));
+      vi.advanceTimersByTime(0);
+      return room;
+    }
+
+    it('asks for the room by its name, as a path segment', () => {
+      const room = watch(() => 'living room');
+
+      http.expectOne('/home/heating/rooms/living%20room').flush({ name: 'living room' });
+
+      expect(room.value()).toEqual({ name: 'living room' });
+    });
+
+    // a name is text from outside: it must not be able to change the path
+    it('encodes a name that would otherwise lead elsewhere', () => {
+      watch(() => '../floor-pump?x=1#y');
+
+      http.expectOne('/home/heating/rooms/..%2Ffloor-pump%3Fx%3D1%23y').flush(null);
+    });
+
+    it.each(['.', '..', '...'])('does not ask for %s, which is no path segment', (name) => {
+      const room = watch(() => name);
+
+      http.expectNone(() => true);
+      expect(room.error()?.kind).toBe('unexpected');
+      expect(room.loading()).toBe(false);
+    });
+
+    it('reads the name anew for every call', () => {
+      let name = 'office';
+      const room = watch(() => name);
+      http.expectOne('/home/heating/rooms/office').flush({ name: 'office' });
+
+      name = 'loft';
+      void room.refresh();
+      vi.advanceTimersByTime(0);
+
+      http.expectOne('/home/heating/rooms/loft').flush({ name: 'loft' });
+    });
+
+    it('hands on the code of a room the service does not know', () => {
+      const room = watch(() => 'attic');
+
+      http.expectOne('/home/heating/rooms/attic').flush(
+        {
+          errors: [
+            {
+              code: 'NOT_FOUND_ROOM',
+              details: 'Room name: attic',
+              message: 'Room with provided name is not a part of home',
+            },
+          ],
+        },
+        { status: 404, statusText: 'Not Found' },
+      );
+
+      expect(room.error()?.hasCode('NOT_FOUND_ROOM')).toBe(true);
+    });
+  });
+
   it('reads the rooms and the pump of the floor heating', () => {
     const { rooms, pump } = TestBed.runInInjectionContext(() => {
       const api = TestBed.inject(HeatingApi);

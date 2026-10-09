@@ -75,6 +75,32 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     reply: (_, fresh) => ({ status: 200, body: heatingRooms(new Date(), fresh) }),
   },
   {
+    // one room by its name, in any case, as the service finds it - and its 404 with the code a
+    // client tells "no such room" by
+    method: 'GET',
+    path: /^\/home\/heating\/rooms\/([^/]+)$/,
+    reply: (_, fresh, [name]) => {
+      const asked = decodeURIComponent(name);
+      const room = heatingRooms(new Date(), fresh).find(
+        (one) => one.name?.toLowerCase() === asked.toLowerCase(),
+      );
+      return room
+        ? { status: 200, body: room }
+        : {
+            status: 404,
+            body: {
+              errors: [
+                {
+                  code: 'NOT_FOUND_ROOM',
+                  details: `Room name: ${asked}`,
+                  message: 'Room with provided name is not a part of home',
+                },
+              ],
+            },
+          };
+    },
+  },
+  {
     method: 'GET',
     path: '/home/heating/floor-pump',
     // until the relay of the pump has answered the service says nothing about it

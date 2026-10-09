@@ -164,8 +164,9 @@ e2e/              # Playwright tests
   (`@if`/`@for`), `ChangeDetectionStrategy.OnPush`, no NgModules, no constructor injection,
   no `any`. Files and classes carry no `.component` / `.service` suffix (`shell.ts`, `Shell`).
 - Desktop-first layouts, but every view must remain usable on a phone (390 px wide).
-- **The rooms of the heating page** (HAS-198, `features/heating/rooms`, `room-views.ts`,
-  `heater-week`) are read from `GET /heating/rooms` of `heating-service` 1.8.0, whose rule is
+- **The rooms of the heating page** (HAS-198, `features/heating/rooms` and `floors.ts`; the
+  reading of a room, the words for a heater and the week of a heater are shared with "My room",
+  in `shared/room-heating/`: `room-views.ts`, `heater-labels.ts`, `heater-week`) are read from `GET /heating/rooms` of `heating-service` 1.8.0, whose rule is
   that a missing field means "not known". `toRoomViews` keeps that rule field by field
   (`working`, `inSchedule`, a temperature, a list of heaters, a list of schedules are each
   `undefined` when absent) and the template has a text for every one of them - a new field of
@@ -181,6 +182,29 @@ e2e/              # Playwright tests
   (`aria-labelledby`) and described by its facts, and `aria-controls` is there only while the
   panel is. In a browser test scope a room to the card (`getByTestId('rooms')`): the sensor
   table carries `data-room` too.
+- **"My room" is a list of capability cards** (HAS-202, `features/my-room/`). The page renders
+  `ROOM_CAPABILITIES` (`capabilities.ts`) for the room on screen and knows none of the cards by
+  name; heating (`RoomHeating`) is the first. **A new thing a room can show or do is an entry
+  there** - a component with one required input, `room` - never a change of the page, and
+  never a placeholder for a service that does not exist yet. Four things to keep:
+  **a card is made anew for every room** (`@for (room of shown(); track room)` over a list of
+  one), so whatever it polls is for one room for as long as it lives and no answer stands under
+  the name of another - which is why `HeatingApi.watchRoom` needs no tagged answers, unlike the
+  reports of the presence page; **the rooms come from the registry and the data from the
+  heating service**, so a room the service does not have (404 with the code `NOT_FOUND_ROOM`)
+  is told in words and wins over the last answer the resource still holds, while a 404 without
+  the code stays a failure; **the choice of a room that is gone is forgotten in an effect**, not
+  hidden by a computed (hidden, it pulled the page back by itself when the room returned -
+  found in review, the lesson of the heating switch again); and **nothing about a room can be
+  pressed** - `my-room.spec` lists every control there is, and a new one fails that test on
+  purpose. **The switch of the heating of the whole house is on this page only for a member
+  with the permission `heating_switch`** (owner, 2026-10-09): `HouseHeating` is rendered under
+  `hasPermission(profile, 'heating_switch')`, and it is a component of its own so that the
+  state of the switch is not even asked for without it. Not the role decides - the
+  administrator has no switch here either. A unit
+  test that renders `/room` through the real routes (`profile-pages.spec`) lets the one read
+  of the page pass - the room, `GET` only: nobody there has the permission, so a call to the
+  switch of the house, read or write, fails the test.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason
@@ -232,6 +256,15 @@ access control** — the README says so plainly, and nothing here may be describ
   effect whenever the profile changes — the registry answering with another role, another tab
   opening somebody else's link — so a page its viewer may no longer see is left. Do not add a
   second rule next to it.
+- **A permission is what the registry grants one member beyond their role**
+  (`Profile.permissions`, `MemberPermission` of `smart-home-sdk` 1.6.0, served by
+  `database-service` from 0.11.0; an older registry sends none). Ask with
+  `hasPermission(profile, '…')` and nowhere compare a name: who may do what lives in the
+  registry, never in this repository. The field is absent from a profile nothing was granted
+  to, a value this version does not know is carried along and opens nothing, and
+  `sameProfile` compares the permissions - without that a grant or a withdrawal would never
+  replace the profile an open browser remembers. A control behind a permission is rendered
+  under `hasPermission` and polls nothing while it is not there.
 - **A resident** reaches `/room` and the pages open to `anyone`; everything else, the picker
   included, redirects to `/room`. A role the application does not know reads as `resident`, the
   one that reaches the least. **The administrator** reaches everything; the name in the panel

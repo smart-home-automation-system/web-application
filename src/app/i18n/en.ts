@@ -276,9 +276,18 @@ export const en = {
   },
   myRoom: {
     title: 'My room',
-    rooms: 'Your rooms',
+    switcher: 'Your rooms',
+    cards: 'Your room',
+    noRoomsTitle: 'No room yet',
     noRooms:
       'No room is assigned to your profile yet. Rooms are assigned by the administrator of the household.',
+    heating: {
+      loading: 'Loading the room',
+      humidity: 'Humidity',
+      today: 'Schedule for today',
+      unknownRoom: 'The heating service does not know this room, so it has nothing to show for it.',
+      noAnswer: 'The heating service did not answer with the room.',
+    },
   },
   settings: {
     title: 'Settings',

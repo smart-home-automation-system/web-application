@@ -1,6 +1,6 @@
 import { HouseholdProfile } from '../../data-access/household/household-api';
 import { redirectFor } from './access';
-import { Profile, parseProfile, sameName, sameProfile, toProfiles } from './profile';
+import { Profile, hasPermission, parseProfile, sameName, sameProfile, toProfiles } from './profile';
 
 describe('toProfiles', () => {
   it('turns the answer of the registry into profiles, in the order sent', () => {
@@ -97,8 +97,96 @@ describe('sameName', () => {
   });
 });
 
+describe('permissions', () => {
+  it('reads what the registry granted a member, each permission once', () => {
+    expect(
+      toProfiles([
+        { name: 'Celina', role: 'resident', permissions: ['heating_switch', 'heating_switch'] },
+        { name: 'Borys', role: 'resident', permissions: [] },
+        { name: 'Damian', role: 'resident' },
+        { name: 'Aurelia', role: 'admin', permissions: 'heating_switch' },
+        { name: 'Emil', role: 'resident', permissions: [null, 4, '', 'something new'] },
+      ]),
+    ).toEqual([
+      { name: 'Celina', role: 'resident', rooms: [], permissions: ['heating_switch'] },
+      { name: 'Borys', role: 'resident', rooms: [] },
+      { name: 'Damian', role: 'resident', rooms: [] },
+      { name: 'Aurelia', role: 'admin', rooms: [] },
+      // a permission this version does not know is carried along; it opens nothing
+      { name: 'Emil', role: 'resident', rooms: [], permissions: ['something new'] },
+    ]);
+  });
+
+  it('leaves the field out of a profile nothing was granted to', () => {
+    const [borys] = toProfiles([{ name: 'Borys', role: 'resident', permissions: [] }]);
+
+    expect('permissions' in borys).toBe(false);
+  });
+
+  it('remembers them with the profile kept in the browser', () => {
+    expect(
+      parseProfile({
+        name: 'Celina',
+        role: 'resident',
+        rooms: [],
+        permissions: ['heating_switch'],
+      }),
+    ).toEqual({ name: 'Celina', role: 'resident', rooms: [], permissions: ['heating_switch'] });
+    // a profile remembered by a version without permissions has none
+    expect(parseProfile({ name: 'Borys', role: 'resident', rooms: ['loft'] })).toEqual({
+      name: 'Borys',
+      role: 'resident',
+      rooms: ['loft'],
+    });
+  });
+
+  it('answers whether a member may do something, and no for everything else', () => {
+    const celina: Profile = {
+      name: 'Celina',
+      role: 'resident',
+      rooms: [],
+      permissions: ['heating_switch'],
+    };
+
+    expect(hasPermission(celina, 'heating_switch')).toBe(true);
+    expect(hasPermission({ ...celina, permissions: ['something new'] }, 'heating_switch')).toBe(
+      false,
+    );
+    expect(hasPermission({ ...celina, permissions: [] }, 'heating_switch')).toBe(false);
+    expect(hasPermission({ name: 'Borys', role: 'resident', rooms: [] }, 'heating_switch')).toBe(
+      false,
+    );
+    // not the role: an administrator nobody granted it to has none
+    expect(hasPermission({ name: 'Aurelia', role: 'admin', rooms: [] }, 'heating_switch')).toBe(
+      false,
+    );
+    expect(hasPermission(undefined, 'heating_switch')).toBe(false);
+  });
+});
+
 describe('sameProfile', () => {
   const borys: Profile = { name: 'Borys', role: 'resident', rooms: ['loft'] };
+
+  it('compares what the registry granted, whatever the order it is listed in', () => {
+    const granted: Profile = { ...borys, permissions: ['heating_switch', 'another'] };
+
+    expect(sameProfile(granted, { ...borys, permissions: ['another', 'heating_switch'] })).toBe(
+      true,
+    );
+    // a grant and a withdrawal both replace the profile the browser remembers
+    expect(sameProfile(borys, granted)).toBe(false);
+    expect(sameProfile(granted, borys)).toBe(false);
+    expect(sameProfile(granted, { ...borys, permissions: ['heating_switch'] })).toBe(false);
+    // a set, not a count: a permission named twice is not two permissions
+    expect(
+      sameProfile(
+        { ...borys, permissions: ['heating_switch', 'heating_switch'] },
+        { ...borys, permissions: ['heating_switch', 'another'] },
+      ),
+    ).toBe(false);
+    // nothing granted is nothing granted, said either way
+    expect(sameProfile(borys, { ...borys, permissions: [] })).toBe(true);
+  });
 
   it('compares the name, the role and the rooms in their order', () => {
     expect(sameProfile(borys, { ...borys, rooms: ['loft'] })).toBe(true);

@@ -53,7 +53,7 @@ const pages: Page[] = [
   {
     path: 'room',
     title: 'nav.myRoom',
-    data: { access: 'member' },
+    data: { access: 'member', background: 'room' },
     loadComponent: () => import('./features/my-room/my-room').then((m) => m.MyRoom),
   },
   {

@@ -1,77 +1,92 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgComponentOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { hasPermission } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
+import { ROOM_CAPABILITIES } from './capabilities';
+import { HouseHeating } from './house-heating';
 
 /**
- * The page of a household member - a resident's whole application. For now it only says which
- * rooms the registry gives the active profile, or that it gives none: the place every resident
- * lands on has to exist before it has anything to show. Temperatures, schedules and the heating
- * switch arrive with the "My room" view proper (HAS-202).
+ * The page of a household member - a resident's whole application, made for the phone. It shows
+ * the rooms the registry gives the active profile, one at a time: a member with several chooses
+ * among them, a member with none is told so.
+ *
+ * What a room shows is a list of capability cards (`ROOM_CAPABILITIES`), each created for the
+ * room on screen; the page itself knows none of them. Everything about a room is read-only.
+ *
+ * The page has no control at all - with one exception that is not a room's: a member the
+ * registry granted `heating_switch` also gets the switch of the heating of the whole house,
+ * the card shared with the heating dashboard (owner, 2026-10-09). Not the role decides that:
+ * an administrator switches the heating on its dashboard, and has no switch here either
+ * unless granted one.
  */
 @Component({
   selector: 'app-my-room',
-  imports: [MatCardModule, MatIconModule, TranslocoDirective],
-  template: `
-    <ng-container *transloco="let t">
-      <header class="page-header">
-        <h1>{{ t('myRoom.title') }}</h1>
-      </header>
-
-      <mat-card appearance="outlined" class="rooms card--domain">
-        <mat-card-header>
-          <div mat-card-avatar class="domain-badge"><mat-icon>bed</mat-icon></div>
-          <mat-card-title>{{ t('myRoom.rooms') }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          @if (rooms().length > 0) {
-            <!-- identifiers of the registry, printed as they are: their names come with HAS-202 -->
-            <ul class="rooms__list">
-              @for (room of rooms(); track room) {
-                <li>{{ room }}</li>
-              }
-            </ul>
-          } @else {
-            <p class="rooms__none">{{ t('myRoom.noRooms') }}</p>
-          }
-        </mat-card-content>
-      </mat-card>
-    </ng-container>
-  `,
-  styles: `
-    .rooms {
-      --app-domain: var(--app-domain-household);
-
-      max-width: 480px;
-    }
-
-    mat-card-header {
-      padding: 12px 12px 0;
-    }
-
-    mat-card-content {
-      padding: 8px 12px 12px;
-    }
-
-    .rooms__list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      font: var(--mat-sys-title-medium);
-      letter-spacing: var(--mat-sys-title-medium-tracking);
-      text-transform: capitalize;
-    }
-
-    .rooms__none {
-      margin: 0;
-      color: var(--mat-sys-on-surface-variant);
-    }
-  `,
+  imports: [
+    NgComponentOutlet,
+    MatButtonToggleModule,
+    MatCardModule,
+    MatIconModule,
+    TranslocoDirective,
+    HouseHeating,
+  ],
+  templateUrl: './my-room.html',
+  styleUrl: './my-room.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MyRoom {
   private readonly profile = inject(ProfileStore).profile;
-  protected readonly rooms = computed(() => this.profile()?.rooms ?? []);
+  protected readonly capabilities = ROOM_CAPABILITIES;
+
+  /** Whether the registry lets this member switch the heating of the whole house from here. */
+  protected readonly switchesHeating = computed(() =>
+    hasPermission(this.profile(), 'heating_switch'),
+  );
+
+  /** The rooms of the profile, each once, in the order of the registry. */
+  protected readonly rooms = computed(() => [...new Set(this.profile()?.rooms ?? [])]);
+
+  private readonly chosen = signal<string | undefined>(undefined);
+
+  /**
+   * The room on screen: the one chosen, for as long as the profile has it - the registry may
+   * take a room away under an open page - and otherwise the first. A choice that is gone is
+   * forgotten (the effect below), not merely hidden: hidden, it would pull the page back to
+   * that room by itself the day the registry gives it back.
+   */
+  protected readonly room = computed(() => {
+    const rooms = this.rooms();
+    const chosen = this.chosen();
+    return chosen !== undefined && rooms.includes(chosen) ? chosen : rooms.at(0);
+  });
+
+  /** A list of the one room on screen: a card tracked by it is made anew when it changes. */
+  protected readonly shown = computed(() => {
+    const room = this.room();
+    return room === undefined ? [] : [room];
+  });
+
+  constructor() {
+    effect(() => {
+      const chosen = this.chosen();
+      if (chosen !== undefined && !this.rooms().includes(chosen)) {
+        this.chosen.set(undefined);
+      }
+    });
+  }
+
+  protected choose(room: string): void {
+    this.chosen.set(room);
+  }
 }

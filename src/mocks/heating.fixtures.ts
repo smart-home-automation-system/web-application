@@ -142,7 +142,7 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
   };
   const room = (
     name: string,
-    reading: { value: number; secondsAgo: number } | undefined,
+    reading: { value: number; secondsAgo: number; humidity?: number } | undefined,
     heaters: (temperature: number | undefined) => RoomHeater[],
   ): Room => {
     const measured = fresh ? undefined : reading;
@@ -157,6 +157,15 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
         ? {
             temperature: {
               value: measured.value,
+              updatedAt: houseTime(now, measured.secondsAgo + 20),
+            },
+          }
+        : {}),
+      // nothing in the real house reports a humidity yet; the mock bedroom does, to show it
+      ...(measured?.humidity !== undefined
+        ? {
+            humidity: {
+              value: measured.humidity,
               updatedAt: houseTime(now, measured.secondsAgo + 20),
             },
           }
@@ -182,7 +191,7 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
     room('office', { value: 21.3, secondsAgo: 2 * MINUTE }, () => [
       heater('radiator', office, { working: false, secondsAgo: 2 * MINUTE }, 21.3),
     ]),
-    room('bedroom', { value: 19.6, secondsAgo: MINUTE }, () => [
+    room('bedroom', { value: 19.6, secondsAgo: MINUTE, humidity: 46 }, () => [
       heater('radiator', bedroom, { working: false, secondsAgo: MINUTE }, 19.6),
     ]),
     // a relay that has not answered since the start of the service: no status, nothing decided

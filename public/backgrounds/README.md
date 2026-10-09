@@ -15,6 +15,7 @@ argument of the script) - by as little as makes `npm run check:contrast` pass.
 | `water` | Hot water | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `presence` | Presence | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `boiler` | Boiler room | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
+| `room` | My room | 2026-10-09, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 
 ## Prompts
 
@@ -100,3 +101,20 @@ whole picture** - not half of it a wall, a floor or empty space. The prompt says
 Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
 owner on 2026-10-08 (HAS-195). Tones `45-255`: the wall is nearly black at the top, which a dark title
 in the light scheme cannot be read on.
+
+### `room`
+
+> Photorealistic wide interior photograph of a cosy private room in a modern family home at dusk,
+> clearly somebody's own room. The furniture and objects are spread across the whole width of the
+> frame, from the left edge to the right: a bed with a knitted blanket and pillows, a bedside table
+> with a book and a lamp turned off, a window with light curtains and a white panel radiator under
+> it, a desk with a chair, a notebook and a mug, a bookshelf with books and plants, an armchair
+> with a cushion, a rug on a wooden floor. No large empty wall, no large empty floor, no large
+> empty ceiling: every part of the picture shows something of the room. Even, soft, mid-toned light
+> across the whole frame, especially along the top: no bright lamp, no black window frame, no deep
+> shadows at the top. No people, no text, no brand logos. Calm, tidy, realistic interior
+> photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-09 (HAS-202). Tones `46-255`: the ceiling beam along the top of the frame is in
+shadow, too dark for the dark title of the light scheme.

@@ -80,6 +80,12 @@ describe('profiles in the application', () => {
   beforeEach(() => localStorage.removeItem(STORAGE_KEY));
 
   afterEach(() => {
+    // the page of a member reads its room; what that read shows is the business of the page
+    // (my-room.spec), not of the profiles. Nobody here has the permission for the switch of the
+    // house, so neither its state nor a change of it is let through
+    http.match(
+      (request) => request.method === 'GET' && request.url.startsWith('/home/heating/rooms/'),
+    );
     http.verify();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('smart-home.language.Borys');
@@ -455,9 +461,11 @@ describe('profiles in the application', () => {
       expect(page().querySelector('.shell__bottom-nav')).toBeNull();
       expect(page().querySelector('a.shell__profile')).toBeNull();
       expect(page().querySelector('.shell__profile')?.textContent).toContain('Borys');
-      expect([...page().querySelectorAll('.rooms__list li')].map((li) => li.textContent)).toEqual([
-        'loft',
-      ]);
+      // the card of their room, named by it
+      await settle();
+      expect(
+        page().querySelector('[data-testid="room-heating"] mat-card-title')?.textContent?.trim(),
+      ).toBe('loft');
     });
 
     it('may open a personal link and the error page', async () => {
