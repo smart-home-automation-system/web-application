@@ -69,6 +69,8 @@ describe('MyRoom', () => {
   /** A resource per room asked for, in the order the cards were made. */
   let asked: { name: () => string; resource: FakeResource<Room | null> }[];
   let turned: boolean[];
+  /** How many times the page asked for the switch of the house. */
+  let switchesWatched: number;
   let fixture: ComponentFixture<MyRoom> | undefined;
 
   beforeEach(() => {
@@ -77,6 +79,7 @@ describe('MyRoom', () => {
     status = fakeResource();
     asked = [];
     turned = [];
+    switchesWatched = 0;
     fixture = undefined;
     TestBed.configureTestingModule({
       providers: [
@@ -85,12 +88,15 @@ describe('MyRoom', () => {
         {
           provide: HeatingApi,
           useValue: {
-            watchSwitch: () => ({
-              ...status,
-              switching: signal(false),
-              switchFailure: signal(undefined),
-              turn: (on: boolean) => turned.push(on),
-            }),
+            watchSwitch: () => {
+              switchesWatched++;
+              return {
+                ...status,
+                switching: signal(false),
+                switchFailure: signal(undefined),
+                turn: (on: boolean) => turned.push(on),
+              };
+            },
             watchRoom: (name: () => string) => {
               const resource = fakeResource<Room | null>();
               asked.push({ name, resource });
@@ -343,7 +349,7 @@ describe('MyRoom', () => {
   describe('for a member without a room', () => {
     beforeEach(() => profile.set(resident()));
 
-    it('says so, asks for no room, and still offers the switch of the house', async () => {
+    it('says so and asks for no room', async () => {
       const shown = await page();
 
       expect(words(shown.querySelector('[data-testid="no-rooms"]'))).toContain(
@@ -351,7 +357,7 @@ describe('MyRoom', () => {
       );
       expect(asked).toEqual([]);
       expect(await card()).toBeNull();
-      expect(shown.querySelector('[data-testid="heating-switch"]')).toBeTruthy();
+      expect(shown.querySelector('[data-testid="heating-switch"]')).toBeNull();
     });
 
     it('shows the room as soon as the registry assigns one', async () => {
@@ -364,37 +370,106 @@ describe('MyRoom', () => {
     });
   });
 
-  describe('what can be pressed', () => {
-    beforeEach(() => profile.set(resident('bedroom', 'wardrobe')));
+  /** Every control of the page, in words: those inside the card of the room, and the rest. */
+  async function controls(): Promise<{ inTheRoom: string[]; elsewhere: string[] }> {
+    const all = [
+      ...(await page()).querySelectorAll('button, a, input, select, textarea, [tabindex]'),
+    ];
+    const inRoom = (control: Element) => control.closest('[data-testid="room-heating"]') !== null;
+    return {
+      inTheRoom: all.filter(inRoom).map(words),
+      elsewhere: all.filter((control) => !inRoom(control)).map(words),
+    };
+  }
 
-    // residents view temperatures and schedules; setting them is the administrator's alone
-    it('is the choice of the room and the switch of the house, and nothing about a room', async () => {
+  // residents view temperatures and schedules; setting them is the administrator's alone - and
+  // the switch of the whole house is on this page only for a member the registry lets have it
+  describe('what can be pressed', () => {
+    it('is nothing but the choice of the room', async () => {
+      profile.set(resident('bedroom', 'wardrobe'));
       await page();
       answer(lastAsked().resource, BEDROOM);
-      answer(status, { isHeatingEnabled: true, updatedAt: '2026-09-28T06:45:12.840868' });
-      const shown = await page();
 
-      const controls = [
-        ...shown.querySelectorAll('button, a, input, select, textarea, [tabindex]'),
-      ];
-      const inTheRoom = controls.filter((control) =>
-        control.closest('[data-testid="room-heating"]'),
-      );
-      const elsewhere = controls
-        .filter((control) => !control.closest('[data-testid="room-heating"]'))
-        .map(words);
-
-      expect(inTheRoom).toEqual([]);
-      expect(elsewhere).toEqual(['bedroom', 'wardrobe', 'power_settings_new Switch off']);
+      expect(await controls()).toEqual({ inTheRoom: [], elsewhere: ['bedroom', 'wardrobe'] });
     });
 
-    it('hands the switch of the house to the shared card', async () => {
+    it('is nothing at all for a member with one room', async () => {
+      await page();
+      answer(lastAsked().resource, BEDROOM);
+
+      expect(await controls()).toEqual({ inTheRoom: [], elsewhere: [] });
+    });
+
+    it('offers no switch of the house, and does not ask for its state', async () => {
+      const shown = await page();
+
+      expect(shown.querySelector('[data-testid="heating-switch"]')).toBeNull();
+      expect(switchesWatched).toBe(0);
+    });
+
+    // not the role decides: an administrator switches the heating on its dashboard
+    it('offers the administrator no switch here either', async () => {
+      profile.set({ name: 'Aurelia', role: 'admin', rooms: ['bedroom'] });
+
+      expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeNull();
+      expect(switchesWatched).toBe(0);
+    });
+
+    it('ignores a permission it does not know', async () => {
+      profile.set({ ...resident('bedroom'), permissions: ['everything'] });
+
+      expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeNull();
+    });
+  });
+
+  describe('for a member the registry lets switch the heating', () => {
+    const granted = (...rooms: string[]): Profile => ({
+      ...resident(...rooms),
+      permissions: ['heating_switch'],
+    });
+
+    beforeEach(() => profile.set(granted('bedroom', 'wardrobe')));
+
+    it('shows the switch of the house, the card shared with the heating dashboard', async () => {
       await page();
       answer(status, { isHeatingEnabled: false, updatedAt: '2026-09-28T06:45:12.840868' });
 
       expect(words((await page()).querySelector('[data-testid="heating-switch"]'))).toContain(
         'Disabled',
       );
+      expect(switchesWatched).toBe(1);
+    });
+
+    it('adds that one control to the page, and still none to the room', async () => {
+      await page();
+      answer(lastAsked().resource, BEDROOM);
+      answer(status, { isHeatingEnabled: true, updatedAt: '2026-09-28T06:45:12.840868' });
+
+      expect(await controls()).toEqual({
+        inTheRoom: [],
+        elsewhere: ['bedroom', 'wardrobe', 'power_settings_new Switch off'],
+      });
+    });
+
+    it('keeps the switch while the member has no room', async () => {
+      profile.set(granted());
+
+      const shown = await page();
+
+      expect(shown.querySelector('[data-testid="no-rooms"]')).toBeTruthy();
+      expect(shown.querySelector('[data-testid="heating-switch"]')).toBeTruthy();
+    });
+
+    // the registry is asked again under an open page: a permission taken away there goes here
+    it('takes the switch away as soon as the registry does, and gives it back', async () => {
+      await page();
+
+      profile.set(resident('bedroom', 'wardrobe'));
+      expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeNull();
+
+      profile.set(granted('bedroom', 'wardrobe'));
+      expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeTruthy();
+      expect(switchesWatched).toBe(2);
     });
   });
 

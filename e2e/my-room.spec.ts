@@ -2,9 +2,9 @@ import { expect, test, useScenario } from './support';
 
 /**
  * "My room", the page of a household member, fed by the mock API: the rooms the registry gives
- * the profile, one at a time, read-only - and the switch of the heating of the whole house, the
- * one control of the page. The mock household has a resident with one room, one with two and
- * one with none.
+ * the profile, one at a time, read-only. The switch of the heating of the whole house is on the
+ * page only for a member the registry granted it to. The mock household has a resident with
+ * one room, one with two - the one who may switch the heating - and one with none.
  */
 
 // Thursday 8 October 2026, 14:30 on the clocks of the house: what a schedule asks for, and which
@@ -27,18 +27,19 @@ test.describe('a resident with one room', () => {
     await expect(room).toContainText('No heater');
     // one room: nothing to choose among
     await expect(page.getByTestId('room-switcher')).toHaveCount(0);
-    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
   // residents view temperatures and schedules; setting them is the administrator's alone
-  test('can press nothing but the switch of the house', async ({ page }) => {
+  test('can press nothing: no switch of the house, and nothing about the room', async ({
+    page,
+  }) => {
     await page.goto('/room');
     await expect(page.getByTestId('room-temperature')).toBeVisible();
 
     const main = page.getByRole('main');
-    await expect(main.getByRole('button')).toHaveText([/Switch off/]);
-    await expect(main.locator('a, input, select, textarea')).toHaveCount(0);
+    await expect(page.getByTestId('heating-switch')).toHaveCount(0);
+    await expect(main.locator('button, a, input, select, textarea')).toHaveCount(0);
     await expect(page.getByTestId('room-heating').locator('button, [tabindex]')).toHaveCount(0);
   });
 
@@ -60,18 +61,6 @@ test.describe('a resident with one room', () => {
       await page.goto(path);
       await expect(page, path).toHaveURL(/\/room$/);
     }
-  });
-
-  test('switches the heating of the house after the question, like the administrator', async ({
-    page,
-  }) => {
-    await page.goto('/room');
-    const card = page.getByTestId('heating-switch');
-
-    await card.getByRole('button', { name: 'Switch off' }).click();
-    await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
-
-    await expect(page.getByTestId('heating-state')).toContainText('Disabled');
   });
 
   test('fits a phone without horizontal scrolling', async ({ page }) => {
@@ -115,6 +104,22 @@ test.describe('a resident with two rooms', () => {
     await expect(room.getByTestId('room-target')).toContainText('21.5 °C');
     // a relay that has not answered is not "off"
     await expect(room).toContainText('Floor heating: no status yet');
+  });
+
+  // the one member of the mock household the registry lets switch the heating
+  test('has the switch of the heating of the whole house, and it asks before it acts', async ({
+    page,
+  }) => {
+    await page.goto('/room');
+    const card = page.getByTestId('heating-switch');
+
+    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
+    await card.getByRole('button', { name: 'Switch off' }).click();
+    await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
+
+    await expect(page.getByTestId('heating-state')).toContainText('Disabled');
+    // still nothing to press in the room itself
+    await expect(page.getByTestId('room-heating').locator('button, [tabindex]')).toHaveCount(0);
   });
 
   // heating-service just after a start: it knows its rooms and schedules and nothing else
@@ -164,7 +169,7 @@ test.describe('a resident with two rooms', () => {
 test.describe('a resident without a room', () => {
   test.use({ profile: 'resident-no-room' });
 
-  test('is told that none is assigned, and still has the switch of the house', async ({ page }) => {
+  test('is told that none is assigned', async ({ page }) => {
     await page.goto('/room');
 
     await expect(page.getByTestId('no-rooms')).toContainText(
@@ -172,7 +177,8 @@ test.describe('a resident without a room', () => {
     );
     await expect(page.getByTestId('room-heating')).toHaveCount(0);
     await expect(page.getByTestId('room-switcher')).toHaveCount(0);
-    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
+    await expect(page.getByTestId('heating-switch')).toHaveCount(0);
+    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
   });
 });
 
@@ -192,5 +198,13 @@ test.describe('the administrator', () => {
     // a row per heater: today alone, with the line of now
     await expect(room.locator('.week__day')).toHaveCount(2);
     await expect(room.locator('.week__now')).toHaveCount(2);
+  });
+
+  // not the role decides: the administrator switches the heating on its dashboard
+  test('has no switch of the heating here unless granted one', async ({ page }) => {
+    await page.goto('/room');
+    await expect(page.getByTestId('room-temperature')).toBeVisible();
+
+    await expect(page.getByTestId('heating-switch')).toHaveCount(0);
   });
 });

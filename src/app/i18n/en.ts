@@ -277,7 +277,7 @@ export const en = {
   myRoom: {
     title: 'My room',
     switcher: 'Your rooms',
-    cards: 'The room and the heating of the house',
+    cards: 'Your room',
     noRoomsTitle: 'No room yet',
     noRooms:
       'No room is assigned to your profile yet. Rooms are assigned by the administrator of the household.',

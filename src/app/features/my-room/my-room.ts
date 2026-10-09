@@ -12,10 +12,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { hasPermission } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
-import { HeatingApi } from '../../data-access/heating/heating-api';
-import { HeatingSwitch } from '../../shared/heating-switch/heating-switch';
 import { ROOM_CAPABILITIES } from './capabilities';
+import { HouseHeating } from './house-heating';
 
 /**
  * The page of a household member - a resident's whole application, made for the phone. It shows
@@ -23,9 +23,13 @@ import { ROOM_CAPABILITIES } from './capabilities';
  * among them, a member with none is told so.
  *
  * What a room shows is a list of capability cards (`ROOM_CAPABILITIES`), each created for the
- * room on screen; the page itself knows none of them. Under them stands the one control of the
- * page, which is not a room's: the switch of the heating of the whole house, the card shared
- * with the heating dashboard. Everything about a room is read-only here.
+ * room on screen; the page itself knows none of them. Everything about a room is read-only.
+ *
+ * The page has no control at all - with one exception that is not a room's: a member the
+ * registry granted `heating_switch` also gets the switch of the heating of the whole house,
+ * the card shared with the heating dashboard (owner, 2026-10-09). Not the role decides that:
+ * an administrator switches the heating on its dashboard, and has no switch here either
+ * unless granted one.
  */
 @Component({
   selector: 'app-my-room',
@@ -35,7 +39,7 @@ import { ROOM_CAPABILITIES } from './capabilities';
     MatCardModule,
     MatIconModule,
     TranslocoDirective,
-    HeatingSwitch,
+    HouseHeating,
   ],
   templateUrl: './my-room.html',
   styleUrl: './my-room.scss',
@@ -43,8 +47,12 @@ import { ROOM_CAPABILITIES } from './capabilities';
 })
 export class MyRoom {
   private readonly profile = inject(ProfileStore).profile;
-  protected readonly heating = inject(HeatingApi).watchSwitch();
   protected readonly capabilities = ROOM_CAPABILITIES;
+
+  /** Whether the registry lets this member switch the heating of the whole house from here. */
+  protected readonly switchesHeating = computed(() =>
+    hasPermission(this.profile(), 'heating_switch'),
+  );
 
   /** The rooms of the profile, each once, in the order of the registry. */
   protected readonly rooms = computed(() => [...new Set(this.profile()?.rooms ?? [])]);

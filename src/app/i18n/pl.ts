@@ -273,7 +273,7 @@ export const pl: Messages = {
   myRoom: {
     title: 'Mój pokój',
     switcher: 'Twoje pokoje',
-    cards: 'Pokój i ogrzewanie domu',
+    cards: 'Twój pokój',
     noRoomsTitle: 'Brak pokoju',
     noRooms:
       'Do twojego profilu nie przypisano jeszcze żadnego pokoju. Pokoje przypisuje administrator domu.',

@@ -28,7 +28,13 @@ export async function startIn(page: Page, language: Language): Promise<void> {
 export const PROFILES = {
   admin: { name: 'Aurelia', role: 'admin', rooms: ['office', 'living room'] },
   resident: { name: 'Borys', role: 'resident', rooms: ['loft'] },
-  'resident-two-rooms': { name: 'Celina', role: 'resident', rooms: ['bedroom', 'wardrobe'] },
+  'resident-two-rooms': {
+    name: 'Celina',
+    role: 'resident',
+    rooms: ['bedroom', 'wardrobe'],
+    // the one member who may switch the heating of the whole house from "My room"
+    permissions: ['heating_switch'],
+  },
   'resident-no-room': { name: 'Damian', role: 'resident', rooms: [] },
   // two the registry no longer agrees with: a member it no longer answers with - switched off
   // or removed since, which look the same from here - and a resident whom this browser still
