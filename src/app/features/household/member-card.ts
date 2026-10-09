@@ -106,6 +106,12 @@ export class MemberCard {
   /** A change asked for in this card is on its way. */
   protected readonly saving = signal(false);
   protected readonly codeShown = signal(false);
+  /**
+   * The form of the card was sent and not carried out: what the registry kept of it is not
+   * known. Stays until a save of the form is carried out - closing the form does not make the
+   * card any better informed.
+   */
+  private attemptFailed = false;
 
   /** A change is on its way, from this card or another: one at a time. */
   protected readonly busy = computed(() => this.registry().changing());
@@ -140,9 +146,6 @@ export class MemberCard {
       ),
   );
 
-  /** The member as the form of the card was opened with - what its changes are measured by. */
-  private editedFrom: HouseholdMember | undefined;
-
   protected readonly icon = computed(() => {
     if (!this.active()) {
       return 'person_off';
@@ -172,9 +175,6 @@ export class MemberCard {
 
   protected open(panel: Panel): void {
     this.failure.set(undefined);
-    if (panel.kind === 'edit') {
-      this.editedFrom = this.member();
-    }
     this.panel.set(panel);
     if (panel.kind === 'remove' || panel.kind === 'remove-device') {
       // the button that was pressed is gone with the question: the safe answer takes the focus
@@ -189,13 +189,17 @@ export class MemberCard {
   }
 
   /**
-   * Saves the form against the member **as the form was opened with**, not as the registry has
-   * them now: only what somebody changed in the form is sent. Compared with the member of this
-   * moment, a room or a permission granted elsewhere while the form was open would read as a
-   * change of the form - and be written back to what it was.
+   * Saves what the form changed - and **the whole form once an attempt has failed**. A change
+   * that stopped halfway has written its first calls, and what the registry kept of them is
+   * not known for certain: the read after it can fail too, and a call that got no answer can
+   * be carried out after that read. Measured by the member on the card, a room added by the
+   * failed attempt and taken back in the form would never be taken back in the registry.
    */
-  protected save(details: MemberDetails): void {
-    void this.run(this.registry().update(this.editedFrom ?? this.member(), details));
+  protected async save(details: MemberDetails): Promise<void> {
+    const carriedOut = await this.run(
+      this.registry().update(this.member(), details, this.attemptFailed),
+    );
+    this.attemptFailed = !carriedOut;
   }
 
   protected setActive(active: boolean): void {
@@ -229,7 +233,7 @@ export class MemberCard {
    * member again - as the registry has them now; not carried out, the form or the question
    * stays, with the reason.
    */
-  private async run(change: Promise<ChangeOutcome>): Promise<void> {
+  private async run(change: Promise<ChangeOutcome>): Promise<boolean> {
     this.failure.set(undefined);
     this.saving.set(true);
     const outcome = await change;
@@ -239,5 +243,6 @@ export class MemberCard {
     } else {
       this.failure.set(outcome.failure);
     }
+    return outcome.carriedOut;
   }
 }

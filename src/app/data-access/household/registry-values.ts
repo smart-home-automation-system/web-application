@@ -1,3 +1,5 @@
+import type { MemberPermission, MemberRole } from '../../core/profile/profile';
+
 /**
  * The values the registry accepts where it takes one of a fixed set - copies of the enums of
  * `smart-home-sdk` (`RoomName`, `MemberRole`, `MemberPermission`), which no endpoint lists.
@@ -31,6 +33,6 @@ export const ROOM_NAMES: readonly string[] = [
   'sanctum',
 ];
 
-export const MEMBER_ROLES = ['admin', 'resident'] as const;
+export const MEMBER_ROLES = ['admin', 'resident'] as const satisfies readonly MemberRole[];
 
-export const MEMBER_PERMISSIONS = ['heating_switch'] as const;
+export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly MemberPermission[];

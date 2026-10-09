@@ -20,9 +20,10 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
 import { mockApiInterceptors } from './core/api/mock-api';
 import { provideI18n } from './core/i18n/provide-i18n';
-import { LANGUAGE_OWNER } from './core/i18n/language-store';
+import { LANGUAGE_OWNER, SAME_LANGUAGE_OWNER } from './core/i18n/language-store';
 import { AppTitleStrategy } from './core/layout/app-title-strategy';
 import { profileInterceptor } from './core/profile/profile-interceptor';
+import { sameName } from './core/profile/profile';
 import { ProfileStore } from './core/profile/profile-store';
 import { ThemeStore } from './core/theme/theme-store';
 
@@ -53,6 +54,8 @@ export const appConfig: ApplicationConfig = {
         return computed(() => profile()?.name);
       },
     },
+    // a name the registry spells anew is still that member, and keeps their language
+    { provide: SAME_LANGUAGE_OWNER, useValue: sameName },
     ...provideI18n(),
     // The application starts as whoever was remembered and does not wait for this: the registry
     // is asked on the side, and a role that changed there takes effect when it answers.

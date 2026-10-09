@@ -222,17 +222,26 @@ e2e/              # Playwright tests
     or the profile itself of the person on the page is what was just changed. With
     `ProfileStore.refreshAfterChange()`, not `refresh()`: that one shares a call already under
     way, whose answer may have left the registry before the change (found in review).
-  - **A form is measured by the member it was opened with**, not by the member of the moment
-    it is saved (`MemberCard.editedFrom`): the registry is polled under the open form, and
-    measured by the fresh member a room granted elsewhere meanwhile reads as a change of the
-    form - and is written back to what it was, with a 200 (found in review).
+  - **The attempt after one that failed sends the whole form** (the third argument of
+    `HouseholdRegistry.update`, `MemberCard.attemptFailed`): a change that stops halfway has
+    written its first calls, and what the registry kept is not known for certain - the read
+    after it can fail too, and a call without an answer can be carried out after that read.
+    Measured by the member on the card, a room added by the failed attempt and taken back in
+    the form stayed in the registry, on a card that closed as saved (0.13.0 did that; found in
+    the second review). A first attempt is measured by the member on the card; the flag stays
+    until a save is carried out, also across a form closed and opened again. Accepted by the
+    owner (2026-10-09): the registry is never changed from this page and from another tool at
+    the same time, so nothing here guards a form against a second writer.
   - **A control keeps the verdict of its last change**: a validator that reads the registry is
     not run again when the registry changes. A form calls `updateValueAndValidity()` on its
     controls before it sends (found in review).
   - **A name spelled anew is the same member** (`borys` to `Borys`): the link and the profile
     find a member whatever the case - `ProfileStore` reconciles by `sameName` since this task -
     so only the presence history, kept under the name as written, stays behind; the form has a
-    warning of its own for that.
+    warning of its own for that. The language the member chose is kept under the name too, so
+    `LanguageStore` moves it to the new spelling - told that two owners are one member by
+    `SAME_LANGUAGE_OWNER`, which `app.config.ts` binds to `sameName`: the i18n itself still
+    knows nothing about names.
   - **The member of the active profile cannot be renamed, demoted, switched off or removed
     there**: each would take the profile the browser remembers, or close the page to its user.
     That, too, is the interface being careful, not a rule the registry knows.

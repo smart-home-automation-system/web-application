@@ -112,6 +112,21 @@ describe('HouseholdApi, the registry', () => {
       expect(await change).toEqual({ carriedOut: true });
     });
 
+    // after an attempt that failed nobody knows what the registry kept of it
+    it('sends all three calls for a form nothing differs in, when asked for the whole', async () => {
+      const { bodies } = await carriedOut(registry.update(BORYS, DETAILS, true), [
+        { method: 'PUT', url: '/home/household/member/Borys/rooms' },
+        { method: 'PUT', url: '/home/household/member/Borys/permissions' },
+        { method: 'PATCH', url: '/home/household/member/Borys' },
+      ]);
+
+      expect(bodies).toEqual([
+        ['loft'],
+        [],
+        { name: 'Borys', phone: '+48500100102', role: 'resident' },
+      ]);
+    });
+
     it('sends only the list that changed', async () => {
       const { bodies } = await carriedOut(
         registry.update(BORYS, { ...DETAILS, rooms: ['office', 'loft'] }),

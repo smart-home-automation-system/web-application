@@ -98,8 +98,13 @@ export interface HouseholdRegistry extends PollingResource<readonly HouseholdMem
    * shows that it changed, so saving a form nothing was changed in makes no call at all. A
    * failure stops the rest; what was carried out until then stays, and shows in the registry
    * read afterwards.
+   *
+   * `whole` sends all three whatever `before` shows: for the attempt after one that failed. What
+   * that one left in the registry is not known for certain - a call without an answer may have
+   * been carried out after the registry was read again, and that read may have failed too - so
+   * nothing is spared on the strength of `before`.
    */
-  update(before: HouseholdMember, member: MemberDetails): Promise<ChangeOutcome>;
+  update(before: HouseholdMember, member: MemberDetails, whole?: boolean): Promise<ChangeOutcome>;
   /** Switches a member on or off: off, they have no profile and their presence is not watched. */
   setActive(name: string, active: boolean): Promise<ChangeOutcome>;
   /** Removes the member with their devices. */
@@ -184,17 +189,18 @@ export class HouseholdApi {
             permissions: details.permissions,
           }),
         ]),
-      update: (before, details) =>
+      update: (before, details, whole = false) =>
         change([
-          ...(sameList(before.rooms ?? [], details.rooms)
+          ...(!whole && sameList(before.rooms ?? [], details.rooms)
             ? []
             : [this.api.put(`${member(before.name)}/rooms`, details.rooms)]),
-          ...(sameList(before.permissions ?? [], details.permissions)
+          ...(!whole && sameList(before.permissions ?? [], details.permissions)
             ? []
             : [this.api.put(`${member(before.name)}/permissions`, details.permissions)]),
           // The name last: until then the member answers to the name the caller knows, so a
           // change that stops halfway leaves them where the caller still finds them.
-          ...(before.name === details.name &&
+          ...(!whole &&
+          before.name === details.name &&
           before.phone === details.phone &&
           (details.role === undefined || before.role === details.role)
             ? []

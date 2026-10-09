@@ -343,7 +343,7 @@ export const en = {
       ownLimits:
         'This is your own profile: the name and the role cannot be changed here, and it cannot be switched off or removed.',
       respelled:
-        'The personal link keeps working. The presence history is kept under the name exactly as written, so it stays under the old spelling.',
+        'The personal link keeps working. The presence history tells upper and lower case in a name apart, so it stays under the old spelling.',
       renamed:
         'A new name changes the personal link: the old link and the icon on the phone stop working, and the presence history stays under the old name.',
     },

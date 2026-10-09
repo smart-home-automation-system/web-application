@@ -38,6 +38,16 @@ export const LANGUAGE_OWNER = new InjectionToken<Signal<string | undefined>>('LA
 });
 
 /**
+ * Whether two owners are one member under two spellings. By itself the i18n tells owners apart
+ * exactly; the application binds this to the rule of the profiles (`app.config.ts`), so what
+ * makes a name the same name stays there.
+ */
+export const SAME_LANGUAGE_OWNER = new InjectionToken<(left: string, right: string) => boolean>(
+  'SAME_LANGUAGE_OWNER',
+  { providedIn: 'root', factory: () => (left, right) => left === right },
+);
+
+/**
  * How long the start of the application waits for the texts of the stored language. On a weak
  * connection the download can take long or never answer; the application then starts in English
  * and changes over when the texts arrive.
@@ -61,6 +71,7 @@ export class LanguageStore {
   private readonly transloco = inject(TranslocoService);
   private readonly document = inject(DOCUMENT);
   private readonly owner = inject(LANGUAGE_OWNER);
+  private readonly sameOwner = inject(SAME_LANGUAGE_OWNER);
   private readonly active = signal<LanguageCode>(DEFAULT_LANGUAGE);
   /** Counts the choices, so that a slow download cannot overrule a later one. */
   private choices = 0;
@@ -123,12 +134,15 @@ export class LanguageStore {
       return false;
     }
     if (choice === this.choices) {
-      // the interface belongs to whoever uses the application now; the choice, to who made it
-      if (owner === this.owner()) {
+      // the interface belongs to whoever uses the application now; the choice, to who made it -
+      // under the name they have now, should the registry have spelled it anew meanwhile
+      const now = this.owner();
+      const stillTheirs = this.isSame(owner, now);
+      if (stillTheirs) {
         this.activate(language);
       }
       if (remember) {
-        store(keyOf(owner), language);
+        store(keyOf(stillTheirs ? now : owner), language);
       }
     }
     return true;
@@ -152,14 +166,28 @@ export class LanguageStore {
       if (owner === known) {
         return;
       }
+      const before = known;
       known = owner;
       untracked(() => {
+        if (before !== undefined && owner !== undefined && this.isSame(before, owner)) {
+          // the same member, spelled anew in the registry: their choice moves to the new name
+          const kept = readStored(keyOf(before));
+          if (kept !== undefined) {
+            store(keyOf(owner), kept);
+            writeText(keyOf(before), undefined);
+          }
+          return;
+        }
         const language = this.chosen();
         if (language !== this.active()) {
           void this.change(language, false);
         }
       });
     });
+  }
+
+  private isSame(left: string | undefined, right: string | undefined): boolean {
+    return left === undefined || right === undefined ? left === right : this.sameOwner(left, right);
   }
 
   private activate(language: LanguageCode): void {

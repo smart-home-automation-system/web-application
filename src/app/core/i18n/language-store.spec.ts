@@ -3,11 +3,17 @@ import { TestBed } from '@angular/core/testing';
 import { TranslocoService } from '@jsverse/transloco';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
 
+import { sameName } from '../profile/profile';
 import { provideI18nTesting } from '../../../testing/i18n';
 import { en } from '../../i18n/en';
 import { Messages } from '../../i18n/messages';
 import { pl } from '../../i18n/pl';
-import { LANGUAGE_OWNER, LanguageStore, RESTORE_TIMEOUT_MS } from './language-store';
+import {
+  LANGUAGE_OWNER,
+  LanguageStore,
+  RESTORE_TIMEOUT_MS,
+  SAME_LANGUAGE_OWNER,
+} from './language-store';
 import { LanguageCode, MESSAGES_LOADER, MessagesLoader } from './languages';
 
 const STORAGE_KEY = 'smart-home.language';
@@ -234,7 +240,12 @@ describe('LanguageStore, with household profiles', () => {
   /** `stored` is what the browser remembers: the language of the device, and of members. */
   function create(stored: { device?: string; members?: Record<string, string> } = {}) {
     TestBed.configureTestingModule({
-      providers: [provideI18nTesting(), { provide: LANGUAGE_OWNER, useValue: owner }],
+      providers: [
+        provideI18nTesting(),
+        { provide: LANGUAGE_OWNER, useValue: owner },
+        // the rule the application binds (`app.config.ts`)
+        { provide: SAME_LANGUAGE_OWNER, useValue: sameName },
+      ],
     });
     if (stored.device !== undefined) {
       localStorage.setItem(STORAGE_KEY, stored.device);
@@ -255,7 +266,12 @@ describe('LanguageStore, with household profiles', () => {
   beforeEach(() => owner.set(undefined));
 
   afterEach(() => {
-    for (const key of [STORAGE_KEY, `${STORAGE_KEY}.Aurelia`, `${STORAGE_KEY}.Borys`]) {
+    for (const key of [
+      STORAGE_KEY,
+      `${STORAGE_KEY}.Aurelia`,
+      `${STORAGE_KEY}.Borys`,
+      `${STORAGE_KEY}.borys`,
+    ]) {
       localStorage.removeItem(key);
     }
     document.documentElement.lang = 'en';
@@ -309,6 +325,37 @@ describe('LanguageStore, with household profiles', () => {
 
     expect(store.language()).toBe('pl');
     expect(document.documentElement.lang).toBe('pl');
+  });
+
+  // the registry spelled the name anew (`borys` to `Borys`): the same person, the same choice
+  it('keeps the language of a member whose name is spelled anew', async () => {
+    owner.set('borys');
+    const store = create({ members: { borys: 'pl' } });
+    await store.restore();
+    await settle();
+
+    owner.set('Borys');
+    await settle();
+
+    expect(store.language()).toBe('pl');
+    expect(localStorage.getItem(`${STORAGE_KEY}.Borys`)).toBe('pl');
+    // moved, not copied: nothing stays under a name the registry no longer has
+    expect(localStorage.getItem(`${STORAGE_KEY}.borys`)).toBeNull();
+  });
+
+  // at a start the registry can answer with the new spelling while the texts are on their way
+  it('takes a language that arrives after the name was spelled anew', async () => {
+    owner.set('borys');
+    const store = create();
+
+    const chosen = store.select('pl');
+    owner.set('Borys');
+    await chosen;
+    await settle();
+
+    expect(store.language()).toBe('pl');
+    expect(localStorage.getItem(`${STORAGE_KEY}.Borys`)).toBe('pl');
+    expect(localStorage.getItem(`${STORAGE_KEY}.borys`)).toBeNull();
   });
 
   // the application can change hands while the texts are on their way
