@@ -16,7 +16,7 @@ import {
   resetHeating,
   temperatureSensors,
 } from './heating.fixtures';
-import { HOUSEHOLD_PROFILES } from './household.fixtures';
+import { householdProfiles, resetHousehold } from './household.fixtures';
 import { mockApiInterceptors } from './mock-api';
 import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
 
@@ -37,6 +37,7 @@ describe('mock API', () => {
   afterEach(() => {
     localStorage.removeItem('mock-scenario');
     resetHeating();
+    resetHousehold();
   });
 
   async function failure(request: Promise<unknown>): Promise<HttpErrorResponse> {
@@ -228,7 +229,7 @@ describe('mock API', () => {
       }[];
 
       expect(now.map((resident) => resident.name)).toEqual(
-        HOUSEHOLD_PROFILES.map((profile) => profile.name),
+        householdProfiles().map((profile) => profile.name),
       );
     });
 
@@ -269,7 +270,174 @@ describe('mock API', () => {
   });
 
   it('answers the household profiles from their fixture', async () => {
-    expect(await firstValueFrom(http.get('/home/household/profiles'))).toEqual(HOUSEHOLD_PROFILES);
+    expect(await firstValueFrom(http.get('/home/household/profiles'))).toEqual(householdProfiles());
+  });
+
+  // the registry of the mock house can be changed, and refuses what the real one refuses
+  describe('the household registry', () => {
+    type Member = Record<string, unknown> & { name: string };
+    const registry = () => firstValueFrom(http.get<Member[]>('/home/household'));
+    const profiles = () => firstValueFrom(http.get<Member[]>('/home/household/profiles'));
+    const one = async (name: string) => (await registry()).find((member) => member.name === name);
+    const member = (name: string) => `/home/household/member/${name}`;
+    const code = async (request: Promise<unknown>) => {
+      const refused = await failure(request);
+      const errors = (refused.error as { errors: { code?: string }[] }).errors;
+      return [refused.status, errors[0].code];
+    };
+
+    it('lists everybody with phone and devices, and leaves empty lists out', async () => {
+      const members = await registry();
+
+      expect(members.map((entry) => entry.name)).toEqual([
+        'Aurelia',
+        'Borys',
+        'Celina',
+        'Damian',
+        'Emil',
+      ]);
+      expect(await one('Damian')).toEqual({
+        name: 'Damian',
+        phone: '+48500100104',
+        devices: [],
+        active: true,
+        role: 'resident',
+      });
+    });
+
+    // what the profiles are for: nothing of the registry beyond name, role, rooms, permissions
+    it('keeps the phone, the devices and a member who is switched off out of the profiles', async () => {
+      const answer = await profiles();
+
+      expect(answer.map((entry) => entry.name)).not.toContain('Emil');
+      expect(answer.flatMap((entry) => Object.keys(entry))).not.toContain('phone');
+      expect(answer.flatMap((entry) => Object.keys(entry))).not.toContain('devices');
+    });
+
+    it('adds a member as a resident unless a role is named, and without devices', async () => {
+      await firstValueFrom(
+        http.post('/home/household/member', { name: 'Fabian', phone: '+48500100106', rooms: ['loft'] }),
+      );
+
+      expect(await one('Fabian')).toEqual({
+        name: 'Fabian',
+        phone: '+48500100106',
+        devices: [],
+        active: true,
+        role: 'resident',
+        rooms: ['loft'],
+      });
+    });
+
+    it.each([
+      [{ name: 'aurelia', phone: '+48500100106' }, [409, 'HOUSEHOLD_CONFLICT']],
+      [{ name: 'Fabian', phone: '+48500100101' }, [409, 'HOUSEHOLD_CONFLICT']],
+      [{ name: 'Fa', phone: '+48500100106' }, [400, undefined]],
+      [{ name: 'Fabian', phone: '500100106' }, [400, undefined]],
+      [{ name: 'Fabian', phone: '+48500100106', role: 'owner' }, [400, undefined]],
+      [{ name: 'Fabian', phone: '+48500100106', rooms: ['attic'] }, [400, undefined]],
+      [
+        { name: 'Fabian', phone: '+48500100106', rooms: ['loft', 'loft'] },
+        [400, 'INVALID_HOUSEHOLD_MEMBER'],
+      ],
+    ])('refuses to add %o', async (body, refusal) => {
+      expect(await code(firstValueFrom(http.post('/home/household/member', body)))).toEqual(refusal);
+      expect(await registry()).toHaveLength(5);
+    });
+
+    // PATCH never touches the rooms, the permissions or the activity
+    it('changes name, phone and a named role, and nothing else', async () => {
+      await firstValueFrom(
+        http.patch(member('celina'), { name: 'Cecylia', phone: '+48500100199', rooms: [] }),
+      );
+
+      expect(await one('Cecylia')).toMatchObject({
+        phone: '+48500100199',
+        role: 'resident',
+        rooms: ['bedroom', 'wardrobe'],
+        permissions: ['heating_switch'],
+      });
+    });
+
+    it('replaces the rooms and the permissions with the lists given', async () => {
+      await firstValueFrom(http.put(`${member('Borys')}/rooms`, ['office', 'loft']));
+      await firstValueFrom(http.put(`${member('Borys')}/permissions`, ['heating_switch']));
+      await firstValueFrom(http.put(`${member('Celina')}/permissions`, []));
+
+      expect(await one('Borys')).toMatchObject({
+        rooms: ['office', 'loft'],
+        permissions: ['heating_switch'],
+      });
+      expect(await one('Celina')).not.toHaveProperty('permissions');
+      expect(
+        await code(firstValueFrom(http.put(`${member('Borys')}/permissions`, [null]))),
+      ).toEqual([400, 'INVALID_HOUSEHOLD_MEMBER']);
+    });
+
+    it('switches a member off and on, and the profiles follow', async () => {
+      await firstValueFrom(http.post(`${member('Borys')}/deactivate`, null));
+      expect((await profiles()).map((entry) => entry.name)).not.toContain('Borys');
+
+      await firstValueFrom(http.post(`${member('Borys')}/activate`, null));
+      expect((await profiles()).map((entry) => entry.name)).toContain('Borys');
+    });
+
+    it('removes a member, and knows nobody under a name it does not hold', async () => {
+      await firstValueFrom(http.delete(member('Damian')));
+
+      expect(await one('Damian')).toBeUndefined();
+      expect(await code(firstValueFrom(http.delete(member('Damian'))))).toEqual([
+        404,
+        'NOT_FOUND_HOUSEHOLD_MEMBER',
+      ]);
+    });
+
+    it('adds, changes and removes a device, addressed by its MAC in any case', async () => {
+      const device = `${member('Damian')}/device`;
+      await firstValueFrom(http.post(device, { name: 'Phone', mac: '02:00:00:00:d4:01' }));
+      await firstValueFrom(
+        http.patch(
+          device,
+          { name: 'Tablet', mac: '02:00:00:00:d4:02' },
+          { params: { mac: '02:00:00:00:D4:01' } },
+        ),
+      );
+      expect(await one('Damian')).toMatchObject({
+        devices: [{ name: 'Tablet', mac: '02:00:00:00:d4:02' }],
+      });
+
+      await firstValueFrom(http.delete(device, { params: { mac: '02:00:00:00:d4:02' } }));
+      expect(await one('Damian')).toMatchObject({ devices: [] });
+    });
+
+    it.each([
+      // registered already, by another member
+      [{ name: 'Tablet', mac: '02:00:00:00:b0:01' }, [409, 'DEVICE_EXIST']],
+      // a second device of the same name
+      [{ name: 'Phone', mac: '02:00:00:00:a1:09' }, [409, 'DEVICE_EXIST']],
+      [{ name: 'Tablet', mac: '02:00:00:00:A1:09' }, [400, undefined]],
+    ])('refuses the device %o', async (body, refusal) => {
+      expect(await code(firstValueFrom(http.post(`${member('Aurelia')}/device`, body)))).toEqual(
+        refusal,
+      );
+    });
+
+    it('knows no device under an address the member does not have', async () => {
+      expect(
+        await code(
+          firstValueFrom(
+            http.delete(`${member('Aurelia')}/device`, { params: { mac: '02:00:00:00:b0:01' } }),
+          ),
+        ),
+      ).toEqual([404, 'NOT_FOUND_MEMBER_DEVICE']);
+    });
+
+    it('carries out no change in the scenario of failing writes', async () => {
+      localStorage.setItem('mock-scenario', 'writes-fail');
+
+      expect((await failure(firstValueFrom(http.delete(member('Damian'))))).status).toBe(500);
+      expect(await registry()).toHaveLength(5);
+    });
   });
 
   it('answers the hot water and the boiler room from their fixtures', async () => {
@@ -334,11 +502,6 @@ describe('mock API', () => {
     it('answers everything else as usual', async () => {
       expect(await firstValueFrom(http.get('/home/heating'))).toEqual(HEATING_STATUS);
     });
-  });
-
-  // the registry itself is not something the application asks for: it carries phones and devices
-  it('does not serve the full household registry', async () => {
-    expect((await failure(firstValueFrom(http.get('/home/household')))).status).toBe(404);
   });
 
   it('answers an unknown endpoint like the gateway does: 404 in the error contract', async () => {

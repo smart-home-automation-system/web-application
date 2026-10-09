@@ -205,6 +205,56 @@ e2e/              # Playwright tests
   test that renders `/room` through the real routes (`profile-pages.spec`) lets the one read
   of the page pass - the room, `GET` only: nobody there has the permission, so a call to the
   switch of the house, read or write, fails the test.
+- **The administration of the household** (HAS-204, `features/household/`, the administrator's)
+  is the one view that reads the whole registry and the one that changes it. What to keep:
+  - **A change is a method of the resource, and resolves with how it ended**
+    (`HouseholdRegistry`, `ChangeOutcome`): the calls go **one after the other** - every write
+    of the registry stores the whole row, so two for one member can undo each other - the
+    registry is read again, and only then the change is over. A second change asked for
+    meanwhile is refused without a call (`changing`). An edit sends only what `before` shows as
+    changed, the name last: until then the member answers to the name the card is tracked by,
+    so a change that stops halfway leaves its failure on a card that still exists.
+  - **A card must not `emit` after a change**: the change may have removed the card (a member
+    removed, renamed), and an output of a destroyed component throws. What has to follow every
+    change is the one argument of `watchRegistry(afterChange)` - one place, so a change added
+    later cannot be left out of it.
+  - **After every change the profiles are asked for again** - a role, the rooms, a permission
+    or the profile itself of the person on the page is what was just changed. With
+    `ProfileStore.refreshAfterChange()`, not `refresh()`: that one shares a call already under
+    way, whose answer may have left the registry before the change (found in review).
+  - **A form is measured by the member it was opened with**, not by the member of the moment
+    it is saved (`MemberCard.editedFrom`): the registry is polled under the open form, and
+    measured by the fresh member a room granted elsewhere meanwhile reads as a change of the
+    form - and is written back to what it was, with a 200 (found in review).
+  - **A control keeps the verdict of its last change**: a validator that reads the registry is
+    not run again when the registry changes. A form calls `updateValueAndValidity()` on its
+    controls before it sends (found in review).
+  - **A name spelled anew is the same member** (`borys` to `Borys`): the link and the profile
+    find a member whatever the case - `ProfileStore` reconciles by `sameName` since this task -
+    so only the presence history, kept under the name as written, stays behind; the form has a
+    warning of its own for that.
+  - **The member of the active profile cannot be renamed, demoted, switched off or removed
+    there**: each would take the profile the browser remembers, or close the page to its user.
+    That, too, is the interface being careful, not a rule the registry knows.
+  - **The form checks before it sends** (`member-rules.ts`, a copy of the bounds of
+    `smart-home-sdk` and of the unique constraints of `database-service`) - also *which* of two
+    things clashed, where the registry has one code for both (`HOUSEHOLD_CONFLICT`: the name or
+    the phone; `DEVICE_EXIST`: the MAC or the name of the device). What people write
+    differently and mean the same is rewritten, not refused: spaces in a phone number, capitals
+    and dashes in a MAC address.
+  - **A refusal with a code reads in the language of the interface**
+    (`household-errors.ts`, passed to the strip as `describeWith`); the test there lists the
+    codes of the registry, so a new one fails it. A refusal without a code (Bean Validation) is
+    shown as the service worded it.
+  - **What the registry holds is never dropped by an edit**: a room, a role or a permission
+    this version does not know (`registry-values.ts` is a copy of the SDK's enums, and may lag)
+    is shown as it comes and sent back with the rest.
+  - **A new name is a new person to everything keyed by the name**: the personal link, the icon
+    on the phone, the presence history of `presence-service`. The form says so before saving.
+  - **The personal link is built from the address the page is served at** (`location.origin`),
+    never from a constant - that address is private. Its QR code (`shared/qr-code`, the encoder
+    is `uqr`) is black on white in every theme, the one place with literal colours; a unit test
+    reads the drawn code back with a QR reader (`jsqr`, a devDependency).
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason
@@ -242,9 +292,12 @@ access control** — the README says so plainly, and nothing here may be describ
   and reconciles: new role or rooms replace the remembered ones, a member who is not in the
   answer loses the profile, a failed call changes nothing. The answer holds the active members
   only - name, `role` (`admin` / `resident`) and `rooms`, left out when there are none - so
-  "switched off" and "removed" are one case here. **Never call `GET /home/household`**: the full
-  registry carries phone numbers and device MAC addresses (HAS-211), and the mock API answers it
-  with 404 so that a browser test fails on it. It runs at every start (not awaited), in the picker and inside
+  "switched off" and "removed" are one case here. **`GET /home/household` is for the
+  administration page alone** (`HouseholdApi.watchRegistry()`, HAS-204): the full registry
+  carries phone numbers and device MAC addresses (HAS-211), so nothing a resident's browser
+  opens, and nothing that runs at a start, may ask for it - a unit test that renders pages
+  through the real routes (`profile-pages.spec`, `app.spec`) fails on the call, because it
+  answers only the requests it names. It runs at every start (not awaited), in the picker and inside
   `open(member)`, which is what a personal link calls. **`open()` of the member already
   remembered answers at once** and asks the registry on the side (HAS-194): their own link is
   the address the installed application starts from, and waiting for the registry there was a
@@ -611,6 +664,10 @@ up in a production build.
 - **The mock house can be switched**: `POST /home/heating` changes what the next reads answer,
   in the memory of the page - a reload is the house as it started. A fixture that a write
   changes is a function over that state (`heatingStatus()`), with a reset for the unit tests.
+- **The mock household can be changed too** (`household.fixtures.ts`): every write of the
+  administration page changes what the registry and the profiles answer next, and it refuses
+  what `database-service` refuses, with the same status and `code`. A unit test that changed
+  it calls `resetHousehold()`.
 - A fixture with a time in it that the page shows as an *age* is a function of "now"
   (`boilerStatus()`, built with `houseTime()` of `src/mocks/house-time.ts`): a fixed time reads
   as a service that stopped reporting. Make it a little older than a round age (3 min 5 s, not

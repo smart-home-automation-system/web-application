@@ -281,6 +281,49 @@ describe('ProfileStore', () => {
 
       expect(members).toHaveBeenCalledTimes(2);
     });
+
+    // an answer already on its way may have left the registry before the change
+    it('asks anew after a change, instead of settling for a call that is under way', async () => {
+      const before = new Subject<HouseholdProfile[]>();
+      const answers: Observable<HouseholdProfile[]>[] = [
+        before,
+        of([{ name: 'Borys', role: 'admin', rooms: ['loft'] }]),
+      ];
+      const members = vi.fn(() => answers.shift()!);
+      registry = members;
+      const store = create({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+
+      void store.refresh();
+      const afterChange = store.refreshAfterChange();
+      expect(members).toHaveBeenCalledTimes(1);
+      before.next(HOUSEHOLD);
+      before.complete();
+
+      expect(await afterChange).toBe(true);
+      expect(members).toHaveBeenCalledTimes(2);
+      expect(store.profile()?.role).toBe('admin');
+    });
+
+    it('asks at once after a change when no call is under way', async () => {
+      const members = vi.fn(() => of(HOUSEHOLD));
+      registry = members;
+      const store = create();
+
+      await store.refreshAfterChange();
+
+      expect(members).toHaveBeenCalledTimes(1);
+    });
+
+    // names are one whatever their case - for the registry, and for a personal link
+    it('keeps the profile of a member whose name was only spelled anew, and takes the spelling', async () => {
+      registry = () => of([{ name: 'Borys', role: 'resident', rooms: ['loft'] }]);
+      const store = create({ name: 'borys', role: 'resident', rooms: ['loft'] });
+
+      await store.refresh();
+
+      expect(store.profile()).toEqual({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+      expect(remembered()).toEqual({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+    });
   });
 
   it('works without storage: the profile then lasts as long as the page', async () => {

@@ -1,0 +1,31 @@
+// As many members side by side as the window has room for, each card as tall as what it says:
+// one column on a phone, five or six on a wide screen.
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.registry {
+  --app-domain: var(--app-domain-household);
+}
+
+mat-card-content {
+  padding-top: 8px;
+}
+
+.registry__note {
+  margin: 0 0 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.registry__form-title {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+}
+
+.registry__add {
+  margin-bottom: 8px;
+}

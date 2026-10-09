@@ -9,7 +9,19 @@ import {
   temperatureSensors,
   turnHeating,
 } from './heating.fixtures';
-import { HOUSEHOLD_PROFILES } from './household.fixtures';
+import {
+  addDevice,
+  addMember,
+  householdProfiles,
+  householdRegistry,
+  removeDevice,
+  removeMember,
+  replacePermissions,
+  replaceRooms,
+  setMemberActive,
+  updateDevice,
+  updateMember,
+} from './household.fixtures';
 import {
   dailyPresenceReport,
   houseReport,
@@ -25,7 +37,7 @@ export interface MockReply {
 }
 
 export interface MockHandler {
-  readonly method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  readonly method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   /**
    * Full path as the browser sends it, base path included - or a pattern, for a path with a
    * name in it; what its groups caught is handed to `reply`.
@@ -109,7 +121,56 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
   {
     method: 'GET',
     path: '/home/household/profiles',
-    reply: () => ({ status: 200, body: HOUSEHOLD_PROFILES }),
+    reply: () => ({ status: 200, body: householdProfiles() }),
+  },
+  {
+    // the registry itself, phones and devices included: asked for by the administration page only
+    method: 'GET',
+    path: '/home/household',
+    reply: () => ({ status: 200, body: householdRegistry() }),
+  },
+  { method: 'POST', path: '/home/household/member', reply: (request) => addMember(request.body) },
+  {
+    method: 'PATCH',
+    path: /^\/home\/household\/member\/([^/]+)$/,
+    reply: (request, _, [name]) => updateMember(decodeURIComponent(name), request.body),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/household\/member\/([^/]+)$/,
+    reply: (_, __, [name]) => removeMember(decodeURIComponent(name)),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/household\/member\/([^/]+)\/rooms$/,
+    reply: (request, _, [name]) => replaceRooms(decodeURIComponent(name), request.body),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/household\/member\/([^/]+)\/permissions$/,
+    reply: (request, _, [name]) => replacePermissions(decodeURIComponent(name), request.body),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/household\/member\/([^/]+)\/(activate|deactivate)$/,
+    reply: (_, __, [name, what]) => setMemberActive(decodeURIComponent(name), what === 'activate'),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/household\/member\/([^/]+)\/device$/,
+    reply: (request, _, [name]) => addDevice(decodeURIComponent(name), request.body),
+  },
+  {
+    method: 'PATCH',
+    path: /^\/home\/household\/member\/([^/]+)\/device$/,
+    reply: (request, _, [name]) =>
+      updateDevice(decodeURIComponent(name), request.params.get('mac'), request.body),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/household\/member\/([^/]+)\/device$/,
+    reply: (request, _, [name]) =>
+      removeDevice(decodeURIComponent(name), request.params.get('mac')),
   },
   {
     method: 'GET',

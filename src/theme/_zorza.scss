@@ -279,6 +279,14 @@ $_shadows: (
       container-vertical-padding: calc((48px - 1.25rem) / 2),
       outlined-outline-color: var(--mat-sys-outline),
       outlined-container-shape: $radius-control,
+      // The words of a field sit on glass (the forms of the household administration): what is
+      // wrong with it and the label of a field in focus are written in the "container" shades,
+      // the ones that reach 4.5:1 there - the plain error and primary do not (check-contrast.mjs).
+      error-text-color: var(--mat-sys-on-error-container),
+      outlined-error-label-text-color: var(--mat-sys-on-error-container),
+      outlined-error-focus-label-text-color: var(--mat-sys-on-error-container),
+      outlined-error-hover-label-text-color: var(--mat-sys-on-error-container),
+      outlined-focus-label-text-color: var(--mat-sys-on-primary-container),
     )
   );
 

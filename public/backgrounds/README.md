@@ -16,6 +16,7 @@ argument of the script) - by as little as makes `npm run check:contrast` pass.
 | `presence` | Presence | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `boiler` | Boiler room | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `room` | My room | 2026-10-09, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
+| `household` | Household | 2026-10-09, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 
 ## Prompts
 
@@ -118,3 +119,23 @@ in the light scheme cannot be read on.
 Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
 owner on 2026-10-09 (HAS-202). Tones `46-255`: the ceiling beam along the top of the frame is in
 shadow, too dark for the dark title of the light scheme.
+
+### `household`
+
+> Photorealistic wide interior photograph of the dining area of a modern family home at dusk,
+> clearly the place where a household lives together. The furniture and objects are spread across
+> the whole width of the frame, from the left edge to the right: a sideboard with a bowl of keys
+> and a stack of letters, a wall calendar, several framed paintings and art prints of landscapes
+> and abstract shapes hung on the walls, a long wooden dining table with six chairs that do not
+> all match, six different mugs and a fruit bowl on it, a bench with cushions under a window with
+> light curtains, a shelf with board games and books, a plant, a rug on a wooden floor. No large
+> empty wall, no large empty floor, no large empty ceiling: every part of the picture shows
+> something of the room. Even, soft, mid-toned light across the whole frame, especially along the
+> top: no bright lamp, no black window frame, no deep shadows at the top. No people, no
+> photographs or portraits of people, no text, no brand logos. Calm, tidy, realistic interior
+> photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-09 (HAS-204), who asked for paintings on the walls and a table for six, and
+against a high chair and children's drawings. Tones `6-255`: the frames at the top of the left
+wall are a shade too dark for the dark title of the light scheme.

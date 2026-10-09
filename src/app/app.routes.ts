@@ -57,6 +57,12 @@ const pages: Page[] = [
     loadComponent: () => import('./features/my-room/my-room').then((m) => m.MyRoom),
   },
   {
+    path: 'household',
+    title: 'nav.household',
+    data: { background: 'household' },
+    loadComponent: () => import('./features/household/household').then((m) => m.Household),
+  },
+  {
     path: 'settings',
     title: 'nav.settings',
     loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),

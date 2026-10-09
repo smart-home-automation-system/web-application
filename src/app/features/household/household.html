@@ -1,0 +1,68 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('household.title') }}</h1>
+  </header>
+
+  <div class="cards">
+    <!-- the registry itself: how fresh the list is, why it could not be read, and the way to
+         add a member - one resource, one card -->
+    <mat-card appearance="outlined" class="registry card--domain" data-testid="registry">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>group</mat-icon></div>
+        <mat-card-title>{{ t('household.registry.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="registry.lastUpdated()" [stale]="registry.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (registry.loading()) {
+          <mat-progress-bar
+            mode="indeterminate"
+            [attr.aria-label]="t('household.registry.loading')"
+          />
+        } @else {
+          @let list = members();
+          @if (list === undefined) {
+            @if (!registry.error()) {
+              <p class="registry__note">{{ t('household.registry.unreadable') }}</p>
+            }
+          } @else if (adding()) {
+            <h2 class="registry__form-title">{{ t('household.registry.newMember') }}</h2>
+            <app-member-form
+              [others]="list"
+              [busy]="registry.changing()"
+              [failure]="addFailure()"
+              (saved)="add($event)"
+              (cancelled)="stopAdding()"
+            />
+          } @else {
+            @if (list.length === 0) {
+              <p class="registry__note">{{ t('household.registry.empty') }}</p>
+            }
+            <button
+              matButton="filled"
+              type="button"
+              class="registry__add"
+              [disabled]="registry.changing()"
+              (click)="startAdding()"
+            >
+              <mat-icon>person_add</mat-icon>
+              {{ t('household.registry.add') }}
+            </button>
+          }
+          <app-api-error-strip [error]="registry.error()" />
+        }
+      </mat-card-content>
+    </mat-card>
+
+    @for (member of members() ?? []; track member.name) {
+      <app-member-card
+        [member]="member"
+        [members]="members() ?? []"
+        [registry]="registry"
+        [own]="isOwn(member)"
+      />
+    }
+  </div>
+</ng-container>

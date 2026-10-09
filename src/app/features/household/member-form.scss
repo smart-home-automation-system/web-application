@@ -1,0 +1,50 @@
+// shared by the form of a member and the form of a device
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  // the floating label of the first field needs room above its outline
+  padding-top: 6px;
+}
+
+.form__group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+
+  app-rooms-picker {
+    align-self: stretch;
+  }
+}
+
+.form__label {
+  margin: 4px 0 0;
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.form__note {
+  margin: -4px 0 0;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// what a change of the name brings with it: a tinted strip, like a failure, but not one
+.form__warning {
+  margin: -4px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

@@ -8,14 +8,9 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { MemberRole } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
-import { MessageKey } from '../../i18n/messages';
 import { describeApiError } from '../../shared/api-error/describe-api-error';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
-
-const ROLE_LABELS: Readonly<Record<MemberRole, MessageKey>> = {
-  admin: 'profiles.role.admin',
-  resident: 'profiles.role.resident',
-};
+import { ROLE_LABELS } from '../../shared/member-labels/member-labels';
 
 const ROLE_ICONS: Readonly<Record<MemberRole, string>> = {
   admin: 'shield_person',

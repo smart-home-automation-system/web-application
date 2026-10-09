@@ -77,6 +77,7 @@ describe('application routing', () => {
         'Boiler room',
         'Presence',
         'My room',
+        'Household',
         'Settings',
         'About',
       ],
@@ -100,12 +101,13 @@ describe('application routing', () => {
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
       '/presence',
       '/room',
+      '/household',
       '/settings',
       '/about',
     ]);
     expect(
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
-    ).toEqual(['Presence', 'My room', 'Settings', 'About']);
+    ).toEqual(['Presence', 'My room', 'Household', 'Settings', 'About']);
     document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
   });
 
@@ -190,6 +192,7 @@ describe('application routing', () => {
           'Kotłownia',
           'Obecność',
           'Mój pokój',
+          'Domownicy',
           'Ustawienia',
           'O aplikacji',
         ],

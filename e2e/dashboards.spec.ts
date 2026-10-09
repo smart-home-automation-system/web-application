@@ -563,6 +563,7 @@ test.describe('the navigation with more destinations than a phone has room for',
       await expect(page.getByRole('menuitem')).toHaveText([
         /Presence/,
         /My room/,
+        /Household/,
         /Settings/,
         /About/,
       ]);
@@ -581,6 +582,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Boiler room/,
         /Presence/,
         /My room/,
+        /Household/,
         /Settings/,
         /About/,
       ]);

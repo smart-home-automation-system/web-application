@@ -9,7 +9,7 @@ import {
   ResidentPresence,
 } from '../app/data-access/presence/presence-api';
 import { LONGEST_RANGE_DAYS } from '../app/features/presence/report-range';
-import { HOUSEHOLD_PROFILES } from './household.fixtures';
+import { householdProfiles } from './household.fixtures';
 import { houseTime } from './house-time';
 
 /**
@@ -134,7 +134,7 @@ function days(from: number, to: number): Span[] {
   return cutDays;
 }
 
-const members = () => HOUSEHOLD_PROFILES.map((profile) => profile.name);
+const members = () => householdProfiles().map((profile) => profile.name);
 
 /** `GET /home/presence/residents/presence`. `fresh`: nothing is stored about anybody yet. */
 export function presenceNow(fresh: boolean, now: Date = new Date()): ResidentPresence[] {
