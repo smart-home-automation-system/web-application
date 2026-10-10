@@ -45,7 +45,7 @@ export class RoomHistory {
     () => this.room(),
     this.period.range,
   );
-  protected readonly shown = shownHistory(this.history, this.period.range);
+  protected readonly shown = shownHistory(this.history, this.period);
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
@@ -68,7 +68,7 @@ export class RoomHistory {
 
   private readonly scheduled = computed((): ChartLine | undefined => {
     this.language();
-    const axis = this.period.axis();
+    const axis = this.shown.axis();
     const points = axis === undefined ? [] : scheduleLine(this.schedules(), axis);
     return points.length === 0
       ? undefined

@@ -212,13 +212,59 @@ describe('WaterHistory', () => {
     });
   });
 
-  it('moves on with the clock of the house: a new hour is a new range', async () => {
-    await settle();
-    vi.setSystemTime(new Date('2026-10-10T17:05:00Z'));
-    vi.advanceTimersByTime(5_000);
-    await settle();
+  describe('when the clock of the house moves on to a new hour', () => {
+    async function nextHour(): Promise<void> {
+      vi.setSystemTime(new Date('2026-10-10T17:05:00Z'));
+      vi.advanceTimersByTime(5_000);
+      await settle();
+    }
 
-    expect(asked()).toEqual({ from: '2026-10-09T20:00:00', to: '2026-10-10T20:00:00' });
+    it('asks for the range of the new hour', async () => {
+      await settle();
+      await nextHour();
+
+      expect(asked()).toEqual({ from: '2026-10-09T20:00:00', to: '2026-10-10T20:00:00' });
+    });
+
+    // the same question an hour later: nobody chose anything, and the chart must not blink
+    it('keeps the chart of the hour before, on its own axis, until the new answer arrives', async () => {
+      const before = asked();
+      answerQuery(history, before, DAY);
+      await settle();
+      await nextHour();
+
+      expect(card().querySelector('mat-progress-bar')).toBeNull();
+      expect(card().querySelector('app-history-chart')).toBeTruthy();
+      expect(charts.drawn).toHaveLength(1);
+      expect((charts.drawn[0] as { xAxis: { min: number } }).xAxis.min).toBe(
+        at('2026-10-09T19:00:00'),
+      );
+    });
+
+    it('keeps it also when the call of the new hour fails, next to the failure', async () => {
+      answerQuery(history, asked(), DAY);
+      await settle();
+      await nextHour();
+
+      failQuery(history, asked(), new ApiError('server', 503, []));
+      await settle();
+
+      expect(card().querySelector('app-history-chart')).toBeTruthy();
+      expect(card().querySelector('[role="alert"]')).toBeTruthy();
+    });
+
+    it('moves the axis on with the answer of the new hour', async () => {
+      answerQuery(history, asked(), DAY);
+      await settle();
+      await nextHour();
+
+      answerQuery(history, asked(), DAY);
+      await settle();
+
+      expect((charts.drawn[0] as { xAxis: { min: number } }).xAxis.min).toBe(
+        at('2026-10-09T20:00:00'),
+      );
+    });
   });
 
   it('says why the history is missing, next to how fresh it is', async () => {

@@ -20,7 +20,12 @@ import { provideCalendar } from '../../core/i18n/calendar';
 import { houseDay, houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { isRecord } from '../../core/util/is-record';
-import { PresenceApi, ReportRange, ResidentQuery } from '../../data-access/presence/presence-api';
+import {
+  PRESENCE_CHECK_IS_LATE_AFTER_MS,
+  PresenceApi,
+  ReportRange,
+  ResidentQuery,
+} from '../../data-access/presence/presence-api';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
@@ -82,7 +87,6 @@ const PRESETS: readonly PresetOption[] = [
 ];
 
 /** The detection looks once a minute; a check older than this means it is not looking. */
-const CHECK_IS_LATE_AFTER_MS = 5 * 60_000;
 
 const STATE_LABELS: Readonly<Record<ResidentNow['state'], MessageKey>> = {
   home: 'presence.now.atHome',
@@ -200,7 +204,8 @@ export class Presence {
       this.residents()
         .filter(
           (resident) =>
-            resident.checkedAt !== undefined && now - resident.checkedAt > CHECK_IS_LATE_AFTER_MS,
+            resident.checkedAt !== undefined &&
+            now - resident.checkedAt > PRESENCE_CHECK_IS_LATE_AFTER_MS,
         )
         .map((resident) => resident.name),
     );

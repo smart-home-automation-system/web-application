@@ -20,8 +20,8 @@ export interface HistoryPeriod {
    * `queryResource` and the view compare by.
    */
   readonly range: Signal<HistoryRange>;
-  /** The ends of that range on the wall-clock timeline, for the axis of the chart. */
-  readonly axis: Signal<{ readonly from: number; readonly to: number } | undefined>;
+  /** Which period a range of this history was made for; `undefined` for any other object. */
+  presetOf(range: HistoryRange): HistoryPreset | undefined;
 }
 
 /** Call in an injection context. A history opens on the last 24 hours. */
@@ -29,31 +29,65 @@ export function historyPeriod(initial: HistoryPreset = 'day'): HistoryPeriod {
   const zone = inject(APP_CONFIG).houseTimeZone;
   const ticker = inject(Ticker);
   const preset = signal(initial);
-  const range = computed(() => historyRange(preset(), ticker.now(), zone), { equal: sameRange });
-  return { preset, range, axis: computed(() => axisOf(range())) };
+  const made = new WeakMap<HistoryRange, HistoryPreset>();
+  const range = computed(
+    () => {
+      const chosen = preset();
+      const next = historyRange(chosen, ticker.now(), zone);
+      made.set(next, chosen);
+      return next;
+    },
+    // the same range of another period is another question: "7 days" is never the object of "24 h"
+    { equal: (a, b) => sameRange(a, b) && made.get(a) === made.get(b) },
+  );
+  return { preset, range, presetOf: (asked) => made.get(asked) };
 }
 
 /** What a view may show of a history whose range can change under it. */
 export interface ShownHistory<T> {
   /**
-   * True until the last call - answered or failed - was for the range on screen: until then the
-   * resource still holds the answer, the failure and the freshness of the range before.
+   * True while there is nothing of the period on screen to show or to tell: no answer for it,
+   * and its last call - answered or failed - not ended. Until then the resource still holds the
+   * answer, the failure and the freshness of the period before.
    */
   readonly waiting: Signal<boolean>;
-  /** The answer for the range on screen; `undefined` while there is none. */
+  /** The answer to show; `undefined` while there is none for the period on screen. */
   readonly answer: Signal<T | undefined>;
+  /** The ends of the range that answer is for, on the wall-clock timeline: the axis of its chart. */
+  readonly axis: Signal<{ readonly from: number; readonly to: number } | undefined>;
 }
 
-/** Call in an injection context. */
+/**
+ * Call in an injection context.
+ *
+ * Two things change the range, and they are not the same to whoever looks at the chart.
+ * **Another period** is another question: the answer on screen is not shown under it for the
+ * length of a call. **The clock moving on** - a new hour, a new day - is the same question an
+ * hour later: the chart of the hour before stays, on its own axis, until the new answer
+ * arrives, and stays also when that one call fails.
+ */
 export function shownHistory<T>(
   resource: QueryResource<HistoryRange, T>,
-  range: Signal<HistoryRange>,
+  period: HistoryPeriod,
 ): ShownHistory<T> {
+  const shown = computed(() => {
+    const answered = resource.value();
+    return answered !== undefined && period.presetOf(answered.query) === period.preset()
+      ? answered
+      : undefined;
+  });
   return {
-    waiting: computed(() => resource.settledFor()?.query !== range()),
-    answer: computed(() => {
-      const answered = resource.value();
-      return answered !== undefined && answered.query === range() ? answered.answer : undefined;
+    waiting: computed(() => {
+      const settled = resource.settledFor();
+      return (
+        shown() === undefined &&
+        (settled === undefined || period.presetOf(settled.query) !== period.preset())
+      );
+    }),
+    answer: computed(() => shown()?.answer),
+    axis: computed(() => {
+      const answered = shown();
+      return answered === undefined ? undefined : axisOf(answered.query);
     }),
   };
 }

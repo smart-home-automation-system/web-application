@@ -113,6 +113,12 @@ export interface ResidentHistory {
   readonly daily: DailyPresenceReport | null;
 }
 
+/**
+ * A last check older than this is older than a detection that runs every minute would leave
+ * it: the detection may be down, and what the answer says may be as old.
+ */
+export const PRESENCE_CHECK_IS_LATE_AFTER_MS = 5 * 60_000;
+
 // the engine of presence-service looks at the network once a minute
 const POLL_NOW_EVERY_MS = 60_000;
 // a report changes only at its running end, and a long one is a large answer

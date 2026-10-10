@@ -22,11 +22,10 @@ export interface ChartLine {
   readonly dashed?: boolean;
 }
 
-/** The lowest and the highest value of a line, and its last. */
+/** The lowest and the highest value of a line. */
 export interface LineSummary {
   readonly lowest: number;
   readonly highest: number;
-  readonly last: number;
 }
 
 const finite = (value: unknown): value is number =>
@@ -95,7 +94,6 @@ export function summarise(line: readonly LinePoint[]): LineSummary | undefined {
     summary = {
       lowest: summary === undefined || value < summary.lowest ? value : summary.lowest,
       highest: summary === undefined || value > summary.highest ? value : summary.highest,
-      last: value,
     };
   }
   return summary;

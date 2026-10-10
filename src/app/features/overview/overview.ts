@@ -3,21 +3,28 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
-import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
 import { HeatingApi } from '../../data-access/heating/heating-api';
-import { PresenceApi } from '../../data-access/presence/presence-api';
-import { HOT_WATER_READING_OUT_OF_DATE_MS, WaterApi } from '../../data-access/water/water-api';
+import {
+  PRESENCE_CHECK_IS_LATE_AFTER_MS,
+  PresenceApi,
+} from '../../data-access/presence/presence-api';
+import { WaterApi } from '../../data-access/water/water-api';
+import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
 import { MessageKey } from '../../i18n/messages';
 import { HeatingSwitch } from '../../shared/heating-switch/heating-switch';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { toRoomViews } from '../../shared/room-heating/room-views';
 import { toDeviceView } from '../boiler-room/boiler-device';
+import { FLOORS } from '../heating/floors';
 import { summarise, toSensorRows } from '../heating/sensor-rows';
 import { OverviewTile } from './overview-tile';
-import { PERSON_STATE_LABELS, summariseRooms, toPeople } from './overview-views';
+import { PERSON_STATE_LABELS, lastCheck, summariseRooms, toPeople } from './overview-views';
+
+/** The rooms that are no part of the house: a garden and a sauna are not its coldest and warmest. */
+const OUTSIDE_ROOMS = FLOORS.find((floor) => floor.id === 'outside')?.rooms ?? [];
 
 /** A device of the boiler room on its tile: its name and the word for its state. */
 interface DeviceLine {
@@ -75,27 +82,20 @@ export class Overview {
 
   /** Whether the answer is a list at all: a 200 without a body is not "no rooms". */
   protected readonly roomsListed = computed(() => Array.isArray(this.rooms.value()));
-  protected readonly roomsSummary = computed(() => summariseRooms(toRoomViews(this.rooms.value())));
+  protected readonly roomsSummary = computed(() =>
+    summariseRooms(toRoomViews(this.rooms.value()), OUTSIDE_ROOMS),
+  );
 
   // ---- hot water ----
 
-  protected readonly tank = computed(() => reading(this.water.value()?.water?.temperature));
-  protected readonly circulation = computed(() =>
-    reading(this.water.value()?.circulation?.temperature),
-  );
-  /** House wall-clock time the sensors were read; `undefined` when the answer does not say. */
-  protected readonly measuredAt = computed(() => {
-    const at: unknown = this.water.value()?.measuredAt;
-    return typeof at === 'string' && parseHouseDateTime(at) !== undefined ? at : undefined;
-  });
+  private readonly waterReading = computed(() => toWaterReading(this.water.value(), this.zone));
+  protected readonly tank = computed(() => this.waterReading().tank);
+  protected readonly circulation = computed(() => this.waterReading().circulation);
+  protected readonly measuredAt = computed(() => this.waterReading().measuredAt);
   /** The service missed two of its polls: the tile shows its last row, not the water as it is. */
-  protected readonly waterOutOfDate = computed(() => {
-    const parsed = parseHouseDateTime(this.measuredAt());
-    return (
-      parsed !== undefined &&
-      this.ticker.now() - houseInstant(parsed, this.zone) > HOT_WATER_READING_OUT_OF_DATE_MS
-    );
-  });
+  protected readonly waterOutOfDate = computed(() =>
+    isOutOfDate(this.waterReading(), this.ticker.now()),
+  );
 
   // ---- boiler room ----
 
@@ -130,7 +130,18 @@ export class Overview {
 
   // ---- presence ----
 
-  protected readonly people = computed(() => toPeople(this.presence.value()));
+  protected readonly people = computed(() => toPeople(this.presence.value(), this.zone));
+  /**
+   * The last check of the detection, when it is older than a detection that runs every minute
+   * would leave it - the warning of the presence page: what the tile says may be hours old.
+   */
+  protected readonly lateCheck = computed(() => {
+    const last = lastCheck(this.people());
+    return last !== undefined &&
+      this.ticker.now() - last.checkedAt > PRESENCE_CHECK_IS_LATE_AFTER_MS
+      ? last.lastCheckedAt
+      : undefined;
+  });
 
   // ---- sensors ----
 
@@ -140,12 +151,4 @@ export class Overview {
   protected readonly silentSensors = computed(() =>
     this.sensorRows().filter((row) => row.stale === true),
   );
-}
-
-/**
- * A temperature, or `undefined` for anything else. Nothing checks an answer at runtime, and
- * before its first reading the service answers with no body at all.
- */
-function reading(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }

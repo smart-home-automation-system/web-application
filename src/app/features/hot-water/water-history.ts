@@ -43,7 +43,7 @@ export class WaterHistory {
 
   protected readonly period = historyPeriod();
   protected readonly history = inject(WaterApi).watchHistory(this.period.range);
-  protected readonly shown = shownHistory(this.history, this.period.range);
+  protected readonly shown = shownHistory(this.history, this.period);
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,

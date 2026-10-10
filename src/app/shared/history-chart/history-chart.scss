@@ -14,3 +14,14 @@
     height: 220px;
   }
 }
+
+// the library did not arrive: no empty box in its place, only the sentence that says so
+.chart__plot--failed {
+  display: none;
+}
+
+.chart__failed {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}

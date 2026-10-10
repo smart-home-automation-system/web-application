@@ -5,13 +5,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
-import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
-import {
-  HOT_WATER_BAND,
-  HOT_WATER_READING_OUT_OF_DATE_MS,
-  WaterApi,
-} from '../../data-access/water/water-api';
+import { HOT_WATER_BAND, WaterApi } from '../../data-access/water/water-api';
+import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
@@ -63,41 +59,17 @@ export class HotWater {
     maximumFractionDigits: 1,
   };
 
-  protected readonly tank = computed(() => reading(this.temperatures.value()?.water?.temperature));
-  protected readonly circulation = computed(() =>
-    reading(this.temperatures.value()?.circulation?.temperature),
-  );
+  private readonly reading = computed(() => toWaterReading(this.temperatures.value(), this.zone));
+  protected readonly tank = computed(() => this.reading().tank);
+  protected readonly circulation = computed(() => this.reading().circulation);
   /** House wall-clock time the sensors were read; `undefined` when the answer does not say. */
-  protected readonly measuredAt = computed(() => {
-    const at: unknown = this.temperatures.value()?.measuredAt;
-    return typeof at === 'string' && parseHouseDateTime(at) !== undefined ? at : undefined;
-  });
-
-  private readonly measuredInstant = computed(() => {
-    const parsed = parseHouseDateTime(this.measuredAt());
-    return parsed ? houseInstant(parsed, this.zone) : undefined;
-  });
-
-  /**
-   * The service has missed two of its polls: what the card shows is the last row it stored, not
-   * the water as it is. Never true for an answer without the time of the reading.
-   */
-  protected readonly outOfDate = computed(() => {
-    const instant = this.measuredInstant();
-    return instant !== undefined && this.ticker.now() - instant > HOT_WATER_READING_OUT_OF_DATE_MS;
-  });
+  protected readonly measuredAt = computed(() => this.reading().measuredAt);
+  /** The service has missed two of its polls: the card shows its last row, not the water as it is. */
+  protected readonly outOfDate = computed(() => isOutOfDate(this.reading(), this.ticker.now()));
 
   /** True, false, or `undefined` while the answer does not say. */
   protected readonly heatingNeeded = computed(() => {
     const active: unknown = this.demand.value()?.active;
     return typeof active === 'boolean' ? active : undefined;
   });
-}
-
-/**
- * A temperature, or `undefined` for anything else. Nothing checks an answer at runtime, and
- * before its first reading the service answers with no body at all.
- */
-function reading(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }

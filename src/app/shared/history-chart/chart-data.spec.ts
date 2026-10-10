@@ -104,7 +104,7 @@ describe('toLine', () => {
 });
 
 describe('summarise', () => {
-  it('finds the lowest, the highest and the last value, breaks aside', () => {
+  it('finds the lowest and the highest value, breaks aside', () => {
     expect(
       summarise([
         [1, 21.5],
@@ -113,7 +113,7 @@ describe('summarise', () => {
         [4, 22.1],
         [5, 20],
       ]),
-    ).toEqual({ lowest: 19.8, highest: 22.1, last: 20 });
+    ).toEqual({ lowest: 19.8, highest: 22.1 });
   });
 
   it('says nothing of a line without a value', () => {

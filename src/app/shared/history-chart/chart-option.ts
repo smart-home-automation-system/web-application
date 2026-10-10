@@ -1,7 +1,7 @@
 import type { EChartsCoreOption } from 'echarts/core';
 
 import { dateTimeFormat, numberFormat } from '../../core/i18n/intl-formats';
-import { ChartLine } from './chart-data';
+import { ChartLine, LinePoint } from './chart-data';
 
 /** A band of values drawn behind the lines - the temperatures the hot water is kept between. */
 export interface ChartBand {
@@ -77,6 +77,26 @@ export function tooltipTime(at: number, locale: string): string {
 }
 
 /**
+ * What a line says at a moment that lies between two of its points: the value on the stretch
+ * that covers the moment. `undefined` at a break, and outside the line.
+ */
+export function valueAt(points: readonly LinePoint[], at: number): number | undefined {
+  for (let index = 0; index + 1 < points.length; index++) {
+    const [from, start] = points[index];
+    const [to, end] = points[index + 1];
+    if (start === null || end === null || at < from || at > to) {
+      continue;
+    }
+    return to === from ? end : start + ((end - start) * (at - from)) / (to - from);
+  }
+  return undefined;
+}
+
+/** The dot before a row of the tooltip, in the colour of its line - a colour the browser resolved. */
+const markerOf = (color: string) =>
+  `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${escapeHtml(color)};"></span>`;
+
+/**
  * What ECharts is asked to draw. A pure function of the data, the colours and the language, so
  * a test can read the drawing without a browser that draws.
  */
@@ -86,6 +106,10 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
   const axisValue = numberFormat(input.locale, { maximumFractionDigits: 1 });
   const text = { color: colors.text, fontFamily: colors.fontFamily };
   const band = input.band;
+  /** The lines that are steps, by name: their place in a tooltip is worked out, not taken. */
+  const steps = new Set(input.lines.filter((line) => line.dashed).map((line) => line.name));
+  // the tooltip is HTML: the unit is a text of a caller, and escaped like the names
+  const unit = escapeHtml(input.unit);
 
   return {
     // the wall clock of the house lies on the UTC timeline: nothing may read it in another zone
@@ -119,16 +143,29 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
           readonly seriesName?: string;
           readonly marker?: string;
         }[];
-        const at = rows[0]?.value?.[0];
-        const lines = rows
-          .filter((row) => typeof row.value?.[1] === 'number')
-          // the marker is ECharts' own markup; the name is ours, and escaped all the same
-          .map(
-            (row) =>
-              `${row.marker ?? ''}${escapeHtml(row.seriesName ?? '')}: <strong>${value.format(
-                row.value?.[1] ?? 0,
-              )} ${input.unit}</strong>`,
-          );
+        // The moment is that of a measured point. A line of steps has points at its edges only,
+        // so ECharts lists it where the pointer is near an edge and nowhere else - or twice,
+        // where two steps share one: what it asks for at the moment is read off the line here.
+        const measured = rows.filter((row) => !steps.has(row.seriesName ?? ''));
+        const at = (measured[0] ?? rows[0])?.value?.[0];
+        const row = (marker: string, name: string, reading: number) =>
+          // the markers are markup of ECharts and of this file; a name is ours, and escaped
+          // all the same
+          `${marker}${escapeHtml(name)}: <strong>${value.format(reading)} ${unit}</strong>`;
+        const lines = [
+          ...measured.flatMap((hoveredRow) => {
+            const reading = hoveredRow.value?.[1];
+            return typeof reading === 'number'
+              ? [row(hoveredRow.marker ?? '', hoveredRow.seriesName ?? '', reading)]
+              : [];
+          }),
+          ...input.lines.flatMap((line) => {
+            const asked = line.dashed && at !== undefined ? valueAt(line.points, at) : undefined;
+            return asked === undefined
+              ? []
+              : [row(markerOf(colors.lines[line.color - 1]), line.name, asked)];
+          }),
+        ];
         return [at === undefined ? '' : escapeHtml(tooltipTime(at, input.locale)), ...lines].join(
           '<br>',
         );

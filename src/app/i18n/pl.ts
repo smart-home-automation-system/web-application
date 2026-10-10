@@ -46,10 +46,10 @@ export const pl: Messages = {
     },
     presence: {
       title: 'Teraz w domu',
+      late: 'Ostatnie sprawdzenie {{ age }} - wykrywanie może nie działać.',
     },
     sensors: {
       title: 'Czujniki temperatury',
-      silent: 'Milczy',
       muted: 'wyciszony',
       unknown: 'Serwis nie podaje, które czujniki raportują.',
     },
@@ -57,6 +57,8 @@ export const pl: Messages = {
   history: {
     loading: 'Wczytywanie historii',
     empty: 'Brak odczytów w tym okresie.',
+    chartFailed:
+      'Nie udało się wczytać wykresu. Kolejna próba nastąpi przy następnej aktualizacji.',
     preset: {
       choose: 'Okres historii',
       day: '24 godziny',

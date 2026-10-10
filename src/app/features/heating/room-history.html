@@ -10,7 +10,7 @@
       [stale]="history.stale()"
     >
       <ng-template>
-        @let axis = period.axis();
+        @let axis = shown.axis();
         @if (axis !== undefined) {
           <app-history-chart
             [lines]="lines()"

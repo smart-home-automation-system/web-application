@@ -5,6 +5,7 @@ import { RecordedCharts, provideChartTesting } from '../../../testing/chart';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ThemeStore } from '../../core/theme/theme-store';
 import { ChartLine } from './chart-data';
+import { ChartEngine } from './chart-engine';
 import { HistoryChart } from './history-chart';
 
 const at = (dateTime: string) => Date.parse(`${dateTime}Z`);
@@ -105,6 +106,63 @@ describe('HistoryChart', () => {
     await settle();
 
     expect(axis().formatter(at('2026-10-09T00:00:00'))).toBe('9 paź');
+  });
+
+  // the house out of reach for a moment, or a file of a version a deploy replaced
+  describe('when the library cannot be downloaded', () => {
+    let attempts: number;
+    let arrives: boolean;
+
+    beforeEach(() => {
+      attempts = 0;
+      arrives = false;
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideI18nTesting(),
+          {
+            provide: ChartEngine,
+            useValue: {
+              create: () => {
+                attempts++;
+                return arrives
+                  ? Promise.resolve({
+                      draw: () => undefined,
+                      resize: () => undefined,
+                      dispose: () => undefined,
+                    })
+                  : Promise.reject(new Error('Failed to fetch dynamically imported module'));
+              },
+            },
+          },
+        ],
+      });
+      fixture = TestBed.createComponent(Host);
+    });
+
+    const note = () =>
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="chart-failed"]');
+
+    it('says so in place of the picture', async () => {
+      await settle();
+      await settle();
+
+      expect(note()?.textContent).toContain('The chart could not be loaded.');
+    });
+
+    it('tries again when its lines change, and shows the chart once the library arrives', async () => {
+      await settle();
+      await settle();
+      expect(attempts).toBe(1);
+
+      arrives = true;
+      fixture.componentInstance.lines.set([{ ...TANK, points: [...TANK.points] }]);
+      await settle();
+      await settle();
+
+      expect(attempts).toBe(2);
+      expect(note()).toBeNull();
+    });
   });
 
   it('removes its chart with itself', async () => {

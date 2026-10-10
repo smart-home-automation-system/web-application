@@ -7,8 +7,10 @@ import {
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
 import { ThemeStore } from '../../core/theme/theme-store';
@@ -32,10 +34,30 @@ const LINE_COLORS = [1, 2, 3, 4, 5].map((index) => `var(--app-chart-${index})`);
  *
  * The picture has no text a screen reader could follow, so it is an image with the name the
  * caller gives it; what the lines say in numbers belongs next to it, in words.
+ *
+ * The library is downloaded when the first chart is shown. A download that fails - the house
+ * out of reach for a moment, a file of a version that was replaced by a deploy - is said in
+ * place of the picture and tried again whenever the lines change, which every poll does.
  */
 @Component({
   selector: 'app-history-chart',
-  template: `<div #plot class="chart__plot" role="img" [attr.aria-label]="label()"></div>`,
+  imports: [TranslocoDirective],
+  template: `
+    <ng-container *transloco="let t">
+      <div
+        #plot
+        class="chart__plot"
+        role="img"
+        [class.chart__plot--failed]="failed()"
+        [attr.aria-label]="label()"
+      ></div>
+      @if (failed()) {
+        <p class="chart__failed" role="status" data-testid="chart-failed">
+          {{ t('history.chartFailed') }}
+        </p>
+      }
+    </ng-container>
+  `,
   styleUrl: './history-chart.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -54,6 +76,8 @@ export class HistoryChart {
   private readonly locale = inject(LanguageStore).locale;
   private readonly plot = viewChild.required<ElementRef<HTMLElement>>('plot');
   private readonly chart = signal<DrawnChart | undefined>(undefined);
+  /** The library could not be downloaded; cleared by the attempt that succeeds. */
+  protected readonly failed = signal(false);
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -65,25 +89,32 @@ export class HistoryChart {
       this.chart()?.dispose();
     });
 
-    // after the first render there is an element to draw into; the library arrives a moment later
-    let asked = false;
+    // After the first render there is an element to draw into; the library arrives a moment
+    // later. Asked for once at a time, and again with new lines after an attempt that failed.
+    let asking = false;
     afterRenderEffect(() => {
       const host = this.plot().nativeElement;
-      if (asked) {
+      this.lines();
+      if (asking || untracked(this.chart) !== undefined) {
         return;
       }
-      asked = true;
-      void this.engine.create(host).then((chart) => {
-        if (gone) {
-          chart.dispose();
-          return;
-        }
-        if (typeof ResizeObserver !== 'undefined') {
-          observer = new ResizeObserver(() => chart.resize());
-          observer.observe(host);
-        }
-        this.chart.set(chart);
-      });
+      asking = true;
+      this.engine
+        .create(host)
+        .then((chart) => {
+          if (gone) {
+            chart.dispose();
+            return;
+          }
+          if (typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver(() => chart.resize());
+            observer.observe(host);
+          }
+          this.failed.set(false);
+          this.chart.set(chart);
+        })
+        .catch(() => this.failed.set(true))
+        .finally(() => (asking = false));
     });
 
     // After the render, so that the attributes of the theme are on the page when the colours

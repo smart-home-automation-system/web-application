@@ -73,19 +73,25 @@ export class Rooms {
     this.open.update((current) => (current === room ? undefined : room));
   }
 
-  private readonly schedules = new WeakMap<RoomView, readonly (readonly SchedulePeriod[])[]>();
+  private readonly schedules = new Map<
+    string,
+    { readonly key: string; readonly periods: readonly (readonly SchedulePeriod[])[] }
+  >();
 
   /**
-   * The periods of every heater of the room, for the schedule line of its history. The same
-   * list for as long as the room is the same object: a list made anew at every look would have
-   * the chart drawn again at every look.
+   * The periods of every heater of the room, for the schedule line of its history. **The same
+   * list for as long as the schedules are the same**: the rooms are read anew with every poll,
+   * and a list made anew each time would have the chart drawn again every half minute, under
+   * the hand of whoever reads a value off it.
    */
   protected schedulesOf(room: RoomView): readonly (readonly SchedulePeriod[])[] {
-    let periods = this.schedules.get(room);
-    if (periods === undefined) {
-      periods = (room.heaters ?? []).map((heater) => heater.periods ?? []);
-      this.schedules.set(room, periods);
+    const periods = (room.heaters ?? []).map((heater) => heater.periods ?? []);
+    const key = JSON.stringify(periods);
+    const kept = this.schedules.get(room.name);
+    if (kept?.key === key) {
+      return kept.periods;
     }
+    this.schedules.set(room.name, { key, periods });
     return periods;
   }
 

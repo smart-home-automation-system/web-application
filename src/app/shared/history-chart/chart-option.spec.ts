@@ -1,5 +1,12 @@
 import { ChartLine } from './chart-data';
-import { ChartColors, ChartInput, axisLabel, chartOption, tooltipTime } from './chart-option';
+import {
+  ChartColors,
+  ChartInput,
+  axisLabel,
+  chartOption,
+  tooltipTime,
+  valueAt,
+} from './chart-option';
 
 const at = (dateTime: string) => Date.parse(`${dateTime}Z`);
 const DAY_MS = 24 * 60 * 60 * 1_000;
@@ -159,6 +166,74 @@ describe('chartOption', () => {
       expect(text).not.toContain('<img');
       expect(text).toContain('&lt;img src=x&gt;');
     });
+  });
+});
+
+describe('the schedule in a tooltip', () => {
+  // a period from 06:00 to 08:00 at 21 °C: two points, one at each edge
+  const schedule: ChartLine = {
+    key: 'schedule',
+    name: 'Current schedule',
+    color: 4,
+    dashed: true,
+    points: [
+      [at('2026-10-08T06:00:00'), 21],
+      [at('2026-10-08T08:00:00'), 21],
+    ],
+  };
+  const tooltip = (hovered: { seriesName: string; value: [number, number | null] }[]) =>
+    (
+      chartOption(input({ lines: [TANK, schedule] }), COLORS) as {
+        tooltip: { formatter(rows: unknown): string };
+      }
+    ).tooltip.formatter(hovered.map((row) => ({ ...row, marker: '<i></i>' })));
+
+  // the library lists a line only near one of its points: the steps have two, hours apart
+  it('says what the schedule asks for at a moment between its two edges', () => {
+    const text = tooltip([{ seriesName: 'Tank', value: [at('2026-10-08T07:00:00'), 46.5] }]);
+
+    expect(text).toContain('Tank: <strong>46.5 °C</strong>');
+    expect(text).toContain('Current schedule: <strong>21.0 °C</strong>');
+  });
+
+  it('says nothing of the schedule at a moment no period is on', () => {
+    const text = tooltip([{ seriesName: 'Tank', value: [at('2026-10-08T09:00:00'), 46.5] }]);
+
+    expect(text).not.toContain('Current schedule');
+  });
+
+  // at an edge two steps can share one moment: the row of the schedule is still one
+  it('lists the schedule once, whatever the library hovered of it', () => {
+    const text = tooltip([
+      { seriesName: 'Tank', value: [at('2026-10-08T06:00:00'), 46.5] },
+      { seriesName: 'Current schedule', value: [at('2026-10-08T06:00:00'), 21] },
+      { seriesName: 'Current schedule', value: [at('2026-10-08T06:00:00'), 21] },
+    ]);
+
+    expect(text.match(/Current schedule/g)).toHaveLength(1);
+    expect(text).toContain('Thu 8 Oct, 06:00');
+  });
+});
+
+describe('valueAt', () => {
+  const line = [
+    [0, 21],
+    [10, 21],
+    [10, null],
+    [20, 22],
+    [30, 24],
+  ] as const;
+
+  it('reads the value of the stretch that covers the moment', () => {
+    expect(valueAt(line, 5)).toBe(21);
+    expect(valueAt(line, 25)).toBe(23);
+  });
+
+  it('has no value at a break, before the line or after it', () => {
+    expect(valueAt(line, 15)).toBeUndefined();
+    expect(valueAt(line, -1)).toBeUndefined();
+    expect(valueAt(line, 31)).toBeUndefined();
+    expect(valueAt([], 5)).toBeUndefined();
   });
 });
 

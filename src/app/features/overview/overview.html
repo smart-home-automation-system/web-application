@@ -5,7 +5,7 @@
 
   <section class="tiles" [attr.aria-label]="t('overview.systems')">
     <!-- the card of the heating page: the state of the whole heating and its switch -->
-    <app-heating-switch class="tiles__switch" [control]="heating" />
+    <app-heating-switch [control]="heating" />
 
     <app-overview-tile
       heading="overview.rooms.title"
@@ -32,6 +32,9 @@
               <dd>
                 <span class="tile__name">{{ coldest.name }}</span>
                 <strong>{{ coldest.temperature | localNumber: ONE_DECIMAL }} °C</strong>
+                @if (coldest.measuredAt | houseAge; as age) {
+                  <span class="tile__age">{{ age }}</span>
+                }
               </dd>
             </div>
             @if (summary.warmest; as warmest) {
@@ -40,6 +43,9 @@
                 <dd>
                   <span class="tile__name">{{ warmest.name }}</span>
                   <strong>{{ warmest.temperature | localNumber: ONE_DECIMAL }} °C</strong>
+                  @if (warmest.measuredAt | houseAge; as age) {
+                    <span class="tile__age">{{ age }}</span>
+                  }
                 </dd>
               </div>
             }
@@ -199,6 +205,11 @@
             </div>
           }
         </dl>
+        @if (lateCheck() | houseAge; as age) {
+          <p class="tile__detail tile__detail--alert" data-testid="presence-late">
+            {{ t('overview.presence.late', { age }) }}
+          </p>
+        }
       } @else if (!presence.error()) {
         <p class="tile__detail">{{ t('presence.now.none') }}</p>
       }

@@ -47,10 +47,10 @@ export const en = {
     },
     presence: {
       title: 'At home now',
+      late: 'Last checked {{ age }} - the detection may be down.',
     },
     sensors: {
       title: 'Temperature sensors',
-      silent: 'Silent',
       muted: 'muted',
       unknown: 'The service does not say which sensors are reporting.',
     },
@@ -58,6 +58,7 @@ export const en = {
   history: {
     loading: 'Loading the history',
     empty: 'No reading in this period.',
+    chartFailed: 'The chart could not be loaded. It is tried again with the next update.',
     preset: {
       choose: 'Period of the history',
       day: '24 hours',

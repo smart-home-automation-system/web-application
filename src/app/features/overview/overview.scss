@@ -104,6 +104,13 @@
   overflow-wrap: anywhere;
 }
 
+// how old a reading is: the service keeps the last one of a sensor that fell silent
+.tile__age {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
 .tile__tag {
   margin-left: 6px;
   font: var(--mat-sys-label-small);

@@ -31,6 +31,8 @@ const ROOMS: readonly Room[] = [
     heaters: [{ type: 'radiator', working: false }],
   },
   { name: 'garage', heaters: [] },
+  // outside the house: counted, and never its coldest room
+  { name: 'garden', temperature: { value: 4, updatedAt: '2026-10-10T18:20:00' }, heaters: [] },
 ];
 
 const SENSORS: readonly TemperatureSensor[] = [
@@ -172,10 +174,12 @@ describe('Overview', () => {
 
       const text = words(await tile('rooms'));
 
-      expect(text).toContain('Rooms: 3');
+      expect(text).toContain('Rooms: 4');
       expect(text).toContain('Being heated now: 1');
-      expect(text).toContain('Coldest bedroom 18.9 °C');
-      expect(text).toContain('Warmest living room 21.4 °C');
+      // each with the age of its reading: the service keeps the last one of a silent sensor
+      expect(text).toMatch(/Coldest bedroom 18\.9 °C 3 min\.? ago/);
+      expect(text).toMatch(/Warmest living room 21\.4 °C 2 min\.? ago/);
+      expect(text).not.toContain('garden');
     });
 
     // right after a start of the service no relay has answered: "0 heated" would be a claim
@@ -296,6 +300,22 @@ describe('Overview', () => {
       expect(text).toContain('Borys Away');
       // listed as not present with no check at all: never observed, which is not "away"
       expect(text).toContain('Cecylia Not observed yet');
+    });
+
+    // presence-service answers 200 with its last pass for as long as it cannot look: the
+    // presence page flags a check older than five minutes, and so does the tile
+    it('warns when the detection last checked more than five minutes ago', async () => {
+      answer(presence, [{ name: 'Aurelia', present: true, lastCheckedAt: '2026-10-10T16:30:00' }]);
+
+      const late = (await tile('presence')).querySelector('[data-testid="presence-late"]');
+
+      expect(words(late)).toMatch(/Last checked 2 hr\.? ago - the detection may be down\./);
+    });
+
+    it('says nothing about the detection while its last check is fresh', async () => {
+      answer(presence, PEOPLE);
+
+      expect((await tile('presence')).querySelector('[data-testid="presence-late"]')).toBeNull();
     });
 
     it('says that the registry has no active member', async () => {
