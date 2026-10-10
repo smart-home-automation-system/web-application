@@ -264,6 +264,83 @@ e2e/              # Playwright tests
     never from a constant - that address is private. Its QR code (`shared/qr-code`, the encoder
     is `uqr`) is black on white in every theme, the one place with literal colours; a unit test
     reads the drawn code back with a QR reader (`jsqr`, a devDependency).
+- **A history is a chart of what the service stored** (HAS-201, `shared/history-chart/`,
+  used by the hot water and by the open room of the heating page). What to keep:
+  - **The page asks with `from` / `to` and never chooses the bucket** - the services do, and say
+    so in `bucketSeconds`. The ranges come from `historyRange` (`core/time/history-range.ts`):
+    the last 24 hours start on a **full hour** of the house, 7 and 30 days on a **midnight**,
+    because the services align their buckets to the clock of the house and a range that starts
+    inside one gets a first point before its axis. Wall-clock arithmetic only - a day is 24
+    hours there, also on the two nights the clocks change.
+  - **A missing bucket is a break in the line** (`toLine`): two points further apart than
+    `bucketSeconds` get a `null` between them, and the chart never connects across one. A point
+    that cannot be read is left out, which makes it a gap too. Never "fix" a gap by connecting.
+  - **A history is a `queryResource`** (`core/api/query-resource.ts`, the rule of the presence
+    reports): the answer carries the range it is for, and the view shows it only while that is
+    the answer of the **period** on screen (`shownHistory`) - until then a progress bar, not
+    the day under "7 days". One resource is for one room: the panel of a room is made anew for
+    another.
+  - **Another period is another question; the clock moving on is not.** The range also changes
+    by itself, at every full hour and at midnight. Then the chart of the hour before stays, on
+    the axis of *its* answer (`shown.axis`, not the range now asked for), until the new answer
+    arrives - and stays when that one call fails. Blanking it there took the chart away once an
+    hour, and for minutes after a failed call (found in review).
+  - **The content of `HistoryFrame` is a template** (`<ng-template>` inside the tag). Plain
+    content is created by Angular the moment the frame is, shown or not - a chart was made, and
+    drawn into nothing, behind every progress bar (found by a test). The same holds for any
+    wrapper that shows its content only sometimes.
+  - **The library is behind one door**, `ChartEngine`, which imports `echarts-kit.ts` with
+    `import()` - nothing else may import `echarts`, or it lands in the first download (the chunk
+    is 534 kB). A unit test provides `provideChartTesting()` (`src/testing/chart.ts`) and reads
+    the drawing the library was handed; the DOM of the tests cannot draw. Drawn as **SVG**: a
+    browser test can read the legend and the axis as text. **The download can fail** (the house
+    out of reach, a file of a version a deploy replaced): the chart says so in place of the
+    picture and asks again when its lines change, which every poll does.
+  - **A drawing holds colours, not variables.** `HistoryChart` reads `--app-chart-1` ... `-5`
+    and the text colours back from the page (an element given the colour, `getComputedStyle`)
+    after the render, and draws again when the season, the scheme or the language changes. A
+    new colour of a chart goes through `readColors`, never as a literal.
+  - **The times are the wall clock of the house on the UTC timeline** (`wallClockOf`,
+    `useUTC: true`, formatters with `timeZone: 'UTC'`) - the rule of `formatHouseDateTime`.
+    Never `new Date(text)` on a point.
+  - **The tooltip is HTML** - the one place of the application that builds markup by hand. A
+    name that goes into it is escaped (`escapeHtml`), and only names of our own making go in:
+    never a room or member name without it. **A line of steps is read off in the tooltip, not
+    taken from the library** (`valueAt`): it has points at its edges only, and ECharts lists a
+    line only where the pointer is near one of its points.
+  - **What a chart is given must be the same object while it says the same** - the rooms are
+    read anew every 30 s, and a list of schedules made anew each time had the chart drawn again
+    every half minute (`Rooms.schedulesOf` keeps it by its content).
+  - **No words inside the picture where a line can cross them** (the label of the band was
+    crossed by the line of the tank, and moved under the chart). What the chart shows is also
+    said next to it in numbers - the lowest and the highest value of each line - which is what
+    a screen reader gets; the picture itself is `role="img"` with a name.
+  - **The schedule line of a room is today's schedule** (`scheduleLine`), named "current
+    schedule" with a note under the chart (owner, 2026-10-09): the target of a past day is
+    stored nowhere. It is drawing, like the week of a heater - the target *now* stays the
+    service's `scheduledTemperature`. A schedule alone is no history: without a reading the
+    frame says "no reading", it does not draw the dashed line by itself.
+- **The age of the hot-water reading is `measuredAt`, not the freshness of the call** (HAS-201):
+  `water-service` repeats its last row while the sensor is silent. Older than
+  `HOT_WATER_READING_OUT_OF_DATE_MS` (6 minutes, two missed polls - a copy of the interval of
+  the service, like the 38 / 42 band) the line is a warning. An answer without the field shows
+  nothing about the age; it is never made up from the time of the call. The page and the tile
+  of the overview read the answer with one function (`toWaterReading`, `isOutOfDate` in
+  `data-access/water/water-reading.ts`). Known limit, as for every age here: it is counted by
+  the clock of the browser, so one that is minutes off sees the warning early or late.
+- **The overview is one tile per call** (HAS-201, `features/overview/`): `OverviewTile` tells
+  the bar, the freshness and the failure of its resource, the content says what the answer
+  holds, the title is the link to the dashboard. A tile reuses the reading of its dashboard
+  (`toRoomViews`, `toSensorRows`, `toDeviceView`) and claims no more than it: `heating` is
+  `undefined`, not 0, while no relay has answered; a member never checked is "not observed",
+  not away; a last check of the detection older than `PRESENCE_CHECK_IS_LATE_AFTER_MS` is
+  flagged, as on the presence page; the coldest and the warmest room are of the house - the
+  rooms of the floor "outside" (`FLOORS`) are counted and left out of the two - each with the
+  age of its reading, because the service keeps the last one of a sensor that fell silent. **A new tile is a new resource** - two values of two calls in one tile would tell
+  one failure for both. An input of a component must not be called `title`: written as a plain
+  attribute it is also the tooltip of the element (`heading` there). A unit test that renders
+  the overview through the real routes lets its six reads through with `isOverviewRead`
+  (`src/testing/overview-reads.ts`) - add a read there together with its tile.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

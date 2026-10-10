@@ -34,20 +34,31 @@ it holds no data and no logic of its own beyond presentation.
 
 It has the **application shell** - the layout and navigation, the foundation every dashboard is
 built on (API client, polling, error handling, house time, two languages, the profiles of the
-household), the mock API for development, and the delivery pipeline - and the first four
+household), the mock API for development, and the delivery pipeline - the overview and the
 dashboards:
 
+- **Overview**: the house at a glance, the landing page of the administrator - the switch of the
+  heating (the card of the heating page) and a tile per dashboard: the rooms (how many, how many
+  are being heated, the coldest and the warmest of the house with the age of each reading), the
+  temperature sensors that fell silent, the hot water, the boiler room and who is at home - with
+  a warning when the detection has not checked for more than five minutes. Each tile is fed by one call, so it has its own
+  freshness and its own failure and the page stays whole while one service is down; its title
+  leads to the dashboard that has the rest.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the
   temperature of each with the age of its reading, the temperature its schedule asks for right
-  now, and its heaters with what their relays last reported; a room opens into the week of its
-  heaters, read-only - and the temperature sensors: when each room last reported, which sensor
+  now, and its heaters with what their relays last reported; a room opens into **the history
+  of its temperature** - the last 24 hours, 7 or 30 days, with the schedule the room has today
+  as a dashed line - and the week of its heaters, read-only - and the temperature sensors: when each room last reported, which sensor
   has fallen silent and which is left out of the alerts. The switch is the one control of the application
   that changes the house: it asks before it acts, and what it shows afterwards is what the
   house answers when asked again, never what was clicked.
 - **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
-  circulation, and whether the water asks to be heated.
+  circulation, **when the sensors were read** - a reading older than 6 minutes is marked out of
+  date, because the service repeats its last one while the sensor is silent - whether the water
+  asks to be heated, and **the history of both temperatures** over the last 24 hours, 7 or 30
+  days, on the band the tank is kept in.
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
@@ -79,8 +90,13 @@ dashboards:
   shows that answer. The member using the page cannot rename, demote, switch off or remove
   themselves there - the browser would lose its own profile.
 
-Hot water, the boiler room and the presence are read-only. The landing page still shows a single tile - the
-state of the heating system; the overview proper arrives with a following task.
+Hot water, the boiler room and the presence are read-only.
+
+**The charts** are drawn with ECharts, downloaded by the first view that shows one and never
+with the first page. A history is asked for with its two ends only - the services choose how
+the range is cut into buckets - and **a bucket without a reading is a break in the line**, never
+a slope drawn across it. The dashed line of a room is the schedule the room has *today*: what
+was in force on a past day is stored nowhere, and the chart says so.
 
 Everybody in the household has a **profile**, opened by a personal link and remembered in the
 browser: the administrator gets the whole application, a resident their own page - see
@@ -253,17 +269,19 @@ Endpoints used today:
 | `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating, and my room for a member with `heating_switch`), polled every 30 s, and once more right after every change of the switch |
 | `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating, and my room for a member with `heating_switch`), after a confirmation. Its answer is not used: the state is read again |
 | `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
-| `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating), polled every 30 s. Needs `heating-service` 1.8.0 or later |
+| `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating, overview), polled every 30 s. Needs `heating-service` 1.8.0 or later |
 | `GET` | `/home/heating/rooms/{name}` | One room, by the identifier the registry gives a profile (my room), polled every 30 s for the room on screen. A 404 with the code `NOT_FOUND_ROOM` is shown as "the heating service does not know this room" |
+| `GET` | `/home/heating/rooms/{name}/temperature/history?from=&to=` | The stored temperatures of a room, averaged into buckets (heating, the open room). Asked when the room is opened or the period changes, then every 5 min. Needs `heating-service` 1.9.0 or later |
 | `GET` | `/home/heating/floor-pump` | What the relay of the floor heating pump last reported (heating), polled every 30 s |
-| `GET` | `/home/heating/temperature/sensors` | Per room the time of the last reading, `stale` and `muted` (heating), polled every 60 s. A room that never reported is not in the answer |
-| `GET` | `/home/presence/residents/presence` | Who is at home now: per active member `present`, `since` and `lastCheckedAt` (presence), polled every 60 s. A member nothing is stored about comes as not present with no times - shown as "not observed yet", not as away |
+| `GET` | `/home/heating/temperature/sensors` | Per room the time of the last reading, `stale` and `muted` (heating, overview), polled every 60 s. A room that never reported is not in the answer |
+| `GET` | `/home/presence/residents/presence` | Who is at home now: per active member `present`, `since` and `lastCheckedAt` (presence, overview), polled every 60 s. A member nothing is stored about comes as not present with no times - shown as "not observed yet", not as away |
 | `GET` | `/home/presence/residents/{name}/report?from=&to=` | The periods at home of one resident (presence). Asked when the resident or the period changes, then every 5 min |
 | `GET` | `/home/presence/residents/{name}/report/daily?from=&to=` | The days of that resident: time at home, first arrival, last departure, share (presence). Always asked together with the report above |
 | `GET` | `/home/presence/house/report?from=&to=` | The house as a timeline of occupied and empty stretches, and its days (presence). Asked when the period changes, then every 5 min |
-| `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation (hot water), polled every 30 s. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
+| `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation with `measuredAt`, the time the sensors were read (hot water, overview), polled every 30 s. Without `measuredAt` - a `water-service` below 0.6.0 - the age of the reading is not shown. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
+| `GET` | `/home/water/temperature/history?from=&to=` | Both temperatures over a range, averaged into buckets (hot water). Asked when the period changes, then every 3 min. Needs `water-service` 0.6.0 or later |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
-| `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room), polled every 30 s |
+| `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room, overview), polled every 30 s |
 | `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the switch on "My room"). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened - and after every change made on the Household page |
 | `GET` | `/home/household` | The whole registry - every member, switched off or not, with phone, role, rooms, permissions and devices (household). By the Household page only, polled every 60 s while it is open and read again after every change |
 | `POST` | `/home/household/member` | Adds a member, with role, rooms and permissions (household) |
