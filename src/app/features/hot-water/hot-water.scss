@@ -1,18 +1,13 @@
+// The tank on the left, the demand and the circulation one under the other on the right - and
+// the two sides always end on one line (owner, 2026-10-10: no card may stop short of its
+// neighbour and leave a hole above the history). Flex, not a grid: whichever side is the taller,
+// the other is stretched to it, at every width.
 .tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
   gap: 12px;
   max-width: 960px;
-  // The tank and the two cards next to it end on one line (owner, 2026-10-10: cards of
-  // different heights in a row do not look right). They are within a few lines of each other,
-  // so no card is left mostly empty by it.
-  align-items: stretch;
-}
-
-// the demand and the circulation: two small cards, one under the other, next to the tank
-.tiles__stack {
-  display: grid;
-  gap: 12px;
 }
 
 // every card here is of the hot-water domain: its colour on the edge, the badge and the gauge
@@ -23,10 +18,24 @@
 // the temperatures are what the page is about: twice the width, so the gauge has room for
 // its scale
 .tile--tank {
-  grid-column: span 2;
+  flex: 2 1 560px;
+  min-width: 0;
+}
 
-  @media (max-width: 640px) {
-    grid-column: 1 / -1;
+// The two small cards. Next to the tank there is room for one of them in a row, so they stand
+// one under the other and share the height of the tank between them; in a window too narrow
+// for that they move under the tank, side by side and of one height; on a phone one per row.
+.tiles__stack {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: stretch;
+  gap: 12px;
+
+  .tile {
+    flex: 1 1 280px;
+    min-width: 0;
   }
 }
 
