@@ -159,7 +159,9 @@ test.describe('heating', () => {
 
       await expect(button).toHaveAttribute('aria-expanded', 'true');
       const panel = livingRoom.getByTestId('room-panel');
+      // the history of the room first, then the week of each heater
       await expect(panel.getByRole('heading', { level: 4 })).toHaveText([
+        'Temperature history',
         'Radiator',
         'Floor heating',
       ]);
@@ -361,15 +363,39 @@ test.describe('hot water', () => {
     expect(bandBox!.width).toBeGreaterThan(20);
   });
 
+  // The owner's layout (2026-10-10): the tank on the left, the demand and under it the
+  // circulation on the right, the two sides ending on one line.
+  test('stands the circulation under the demand, level with the card of the tank', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/water');
+    await expect(page.getByTestId('circulation')).toContainText('29.8 °C');
+    await expect(page.getByTestId('demand')).toContainText('Warm enough');
+
+    const box = async (name: string) => (await page.getByTestId(name).boundingBox())!;
+    const tank = await box('temperatures');
+    const demand = await box('demand');
+    const circulation = await box('circulation-card');
+
+    expect(circulation.y).toBeGreaterThan(demand.y + demand.height);
+    expect(Math.round(circulation.x)).toBe(Math.round(demand.x));
+    if (testInfo.project.name === 'phone') {
+      expect(demand.y).toBeGreaterThan(tank.y + tank.height);
+    } else {
+      expect(Math.round(demand.y)).toBe(Math.round(tank.y));
+      expect(Math.round(circulation.y + circulation.height)).toBe(Math.round(tank.y + tank.height));
+    }
+  });
+
   // water-service answers 200 with no body until its first reading
   test('says that nothing was measured yet just after a start of the service', async ({ page }) => {
     await useScenario(page, 'no-readings');
 
     await page.goto('/water');
 
-    await expect(page.getByTestId('temperatures')).toContainText(
-      'No temperature has been measured yet.',
-    );
+    for (const card of ['temperatures', 'circulation-card']) {
+      await expect(page.getByTestId(card)).toContainText('No temperature has been measured yet.');
+    }
     await expect(page.getByTestId('tank')).toHaveCount(0);
     await expect(page.getByTestId('circulation')).toHaveCount(0);
     await expect(page.getByRole('meter')).toHaveCount(0);
@@ -383,8 +409,10 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
+    // three calls - the temperatures, the demand and the history - in four cards: the tank and
+    // the circulation come from one call and each tells its failure
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(2);
+    await expect(alerts).toHaveCount(4);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }

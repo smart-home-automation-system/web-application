@@ -1,11 +1,13 @@
+// The tank on the left, the demand and the circulation one under the other on the right - and
+// the two sides always end on one line (owner, 2026-10-10: no card may stop short of its
+// neighbour and leave a hole above the history). Flex, not a grid: whichever side is the taller,
+// the other is stretched to it, at every width.
 .tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
   gap: 12px;
   max-width: 960px;
-  // A card is as tall as what it has to say. Stretched to the tallest card of its row, a card
-  // with one line in it was mostly empty (owner, 2026-10-08).
-  align-items: start;
 }
 
 // every card here is of the hot-water domain: its colour on the edge, the badge and the gauge
@@ -16,10 +18,24 @@
 // the temperatures are what the page is about: twice the width, so the gauge has room for
 // its scale
 .tile--tank {
-  grid-column: span 2;
+  flex: 2 1 560px;
+  min-width: 0;
+}
 
-  @media (max-width: 640px) {
-    grid-column: 1 / -1;
+// The two small cards. Next to the tank there is room for one of them in a row, so they stand
+// one under the other and share the height of the tank between them; in a window too narrow
+// for that they move under the tank, side by side and of one height; on a phone one per row.
+.tiles__stack {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: stretch;
+  gap: 12px;
+
+  .tile {
+    flex: 1 1 280px;
+    min-width: 0;
   }
 }
 
@@ -38,34 +54,6 @@ mat-card-content {
   letter-spacing: var(--mat-sys-display-small-tracking);
   color: var(--mat-sys-on-surface);
   // the digits keep their width, so the number does not shake when it changes
-  font-variant-numeric: tabular-nums;
-}
-
-// the second temperature of the same call: a line under the first, not a card of its own
-.tile__second {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 12px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
-  font: var(--mat-sys-title-medium);
-  letter-spacing: var(--mat-sys-title-medium-tracking);
-  color: var(--mat-sys-on-surface-variant);
-
-  // alone in the card - the tank has no reading - it needs no line above it
-  &:first-child {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
-  }
-}
-
-.tile__second-reading {
-  margin-left: auto;
-  font: var(--mat-sys-headline-small);
-  letter-spacing: var(--mat-sys-headline-small-tracking);
-  color: var(--mat-sys-on-surface);
   font-variant-numeric: tabular-nums;
 }
 
@@ -96,4 +84,32 @@ mat-card-content {
   margin: 4px 0 0;
   font: var(--mat-sys-body-medium);
   color: var(--mat-sys-on-surface-variant);
+}
+
+// when the sensors were read - the age of the reading, which the freshness of the call is not
+.tile__measured {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+// A reading the service only repeats: a sentence on the tinted strip of an error, whose text
+// colour is made for it - the error red alone does not reach 4.5:1 on glass over a photo.
+.tile__measured--old {
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  mat-icon {
+    flex: none;
+  }
+}
+
+// the history has lines to tell apart: as wide as the tiles above it together
+.history {
+  display: block;
+  max-width: 960px;
+  margin-top: 12px;
 }

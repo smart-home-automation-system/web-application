@@ -248,3 +248,72 @@ describe('HeatingApi', () => {
     expect(pump.value()).toEqual({});
   });
 });
+
+describe('HeatingApi: the history of a room', () => {
+  let http: HttpTestingController;
+  const DAY = { from: '2026-10-09T19:00:00', to: '2026-10-10T19:00:00' };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    http.verify();
+    vi.useRealTimers();
+  });
+
+  const watch = (room: string) =>
+    TestBed.runInInjectionContext(() =>
+      TestBed.inject(HeatingApi).watchRoomHistory(
+        () => room,
+        () => DAY,
+      ),
+    );
+
+  // the name is a path segment: encoded, a space or a slash in it cannot change the path
+  it('asks for the room by its name, encoded, with the two ends of the range', () => {
+    watch('bathroom down/up');
+    vi.advanceTimersByTime(1);
+
+    const call = http.expectOne(
+      (request) => request.url === '/home/heating/rooms/bathroom%20down%2Fup/temperature/history',
+    );
+
+    expect(call.request.method).toBe('GET');
+    expect(call.request.params.keys().sort()).toEqual(['from', 'to']);
+    expect(call.request.params.get('from')).toBe('2026-10-09T19:00:00');
+    call.flush({ room: 'bathroom down', bucketSeconds: 1200, points: [] });
+  });
+
+  // a segment of dots alone is one the browser resolves away before it sends anything
+  it('never asks for a name of dots', () => {
+    const history = watch('..');
+    vi.advanceTimersByTime(1);
+
+    expect(history.error()?.kind).toBe('unexpected');
+    expect(history.settledFor()?.query).toBe(DAY);
+  });
+
+  // "no such room" is told by its code, like for the room itself
+  it('keeps the code of the 404 for a room the service does not have', () => {
+    const history = watch('attic');
+    vi.advanceTimersByTime(1);
+
+    http
+      .expectOne((request) => request.url.endsWith('/temperature/history'))
+      .flush(
+        {
+          errors: [
+            { code: 'NOT_FOUND_ROOM', message: 'Room with provided name is not a part of home' },
+          ],
+        },
+        { status: 404, statusText: 'Not Found' },
+      );
+
+    expect(history.error()?.hasCode('NOT_FOUND_ROOM')).toBe(true);
+  });
+});

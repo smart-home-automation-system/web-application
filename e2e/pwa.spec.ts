@@ -131,7 +131,8 @@ test.describe('without a connection to the house', () => {
 
     await page.goto('/');
 
-    await expect(page.getByRole('alert')).toContainText('(error 502)');
+    // every tile of the overview tells its own failure; none of them is the banner
+    await expect(page.getByRole('alert').first()).toContainText('(error 502)');
     await expect(page.getByTestId('offline-notice')).toBeHidden();
   });
 });

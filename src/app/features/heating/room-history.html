@@ -1,0 +1,37 @@
+<ng-container *transloco="let t">
+  <section class="history" data-testid="room-history">
+    <h4 class="history__title">{{ t('heating.rooms.history.title') }}</h4>
+    <app-history-frame
+      [(preset)]="period.preset"
+      [waiting]="shown.waiting()"
+      [empty]="!hasReadings()"
+      [error]="history.error()"
+      [lastUpdated]="history.lastUpdated()"
+      [stale]="history.stale()"
+    >
+      <ng-template>
+        @let axis = shown.axis();
+        @if (axis !== undefined) {
+          <app-history-chart
+            [lines]="lines()"
+            [from]="axis.from"
+            [to]="axis.to"
+            [label]="t('heating.rooms.history.chart')"
+          />
+        }
+        @if (extremes(); as range) {
+          <p class="history__note" data-testid="history-facts">
+            <span>{{ t('heating.rooms.history.temperature') }}</span>
+            <strong
+              >{{ range.lowest | localNumber: ONE_DECIMAL }} –
+              {{ range.highest | localNumber: ONE_DECIMAL }} °C</strong
+            >
+          </p>
+        }
+        @if (hasSchedule()) {
+          <p class="history__note">{{ t('heating.rooms.history.scheduleNote') }}</p>
+        }
+      </ng-template>
+    </app-history-frame>
+  </section>
+</ng-container>

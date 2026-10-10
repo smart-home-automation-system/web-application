@@ -36,7 +36,7 @@ test.describe('container image', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Choose your profile' }),
     ).toBeVisible();
-    await expect(page.getByRole('alert')).toContainText('The API gateway is not routed');
+    await expect(page.getByRole('alert').first()).toContainText('The API gateway is not routed');
     await context.close();
   });
 
@@ -53,10 +53,13 @@ test.describe('container image', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
     await expect(page.locator('.shell__brand mat-icon').first()).toBeVisible();
     // nginx answers /home itself, in the error contract: a refused request, not garbage
-    await expect(page.getByRole('alert')).toContainText('The API gateway is not routed');
-    const iconFont = await page.evaluate(() =>
-      document.fonts.check('24px "Material Symbols Outlined"'),
-    );
+    await expect(page.getByRole('alert').first()).toContainText('The API gateway is not routed');
+    // once the fonts that are on their way have arrived: the first failure strip can be on
+    // screen before the icon font is
+    const iconFont = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return document.fonts.check('24px "Material Symbols Outlined"');
+    });
     expect(iconFont, 'the self-hosted icon font loaded').toBe(true);
     expect(violations).toEqual([]);
   });
@@ -267,7 +270,7 @@ test.describe('container image', () => {
       await expect(page.getByTestId('offline-notice')).toContainText('No connection to the house');
       // The call itself went past the worker, which keeps no answer of the backend - and which
       // would have answered in its place with a 504 of its own, read as a failing service.
-      await expect(page.getByRole('alert')).toContainText('The server cannot be reached');
+      await expect(page.getByRole('alert').first()).toContainText('The server cannot be reached');
     });
 
     test('offers a version deployed since, and starts it on request', async ({ page, context }) => {

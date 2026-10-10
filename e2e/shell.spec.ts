@@ -116,19 +116,28 @@ test.describe('when the backend fails', () => {
     await useScenario(page, 'offline');
     await page.goto('/');
 
-    const alert = page.getByRole('alert');
-    await expect(alert).toContainText('The server cannot be reached');
-    await expect(page.getByText('No data received')).toBeVisible();
+    // one failure per tile of the overview, each with nothing received
+    const alerts = page.getByRole('alert');
+    await expect(alerts).toHaveCount(6);
+    for (const alert of await alerts.all()) {
+      await expect(alert).toContainText('The server cannot be reached');
+    }
+    await expect(page.getByText('No data received')).toHaveCount(6);
     // the shell keeps working without the backend
-    await expect(page.getByRole('link', { name: 'Hot water' })).toBeVisible();
+    await expect(
+      page.getByRole('navigation').getByRole('link', { name: 'Hot water' }).first(),
+    ).toBeVisible();
   });
 
   test('explains that the service is failing, without quoting it', async ({ page }) => {
     await useScenario(page, 'server-error');
     await page.goto('/');
 
-    const alert = page.getByRole('alert');
-    await expect(alert).toContainText('error 502');
-    await expect(alert).not.toContainText('Mock scenario');
+    const alerts = page.getByRole('alert');
+    await expect(alerts).toHaveCount(6);
+    for (const alert of await alerts.all()) {
+      await expect(alert).toContainText('error 502');
+      await expect(alert).not.toContainText('Mock scenario');
+    }
   });
 });

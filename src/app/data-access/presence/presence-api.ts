@@ -1,9 +1,12 @@
-import { Injectable, Signal, effect, inject, signal, untracked } from '@angular/core';
-import { Observable, forkJoin, map, of, tap, throwError } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { forkJoin, of, throwError } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { ApiError } from '../../core/api/api-error';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
+import { QueryResource, queryResource } from '../../core/api/query-resource';
+
+export type { Answered, QueryResource } from '../../core/api/query-resource';
 
 /**
  * One entry of `GET /home/presence/residents/presence` (`presence-service`): an active member of
@@ -111,25 +114,10 @@ export interface ResidentHistory {
 }
 
 /**
- * An answer together with the question it answers. A report is asked for a range somebody can
- * change, and the answer for the old range stays on screen until the new one arrives: the view
- * compares `query` with what it shows the controls for.
+ * A last check older than this is older than a detection that runs every minute would leave
+ * it: the detection may be down, and what the answer says may be as old.
  */
-export interface Answered<Q, T> {
-  readonly query: Q;
-  readonly answer: T;
-}
-
-/**
- * A resource whose question can change. Next to the answer it says which question its last
- * call - answered *or failed* - was for: the error and the freshness of the resource are those
- * of that question, and until it is the one on screen the view has nothing to show but that it
- * is waiting.
- */
-export interface QueryResource<Q, T> extends PollingResource<Answered<Q, T>> {
-  /** `undefined` until the first call has ended. */
-  readonly settledFor: Signal<{ readonly query: Q } | undefined>;
-}
+export const PRESENCE_CHECK_IS_LATE_AFTER_MS = 5 * 60_000;
 
 // the engine of presence-service looks at the network once a minute
 const POLL_NOW_EVERY_MS = 60_000;
@@ -153,8 +141,10 @@ export class PresenceApi {
    * Call in an injection context: the polling lives as long as the caller.
    */
   watchHouse(range: () => ReportRange): QueryResource<ReportRange, HouseReport | null> {
-    return this.watch(range, (asked) =>
-      this.api.get<HouseReport | null>('/presence/house/report', { ...asked }),
+    return queryResource(
+      range,
+      (asked) => this.api.get<HouseReport | null>('/presence/house/report', { ...asked }),
+      { intervalMs: POLL_REPORT_EVERY_MS },
     );
   }
 
@@ -167,51 +157,27 @@ export class PresenceApi {
   watchResident(
     query: () => ResidentQuery | undefined,
   ): QueryResource<ResidentQuery | undefined, ResidentHistory | null> {
-    return this.watch(query, (asked) => {
-      if (asked === undefined) {
-        return of(null);
-      }
-      // The name is a path segment: encoded, a space or a slash in it cannot change the path.
-      // Dots are not encoded, and a segment of dots alone is one the browser resolves away
-      // before it sends anything - such a name cannot be asked for, and is not.
-      if (/^\.+$/.test(asked.name)) {
-        return throwError(
-          () => new ApiError('unexpected', 0, [], new Error('A name of dots is not a path')),
-        );
-      }
-      const path = `/presence/residents/${encodeURIComponent(asked.name)}/report`;
-      return forkJoin({
-        report: this.api.get<PresenceReport | null>(path, { ...asked.range }),
-        daily: this.api.get<DailyPresenceReport | null>(`${path}/daily`, { ...asked.range }),
-      });
-    });
-  }
-
-  private watch<Q, T>(query: () => Q, load: (asked: Q) => Observable<T>): QueryResource<Q, T> {
-    const settledFor = signal<{ readonly query: Q } | undefined>(undefined);
-    const resource = pollingResource(
-      () => {
-        // read when the call is made: the answer is tagged with exactly what was asked
-        const asked = untracked(query);
-        const settle = () => settledFor.set({ query: asked });
-        return load(asked).pipe(
-          map((answer) => ({ query: asked, answer })),
-          tap({ next: settle, error: settle }),
-        );
+    return queryResource(
+      query,
+      (asked) => {
+        if (asked === undefined) {
+          return of(null);
+        }
+        // The name is a path segment: encoded, a space or a slash in it cannot change the path.
+        // Dots are not encoded, and a segment of dots alone is one the browser resolves away
+        // before it sends anything - such a name cannot be asked for, and is not.
+        if (/^\.+$/.test(asked.name)) {
+          return throwError(
+            () => new ApiError('unexpected', 0, [], new Error('A name of dots is not a path')),
+          );
+        }
+        const path = `/presence/residents/${encodeURIComponent(asked.name)}/report`;
+        return forkJoin({
+          report: this.api.get<PresenceReport | null>(path, { ...asked.range }),
+          daily: this.api.get<DailyPresenceReport | null>(`${path}/daily`, { ...asked.range }),
+        });
       },
       { intervalMs: POLL_REPORT_EVERY_MS },
     );
-    // a new question is asked at once; the answer to the old one, still on its way, is dropped
-    let first = true;
-    effect(() => {
-      query();
-      if (first) {
-        // the resource makes its first call by itself
-        first = false;
-        return;
-      }
-      void resource.refresh();
-    });
-    return { ...resource, settledFor: settledFor.asReadonly() };
   }
 }

@@ -1,0 +1,63 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+// as tall as its place: the overview stretches the tiles of a row to one height
+.tile {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+// the colour of the domain the tile is about, on its edge and its badge
+.tile[data-domain='heating'] {
+  --app-domain: var(--app-domain-heating);
+}
+
+.tile[data-domain='water'] {
+  --app-domain: var(--app-domain-water);
+}
+
+.tile[data-domain='boiler'] {
+  --app-domain: var(--app-domain-boiler);
+}
+
+.tile[data-domain='household'] {
+  --app-domain: var(--app-domain-household);
+}
+
+// tighter than Material's 16 px all round: the tiles are read, not touched
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+// The title is the way to the dashboard. It keeps the colour of a title - text on glass is
+// on-surface - and says it is a link by its arrow and by the line under it on hover and focus.
+.tile__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--mat-sys-corner-extra-small);
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-on-surface);
+    outline-offset: 2px;
+  }
+}
+
+.mat-icon.tile__arrow {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}

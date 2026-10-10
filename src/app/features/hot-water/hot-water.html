@@ -4,8 +4,9 @@
   </header>
 
   <section class="tiles" [attr.aria-label]="t('hotWater.readings')">
-    <!-- Both temperatures come from one call, so they share one card: one freshness, and one
-         explanation when the call fails. -->
+    <!-- Both temperatures come from one call, and each has a card of its own (owner,
+         2026-10-10): so each card tells the freshness, the age of the reading and the failure
+         of that call itself. -->
     <mat-card appearance="outlined" class="tile tile--tank card--domain" data-testid="temperatures">
       <mat-card-header>
         <div mat-card-avatar class="domain-badge"><mat-icon>water_drop</mat-icon></div>
@@ -23,7 +24,6 @@
           <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('hotWater.loading')" />
         } @else {
           @let water = tank();
-          @let loop = circulation();
           @if (water !== undefined) {
             <p class="tile__reading" data-testid="tank">{{ water | localNumber: oneDecimal }} °C</p>
             <app-temperature-gauge
@@ -44,17 +44,9 @@
               {{ t('hotWater.tank.band', { low: band.low, high: band.high }) }}
             </p>
           }
-          @if (loop !== undefined) {
-            <p class="tile__second" data-testid="circulation">
-              <mat-icon>cycle</mat-icon>
-              <!-- a space a screen reader hears: the name and the number are two words -->
-              <span class="tile__second-name">{{ t('hotWater.circulation.title') }}</span
-              >&ngsp;<span class="tile__second-reading"
-                >{{ loop | localNumber: oneDecimal }} °C</span
-              >
-            </p>
-          }
-          @if (water === undefined && loop === undefined && !temperatures.error()) {
+          @if (water !== undefined) {
+            <ng-container [ngTemplateOutlet]="measured" />
+          } @else if (!temperatures.error()) {
             <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
           }
           <app-api-error-strip [error]="temperatures.error()" />
@@ -62,36 +54,89 @@
       </mat-card-content>
     </mat-card>
 
-    <mat-card appearance="outlined" class="tile card--domain" data-testid="demand">
-      <mat-card-header>
-        <div mat-card-avatar class="domain-badge">
-          <mat-icon>local_fire_department</mat-icon>
-        </div>
-        <mat-card-title>{{ t('hotWater.heating.title') }}</mat-card-title>
-        <mat-card-subtitle>
-          <app-data-freshness [lastUpdated]="demand.lastUpdated()" [stale]="demand.stale()" />
-        </mat-card-subtitle>
-      </mat-card-header>
+    <!-- the two small cards, one under the other next to the tank -->
+    <div class="tiles__stack">
+      <mat-card appearance="outlined" class="tile card--domain" data-testid="demand">
+        <mat-card-header>
+          <div mat-card-avatar class="domain-badge">
+            <mat-icon>local_fire_department</mat-icon>
+          </div>
+          <mat-card-title>{{ t('hotWater.heating.title') }}</mat-card-title>
+          <mat-card-subtitle>
+            <app-data-freshness [lastUpdated]="demand.lastUpdated()" [stale]="demand.stale()" />
+          </mat-card-subtitle>
+        </mat-card-header>
 
-      <mat-card-content>
-        @if (demand.loading()) {
-          <mat-progress-bar
-            mode="indeterminate"
-            [attr.aria-label]="t('hotWater.heating.loading')"
-          />
-        } @else {
-          @let needed = heatingNeeded();
-          @if (needed !== undefined) {
-            <p class="tile__state" [class.tile__state--on]="needed">
-              <mat-icon>{{ needed ? 'mode_heat' : 'check_circle' }}</mat-icon>
-              {{ t(needed ? 'hotWater.heating.needed' : 'hotWater.heating.notNeeded') }}
-            </p>
-          } @else if (!demand.error()) {
-            <p class="tile__detail">{{ t('hotWater.heating.unknown') }}</p>
+        <mat-card-content>
+          @if (demand.loading()) {
+            <mat-progress-bar
+              mode="indeterminate"
+              [attr.aria-label]="t('hotWater.heating.loading')"
+            />
+          } @else {
+            @let needed = heatingNeeded();
+            @if (needed !== undefined) {
+              <p class="tile__state" [class.tile__state--on]="needed">
+                <mat-icon>{{ needed ? 'mode_heat' : 'check_circle' }}</mat-icon>
+                {{ t(needed ? 'hotWater.heating.needed' : 'hotWater.heating.notNeeded') }}
+              </p>
+            } @else if (!demand.error()) {
+              <p class="tile__detail">{{ t('hotWater.heating.unknown') }}</p>
+            }
+            <app-api-error-strip [error]="demand.error()" />
           }
-          <app-api-error-strip [error]="demand.error()" />
-        }
-      </mat-card-content>
-    </mat-card>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="tile card--domain" data-testid="circulation-card">
+        <mat-card-header>
+          <div mat-card-avatar class="domain-badge"><mat-icon>cycle</mat-icon></div>
+          <mat-card-title>{{ t('hotWater.circulation.title') }}</mat-card-title>
+          <mat-card-subtitle>
+            <app-data-freshness
+              [lastUpdated]="temperatures.lastUpdated()"
+              [stale]="temperatures.stale()"
+            />
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          @if (temperatures.loading()) {
+            <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('hotWater.loading')" />
+          } @else {
+            @let loop = circulation();
+            @if (loop !== undefined) {
+              <p class="tile__state tile__state--on" data-testid="circulation">
+                {{ loop | localNumber: oneDecimal }} °C
+              </p>
+              <ng-container [ngTemplateOutlet]="measured" />
+            } @else if (!temperatures.error()) {
+              <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
+            }
+            <app-api-error-strip [error]="temperatures.error()" />
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
   </section>
+
+  <!-- when the sensors were read: one time for both temperatures, told in each of their cards -->
+  <ng-template #measured>
+    @if (measuredAt() | houseAge; as age) {
+      <p
+        class="tile__detail tile__measured"
+        [class.tile__measured--old]="outOfDate()"
+        data-testid="measured"
+      >
+        @if (outOfDate()) {
+          <mat-icon>warning</mat-icon>
+        }
+        <span>{{
+          t(outOfDate() ? 'hotWater.measuredOutOfDate' : 'hotWater.measured', { age })
+        }}</span>
+      </p>
+    }
+  </ng-template>
+
+  <app-water-history class="history" />
 </ng-container>

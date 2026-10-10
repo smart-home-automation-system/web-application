@@ -4,6 +4,8 @@ import { throwError } from 'rxjs';
 import { ApiClient } from '../../core/api/api-client';
 import { ApiError, toApiError } from '../../core/api/api-error';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
+import { QueryResource, queryResource } from '../../core/api/query-resource';
+import { HistoryRange } from '../../core/time/history-range';
 
 /** `GET /home/heating` - the switch of the whole heating system. */
 export interface HeatingStatus {
@@ -100,6 +102,28 @@ export interface FloorPump {
   readonly updatedAt?: string;
 }
 
+/** One bucket of the history of a room: the average of the readings in it. */
+export interface RoomHistoryPoint {
+  /** House wall-clock time the bucket starts at, aligned to the clock of the house. */
+  readonly at?: string;
+  readonly value?: number;
+}
+
+/**
+ * `GET /home/heating/rooms/{name}/temperature/history?from=&to=` (`heating-service` 1.9.0): the
+ * stored temperatures of a room over a range, averaged into buckets whose width the service
+ * chooses - 20 minutes up to 2 days, 1 hour up to 8, 3 hours up to 31. **A bucket without a
+ * reading has no point**: two points further apart than `bucketSeconds` are a gap in the
+ * readings, and the line is broken there.
+ */
+export interface RoomHistory {
+  readonly room?: string;
+  readonly from?: string;
+  readonly to?: string;
+  readonly bucketSeconds?: number;
+  readonly points?: readonly RoomHistoryPoint[];
+}
+
 /** A change of the heating switch that the service did not carry out. */
 export interface FailedSwitch {
   /** What was asked for. */
@@ -124,6 +148,8 @@ export interface HeatingSwitchControl extends PollingResource<HeatingStatus> {
 const POLL_EVERY_MS = 30_000;
 // a sensor reports every few minutes and counts as silent after a day
 const POLL_SENSORS_EVERY_MS = 60_000;
+// a bucket is 20 minutes at its narrowest; the query shares a pool of 2 with the control loop
+const POLL_HISTORY_EVERY_MS = 5 * 60_000;
 
 @Injectable({ providedIn: 'root' })
 export class HeatingApi {
@@ -215,6 +241,36 @@ export class HeatingApi {
         return this.api.get<Room | null>(`/heating/rooms/${encodeURIComponent(asked)}`);
       },
       { intervalMs: POLL_EVERY_MS },
+    );
+  }
+
+  /**
+   * The stored temperatures of the room `room()` names for the range `range()` gives - asked
+   * again whenever the range changes, the answer tagged with the range it is for. Like
+   * `watchRoom`, one resource is for one room: the caller is made anew for another. The page asks
+   * with `from` / `to` and never chooses the bucket. Call in an injection context: the polling
+   * lives as long as the caller.
+   */
+  watchRoomHistory(
+    room: () => string,
+    range: () => HistoryRange,
+  ): QueryResource<HistoryRange, RoomHistory | null> {
+    return queryResource(
+      range,
+      (asked) => {
+        const name = room();
+        // a path segment, as in watchRoom: encoded, and a name of dots alone is never asked for
+        if (/^\.+$/.test(name)) {
+          return throwError(
+            () => new ApiError('unexpected', 0, [], new Error('A name of dots is not a path')),
+          );
+        }
+        return this.api.get<RoomHistory | null>(
+          `/heating/rooms/${encodeURIComponent(name)}/temperature/history`,
+          { ...asked },
+        );
+      },
+      { intervalMs: POLL_HISTORY_EVERY_MS },
     );
   }
 

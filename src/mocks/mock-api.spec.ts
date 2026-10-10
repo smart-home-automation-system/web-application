@@ -18,6 +18,7 @@ import {
 } from './heating.fixtures';
 import { householdProfiles, resetHousehold } from './household.fixtures';
 import { mockApiInterceptors } from './mock-api';
+import { WaterTemperatures } from '../app/data-access/water/water-api';
 import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
 
 describe('mock API', () => {
@@ -316,7 +317,11 @@ describe('mock API', () => {
 
     it('adds a member as a resident unless a role is named, and without devices', async () => {
       await firstValueFrom(
-        http.post('/home/household/member', { name: 'Fabian', phone: '+48500100106', rooms: ['loft'] }),
+        http.post('/home/household/member', {
+          name: 'Fabian',
+          phone: '+48500100106',
+          rooms: ['loft'],
+        }),
       );
 
       expect(await one('Fabian')).toEqual({
@@ -341,7 +346,9 @@ describe('mock API', () => {
         [400, 'INVALID_HOUSEHOLD_MEMBER'],
       ],
     ])('refuses to add %o', async (body, refusal) => {
-      expect(await code(firstValueFrom(http.post('/home/household/member', body)))).toEqual(refusal);
+      expect(await code(firstValueFrom(http.post('/home/household/member', body)))).toEqual(
+        refusal,
+      );
       expect(await registry()).toHaveLength(5);
     });
 
@@ -441,9 +448,12 @@ describe('mock API', () => {
   });
 
   it('answers the hot water and the boiler room from their fixtures', async () => {
-    expect(await firstValueFrom(http.get('/home/water/status/temperature'))).toEqual(
-      WATER_TEMPERATURES,
-    );
+    // the reading with the time the sensors were read, to the second and a moment ago
+    const temperatures = (await firstValueFrom(
+      http.get('/home/water/status/temperature'),
+    )) as WaterTemperatures;
+    expect(temperatures).toEqual({ ...WATER_TEMPERATURES, measuredAt: temperatures.measuredAt });
+    expect(temperatures.measuredAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
     expect(await firstValueFrom(http.get('/home/water/status/active'))).toEqual(
       WATER_HEATING_DEMAND,
     );

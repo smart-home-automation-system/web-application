@@ -15,13 +15,15 @@ import {
   heaterStateLabel,
 } from '../../shared/room-heating/heater-labels';
 import { HeaterWeek } from '../../shared/room-heating/heater-week';
-import { toRoomViews } from '../../shared/room-heating/room-views';
+import { RoomView, SchedulePeriod, toRoomViews } from '../../shared/room-heating/room-views';
 import { groupByFloor } from './floors';
+import { RoomHistory } from './room-history';
 
 /**
  * The rooms of the house, floor by floor: per room its temperature with the age of the reading,
  * the temperature its schedule asks for right now, and each heater with what its relay last
- * reported. A room opens in place into the week of its heaters, read-only.
+ * reported. A room opens in place into the history of its temperature and the week of its
+ * heaters, read-only.
  *
  * One call feeds all of it, so it is one card: the freshness and a failure are told once. The
  * freshness is that of the call - the service answers from its memory, which is why every
@@ -41,6 +43,7 @@ import { groupByFloor } from './floors';
     HouseAgePipe,
     LocalNumberPipe,
     HeaterWeek,
+    RoomHistory,
   ],
   templateUrl: './rooms.html',
   styleUrl: './rooms.scss',
@@ -68,6 +71,28 @@ export class Rooms {
 
   protected toggle(room: string): void {
     this.open.update((current) => (current === room ? undefined : room));
+  }
+
+  private readonly schedules = new Map<
+    string,
+    { readonly key: string; readonly periods: readonly (readonly SchedulePeriod[])[] }
+  >();
+
+  /**
+   * The periods of every heater of the room, for the schedule line of its history. **The same
+   * list for as long as the schedules are the same**: the rooms are read anew with every poll,
+   * and a list made anew each time would have the chart drawn again every half minute, under
+   * the hand of whoever reads a value off it.
+   */
+  protected schedulesOf(room: RoomView): readonly (readonly SchedulePeriod[])[] {
+    const periods = (room.heaters ?? []).map((heater) => heater.periods ?? []);
+    const key = JSON.stringify(periods);
+    const kept = this.schedules.get(room.name);
+    if (kept?.key === key) {
+      return kept.periods;
+    }
+    this.schedules.set(room.name, { key, periods });
+    return periods;
   }
 
   protected readonly kindLabel = heaterKindLabel;
