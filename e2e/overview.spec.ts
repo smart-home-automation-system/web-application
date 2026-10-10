@@ -106,6 +106,10 @@ test.describe('overview', () => {
     const tops = await page
       .locator('.tiles > *')
       .evaluateAll((tiles) => tiles.map((tile) => Math.round(tile.getBoundingClientRect().top)));
+    // the cards themselves, not the places they stand in
+    const heights = await page
+      .locator('.tiles mat-card')
+      .evaluateAll((cards) => cards.map((card) => Math.round(card.getBoundingClientRect().height)));
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
@@ -117,6 +121,9 @@ test.describe('overview', () => {
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
+      // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
+      expect(heights).toHaveLength(6);
+      expect(new Set(heights).size).toBe(1);
     }
   });
 

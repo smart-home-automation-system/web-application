@@ -3,9 +3,16 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 12px;
   max-width: 960px;
-  // A card is as tall as what it has to say. Stretched to the tallest card of its row, a card
-  // with one line in it was mostly empty (owner, 2026-10-08).
-  align-items: start;
+  // The tank and the two cards next to it end on one line (owner, 2026-10-10: cards of
+  // different heights in a row do not look right). They are within a few lines of each other,
+  // so no card is left mostly empty by it.
+  align-items: stretch;
+}
+
+// the demand and the circulation: two small cards, one under the other, next to the tank
+.tiles__stack {
+  display: grid;
+  gap: 12px;
 }
 
 // every card here is of the hot-water domain: its colour on the edge, the badge and the gauge
@@ -38,34 +45,6 @@ mat-card-content {
   letter-spacing: var(--mat-sys-display-small-tracking);
   color: var(--mat-sys-on-surface);
   // the digits keep their width, so the number does not shake when it changes
-  font-variant-numeric: tabular-nums;
-}
-
-// the second temperature of the same call: a line under the first, not a card of its own
-.tile__second {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 12px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
-  font: var(--mat-sys-title-medium);
-  letter-spacing: var(--mat-sys-title-medium-tracking);
-  color: var(--mat-sys-on-surface-variant);
-
-  // alone in the card - the tank has no reading - it needs no line above it
-  &:first-child {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
-  }
-}
-
-.tile__second-reading {
-  margin-left: auto;
-  font: var(--mat-sys-headline-small);
-  letter-spacing: var(--mat-sys-headline-small-tracking);
-  color: var(--mat-sys-on-surface);
   font-variant-numeric: tabular-nums;
 }
 

@@ -57,8 +57,11 @@ e2e/              # Playwright tests
   down for an hour. On an error the last value stays on screen, marked stale, next to the
   message - `<app-api-error-strip [error]="resource.error()" />` (`shared/api-error/`), the one
   way a failed call is told inside a card. **One resource, one card**: two values of the same
-  call share a card, or its freshness and its failure are told twice (the two temperatures of
-  the hot water did, until a review). The freshness is that of the *call*: where the answer
+  call share a card, or its freshness and its failure are told twice. **The one exception is the
+  owner's** (2026-10-10, HAS-201): the tank and the circulation of the hot water come from one
+  call and have a card each - so each of the two tells the freshness, the age of the reading
+  and the failure of that call, because a card has to be true read by itself. The freshness is
+  that of the *call*: where the answer
   carries no time of its own (`water/status/temperature`), say so in the data-access class.
 - **A change of the house has no optimistic state** (HAS-196, the heating switch): the
   data-access class returns the polled resource together with the way to change it
@@ -356,6 +359,12 @@ e2e/              # Playwright tests
   first. Check a new view at 2560 x 1440 and at 1440 x 900 for both: empty halves, and a scroll
   bar that the empty half would have made unnecessary. It does not undo the rule below - a
   card that has one line to say is still not stretched.
+- **Cards side by side end on one line where they are within a few lines of each other**
+  (owner, 2026-10-10, HAS-201): the tiles of the overview are all of one height
+  (`grid-auto-rows: 1fr` from 600 px, the card filling its place), and on the hot-water page
+  the demand and the circulation are stacked next to the tank, the two sides stretched to one
+  height. It bounds the rule below, it does not undo it: a card is still not stretched to a
+  neighbour several times its size, and in the one column of a phone nothing is evened out.
 - **A card is as big as what it says** (owner, 2026-10-08, HAS-195): never stretched to the
   height of its neighbour (`align-items: start` on a grid of cards) or across a wide screen and
   left mostly empty. Where a box has to be taller than its text - the furnace next to two

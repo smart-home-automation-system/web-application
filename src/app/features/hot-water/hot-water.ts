@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,8 +21,9 @@ import { WaterHistory } from './water-history';
  * the temperature of the circulation, whether the water asks to be heated, and the history of
  * both temperatures. Read-only - the backend has nothing to set here.
  *
- * Three calls feed the page, and each has one card: its freshness and its failure are told
- * once. They come from the same service, but one can be answered while another is not.
+ * Three calls feed the page. The demand and the history have a card each; the two temperatures
+ * come from one call and have a card each all the same (owner, 2026-10-10), so both tell the
+ * freshness, the age of the reading and the failure of that call.
  *
  * The freshness of a card is that of its call. For the temperatures that is not the age of the
  * reading: the service repeats its last row for as long as the sensor is silent, so the card
@@ -32,6 +34,7 @@ import { WaterHistory } from './water-history';
 @Component({
   selector: 'app-hot-water',
   imports: [
+    NgTemplateOutlet,
     MatCardModule,
     MatIconModule,
     MatProgressBarModule,

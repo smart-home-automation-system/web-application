@@ -112,7 +112,11 @@ test.describe('the age of the hot-water reading', () => {
   test('says when the sensors were read, next to the freshness of the call', async ({ page }) => {
     await page.goto('/water');
 
-    await expect(page.getByTestId('measured')).toHaveText(/Measured 1 min\.? ago/);
+    // the tank and the circulation were read at the same moment: each card says so
+    await expect(page.getByTestId('measured')).toHaveText([
+      /Measured 1 min\.? ago/,
+      /Measured 1 min\.? ago/,
+    ]);
     await expect(page.getByTestId('temperatures')).toContainText(/Updated/);
   });
 });

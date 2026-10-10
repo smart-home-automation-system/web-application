@@ -4,6 +4,10 @@
 
 .switch {
   --app-domain: var(--app-domain-heating);
+  // fills its place where a page stretches it (the overview); where the page does not, the
+  // place is as tall as the card and this changes nothing
+  height: 100%;
+  box-sizing: border-box;
 }
 
 // tighter than Material's 16 px all round, like the tiles of the views this card stands among

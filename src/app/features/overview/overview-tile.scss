@@ -3,6 +3,12 @@
   min-width: 0;
 }
 
+// as tall as its place: the overview stretches the tiles of a row to one height
+.tile {
+  height: 100%;
+  box-sizing: border-box;
+}
+
 // the colour of the domain the tile is about, on its edge and its badge
 .tile[data-domain='heating'] {
   --app-domain: var(--app-domain-heating);

@@ -1,12 +1,19 @@
 // The tiles fill the width of the window before the page asks to be scrolled: one column on a
-// phone, as many of at least 280 px as fit beyond it. A tile is as tall as what it says - never
-// stretched to the tallest of its row.
+// phone, as many of at least 280 px as fit beyond it. The tiles of a row are of one height
+// (owner, 2026-10-10): this page is a board of tiles of a kind, and a ragged row of them does
+// not look right - unlike the cards of a dashboard, each as tall as what it says.
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
   max-width: 1600px;
+
+  // every row as tall as the tallest tile of the page, not only of its own row; in the one
+  // column of a phone there is no row to even out, and a tile is as tall as what it says
+  @media (min-width: 600px) {
+    grid-auto-rows: 1fr;
+  }
 }
 
 // the first fact of a tile

@@ -68,9 +68,9 @@ describe('HotWater', () => {
     resource.stale.set(true);
   }
 
-  /** A card of the page, or one of the two readings inside the card of the temperatures. */
+  /** A card of the page, or the reading inside the card of the tank or of the circulation. */
   async function part(
-    name: 'temperatures' | 'demand' | 'tank' | 'circulation',
+    name: 'temperatures' | 'demand' | 'circulation-card' | 'tank' | 'circulation',
   ): Promise<HTMLElement | null> {
     await fixture.whenStable();
     return (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${name}"]`);
@@ -80,7 +80,7 @@ describe('HotWater', () => {
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
   it('shows a progress bar in each card until its call has answered', async () => {
-    for (const name of ['temperatures', 'demand'] as const) {
+    for (const name of ['temperatures', 'demand', 'circulation-card'] as const) {
       expect((await part(name))?.querySelector('mat-progress-bar'), name).toBeTruthy();
     }
 
@@ -88,6 +88,7 @@ describe('HotWater', () => {
 
     expect((await part('demand'))?.querySelector('mat-progress-bar')).toBeNull();
     expect((await part('temperatures'))?.querySelector('mat-progress-bar')).toBeTruthy();
+    expect((await part('circulation-card'))?.querySelector('mat-progress-bar')).toBeTruthy();
   });
 
   describe('the tank', () => {
@@ -134,13 +135,18 @@ describe('HotWater', () => {
     });
   });
 
-  it('shows the temperature of the circulation under that of the tank, in the same card', async () => {
+  // the owner's layout (2026-10-10): the tank alone in its card, the circulation under the demand
+  it('shows the temperature of the circulation in a card of its own, after that of the demand', async () => {
     answer(temperatures, { water: { temperature: 44.75 }, circulation: { temperature: 29.81 } });
 
     const circulation = await part('circulation');
+    const card = (await part('circulation-card'))!;
 
-    expect(words(circulation)).toBe('cycleCirculation 29.8 °C');
-    expect((await part('temperatures'))!.contains(circulation)).toBe(true);
+    expect(words(circulation)).toBe('29.8 °C');
+    expect(words(card.querySelector('mat-card-title'))).toBe('Circulation');
+    expect(card.contains(circulation)).toBe(true);
+    expect(words(await part('temperatures'))).not.toContain('29.8');
+    expect((await part('demand'))!.nextElementSibling).toBe(card);
   });
 
   // the field exists in the answer and is always false: the backend does not fill it in
@@ -164,32 +170,38 @@ describe('HotWater', () => {
         'temperatures that are not numbers',
         { water: { temperature: 'warm' }, circulation: { temperature: null } },
       ],
-    ])('says once that nothing was measured yet, for %s', async (_, body) => {
+    ])('says in both cards that nothing was measured yet, for %s', async (_, body) => {
       answer(temperatures, body as WaterTemperatures | null);
 
       const shown = (await part('temperatures'))!;
+      const loop = (await part('circulation-card'))!;
 
       expect(words(shown)).toContain(NOTHING_MEASURED);
+      expect(words(loop)).toContain(NOTHING_MEASURED);
       expect(await part('tank')).toBeNull();
       expect(await part('circulation')).toBeNull();
       expect(shown.querySelector('[role="meter"]')).toBeNull();
       expect(shown.querySelector('[role="alert"]')).toBeNull();
+      expect(loop.querySelector('[role="alert"]')).toBeNull();
     });
 
-    it('shows the one temperature that is there, without a word about the other', async () => {
+    it('shows the one temperature that is there, and says in the card of the other that it is missing', async () => {
       answer(temperatures, { water: { temperature: 41 } });
 
       expect(words(await part('tank'))).toBe('41.0 °C');
       expect(await part('circulation')).toBeNull();
       expect(words(await part('temperatures'))).not.toContain(NOTHING_MEASURED);
+      expect(words(await part('circulation-card'))).toContain(NOTHING_MEASURED);
     });
 
     it('shows the circulation alone when only it was measured', async () => {
       answer(temperatures, { circulation: { temperature: 29.81 } });
 
       expect(await part('tank')).toBeNull();
-      expect(words(await part('circulation'))).toContain('29.8 °C');
+      expect(words(await part('circulation'))).toBe('29.8 °C');
+      expect(words(await part('circulation-card'))).not.toContain(NOTHING_MEASURED);
       expect((await part('temperatures'))!.querySelector('[role="meter"]')).toBeNull();
+      expect(words(await part('temperatures'))).toContain(NOTHING_MEASURED);
     });
   });
 
@@ -227,19 +239,25 @@ describe('HotWater', () => {
   });
 
   describe('when a call fails', () => {
-    // two readings, one call: one explanation
-    it('says why the temperatures are missing once, and leaves the demand alone', async () => {
+    // two readings of one call, each in a card of its own: each card explains itself
+    it('says in both cards why the temperatures are missing, and leaves the demand alone', async () => {
       fail(temperatures, new ApiError('server', 502));
       answer(demand, { active: false });
       await fixture.whenStable();
 
       const alerts = [...(fixture.nativeElement as HTMLElement).querySelectorAll('[role="alert"]')];
 
-      expect(alerts).toHaveLength(1);
-      expect(words(alerts[0])).toContain('The service is not available right now (error 502).');
-      expect((await part('temperatures'))!.contains(alerts[0])).toBe(true);
-      // no reading and a failure: the failure is the explanation, not "nothing measured yet"
-      expect(words(await part('temperatures'))).not.toContain(NOTHING_MEASURED);
+      expect(alerts).toHaveLength(2);
+      for (const name of ['temperatures', 'circulation-card'] as const) {
+        const card = (await part(name))!;
+
+        expect(words(card.querySelector('[role="alert"]')), name).toContain(
+          'The service is not available right now (error 502).',
+        );
+        // no reading and a failure: the failure is the explanation, not "nothing measured yet"
+        expect(words(card), name).not.toContain(NOTHING_MEASURED);
+      }
+      expect((await part('demand'))!.querySelector('[role="alert"]')).toBeNull();
     });
 
     it('keeps the last readings on screen next to the failure, marked as out of date', async () => {
@@ -254,6 +272,9 @@ describe('HotWater', () => {
         'The server cannot be reached.',
       );
       expect(shown.querySelector('app-data-freshness')?.classList).toContain('freshness--stale');
+      expect(
+        (await part('circulation-card'))!.querySelector('app-data-freshness')?.classList,
+      ).toContain('freshness--stale');
     });
 
     it('says why the demand is not known', async () => {
@@ -293,6 +314,20 @@ describe('HotWater', () => {
       expect(words(await part('tank'))).toBe('46.8 °C');
     });
 
+    // one time for both sensors: the card of the circulation dates its reading the same way
+    it('says the same in the card of the circulation', async () => {
+      answer(temperatures, {
+        measuredAt: measured(7 * 60 + 5),
+        water: { temperature: 46.81 },
+        circulation: { temperature: 29.81 },
+      });
+
+      const line = (await part('circulation-card'))?.querySelector('[data-testid="measured"]');
+
+      expect(words(line)).toMatch(/Measured 7 min\.? ago - the sensor has not been read since\./);
+      expect(line?.classList).toContain('tile__measured--old');
+    });
+
     it('does not call a reading of five minutes out of date', async () => {
       answer(temperatures, { measuredAt: measured(5 * 60), water: { temperature: 46.81 } });
 
@@ -319,6 +354,9 @@ describe('HotWater', () => {
       answer(temperatures, { measuredAt: measured(60) });
 
       expect((await part('temperatures'))?.querySelector('[data-testid="measured"]')).toBeNull();
+      expect(
+        (await part('circulation-card'))?.querySelector('[data-testid="measured"]'),
+      ).toBeNull();
     });
   });
 
@@ -339,7 +377,10 @@ describe('HotWater', () => {
 
     expect(words((fixture.nativeElement as HTMLElement).querySelector('h1'))).toBe('Ciepła woda');
     expect(words(await part('tank'))).toBe('44,8 °C');
-    expect(words(await part('circulation'))).toBe('cycleCyrkulacja 29,8 °C');
+    expect(words(await part('circulation'))).toBe('29,8 °C');
+    expect(words((await part('circulation-card'))!.querySelector('mat-card-title'))).toBe(
+      'Cyrkulacja',
+    );
     expect(shown.querySelector('[role="meter"]')?.getAttribute('aria-valuetext')).toBe(
       '44,8 °C; utrzymywana między 38 a 42 °C',
     );
