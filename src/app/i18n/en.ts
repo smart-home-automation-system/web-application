@@ -28,14 +28,41 @@ export const en = {
   },
   overview: {
     title: 'Overview',
-    systems: 'House systems',
-    heating: {
-      title: 'Heating system',
-      enabled: 'Enabled',
-      disabled: 'Disabled',
-      switchedOn: 'Switched on: {{ time }}',
-      switchedOff: 'Switched off: {{ time }}',
-      loading: 'Loading the heating status',
+    systems: 'The house at a glance',
+    rooms: {
+      title: 'Rooms',
+      loading: 'Loading the rooms',
+      count: 'Rooms: {{ count }}',
+      heating: 'Being heated now: {{ count }}',
+      coldest: 'Coldest',
+      warmest: 'Warmest',
+      noReading: 'No room has a reading yet.',
+    },
+    water: {
+      title: 'Hot water',
+      tank: 'Tank',
+    },
+    boiler: {
+      title: 'Boiler room',
+    },
+    presence: {
+      title: 'At home now',
+    },
+    sensors: {
+      title: 'Temperature sensors',
+      silent: 'Silent',
+      muted: 'muted',
+      unknown: 'The service does not say which sensors are reporting.',
+    },
+  },
+  history: {
+    loading: 'Loading the history',
+    empty: 'No reading in this period.',
+    preset: {
+      choose: 'Period of the history',
+      day: '24 hours',
+      week: '7 days',
+      month: '30 days',
     },
   },
   heating: {
@@ -102,6 +129,14 @@ export const en = {
         callsForHeat: 'Calls for heat',
         reported: 'reported',
       },
+      history: {
+        title: 'Temperature history',
+        temperature: 'Temperature',
+        schedule: 'Current schedule',
+        scheduleNote:
+          'The dashed line is the schedule the room has today, laid over every day - not what was in force on a past day.',
+        chart: 'Chart of the temperature of the room over the chosen period',
+      },
       schedule: {
         today: 'today',
         noneThatDay: 'no heating',
@@ -135,6 +170,16 @@ export const en = {
     readings: 'Hot water readings',
     loading: 'Loading the temperatures',
     noReading: 'No temperature has been measured yet.',
+    measured: 'Measured {{ age }}',
+    measuredOutOfDate: 'Measured {{ age }} - the sensor has not been read since.',
+    history: {
+      title: 'Temperature history',
+      tank: 'Tank',
+      circulation: 'Circulation',
+      band: 'kept in',
+      bandNote: 'Shaded: the band the tank is kept in, {{ low }} – {{ high }} °C.',
+      chart: 'Chart of the temperature of the tank and of the circulation over the chosen period',
+    },
     tank: {
       title: 'Water in the tank',
       band: 'Heated once it drops below {{ low }} °C, until it is above {{ high }} °C.',

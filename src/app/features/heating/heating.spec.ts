@@ -1,7 +1,13 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
+import {
+  FakeResource,
+  answer,
+  fail,
+  fakeQueryResource,
+  fakeResource,
+} from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import {
@@ -57,6 +63,7 @@ describe('Heating', () => {
             watchSensors: () => sensors,
             watchFloorPump: () => pump,
             watchRooms: () => rooms,
+            watchRoomHistory: () => fakeQueryResource(),
           },
         },
       ],

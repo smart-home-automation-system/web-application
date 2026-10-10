@@ -110,6 +110,11 @@
                       [id]="panelId(floor.id, $index)"
                       data-testid="room-panel"
                     >
+                      <!-- Made anew for every room: its history is asked for one room for as
+                           long as it lives, so no answer stands under the name of another. -->
+                      @for (name of [room.name]; track name) {
+                        <app-room-history [room]="name" [schedules]="schedulesOf(room)" />
+                      }
                       @if (room.heaters === undefined) {
                         <p class="room__note">{{ t('heating.rooms.heatersUnknown') }}</p>
                       } @else {

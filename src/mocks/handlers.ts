@@ -9,6 +9,7 @@ import {
   temperatureSensors,
   turnHeating,
 } from './heating.fixtures';
+import { isHistoryRefusal, roomHistory, waterHistory } from './history.fixtures';
 import {
   addDevice,
   addMember,
@@ -29,7 +30,7 @@ import {
   presenceNow,
   presenceReport,
 } from './presence.fixtures';
-import { WATER_HEATING_DEMAND, WATER_TEMPERATURES } from './water.fixtures';
+import { WATER_HEATING_DEMAND, waterTemperatures } from './water.fixtures';
 
 export interface MockReply {
   readonly status: number;
@@ -50,6 +51,13 @@ export interface MockHandler {
 /** A report of presence-service, or the refusal it answers instead - in the error contract. */
 function report(answer: object): MockReply {
   return isRefusal(answer)
+    ? { status: answer.status, body: { errors: [{ message: answer.message }] } }
+    : { status: 200, body: answer };
+}
+
+/** A history, or the refusal of its range - a 400 with the reason, without a code. */
+function history(answer: object): MockReply {
+  return isHistoryRefusal(answer)
     ? { status: answer.status, body: { errors: [{ message: answer.message }] } }
     : { status: 200, body: answer };
 }
@@ -98,6 +106,31 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
       );
       return room
         ? { status: 200, body: room }
+        : {
+            status: 404,
+            body: {
+              errors: [
+                {
+                  code: 'NOT_FOUND_ROOM',
+                  details: `Room name: ${asked}`,
+                  message: 'Room with provided name is not a part of home',
+                },
+              ],
+            },
+          };
+    },
+  },
+  {
+    // the stored temperatures of a room; an unknown room is the same 404 as for the room itself
+    method: 'GET',
+    path: /^\/home\/heating\/rooms\/([^/]+)\/temperature\/history$/,
+    reply: (request, fresh, [name]) => {
+      const asked = decodeURIComponent(name);
+      const room = heatingRooms(new Date(), fresh).find(
+        (one) => one.name?.toLowerCase() === asked.toLowerCase(),
+      );
+      return room?.name
+        ? history(roomHistory(room.name, from(request), to(request), fresh))
         : {
             status: 404,
             body: {
@@ -198,7 +231,12 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/water/status/temperature',
     // before its first reading water-service answers 200 with no body at all
-    reply: (_, fresh) => ({ status: 200, body: fresh ? null : WATER_TEMPERATURES }),
+    reply: (_, fresh) => ({ status: 200, body: fresh ? null : waterTemperatures() }),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/temperature/history',
+    reply: (request, fresh) => history(waterHistory(from(request), to(request), fresh)),
   },
   {
     method: 'GET',

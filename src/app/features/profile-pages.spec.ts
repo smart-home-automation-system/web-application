@@ -5,6 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
 import { provideI18nTesting, useLanguage } from '../../testing/i18n';
+import { isOverviewRead } from '../../testing/overview-reads';
 import { routes } from '../app.routes';
 import { ProfileStore } from '../core/profile/profile-store';
 import { Profile } from '../core/profile/profile';
@@ -86,6 +87,9 @@ describe('profiles in the application', () => {
     http.match(
       (request) => request.method === 'GET' && request.url.startsWith('/home/heating/rooms/'),
     );
+    // the overview of the administrator reads one call per tile - the state of the switch among
+    // them, which is the administrator's to see; a change of it is still not let through
+    http.match(isOverviewRead);
     http.verify();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('smart-home.language.Borys');

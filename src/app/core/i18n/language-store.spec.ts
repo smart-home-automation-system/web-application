@@ -408,8 +408,8 @@ describe('the real loader of the texts', () => {
 
     expect(await store.select('pl')).toBe(true);
 
-    expect(TestBed.inject(TranslocoService).translate('overview.heating.title')).toBe(
-      pl.overview.heating.title,
+    expect(TestBed.inject(TranslocoService).translate('overview.rooms.title')).toBe(
+      pl.overview.rooms.title,
     );
   });
 });

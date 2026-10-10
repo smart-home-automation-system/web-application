@@ -1,41 +1,111 @@
+// The tiles fill the width of the window before the page asks to be scrolled: one column on a
+// phone, as many of at least 280 px as fit beyond it. A tile is as tall as what it says - never
+// stretched to the tallest of its row.
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 12px;
+  align-items: start;
+  max-width: 1600px;
 }
 
-// the heating tile is a card of the heating domain: its colour on the edge and the badge
-.tile--heating {
-  --app-domain: var(--app-domain-heating);
-}
-
-// tighter than Material's 16 px all round: the tiles are read, not touched
-mat-card-header {
-  padding: 12px 12px 0;
-}
-
-mat-card-content {
-  padding: 8px 12px 12px;
-}
-
-.tile__state {
+// the first fact of a tile
+.tile__lead {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
-  font: var(--mat-sys-headline-small);
-  letter-spacing: var(--mat-sys-headline-small-tracking);
-  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-title-large);
+  letter-spacing: var(--mat-sys-title-large-tracking);
+  color: var(--mat-sys-on-surface);
+
+  mat-icon {
+    flex: none;
+  }
 }
 
-// the shade of the primary made for tinted backgrounds: the plain primary does not reach 4.5:1
-// on glass over the darkest patch of a photo
-.tile__state--on {
+// a status in the colour of the season is the shade made for tinted backgrounds
+.tile__lead--ok mat-icon {
   color: var(--mat-sys-on-primary-container);
+}
+
+// what somebody should look at: a sentence on the tinted strip of an error
+.tile__lead--alert,
+.tile__detail--alert {
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.tile__lead--alert {
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
 }
 
 .tile__detail {
   margin: 4px 0 0;
   font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// name on the left, value on the right, a row per fact
+.tile__rows {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.tile__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  dt,
+  dd {
+    margin: 0;
+  }
+
+  dd {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    text-align: right;
+  }
+
+  strong {
+    color: var(--mat-sys-on-surface);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  // off, away, no status: said in the quieter of the two text colours, and in words
+  strong.tile__quiet {
+    font-weight: inherit;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+// the two temperatures of the hot water are what its tile is looked at for
+.tile__rows--big strong {
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+}
+
+// a name from outside may be long: it breaks instead of pushing the value out of the tile
+.tile__name {
+  overflow-wrap: anywhere;
+}
+
+.tile__tag {
+  margin-left: 6px;
+  font: var(--mat-sys-label-small);
   color: var(--mat-sys-on-surface-variant);
 }

@@ -1,0 +1,46 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="history card--domain" data-testid="water-history">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>show_chart</mat-icon></div>
+      <mat-card-title>{{ t('hotWater.history.title') }}</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <app-history-frame
+        [(preset)]="period.preset"
+        [waiting]="shown.waiting()"
+        [empty]="lines().length === 0"
+        [error]="history.error()"
+        [lastUpdated]="history.lastUpdated()"
+        [stale]="history.stale()"
+      >
+        <ng-template>
+          @let axis = period.axis();
+          @if (axis !== undefined) {
+            <app-history-chart
+              [lines]="lines()"
+              [from]="axis.from"
+              [to]="axis.to"
+              [band]="band()"
+              [label]="t('hotWater.history.chart')"
+            />
+          }
+          <ul class="history__facts" data-testid="history-facts">
+            @for (fact of facts(); track fact.key) {
+              <li>
+                <span class="history__name">{{ fact.name }}</span>
+                <span
+                  >{{ fact.lowest | localNumber: ONE_DECIMAL }} –
+                  {{ fact.highest | localNumber: ONE_DECIMAL }} °C</span
+                >
+              </li>
+            }
+          </ul>
+          <p class="history__note">
+            {{ t('hotWater.history.bandNote', { low: bandLimits.low, high: bandLimits.high }) }}
+          </p>
+        </ng-template>
+      </app-history-frame>
+    </mat-card-content>
+  </mat-card>
+</ng-container>

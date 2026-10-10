@@ -30,7 +30,7 @@ test.describe('language', () => {
     await choose(page, 'Change language', 'Polski');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Przegląd' })).toBeVisible();
-    const tile = page.locator('mat-card', { hasText: 'Ogrzewanie' });
+    const tile = page.getByTestId('heating-switch');
     await expect(tile.getByText('Włączone')).toBeVisible();
     // the date follows the language too: Polish month, 24-hour clock
     await expect(tile.getByText('Włączono: 28 wrz 2026, 06:45')).toBeVisible();
@@ -121,8 +121,11 @@ test.describe('language', () => {
 
     await page.goto('/');
 
-    await expect(page.getByRole('alert')).toContainText('Nie można połączyć się z serwerem');
-    await expect(page.getByText('Brak danych')).toBeVisible();
+    // every tile of the overview tells its own failure
+    await expect(page.getByRole('alert').first()).toContainText(
+      'Nie można połączyć się z serwerem',
+    );
+    await expect(page.getByText('Brak danych').first()).toBeVisible();
 
     await page.goto('/no/such/page');
 

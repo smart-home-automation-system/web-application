@@ -97,3 +97,31 @@ mat-card-content {
   font: var(--mat-sys-body-medium);
   color: var(--mat-sys-on-surface-variant);
 }
+
+// when the sensors were read - the age of the reading, which the freshness of the call is not
+.tile__measured {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+// A reading the service only repeats: a sentence on the tinted strip of an error, whose text
+// colour is made for it - the error red alone does not reach 4.5:1 on glass over a photo.
+.tile__measured--old {
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  mat-icon {
+    flex: none;
+  }
+}
+
+// the history has lines to tell apart: as wide as the tiles above it together
+.history {
+  display: block;
+  max-width: 960px;
+  margin-top: 12px;
+}

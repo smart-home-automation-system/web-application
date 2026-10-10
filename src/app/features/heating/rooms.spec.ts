@@ -1,6 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
+import {
+  FakeResource,
+  answer,
+  fail,
+  fakeQueryResource,
+  fakeResource,
+} from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { HeatingApi, Room } from '../../data-access/heating/heating-api';
@@ -70,7 +76,11 @@ describe('Rooms', () => {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
-        { provide: HeatingApi, useValue: { watchRooms: () => rooms } },
+        // the history of an open room has tests of its own (room-history.spec): here it waits
+        {
+          provide: HeatingApi,
+          useValue: { watchRooms: () => rooms, watchRoomHistory: () => fakeQueryResource() },
+        },
       ],
     });
     fixture = TestBed.createComponent(Rooms);
@@ -288,7 +298,10 @@ describe('Rooms', () => {
     it('says that a room without a heater has none', async () => {
       answer(rooms, [SAUNA]);
 
-      expect(words(await open('sauna'))).toBe('No heater');
+      // the panel also holds the history of the room: what it says about the heaters is its note
+      const notes = [...(await open('sauna')).querySelectorAll(':scope > .room__note')];
+
+      expect(notes.map(words)).toEqual(['No heater']);
     });
 
     it('shows one room at a time, and closes it again', async () => {

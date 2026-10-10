@@ -54,6 +54,22 @@
               >
             </p>
           }
+          @if (water !== undefined || loop !== undefined) {
+            @if (measuredAt() | houseAge; as age) {
+              <p
+                class="tile__detail tile__measured"
+                [class.tile__measured--old]="outOfDate()"
+                data-testid="measured"
+              >
+                @if (outOfDate()) {
+                  <mat-icon>warning</mat-icon>
+                }
+                <span>{{
+                  t(outOfDate() ? 'hotWater.measuredOutOfDate' : 'hotWater.measured', { age })
+                }}</span>
+              </p>
+            }
+          }
           @if (water === undefined && loop === undefined && !temperatures.error()) {
             <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
           }
@@ -94,4 +110,6 @@
       </mat-card-content>
     </mat-card>
   </section>
+
+  <app-water-history class="history" />
 </ng-container>

@@ -27,14 +27,41 @@ export const pl: Messages = {
   },
   overview: {
     title: 'Przegląd',
-    systems: 'Systemy domu',
-    heating: {
-      title: 'Ogrzewanie',
-      enabled: 'Włączone',
-      disabled: 'Wyłączone',
-      switchedOn: 'Włączono: {{ time }}',
-      switchedOff: 'Wyłączono: {{ time }}',
-      loading: 'Wczytywanie stanu ogrzewania',
+    systems: 'Dom w skrócie',
+    rooms: {
+      title: 'Pokoje',
+      loading: 'Wczytywanie pokoi',
+      count: 'Pokoje: {{ count }}',
+      heating: 'Grzane teraz: {{ count }}',
+      coldest: 'Najchłodniejszy',
+      warmest: 'Najcieplejszy',
+      noReading: 'Żaden pokój nie ma jeszcze odczytu.',
+    },
+    water: {
+      title: 'Ciepła woda',
+      tank: 'Zasobnik',
+    },
+    boiler: {
+      title: 'Kotłownia',
+    },
+    presence: {
+      title: 'Teraz w domu',
+    },
+    sensors: {
+      title: 'Czujniki temperatury',
+      silent: 'Milczy',
+      muted: 'wyciszony',
+      unknown: 'Serwis nie podaje, które czujniki raportują.',
+    },
+  },
+  history: {
+    loading: 'Wczytywanie historii',
+    empty: 'Brak odczytów w tym okresie.',
+    preset: {
+      choose: 'Okres historii',
+      day: '24 godziny',
+      week: '7 dni',
+      month: '30 dni',
     },
   },
   heating: {
@@ -101,6 +128,14 @@ export const pl: Messages = {
         callsForHeat: 'Wymaga grzania',
         reported: 'zgłoszono',
       },
+      history: {
+        title: 'Historia temperatury',
+        temperature: 'Temperatura',
+        schedule: 'Obecny harmonogram',
+        scheduleNote:
+          'Linia przerywana to harmonogram, który pokój ma dziś, nałożony na każdy dzień - nie to, co obowiązywało w minionym dniu.',
+        chart: 'Wykres temperatury pokoju w wybranym okresie',
+      },
       schedule: {
         today: 'dzisiaj',
         noneThatDay: 'bez grzania',
@@ -133,6 +168,17 @@ export const pl: Messages = {
     readings: 'Odczyty ciepłej wody',
     loading: 'Wczytywanie temperatur',
     noReading: 'Nie ma jeszcze żadnego pomiaru temperatury.',
+    measured: 'Pomiar {{ age }}',
+    measuredOutOfDate: 'Pomiar {{ age }} - od tego czasu czujnik nie został odczytany.',
+    history: {
+      title: 'Historia temperatur',
+      tank: 'Zasobnik',
+      circulation: 'Cyrkulacja',
+      band: 'utrzymywana w',
+      bandNote:
+        'Zacienione: zakres, w którym utrzymywany jest zasobnik, {{ low }} – {{ high }} °C.',
+      chart: 'Wykres temperatury zasobnika i cyrkulacji w wybranym okresie',
+    },
     tank: {
       title: 'Woda w zasobniku',
       band: 'Grzana, gdy spadnie poniżej {{ low }} °C, aż przekroczy {{ high }} °C.',

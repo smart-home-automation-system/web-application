@@ -159,7 +159,9 @@ test.describe('heating', () => {
 
       await expect(button).toHaveAttribute('aria-expanded', 'true');
       const panel = livingRoom.getByTestId('room-panel');
+      // the history of the room first, then the week of each heater
       await expect(panel.getByRole('heading', { level: 4 })).toHaveText([
+        'Temperature history',
         'Radiator',
         'Floor heating',
       ]);
@@ -383,8 +385,9 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
+    // the temperatures, the demand and the history: three calls, three cards
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(2);
+    await expect(alerts).toHaveCount(3);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }

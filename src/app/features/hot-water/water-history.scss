@@ -1,0 +1,35 @@
+.history {
+  --app-domain: var(--app-domain-water);
+}
+
+// tighter than Material's 16 px all round, like the tiles above it
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+// what the lines say in numbers: per line the lowest and the highest value of the period
+.history__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.history__note {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.history__name {
+  color: var(--mat-sys-on-surface-variant);
+}

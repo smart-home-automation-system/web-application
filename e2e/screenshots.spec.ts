@@ -60,7 +60,8 @@ for (const language of ['en', 'pl'] as const) {
       test('overview, backend unreachable', async ({ page }, testInfo) => {
         await useScenario(page, 'offline');
         await page.goto('/');
-        await expect(page.getByRole('alert')).toBeVisible();
+        // every tile has told its failure before the picture is taken
+        await expect(page.getByRole('alert')).toHaveCount(6, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -118,9 +119,25 @@ for (const language of ['en', 'pl'] as const) {
         const room = page.getByTestId('rooms').locator('[data-room="living room"]');
         await room.getByRole('button').click();
         await expect(room.getByTestId('room-panel')).toBeVisible();
+        // the history of the room is drawn before the picture is taken
+        await expect(room.locator('.chart__plot svg')).toBeVisible();
         await room.scrollIntoViewIfNeeded();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'heating-room-week'),
+        });
+      });
+
+      // the history of the hot water over a week: the hour the sensor of the mock house was
+      // silent is a break in both lines
+      test('hot water, the history of 7 days', async ({ page }, testInfo) => {
+        await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+        await page.goto('/water');
+        const card = page.getByTestId('water-history');
+        await card.getByRole('radio').nth(1).click();
+        await expect(card.locator('.chart__plot svg')).toBeVisible();
+        await card.scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'hot-water-history-week'),
         });
       });
 
@@ -150,12 +167,18 @@ for (const language of ['en', 'pl'] as const) {
           await page.goto('/water');
           await expect(page.getByTestId('demand').locator('mat-progress-bar')).toHaveCount(0);
           await expect(page.getByTestId('temperatures').locator('mat-progress-bar')).toHaveCount(0);
+          await expect(page.getByTestId('water-history').locator('mat-progress-bar')).toHaveCount(
+            0,
+          );
           if (scenario === 'default') {
             await expect(page.getByText(TEXTS[language].warmEnough)).toBeVisible();
+            // the history is drawn before the picture is taken
+            await expect(page.locator('.chart__plot svg')).toBeVisible();
           }
           await photoIsShown(page);
           await page.screenshot({
             path: shot(testInfo.project.name, scheme, language, `hot-water${suffix}`),
+            fullPage: true,
           });
         });
 

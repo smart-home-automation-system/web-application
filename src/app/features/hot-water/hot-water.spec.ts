@@ -1,7 +1,9 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { fakeQueryResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
+import { houseTime } from '../../../mocks/house-time';
 import { ApiError } from '../../core/api/api-error';
 import { PollingResource } from '../../core/api/polling-resource';
 import { WaterApi, WaterHeatingDemand, WaterTemperatures } from '../../data-access/water/water-api';
@@ -42,7 +44,12 @@ describe('HotWater', () => {
         provideI18nTesting(),
         {
           provide: WaterApi,
-          useValue: { watchTemperatures: () => temperatures, watchHeatingDemand: () => demand },
+          useValue: {
+            watchTemperatures: () => temperatures,
+            watchHeatingDemand: () => demand,
+            // the history is a card of its own, with tests of its own (water-history.spec)
+            watchHistory: () => fakeQueryResource(),
+          },
         },
       ],
     });
@@ -257,6 +264,70 @@ describe('HotWater', () => {
       expect(words(shown.querySelector('[role="alert"]'))).toContain('(error 503)');
       expect(words(shown)).not.toContain('does not say');
     });
+  });
+
+  // The service repeats its last row for as long as the sensor is silent, so the freshness of
+  // the call says nothing about the reading: the card says when the sensors were read.
+  describe('the age of the reading', () => {
+    /** A local date-time of the house, to the second, some seconds ago - as the service sends it. */
+    const measured = (secondsAgo: number) => houseTime(new Date(), secondsAgo).slice(0, 19);
+
+    it('says when the sensors were read', async () => {
+      answer(temperatures, { measuredAt: measured(125), water: { temperature: 46.81 } });
+
+      const line = (await part('temperatures'))?.querySelector('[data-testid="measured"]');
+
+      expect(words(line)).toMatch(/^Measured 2 min\.? ago$/);
+      expect(line?.classList).not.toContain('tile__measured--old');
+    });
+
+    // two missed polls of the 3-minute cycle
+    it('calls the reading out of date once the sensor was not read for more than 6 minutes', async () => {
+      answer(temperatures, { measuredAt: measured(7 * 60 + 5), water: { temperature: 46.81 } });
+
+      const line = (await part('temperatures'))?.querySelector('[data-testid="measured"]');
+
+      expect(words(line)).toMatch(/Measured 7 min\.? ago - the sensor has not been read since\./);
+      expect(line?.classList).toContain('tile__measured--old');
+      // the reading itself stays: it is the last one there is
+      expect(words(await part('tank'))).toBe('46.8 °C');
+    });
+
+    it('does not call a reading of five minutes out of date', async () => {
+      answer(temperatures, { measuredAt: measured(5 * 60), water: { temperature: 46.81 } });
+
+      const line = (await part('temperatures'))?.querySelector('[data-testid="measured"]');
+
+      expect(line?.classList).not.toContain('tile__measured--old');
+    });
+
+    // a water-service below 0.6.0 sends no time: the age is not known, and not made up
+    it('says nothing about the age of a reading the answer does not date', async () => {
+      answer(temperatures, { water: { temperature: 46.81 } });
+
+      expect((await part('temperatures'))?.querySelector('[data-testid="measured"]')).toBeNull();
+    });
+
+    it('says nothing for a time that is no date-time', async () => {
+      answer(temperatures, { measuredAt: 'a moment ago', water: { temperature: 46.81 } });
+
+      expect((await part('temperatures'))?.querySelector('[data-testid="measured"]')).toBeNull();
+    });
+
+    // the time of a reading says nothing without the reading
+    it('says nothing while there is no temperature to date', async () => {
+      answer(temperatures, { measuredAt: measured(60) });
+
+      expect((await part('temperatures'))?.querySelector('[data-testid="measured"]')).toBeNull();
+    });
+  });
+
+  it('has the history of both temperatures as a card of its own', async () => {
+    await fixture.whenStable();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="water-history"]'),
+    ).toBeTruthy();
   });
 
   it('speaks Polish, with a decimal comma', async () => {
