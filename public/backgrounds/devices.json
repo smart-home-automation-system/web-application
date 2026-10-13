@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 0,
+    "white": 230
+  },
+  "files": {
+    "devices-2560.webp": {
+      "bytes": 130696,
+      "quality": 82
+    },
+    "devices-1280.webp": {
+      "bytes": 41442,
+      "quality": 82
+    }
+  },
+  "darkest": "#140903",
+  "lightest": "#e6e6e0",
+  "top": {
+    "darkest": "#44372f",
+    "lightest": "#8b9ac6"
+  }
+}

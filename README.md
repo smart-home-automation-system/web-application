@@ -89,6 +89,20 @@ dashboards:
   done before the registry says so: a change is sent, the registry is read again, and the page
   shows that answer. The member using the page cannot rename, demote, switch off or remove
   themselves there - the browser would lose its own profile.
+- **Devices**: the administration of the device registry, the administrator's. Every device of
+  the house the registry holds - blinds, lights, sensors, whatever their vendor - by room, in
+  the order of the house, each with what it is and how it is reached: the address, channel and
+  MQTT id of a Shelly, the gateway and point of an Eaton device, the address of a Bluetooth
+  sensor. And the forms to register a device, change one, switch one off and on for the
+  services, and remove one. **The kind decides what the form asks for**: the ways such a device
+  can be reached, and the fields of that kind alone; the kind of a registered device cannot be
+  changed. What the registry would refuse is said before anything is sent - a name of 3 to 50
+  characters, an address, the id a Shelly of generation 2 or later reports under, a point from
+  1 to 99, and that a channel of a Shelly, a point of a gateway and a Bluetooth address belong
+  to one device. Removing a device asks first, and for an Eaton device says what the house
+  loses with it: the AMX system asks for that point with every datagram, and for a room sensor
+  the temperature of the room in the heating ends there. Nothing is shown as done before the
+  registry says so, and one change is made at a time.
 
 Hot water, the boiler room and the presence are read-only.
 
@@ -118,7 +132,7 @@ the season**: green in spring, gold in summer, rust in autumn and blue in winter
 and a dark variant that follows the setting of the device. The season is taken from the clock of
 the browser (it starts on 21 March, 22 June, 23 September and 22 December) and changes by itself
 at midnight, also in a dashboard that is never reloaded. Each domain of the house — heating, hot
-water, the boiler room, the household — keeps a colour of its own all year, so a card is known by
+water, the boiler room, the household, the devices — keeps a colour of its own all year, so a card is known by
 its colour before it is read. Behind the glass of a view lies a **photo of its place** — the
 Overview a house with its garden — under a haze of the page colour, so the photo gives the view
 its mood and never competes with the text; a slow device can switch the photos off in the
@@ -293,6 +307,11 @@ Endpoints used today:
 | `POST` | `/home/household/member/{name}/device` | Adds a device to a member (household) |
 | `PATCH` | `/home/household/member/{name}/device?mac=` | Changes the device a member has under that MAC address (household) |
 | `DELETE` | `/home/household/member/{name}/device?mac=` | Removes that device (household), after a confirmation |
+| `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices). By the Devices page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
+| `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below |
+| `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |
+| `POST` | `/home/device/registry/{id}/enable`, `.../disable` | Switches a device on or off for the services (devices) |
+| `DELETE` | `/home/device/registry/{id}` | Removes a device (devices), after a confirmation |
 
 What the application relies on, in every call:
 

@@ -1,0 +1,148 @@
+.room {
+  --app-domain: var(--app-domain-devices);
+}
+
+mat-card-content {
+  padding-top: 8px;
+}
+
+.devices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// the icon of the kind, what the registry says of the device, and what can be done about it;
+// a question about the device takes the whole width below them
+.device {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 12px;
+  padding: 8px 0;
+
+  & + & {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.device__form,
+.question {
+  grid-column: 1 / -1;
+}
+
+.device__icon {
+  margin-top: 2px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.device__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.device__name {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.device--off .device__name,
+.device--off .device__icon {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.device__kind,
+.device__binding {
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+  overflow-wrap: anywhere;
+}
+
+.device__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.badge {
+  padding: 0 8px;
+  border-radius: var(--mat-sys-corner-full);
+  // the pair Material uses for whatever is selected: a tint of the season with a text made for it
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  font: var(--mat-sys-label-medium);
+  line-height: 1.25rem;
+}
+
+.badge--off {
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface);
+}
+
+// an address, an id: read letter by letter
+.code {
+  font:
+    0.8125rem ui-monospace,
+    'Cascadia Mono',
+    Consolas,
+    monospace;
+}
+
+.device__id {
+  display: block;
+}
+
+.device__actions {
+  display: flex;
+  // three buttons in a row leave a phone no room for the name
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 96px;
+}
+
+.question {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-surface-container-highest);
+
+  p {
+    margin: 0 0 8px;
+  }
+}
+
+// what removing it does to the house: a sentence on the strip of a failure
+.question__warning {
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.question__answers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.room__form-title {
+  margin: 12px 0 4px;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+}
+
+.room__progress {
+  margin-top: 12px;
+}
+
+.room__actions {
+  padding: 0 8px 12px;
+}

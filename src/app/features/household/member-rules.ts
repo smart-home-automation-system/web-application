@@ -1,6 +1,9 @@
-import { AbstractControl, ValidatorFn } from '@angular/forms';
+import { ValidatorFn } from '@angular/forms';
 
 import { MessageKey } from '../../i18n/messages';
+import { isMac, normaliseMac, validator } from '../../shared/form-rules/form-rules';
+
+export { normaliseMac, problemOf } from '../../shared/form-rules/form-rules';
 
 /**
  * What the registry accepts of a member and a device, checked before anything is sent - a copy
@@ -16,7 +19,6 @@ export const NAME_MAX_LENGTH = 50;
 export const DEVICE_NAME_MAX_LENGTH = 50;
 
 const PHONE = /^\+[1-9][0-9]{7,14}$/;
-const MAC = /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/;
 
 /** A name as it is sent: without the spaces around it. */
 export function normaliseName(text: string): string {
@@ -29,14 +31,6 @@ export function normaliseName(text: string): string {
  */
 export function normalisePhone(text: string): string {
   return text.replace(/[\s\-()]/g, '');
-}
-
-/**
- * A MAC address as it is sent: lowercase and colon separated. Some tools print it in capitals
- * or with dashes - the same address, so it is rewritten instead of refused.
- */
-export function normaliseMac(text: string): string {
-  return text.trim().toLowerCase().replaceAll('-', ':');
 }
 
 /** `others`: the names of the other members - names are unique whatever their case. */
@@ -70,31 +64,19 @@ export function deviceNameProblem(text: string, others: readonly string[]): Mess
 /** `others`: the addresses of every other device in the registry, whoever has it. */
 export function macProblem(text: string, others: readonly string[]): MessageKey | undefined {
   const mac = normaliseMac(text);
-  if (!MAC.test(mac)) {
+  if (!isMac(mac)) {
     return 'household.problem.macFormat';
   }
   return others.includes(mac) ? 'household.problem.macTaken' : undefined;
 }
 
 /**
- * A rule as the validator of a form control. `others` is read at every check - but a control
- * is checked when its value changes, not when the registry does: a form calls
- * `updateValueAndValidity()` on its controls before it sends, so that what it sends was
- * checked against the registry as it is then.
+ * A rule that reads the registry as the validator of a form control. `others` is read at every
+ * check - see `validator` for when that is.
  */
 export function rule(
   problem: (text: string, others: readonly string[]) => MessageKey | undefined,
   others: () => readonly string[],
 ): ValidatorFn {
-  return (control: AbstractControl<string>) => {
-    const found = problem(control.value, others());
-    return found === undefined ? null : { problem: found };
-  };
-}
-
-/** The sentence for what is wrong with a control somebody has been in - or `undefined`. */
-export function problemOf(control: AbstractControl): MessageKey | undefined {
-  return control.touched || control.dirty
-    ? (control.errors?.['problem'] as MessageKey | undefined)
-    : undefined;
+  return validator((text) => problem(text, others()));
 }

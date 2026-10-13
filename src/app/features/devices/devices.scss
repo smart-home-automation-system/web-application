@@ -1,0 +1,32 @@
+// The registry first, then the rooms in the order of the house - as many cards side by side as
+// the window has room for, one column on a phone, five or six on a wide screen - every card as
+// tall as what it says.
+.registry {
+  --app-domain: var(--app-domain-devices);
+}
+
+mat-card-content {
+  padding-top: 8px;
+}
+
+.registry__note {
+  margin: 0 0 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.registry__form-title {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+}
+
+.registry__add {
+  margin-bottom: 8px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: 16px;
+  align-items: start;
+}

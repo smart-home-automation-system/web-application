@@ -2,6 +2,13 @@ import { HttpRequest } from '@angular/common/http';
 
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import {
+  addDevice as addRegisteredDevice,
+  deviceRegistry,
+  removeDevice as removeRegisteredDevice,
+  replaceDevice,
+  setDeviceEnabled,
+} from './devices.fixtures';
+import {
   floorPump,
   heatingActivity,
   heatingRooms,
@@ -204,6 +211,32 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: /^\/home\/household\/member\/([^/]+)\/device$/,
     reply: (request, _, [name]) =>
       removeDevice(decodeURIComponent(name), request.params.get('mac')),
+  },
+  {
+    // every device of the house: asked for by the administration page of the devices
+    method: 'GET',
+    path: '/home/device/registry',
+    reply: () => ({ status: 200, body: deviceRegistry() }),
+  },
+  {
+    method: 'POST',
+    path: '/home/device/registry',
+    reply: (request) => addRegisteredDevice(request.body),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/device\/registry\/([^/]+)$/,
+    reply: (request, _, [id]) => replaceDevice(id, request.body),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/device\/registry\/([^/]+)\/(enable|disable)$/,
+    reply: (_, __, [id, what]) => setDeviceEnabled(id, what === 'enable'),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/device\/registry\/([^/]+)$/,
+    reply: (_, __, [id]) => removeRegisteredDevice(id),
   },
   {
     method: 'GET',

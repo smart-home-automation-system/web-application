@@ -267,6 +267,64 @@ e2e/              # Playwright tests
     never from a constant - that address is private. Its QR code (`shared/qr-code`, the encoder
     is `uqr`) is black on white in every theme, the one place with literal colours; a unit test
     reads the drawn code back with a QR reader (`jsqr`, a devDependency).
+- **The administration of the devices** (HAS-231, `features/devices/`, the administrator's)
+  is the household page over again for the device registry of `database-service`, and follows
+  its rules - no optimistic state, a change resolves with how it ended, a card emits nothing
+  after one, a refusal with a code reads in the language of the interface
+  (`device-errors.ts`, whose test lists the codes of the registry). What is its own:
+  - **The changes of a registry are made in one place**, `registryChanges`
+    (`core/api/registry-changes.ts`): one at a time, the calls of one after the other, the
+    registry read again before the change is over, `afterChange` whatever the outcome. Both
+    registries use it; a third one does too. `ChangeOutcome` lives there.
+  - **A `PUT` sends the whole device** (`DeviceRegistry.replace`): the registry has no partial
+    update and what is left out is gone. So what the device holds and this version does not
+    know - at the top, and inside the binding it keeps - is sent back with the form
+    (`replaced` in `device-registry-api.ts`). A new field of `SmartDevice` or of a binding
+    goes into `KNOWN_FIELDS` / `KNOWN_BINDING_FIELDS` the moment the form sets it: left out
+    of the list, a value the form cleared is sent back as the registry had it.
+  - **A form nothing was changed in makes no call** (`sameDevice`); a field added to the form
+    is added there, or its change alone is never saved.
+  - **The kind decides what the form asks for** (`bindingsOf`, `vendorsOf` in
+    `device-rules.ts` - a copy of `DeviceRules` of `database-service`, like the bounds copied
+    from `smart-home-sdk`): the bindings on offer follow the kind, the vendor follows the
+    binding, and two effects put the form back on a possible choice when the kind or the
+    binding changes. So the form cannot produce what the registry refuses as `INVALID_DEVICE`;
+    a rule added to the registry is added there. The kind of a registered device is disabled:
+    the registry refuses another.
+  - **A signal a validator reads is declared before the control** (`generation` before
+    `deviceId`): a `FormControl` runs its validators the moment it is made, and a field
+    initialiser below it does not exist yet - "this.generation is not a function", in the
+    browser only, since no unit test rendered the form before the browser test did.
+  - **Which binding is taken is found when the form is sent** (`bindingTaken`, the four unique
+    indexes of the registry), against **every entry the registry answered** (`entries`), also
+    one the page cannot show. It is a strip in the form, not the error of one control: a
+    channel is taken together with an address.
+  - **One thing at a time in a card**: while a form or a question is open in a room card, the
+    buttons of its other rows are disabled. A change made from one of them ends in
+    `panel.set(VIEW)` or in `failure` - it would close the form with what was typed into it,
+    or put its failure into a form that never made it (found in review).
+  - **A device is a row, a room is a card.** The registry will hold well over a hundred
+    devices; the rooms stand in the order of the house (`groupByFloor`, on `FLOORS` of the
+    heating page), a room that list does not know in a last group, and the floor is said on
+    the card - all cards share one grid, so the page fills a wide screen.
+  - **What the answer does not say**: a device without a name, a kind or a binding has words
+    for each; one without `enabled` is neither "not used" nor offered the button that changes it; an entry
+    without an id gets no row and is counted in the registry card. **A channel, a point or a
+    generation is a translation parameter only when it is a number** (`numberOf`) - anything
+    else is printed as it came.
+  - **An Eaton device is the Eaton configuration** `amx-service` is answered from: the form of
+    one says what a change does, and the question before removing one says what the house
+    loses. Keep both when the page changes.
+  - **The room and the kind are the `<select>` of the browser** inside Material's form field
+    (`matNativeControl`): twenty rooms do not fit a row of toggles, and Material's own select
+    is a component with an overlay the application does not have yet. A browser test chooses
+    with `selectOption`, a unit test sets `value` and dispatches `change`.
+  - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
+    Polish a comma and no dot.
+  - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,
+    wall switches, a motion and a door sensor, a weather display (`devices`, prompt in
+    `public/backgrounds/README.md`). Its white end is narrowed to 230: a lit lamp shade under a
+    card failed the secondary text of the dark scheme - a photo with a lamp in it will again.
 - **A history is a chart of what the service stored** (HAS-201, `shared/history-chart/`,
   used by the hot water and by the open room of the heating page). What to keep:
   - **The page asks with `from` / `to` and never chooses the bucket** - the services do, and say
@@ -528,7 +586,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
@@ -763,6 +821,11 @@ up in a production build.
   administration page changes what the registry and the profiles answer next, and it refuses
   what `database-service` refuses, with the same status and `code`. A unit test that changed
   it calls `resetHousehold()`.
+- **And so can the mock device registry** (`devices.fixtures.ts`): thirteen invented devices -
+  addresses of the documentation range, made-up ids - whose writes change what the registry
+  answers next and are refused as `database-service` refuses them (`INVALID_DEVICE` in the
+  words of `DeviceRules`, `DEVICE_CONFLICT`, `NOT_FOUND_DEVICE`). `resetDevices()` for a unit
+  test that changed it.
 - A fixture with a time in it that the page shows as an *age* is a function of "now"
   (`boilerStatus()`, built with `houseTime()` of `src/mocks/house-time.ts`): a fixed time reads
   as a service that stopped reporting. Make it a little older than a round age (3 min 5 s, not

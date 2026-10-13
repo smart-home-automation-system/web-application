@@ -63,6 +63,12 @@ const pages: Page[] = [
     loadComponent: () => import('./features/household/household').then((m) => m.Household),
   },
   {
+    path: 'devices',
+    title: 'nav.devices',
+    data: { background: 'devices' },
+    loadComponent: () => import('./features/devices/devices').then((m) => m.Devices),
+  },
+  {
     path: 'settings',
     title: 'nav.settings',
     loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),

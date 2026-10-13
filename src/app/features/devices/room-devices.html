@@ -1,0 +1,243 @@
+<ng-container *transloco="let t">
+  @let shown = panel();
+  <mat-card
+    appearance="outlined"
+    class="room card--domain"
+    data-testid="room"
+    [attr.data-room]="group().room"
+  >
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>meeting_room</mat-icon></div>
+      <!-- a room is shown by its identifier, as everywhere in the application -->
+      <mat-card-title>{{ group().room || t('devices.room.unknown') }}</mat-card-title>
+      <mat-card-subtitle>
+        <span data-testid="floor">{{ t(floor()) }}</span>
+        <span>· {{ t('devices.room.count', { count: devices().length }) }}</span>
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <ul class="devices">
+        @for (device of devices(); track device.id) {
+          <li
+            class="device"
+            data-testid="device"
+            [class.device--off]="device.enabled === false"
+            [attr.data-device]="device.id"
+          >
+            @if (shown.kind === 'edit' && shown.id === device.id) {
+              <app-smart-device-form
+                class="device__form"
+                [device]="device"
+                [others]="othersThan(device.id)"
+                [busy]="busy()"
+                [failure]="failure()"
+                (saved)="save(device, $event)"
+                (cancelled)="close()"
+              />
+            } @else {
+              <mat-icon class="device__icon" aria-hidden="true">{{ kindIcon(device.kind) }}</mat-icon>
+              <div class="device__text">
+                <!-- the name is the household's own: printed as it is, never through the translations -->
+                <span class="device__name" data-testid="name">{{
+                  device.name ?? t('devices.device.unnamed')
+                }}</span>
+                <span class="device__kind" data-testid="kind">
+                  @let label = kindLabel(device.kind);
+                  {{ label ? t(label) : (device.kind ?? t('devices.device.unknownKind')) }}
+                  @if (lightKindLabel(device.lightKind); as light) {
+                    <span>· {{ t(light) }}</span>
+                  } @else if (device.lightKind) {
+                    <span>· {{ device.lightKind }}</span>
+                  }
+                  @if (placementLabel(device.placement); as placement) {
+                    <span>· {{ t(placement) }}</span>
+                  } @else if (device.placement) {
+                    <span>· {{ device.placement }}</span>
+                  }
+                  @if (device.positioning !== undefined) {
+                    <span
+                      >·
+                      {{
+                        t(
+                          device.positioning
+                            ? 'devices.device.positioning'
+                            : 'devices.device.noPositioning'
+                        )
+                      }}</span
+                    >
+                  }
+                </span>
+                <span class="device__badges">
+                  @if (device.enabled === false) {
+                    <span class="badge badge--off" data-testid="not-used">{{
+                      t('devices.device.notUsed')
+                    }}</span>
+                  } @else if (device.enabled !== true) {
+                    <span class="badge badge--off" data-testid="use-unknown">{{
+                      t('devices.device.useUnknown')
+                    }}</span>
+                  }
+                  @if (device.vendor; as vendor) {
+                    @let name = vendorLabel(vendor);
+                    <span class="badge" data-testid="vendor">{{ name ? t(name) : vendor }}</span>
+                  }
+                  @if (device.shelly?.generation !== undefined) {
+                    @let generation = numberOf(device.shelly?.generation);
+                    <span class="badge" data-testid="generation">{{
+                      generation === undefined
+                        ? device.shelly?.generation
+                        : t('devices.device.generation', { generation })
+                    }}</span>
+                  }
+                </span>
+                <span class="device__binding" data-testid="binding">
+                  @switch (bindingOf(device)) {
+                    @case ('shelly') {
+                      <span class="code">{{ device.shelly?.address }}</span>
+                      @if (device.shelly?.channel !== undefined) {
+                        @let channel = numberOf(device.shelly?.channel);
+                        <span>{{
+                          channel === undefined
+                            ? device.shelly?.channel
+                            : t('devices.device.channel', { channel })
+                        }}</span>
+                      }
+                      @if (device.shelly?.deviceId; as deviceId) {
+                        <span class="code device__id">{{ deviceId }}</span>
+                      }
+                    }
+                    @case ('eaton') {
+                      <span>{{ t('devices.device.gateway') }}</span>
+                      <span class="code">{{ device.eaton?.gateway }}</span>
+                      @let point = numberOf(device.eaton?.point);
+                      <span>{{
+                        point === undefined ? device.eaton?.point : t('devices.device.point', { point })
+                      }}</span>
+                    }
+                    @case ('bthome') {
+                      <span>{{ t('devices.device.bluetooth') }}</span>
+                      <span class="code">{{ device.bthome?.address }}</span>
+                    }
+                    @default {
+                      <span>{{ t('devices.device.noBinding') }}</span>
+                    }
+                  }
+                </span>
+              </div>
+              <div class="device__actions">
+                <button
+                  matIconButton
+                  type="button"
+                  [disabled]="busy() || shown.kind !== 'view'"
+                  (click)="open({ kind: 'edit', id: device.id })"
+                >
+                  <mat-icon>edit</mat-icon>
+                  <span class="visually-hidden">{{ t('devices.device.edit') }} {{ device.name }}</span>
+                </button>
+                <!-- whether the services use the device - nothing is sent to the device itself. It
+                     needs a state to change: none is offered for a device the registry says
+                     neither of -->
+                @if (device.enabled === true || device.enabled === false) {
+                  <button
+                    matIconButton
+                    type="button"
+                    [disabled]="busy() || shown.kind !== 'view'"
+                    [attr.title]="
+                      t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse')
+                    "
+                    (click)="setEnabled(device, !device.enabled)"
+                  >
+                    <!-- not a switch of the device itself: whether the services may use it. The icon is
+                         what pressing does, and must not look like the switch of a light -->
+                    <mat-icon>{{ device.enabled ? 'block' : 'check_circle' }}</mat-icon>
+                    <span class="visually-hidden"
+                      >{{ t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse') }}
+                      {{ device.name }}</span
+                    >
+                  </button>
+                }
+                <button
+                  matIconButton
+                  type="button"
+                  [disabled]="busy() || shown.kind !== 'view'"
+                  (click)="open({ kind: 'remove', id: device.id })"
+                >
+                  <mat-icon>delete</mat-icon>
+                  <span class="visually-hidden">{{ t('devices.device.remove') }} {{ device.name }}</span>
+                </button>
+              </div>
+
+              @if (shown.kind === 'remove' && shown.id === device.id) {
+                <div class="question" role="group" [attr.aria-labelledby]="id + '-question'">
+                  <p [id]="id + '-question'">
+                    {{ t('devices.device.confirmRemove') }} <strong>{{ device.name }}</strong>
+                  </p>
+                  @if (device.eaton) {
+                    <!-- the AMX system asks for this point with every datagram -->
+                    <p class="question__warning" data-testid="eaton-warning">
+                      {{ t('devices.device.confirmRemoveEaton') }}
+                    </p>
+                  }
+                  <div class="question__answers">
+                    <button #cancelButton matButton type="button" [disabled]="busy()" (click)="close()">
+                      {{ t('devices.form.cancel') }}
+                    </button>
+                    <button
+                      matButton="filled"
+                      type="button"
+                      [disabled]="busy()"
+                      (click)="remove(device.id)"
+                    >
+                      {{ t('devices.device.remove') }}
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </li>
+        }
+      </ul>
+
+      @if (shown.kind === 'add') {
+        <h3 class="room__form-title">{{ t('devices.registry.newDevice') }}</h3>
+        <app-smart-device-form
+          [others]="all()"
+          [room]="group().room"
+          [busy]="busy()"
+          [failure]="failure()"
+          (saved)="add($event)"
+          (cancelled)="close()"
+        />
+      }
+
+      @if (saving() && shown.kind !== 'add' && shown.kind !== 'edit') {
+        <mat-progress-bar
+          class="room__progress"
+          mode="indeterminate"
+          [attr.aria-label]="t('devices.change.saving')"
+        />
+      }
+      <!-- a form shows its own failure; this one is for a question and for the switch -->
+      @if (shown.kind !== 'add' && shown.kind !== 'edit') {
+        @if (failure(); as failed) {
+          <app-api-error-strip
+            data-testid="change-failure"
+            [error]="failed"
+            [summary]="t(summary(failed))"
+            [describeWith]="describe"
+          />
+        }
+      }
+    </mat-card-content>
+
+    @if (shown.kind === 'view') {
+      <mat-card-actions class="room__actions">
+        <button matButton type="button" [disabled]="busy()" (click)="open({ kind: 'add' })">
+          <mat-icon>add</mat-icon>
+          {{ t('devices.room.add') }}
+        </button>
+      </mat-card-actions>
+    }
+  </mat-card>
+</ng-container>

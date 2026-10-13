@@ -51,6 +51,7 @@ describe('routes', () => {
     ['boiler', 'boiler'],
     ['presence', 'presence'],
     ['household', 'household'],
+    ['devices', 'devices'],
   ])('name the photo of /%s under the key the background layer reads', (path, photo) => {
     const page = (routes[0].children ?? []).find((route) => route.path === path);
 

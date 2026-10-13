@@ -381,6 +381,37 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the administration of the devices: the registry as it is, a device being changed with
+      // a question open in another card, and the form of a new device with what it refuses
+      test('devices', async ({ page }, testInfo) => {
+        await page.goto('/devices');
+        await expect(page.getByTestId('device')).toHaveCount(13);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'devices'),
+        });
+
+        await page.locator('[data-device="3"] .device__actions button').first().click();
+        await expect(page.locator('[data-device="3"] app-smart-device-form')).toBeVisible();
+        await page.locator('[data-device="6"] .device__actions button').last().click();
+        await expect(page.locator('[data-device="6"]').getByRole('group')).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'devices-editing'),
+        });
+        // the form is taller than the window: the card by itself
+        await page.locator('[data-room="office"]').screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'devices-form'),
+        });
+
+        await page.locator('[data-room="office"] app-smart-device-form button[type="button"]').last().click();
+        await page.locator('[data-testid="registry"] .registry__add').click();
+        await page.locator('[data-testid="registry"] input').first().fill('Lo');
+        await page.locator('[data-testid="registry"] [data-testid="kind"]').selectOption('blinds');
+        await page.locator('[data-testid="registry"] button[type="submit"]').click();
+        await page.locator('[data-testid="registry"]').screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'devices-new'),
+        });
+      });
+
       test('language menu', async ({ page }, testInfo) => {
         await page.goto('/');
         await expect(page.getByText(TEXTS[language].enabled)).toBeVisible();

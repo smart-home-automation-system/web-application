@@ -53,7 +53,17 @@ describe('translations', () => {
 
   // an untranslated text is usually a copy of the English one; these are the same on purpose
   it('are translated: Polish differs from English except where it is meant to be the same', () => {
-    const sameOnPurpose = ['about.commit', 'profiles.role.admin', 'presence.duration.minutes'];
+    const sameOnPurpose = [
+      'about.commit',
+      'profiles.role.admin',
+      'presence.duration.minutes',
+      // names of products and of a technology, and an abbreviation both languages use
+      'devices.device.generation',
+      'devices.device.bluetooth',
+      'devices.vendor.shelly',
+      'devices.vendor.eaton',
+      'devices.binding.bthome',
+    ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),
     );
