@@ -139,3 +139,23 @@ Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt ag
 owner on 2026-10-09 (HAS-204), who asked for paintings on the walls and a table for six, and
 against a high chair and children's drawings. Tones `6-255`: the frames at the top of the left
 wall are a shade too dark for the dark title of the light scheme.
+
+### `devices`
+
+> Photorealistic wide interior photograph of a living space of a modern family home at dusk,
+> clearly a home full of connected devices. The things are spread across the whole width of the
+> frame, from the left edge to the right: a tall window with external roller blinds lowered
+> halfway, a second window with slatted blinds, a floor lamp and a table lamp both switched on
+> with a warm glow, a ceiling pendant light, a row of white wall switches and a small white wall
+> thermostat next to a door, a small white motion sensor in the upper corner of the room, a white
+> door sensor on the door frame, a compact weather station display on a windowsill, a smart plug
+> in a wall socket with a cable to a lamp, a sideboard with a small white network hub and a
+> plant, an armchair with a cushion, a rug on a wooden floor. No large empty wall, no large empty
+> floor, no large empty ceiling: every part of the picture shows something of the room. Even,
+> soft, mid-toned light across the whole frame, especially along the top: no bright lamp at the
+> top, no black window frame, no deep shadows at the top. No people, no text, no screens with
+> readable text, no brand logos. Calm, tidy, realistic interior photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-13 (HAS-231). Tones `0-230`: the shade of the floor lamp is nearly white, too
+bright under the glass of a card for the secondary text of the dark scheme.

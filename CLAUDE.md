@@ -321,8 +321,10 @@ e2e/              # Playwright tests
     with `selectOption`, a unit test sets `value` and dispatches `change`.
   - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
     Polish a comma and no dot.
-  - **The view has no photo yet** - `/devices` shows the plain glow until one is generated
-    (see "Backgrounds"); `app.routes.spec` lists the photos by route.
+  - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,
+    wall switches, a motion and a door sensor, a weather display (`devices`, prompt in
+    `public/backgrounds/README.md`). Its white end is narrowed to 230: a lit lamp shade under a
+    card failed the secondary text of the dark scheme - a photo with a lamp in it will again.
 - **A history is a chart of what the service stored** (HAS-201, `shared/history-chart/`,
   used by the hot water and by the open room of the heating page). What to keep:
   - **The page asks with `from` / `to` and never chooses the bucket** - the services do, and say

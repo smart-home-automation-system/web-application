@@ -65,6 +65,7 @@ const pages: Page[] = [
   {
     path: 'devices',
     title: 'nav.devices',
+    data: { background: 'devices' },
     loadComponent: () => import('./features/devices/devices').then((m) => m.Devices),
   },
   {
