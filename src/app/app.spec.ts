@@ -78,6 +78,7 @@ describe('application routing', () => {
         'Presence',
         'My room',
         'Household',
+        'Devices',
         'Settings',
         'About',
       ],
@@ -102,12 +103,13 @@ describe('application routing', () => {
       '/presence',
       '/room',
       '/household',
+      '/devices',
       '/settings',
       '/about',
     ]);
     expect(
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
-    ).toEqual(['Presence', 'My room', 'Household', 'Settings', 'About']);
+    ).toEqual(['Presence', 'My room', 'Household', 'Devices', 'Settings', 'About']);
     document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
   });
 
@@ -193,6 +195,7 @@ describe('application routing', () => {
           'Obecność',
           'Mój pokój',
           'Domownicy',
+          'Urządzenia',
           'Ustawienia',
           'O aplikacji',
         ],

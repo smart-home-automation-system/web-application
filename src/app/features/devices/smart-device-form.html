@@ -1,0 +1,307 @@
+<ng-container *transloco="let t">
+  <form class="form" novalidate (submit)="$event.preventDefault(); submit()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ t('devices.form.name') }}</mat-label>
+      <input matInput autocomplete="off" maxlength="60" [formControl]="name" />
+      @if (problemOf(name); as problem) {
+        <mat-error>{{ t(problem) }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ t('devices.form.room') }}</mat-label>
+      <!-- a room is shown by its identifier, as everywhere in the application -->
+      <select matNativeControl data-testid="room" [formControl]="roomName">
+        <option value="" disabled></option>
+        @for (one of rooms(); track one) {
+          <option [value]="one">{{ one }}</option>
+        }
+      </select>
+      @if (problemOf(roomName); as problem) {
+        <mat-error>{{ t(problem) }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ t('devices.form.kind') }}</mat-label>
+      <select matNativeControl data-testid="kind" [formControl]="kind">
+        <option value="" disabled></option>
+        @for (one of kinds(); track one) {
+          @let label = kindLabel(one);
+          <option [value]="one">{{ label ? t(label) : one }}</option>
+        }
+      </select>
+      @if (device()) {
+        <mat-hint>{{ t('devices.form.kindFixed') }}</mat-hint>
+      }
+      @if (problemOf(kind); as problem) {
+        <mat-error>{{ t(problem) }}</mat-error>
+      }
+    </mat-form-field>
+
+    @if (chosenKind() !== '') {
+      <div class="form__group" role="group" [attr.aria-labelledby]="id + '-binding'">
+        <h3 class="form__label" [id]="id + '-binding'">{{ t('devices.form.binding') }}</h3>
+        @if (bindings().length > 1) {
+          <mat-button-toggle-group
+            hideSingleSelectionIndicator
+            data-testid="binding"
+            [attr.aria-labelledby]="id + '-binding'"
+            [value]="binding()"
+            [disabled]="busy()"
+            (change)="reachThrough($event.value)"
+          >
+            @for (one of bindings(); track one) {
+              <mat-button-toggle [value]="one">{{ t(bindingLabels[one]) }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        } @else {
+          <p class="form__note">{{ t(bindingLabels[binding()]) }}</p>
+        }
+      </div>
+
+      @switch (binding()) {
+        @case ('shelly') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.address') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              inputmode="decimal"
+              autocomplete="off"
+              maxlength="15"
+              [formControl]="address"
+            />
+            <mat-hint>{{ t('devices.form.addressHint') }}</mat-hint>
+            @if (problemOf(address); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="form__group" role="group" [attr.aria-labelledby]="id + '-generation'">
+            <h3 class="form__label" [id]="id + '-generation'">
+              {{ t('devices.form.generation') }}
+            </h3>
+            <mat-button-toggle-group
+              hideSingleSelectionIndicator
+              data-testid="generation"
+              [attr.aria-labelledby]="id + '-generation'"
+              [value]="generation()"
+              [disabled]="busy()"
+              (change)="setGeneration($event.value)"
+            >
+              @for (one of generations; track one) {
+                <mat-button-toggle [value]="one">{{ one }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+            <p class="form__note">
+              {{
+                t(
+                  generation() >= firstGenerationOnMqtt
+                    ? 'devices.form.generationMqtt'
+                    : 'devices.form.generationOne'
+                )
+              }}
+            </p>
+          </div>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.deviceId') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="50"
+              [formControl]="deviceId"
+            />
+            <mat-hint>{{ t('devices.form.deviceIdHint') }}</mat-hint>
+            @if (problemOf(deviceId); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="form__group" role="group" [attr.aria-labelledby]="id + '-channel'">
+            <h3 class="form__label" [id]="id + '-channel'">{{ t('devices.form.channel') }}</h3>
+            <mat-button-toggle-group
+              hideSingleSelectionIndicator
+              data-testid="channel"
+              [attr.aria-labelledby]="id + '-channel'"
+              [value]="channel() === undefined ? notSet : '' + channel()"
+              [disabled]="busy()"
+              (change)="setChannel($event.value)"
+            >
+              <mat-button-toggle [value]="notSet">{{ t('devices.form.noChannel') }}</mat-button-toggle>
+              @for (one of channels; track one) {
+                <mat-button-toggle [value]="'' + one">{{ one }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+            <p class="form__note">{{ t('devices.form.channelHint') }}</p>
+          </div>
+        }
+        @case ('eaton') {
+          <div class="form__group" role="group" [attr.aria-labelledby]="id + '-gateway'">
+            <h3 class="form__label" [id]="id + '-gateway'">{{ t('devices.form.gateway') }}</h3>
+            <mat-button-toggle-group
+              hideSingleSelectionIndicator
+              data-testid="gateway"
+              [attr.aria-labelledby]="id + '-gateway'"
+              [value]="gateway()"
+              [disabled]="busy()"
+              (change)="setGateway($event.value)"
+            >
+              @for (one of gateways; track one) {
+                <!-- the name of a gateway of the AMX system, as the registry has it -->
+                <mat-button-toggle [value]="one">{{ one }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+          </div>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.point') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="2"
+              [formControl]="point"
+            />
+            <mat-hint>{{ t('devices.form.pointHint') }}</mat-hint>
+            @if (problemOf(point); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+        }
+        @case ('bthome') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.bluetoothAddress') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="20"
+              [formControl]="bluetooth"
+            />
+            <mat-hint>{{ t('devices.form.bluetoothAddressHint') }}</mat-hint>
+            @if (problemOf(bluetooth); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+        }
+      }
+
+      @if (taken(); as problem) {
+        <p class="form__problem" role="alert" data-testid="binding-taken">{{ t(problem) }}</p>
+      }
+
+      @if (vendors().length > 1) {
+        <div class="form__group" role="group" [attr.aria-labelledby]="id + '-vendor'">
+          <h3 class="form__label" [id]="id + '-vendor'">{{ t('devices.form.vendor') }}</h3>
+          <mat-button-toggle-group
+            hideSingleSelectionIndicator
+            data-testid="vendor"
+            [attr.aria-labelledby]="id + '-vendor'"
+            [value]="vendor()"
+            [disabled]="busy()"
+            (change)="vendor.set($event.value)"
+          >
+            @for (one of vendors(); track one) {
+              @let label = vendorLabel(one);
+              <mat-button-toggle [value]="one">{{ label ? t(label) : one }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+      }
+
+      @if (chosenKind() === 'light') {
+        <div class="form__group" role="group" [attr.aria-labelledby]="id + '-light'">
+          <h3 class="form__label" [id]="id + '-light'">{{ t('devices.form.lightKind') }}</h3>
+          <mat-button-toggle-group
+            hideSingleSelectionIndicator
+            data-testid="light-kind"
+            [attr.aria-labelledby]="id + '-light'"
+            [value]="lightKind() ?? notSet"
+            [disabled]="busy()"
+            (change)="lightKind.set(orNotSet($event.value))"
+          >
+            <mat-button-toggle [value]="notSet">{{ t('devices.form.notSet') }}</mat-button-toggle>
+            @for (one of lightKinds; track one) {
+              <mat-button-toggle [value]="one">{{ t(lightKindLabels[one]) }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+      }
+
+      @if (chosenKind() === 'blinds') {
+        <div class="form__group" role="group" [attr.aria-labelledby]="id + '-placement'">
+          <h3 class="form__label" [id]="id + '-placement'">{{ t('devices.form.placement') }}</h3>
+          <mat-button-toggle-group
+            hideSingleSelectionIndicator
+            data-testid="placement"
+            [attr.aria-labelledby]="id + '-placement'"
+            [value]="placement() ?? notSet"
+            [disabled]="busy()"
+            (change)="placement.set(orNotSet($event.value))"
+          >
+            <mat-button-toggle [value]="notSet">{{ t('devices.form.notSet') }}</mat-button-toggle>
+            @for (one of placements; track one) {
+              <mat-button-toggle [value]="one">{{ t(placementLabels[one]) }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+
+        <div class="form__group" role="group" [attr.aria-labelledby]="id + '-positioning'">
+          <h3 class="form__label" [id]="id + '-positioning'">
+            {{ t('devices.form.positioning') }}
+          </h3>
+          <mat-button-toggle-group
+            hideSingleSelectionIndicator
+            data-testid="positioning"
+            [attr.aria-labelledby]="id + '-positioning'"
+            [value]="positioning() === undefined ? notSet : positioning() ? 'yes' : 'no'"
+            [disabled]="busy()"
+            (change)="setPositioning($event.value)"
+          >
+            <mat-button-toggle [value]="notSet">{{ t('devices.form.notKnown') }}</mat-button-toggle>
+            <mat-button-toggle value="yes">{{ t('devices.form.yes') }}</mat-button-toggle>
+            <mat-button-toggle value="no">{{ t('devices.form.no') }}</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+      }
+    }
+
+    <mat-slide-toggle
+      data-testid="enabled"
+      [checked]="enabled()"
+      [disabled]="busy()"
+      (change)="enabled.set($event.checked)"
+    >
+      {{ t('devices.form.enabled') }}
+    </mat-slide-toggle>
+
+    @if (busy()) {
+      <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('devices.change.saving')" />
+    }
+    @if (failure(); as failed) {
+      <app-api-error-strip
+        data-testid="change-failure"
+        [error]="failed"
+        [summary]="t(summary(failed))"
+        [describeWith]="describe"
+      />
+    }
+
+    <div class="form__actions">
+      <button matButton type="button" [disabled]="busy()" (click)="cancelled.emit()">
+        {{ t('devices.form.cancel') }}
+      </button>
+      <button matButton="filled" type="submit" [disabled]="busy()">
+        {{ t(device() ? 'devices.form.save' : 'devices.form.add') }}
+      </button>
+    </div>
+  </form>
+</ng-container>

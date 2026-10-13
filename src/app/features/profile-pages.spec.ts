@@ -510,6 +510,7 @@ describe('profiles in the application', () => {
         'Presence',
         'My room',
         'Household',
+        'Devices',
         'Settings',
         'About',
       ]);

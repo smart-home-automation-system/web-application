@@ -23,7 +23,7 @@ import { SEASONS } from '../src/app/core/theme/season.ts';
 const DIST = fileURLToPath(new URL('../dist/web-application/browser', import.meta.url));
 const TEXT = 4.5;
 const NON_TEXT = 3;
-const DOMAINS = ['heating', 'water', 'boiler', 'household'];
+const DOMAINS = ['heating', 'water', 'boiler', 'household', 'devices'];
 
 // How much of the season's primary colour the glow (`--app-glow` in _seasons.scss) lays over
 // the page: its strongest point sits under the panel, the page text next to it, the cards see

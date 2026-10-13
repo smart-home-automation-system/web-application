@@ -1,0 +1,57 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  // the floating label of the first field needs room above its outline
+  padding-top: 6px;
+}
+
+.form__group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+
+  // five choices side by side do not fit a card on a phone: they wrap instead of overflowing
+  mat-button-toggle-group {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+}
+
+.form__label {
+  margin: 4px 0 0;
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.form__note {
+  margin: 0;
+  max-width: 52ch;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// what another device already has: a sentence on the strip of a failure, before anything is sent
+.form__problem {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+// an address, an id, a point: read letter by letter
+.code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

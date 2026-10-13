@@ -36,3 +36,38 @@ export const ROOM_NAMES: readonly string[] = [
 export const MEMBER_ROLES = ['admin', 'resident'] as const satisfies readonly MemberRole[];
 
 export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly MemberPermission[];
+
+/**
+ * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
+ * `SmartVendor`, `EatonGatewayType` of `smart-home-sdk` 1.8.0) - copies, like the ones above,
+ * and under the same rule: they are what the administration of the devices offers, and what
+ * the registry already holds is shown and sent back as it is.
+ */
+export const DEVICE_KINDS = [
+  'blinds',
+  'light',
+  'opening sensor',
+  'motion sensor',
+  'presence sensor',
+  'temperature sensor',
+  'weather station',
+  'bthome gateway',
+] as const;
+
+export type DeviceKind = (typeof DEVICE_KINDS)[number];
+
+export const LIGHT_KINDS = ['relay', 'dimmer', 'rgbw'] as const;
+
+export type LightKind = (typeof LIGHT_KINDS)[number];
+
+export const PLACEMENTS = ['external', 'internal'] as const;
+
+export type Placement = (typeof PLACEMENTS)[number];
+
+export const VENDORS = ['shelly', 'eaton', 'other'] as const;
+
+export type Vendor = (typeof VENDORS)[number];
+
+export const EATON_GATEWAYS = ['blinds', 'lights'] as const;
+
+export type EatonGateway = (typeof EATON_GATEWAYS)[number];

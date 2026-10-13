@@ -1,9 +1,11 @@
-import { Injectable, Signal, inject, signal } from '@angular/core';
-import { Observable, concat, lastValueFrom } from 'rxjs';
+import { Injectable, Signal, inject } from '@angular/core';
+import { Observable } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
-import { ApiError, toApiError } from '../../core/api/api-error';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
+import { ChangeOutcome, registryChanges } from '../../core/api/registry-changes';
+
+export type { ChangeOutcome } from '../../core/api/registry-changes';
 
 /**
  * `GET /home/household/profiles` - a household member as the dashboard may know them
@@ -63,20 +65,6 @@ export interface DeviceDetails {
   readonly name: string;
   readonly mac: string;
 }
-
-/** How a change of the registry ended. */
-export interface ChangeOutcome {
-  /** True when every call of the change was answered with a success. */
-  readonly carriedOut: boolean;
-  /**
-   * Why it was not; absent for a change refused because another one was under way. A failure
-   * of the `network` kind is a call that got no answer - it may have been carried out.
-   */
-  readonly failure?: ApiError;
-}
-
-const CARRIED_OUT: ChangeOutcome = { carriedOut: true };
-const REFUSED: ChangeOutcome = { carriedOut: false };
 
 /**
  * The household registry for its administration: the members, kept fresh by polling, and the
@@ -151,34 +139,13 @@ export class HouseholdApi {
       () => this.api.get<readonly HouseholdMember[] | null>('/household'),
       { intervalMs: POLL_REGISTRY_EVERY_MS },
     );
-    const changing = signal(false);
-
-    // The answers of the calls are not used: what is on screen is what the registry gives when
-    // asked, also after a change that failed or got no answer.
-    const change = async (calls: readonly Observable<unknown>[]): Promise<ChangeOutcome> => {
-      if (changing()) {
-        return REFUSED;
-      }
-      changing.set(true);
-      let failure: ApiError | undefined;
-      try {
-        // one after the other, and none after one that failed
-        await lastValueFrom(concat(...calls), { defaultValue: undefined });
-      } catch (error) {
-        failure = toApiError(error);
-      }
-      await registry.refresh();
-      changing.set(false);
-      // also after a change that failed: one that got no answer may have been carried out
-      afterChange?.();
-      return failure === undefined ? CARRIED_OUT : { carriedOut: false, failure };
-    };
+    const { changing, change } = registryChanges(registry, afterChange);
 
     const member = (name: string) => `/household/member/${encodeURIComponent(name)}`;
 
     return {
       ...registry,
-      changing: changing.asReadonly(),
+      changing,
       add: (details) =>
         change([
           this.api.post('/household/member', {

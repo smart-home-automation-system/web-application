@@ -28,6 +28,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/presence', label: 'nav.presence', icon: 'location_home', access: 'admin' },
   { path: '/room', label: 'nav.myRoom', icon: 'bed', access: 'member' },
   { path: '/household', label: 'nav.household', icon: 'group', access: 'admin' },
+  { path: '/devices', label: 'nav.devices', icon: 'devices_other', access: 'admin' },
   { path: '/settings', label: 'nav.settings', icon: 'settings', access: 'admin' },
   { path: '/about', label: 'nav.about', icon: 'info', access: 'admin' },
 ];
