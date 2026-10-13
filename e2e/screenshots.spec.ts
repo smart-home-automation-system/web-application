@@ -405,7 +405,15 @@ for (const language of ['en', 'pl'] as const) {
         await page.locator('[data-room="office"] app-smart-device-form button[type="button"]').last().click();
         await page.locator('[data-testid="registry"] .registry__add').click();
         await page.locator('[data-testid="registry"] input').first().fill('Lo');
-        await page.locator('[data-testid="registry"] [data-testid="kind"]').selectOption('blinds');
+        // the list of a select opens over the page: a picture of it, then a choice from it
+        await page.locator('[data-testid="registry"] [data-testid="kind"]').click();
+        await expect(page.locator('.mat-mdc-select-panel')).toHaveCSS('opacity', '1');
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'devices-select'),
+        });
+        await page
+          .getByRole('option', { name: language === 'pl' ? 'Rolety' : 'Blinds', exact: true })
+          .click();
         await page.locator('[data-testid="registry"] button[type="submit"]').click();
         await page.locator('[data-testid="registry"]').screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-new'),

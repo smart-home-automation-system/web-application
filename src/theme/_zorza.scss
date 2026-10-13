@@ -290,6 +290,44 @@ $_shadows: (
     )
   );
 
+  // A choice from a list (the room and the kind of a device): the field is the form field above,
+  // the list a sheet like the menu - the same surface, corners and type, and what is chosen
+  // tinted the way a pressed toggle is, with the text made for that tint.
+  @include mat.select-overrides(
+    (
+      panel-background-color: var(--mat-sys-surface-container-high),
+      container-elevation-shadow: var(--mat-sys-level4),
+      trigger-text-size: 1rem,
+      trigger-text-line-height: 1.25rem,
+      trigger-text-tracking: 0,
+      enabled-arrow-color: var(--mat-sys-on-surface-variant),
+      focused-arrow-color: var(--mat-sys-on-primary-container),
+      invalid-arrow-color: var(--mat-sys-on-error-container),
+    )
+  );
+
+  @include mat.option-overrides(
+    (
+      label-text-size: 1rem,
+      label-text-weight: 500,
+      label-text-line-height: 1.5rem,
+      label-text-tracking: 0,
+      selected-state-label-text-color: var(--mat-sys-on-secondary-container),
+      selected-state-layer-color: var(--mat-sys-secondary-container),
+    )
+  );
+
+  // A hint on hover (what a button of a row does, the times of a bar of the presence): the dark
+  // sheet of Material, in the corners and the type of the application.
+  @include mat.tooltip-overrides(
+    (
+      container-shape: $radius-control,
+      supporting-text-size: 0.8125rem,
+      supporting-text-weight: 500,
+      supporting-text-tracking: 0,
+    )
+  );
+
   @include mat.progress-bar-overrides(
     (
       track-color: color-mix(in srgb, var(--mat-sys-primary) 30%, transparent),
@@ -308,6 +346,13 @@ $_shadows: (
   // The glass itself: no variable blurs what lies behind a card.
   .mat-mdc-card {
     backdrop-filter: blur(var(--app-glass-blur));
+  }
+
+  // The list of a select has the corners of the menu; Material gives it none of its own to set
+  // (it squares the edge that meets the field, below it or above). Material's rules come after
+  // this stylesheet and one of them carries two classes: the pane named twice outweighs both.
+  .cdk-overlay-pane.cdk-overlay-pane div.mat-mdc-select-panel {
+    border-radius: $radius-menu;
   }
 
   // The filled button runs from the primary to the secondary colour and glows; Material's own

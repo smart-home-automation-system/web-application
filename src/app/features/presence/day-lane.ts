@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoService } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
@@ -17,6 +18,7 @@ import { DayLane } from './day-lanes';
  */
 @Component({
   selector: 'app-day-lane',
+  imports: [MatTooltipModule],
   template: `
     <div class="lane" role="img" [attr.aria-label]="name()">
       @if (lane().known) {
@@ -31,7 +33,8 @@ import { DayLane } from './day-lanes';
             [class.lane__block--open]="block.open"
             [style.left.%]="block.left"
             [style.width.%]="block.width"
-            [attr.title]="block.from + ' – ' + block.to"
+            [matTooltip]="block.from + ' – ' + block.to"
+            matTooltipTouchGestures="off"
           ></span>
         }
       }
