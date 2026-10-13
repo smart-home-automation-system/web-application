@@ -280,8 +280,8 @@ e2e/              # Playwright tests
     update and what is left out is gone. So what the device holds and this version does not
     know - at the top, and inside the binding it keeps - is sent back with the form
     (`replaced` in `device-registry-api.ts`). A new field of `SmartDevice` or of a binding
-    goes into `KNOWN_FIELDS` / `KNOWN_BINDING_FIELDS` the moment the form sets it, or the
-    form's value and the old one are both sent and the old one wins nowhere - check the test.
+    goes into `KNOWN_FIELDS` / `KNOWN_BINDING_FIELDS` the moment the form sets it: left out
+    of the list, a value the form cleared is sent back as the registry had it.
   - **A form nothing was changed in makes no call** (`sameDevice`); a field added to the form
     is added there, or its change alone is never saved.
   - **The kind decides what the form asks for** (`bindingsOf`, `vendorsOf` in
