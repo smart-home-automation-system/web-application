@@ -70,12 +70,12 @@
                 </span>
                 <span class="device__badges">
                   @if (device.enabled === false) {
-                    <span class="badge badge--off" data-testid="switched-off">{{
-                      t('devices.device.switchedOff')
+                    <span class="badge badge--off" data-testid="not-used">{{
+                      t('devices.device.notUsed')
                     }}</span>
                   } @else if (device.enabled !== true) {
-                    <span class="badge badge--off" data-testid="state-unknown">{{
-                      t('devices.device.stateUnknown')
+                    <span class="badge badge--off" data-testid="use-unknown">{{
+                      t('devices.device.useUnknown')
                     }}</span>
                   }
                   @if (device.vendor; as vendor) {
@@ -135,18 +135,24 @@
                   <mat-icon>edit</mat-icon>
                   <span class="visually-hidden">{{ t('devices.device.edit') }} {{ device.name }}</span>
                 </button>
-                <!-- a switch needs a state to switch from: none is offered for a device the
-                     registry says neither of -->
+                <!-- whether the services use the device - nothing is sent to the device itself. It
+                     needs a state to change: none is offered for a device the registry says
+                     neither of -->
                 @if (device.enabled === true || device.enabled === false) {
                   <button
                     matIconButton
                     type="button"
                     [disabled]="busy() || shown.kind !== 'view'"
+                    [attr.title]="
+                      t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse')
+                    "
                     (click)="setEnabled(device, !device.enabled)"
                   >
-                    <mat-icon>{{ device.enabled ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                    <!-- not a switch of the device itself: whether the services may use it. The icon is
+                         what pressing does, and must not look like the switch of a light -->
+                    <mat-icon>{{ device.enabled ? 'block' : 'check_circle' }}</mat-icon>
                     <span class="visually-hidden"
-                      >{{ t(device.enabled ? 'devices.device.switchOff' : 'devices.device.switchOn') }}
+                      >{{ t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse') }}
                       {{ device.name }}</span
                     >
                   </button>

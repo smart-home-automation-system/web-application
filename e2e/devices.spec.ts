@@ -63,8 +63,8 @@ test('lists every device of the registry by floor and room, with how it is reach
   await expect(device(page, 'Weather station').getByTestId('binding')).toContainText(
     'Bluetooth 7c:c6:b6:00:00:02',
   );
-  await expect(device(page, 'Living room terrace blinds').getByTestId('switched-off')).toBeVisible();
-  await expect(device(page, 'Office main light').getByTestId('switched-off')).toHaveCount(0);
+  await expect(device(page, 'Living room terrace blinds').getByTestId('not-used')).toBeVisible();
+  await expect(device(page, 'Office main light').getByTestId('not-used')).toHaveCount(0);
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
@@ -206,11 +206,11 @@ test.describe('changing a device', () => {
     await open(page);
     const light = device(page, 'Office main light');
 
-    await light.getByRole('button', { name: 'Switch off Office main light' }).click();
-    await expect(light.getByTestId('switched-off')).toBeVisible();
+    await light.getByRole('button', { name: 'Take out of use by the services Office main light' }).click();
+    await expect(light.getByTestId('not-used')).toBeVisible();
 
-    await light.getByRole('button', { name: 'Switch on Office main light' }).click();
-    await expect(light.getByTestId('switched-off')).toHaveCount(0);
+    await light.getByRole('button', { name: 'Let the services use Office main light' }).click();
+    await expect(light.getByTestId('not-used')).toHaveCount(0);
   });
 
   test('shows a change the registry did not carry out next to the device as it is', async ({
@@ -220,11 +220,11 @@ test.describe('changing a device', () => {
     await open(page);
     const light = device(page, 'Office main light');
 
-    await light.getByRole('button', { name: 'Switch off Office main light' }).click();
+    await light.getByRole('button', { name: 'Take out of use by the services Office main light' }).click();
 
     const failure = room(page, 'office').getByTestId('change-failure');
     await expect(failure).toContainText('The change was not carried out.');
-    await expect(light.getByTestId('switched-off')).toHaveCount(0);
+    await expect(light.getByTestId('not-used')).toHaveCount(0);
   });
 });
 
@@ -278,7 +278,7 @@ test('reads in Polish', async ({ page }) => {
 
   await expect(page.getByRole('heading', { level: 1, name: 'Urządzenia' })).toBeVisible();
   const blinds = device(page, 'Living room terrace blinds');
-  await expect(blinds.getByTestId('switched-off')).toHaveText('Wyłączone');
+  await expect(blinds.getByTestId('not-used')).toHaveText('Nieużywane przez serwisy');
   await expect(blinds.getByTestId('kind')).toContainText('Rolety');
   await blinds.getByRole('button', { name: 'Usuń Living room terrace blinds' }).click();
   await expect(blinds.getByRole('group')).toContainText('Usunąć to urządzenie z rejestru?');

@@ -105,8 +105,8 @@ describe('Devices', () => {
     expect(text(row(7).querySelector('[data-testid="kind"]'))).toBe(
       'Blinds · outside the window · open or closed only',
     );
-    expect(row(7).querySelector('[data-testid="switched-off"]')).not.toBeNull();
-    expect(row(3).querySelector('[data-testid="switched-off"]')).toBeNull();
+    expect(row(7).querySelector('[data-testid="not-used"]')).not.toBeNull();
+    expect(row(3).querySelector('[data-testid="not-used"]')).toBeNull();
   });
 
   // nothing checks an answer: what it leaves out is told as not known, never made up
@@ -126,9 +126,9 @@ describe('Devices', () => {
     );
     // a device without the field is not "switched off" - and not "on" either: it is said to be
     // not given, and no switch is offered that would need a state to switch from
-    expect(row(20).querySelector('[data-testid="switched-off"]')).toBeNull();
-    expect(text(row(20).querySelector('[data-testid="state-unknown"]'))).toBe('On or off not given');
-    expect(button(row(20), 'Switch o')).toBeUndefined();
+    expect(row(20).querySelector('[data-testid="not-used"]')).toBeNull();
+    expect(text(row(20).querySelector('[data-testid="use-unknown"]'))).toBe('Use by the services not given');
+    expect(button(row(20), 'use')).toBeUndefined();
     // the entry without an id is counted, not dropped without a word
     expect(text(page().querySelector('[data-testid="skipped"]'))).toBe(
       'Entries of the registry without an id, not shown: 1',
@@ -173,11 +173,11 @@ describe('Devices', () => {
     button(row(3), 'Edit')!.click();
     fixture.detectChanges();
 
-    expect(button(row(4), 'Switch off')!.disabled).toBe(true);
+    expect(button(row(4), 'Take out of use')!.disabled).toBe(true);
     expect(button(row(4), 'Edit')!.disabled).toBe(true);
     expect(button(row(4), 'Remove')!.disabled).toBe(true);
     // another card is another matter
-    expect(button(row(7), 'Switch on')!.disabled).toBe(false);
+    expect(button(row(7), 'Let the services use')!.disabled).toBe(false);
   });
 
   // the registry is what the AMX system is answered from: said in the form, before it is saved
@@ -340,17 +340,17 @@ describe('Devices', () => {
   it('switches a device off with the operation made for it, and shows what the registry says', async () => {
     answerTheRegistryWith([LIGHT]);
 
-    button(row(3), 'Switch off')!.click();
+    button(row(3), 'Take out of use')!.click();
     await settled();
     http.expectOne({ method: 'POST', url: '/home/device/registry/3/disable' }).flush({});
     await settled();
     // not optimistic: until the registry is read again the device is as it was
-    expect(row(3).querySelector('[data-testid="switched-off"]')).toBeNull();
+    expect(row(3).querySelector('[data-testid="not-used"]')).toBeNull();
     answerTheRegistryWith([{ ...LIGHT, enabled: false }]);
     await settled();
 
-    expect(row(3).querySelector('[data-testid="switched-off"]')).not.toBeNull();
-    expect(button(row(3), 'Switch on')).toBeDefined();
+    expect(row(3).querySelector('[data-testid="not-used"]')).not.toBeNull();
+    expect(button(row(3), 'Let the services use')).toBeDefined();
   });
 
   it('asks before removing a device, and warns about a point of the AMX system', async () => {
@@ -388,7 +388,7 @@ describe('Devices', () => {
   it('tells a refusal next to the device, in the words of the interface', async () => {
     answerTheRegistryWith([LIGHT]);
 
-    button(row(3), 'Switch off')!.click();
+    button(row(3), 'Take out of use')!.click();
     await settled();
     http
       .expectOne({ method: 'POST', url: '/home/device/registry/3/disable' })
@@ -403,14 +403,14 @@ describe('Devices', () => {
     const failure = roomCard('office').querySelector('[data-testid="change-failure"]');
     expect(text(failure)).toContain('The change was not carried out.');
     expect(text(failure)).toContain('This device is no longer in the registry.');
-    expect(row(3).querySelector('[data-testid="switched-off"]')).toBeNull();
+    expect(row(3).querySelector('[data-testid="not-used"]')).toBeNull();
   });
 
   // one change at a time: every write stores a whole row
   it('offers no second change while one is under way', async () => {
     answerTheRegistryWith([LIGHT, SENSOR]);
 
-    button(row(3), 'Switch off')!.click();
+    button(row(3), 'Take out of use')!.click();
     await settled();
 
     expect(button(row(4), 'Edit')!.disabled).toBe(true);

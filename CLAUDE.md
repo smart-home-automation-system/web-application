@@ -308,7 +308,7 @@ e2e/              # Playwright tests
     heating page), a room that list does not know in a last group, and the floor is said on
     the card - all cards share one grid, so the page fills a wide screen.
   - **What the answer does not say**: a device without a name, a kind or a binding has words
-    for each; one without `enabled` is neither "switched off" nor offered a switch; an entry
+    for each; one without `enabled` is neither "not used" nor offered the button that changes it; an entry
     without an id gets no row and is counted in the registry card. **A channel, a point or a
     generation is a translation parameter only when it is a number** (`numberOf`) - anything
     else is printed as it came.
