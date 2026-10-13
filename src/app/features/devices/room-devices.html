@@ -146,6 +146,8 @@
                     [matTooltip]="
                       t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse')
                     "
+                    [matTooltipDisabled]="busy()"
+                    matTooltipTouchGestures="off"
                     (click)="setEnabled(device, !device.enabled)"
                   >
                     <!-- not a switch of the device itself: whether the services may use it. The icon is

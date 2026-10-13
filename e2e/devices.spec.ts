@@ -87,7 +87,10 @@ test.describe('adding a device', () => {
 
     await form.getByLabel('Name').fill('Loft blinds');
     await choose(form, 'Room', 'loft');
-    await choose(form, 'Kind', 'Blinds');
+    // the list is a sheet of the application - the corners of the menu, not Material's square top
+    await form.getByRole('combobox', { name: 'Kind' }).click();
+    await expect(page.locator('.mat-mdc-select-panel')).toHaveCSS('border-radius', '12px');
+    await page.getByRole('option', { name: 'Blinds', exact: true }).click();
     // blinds are wired: a Shelly or the AMX system, never Bluetooth
     await expect(form.getByTestId('binding').getByRole('radio')).toHaveText([
       'Shelly on the network',

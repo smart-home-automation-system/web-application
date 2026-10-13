@@ -411,7 +411,9 @@ for (const language of ['en', 'pl'] as const) {
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-select'),
         });
-        await page.getByRole('option').first().click();
+        await page
+          .getByRole('option', { name: language === 'pl' ? 'Rolety' : 'Blinds', exact: true })
+          .click();
         await page.locator('[data-testid="registry"] button[type="submit"]').click();
         await page.locator('[data-testid="registry"]').screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-new'),

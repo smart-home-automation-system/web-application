@@ -34,6 +34,7 @@ import { DayLane } from './day-lanes';
             [style.left.%]="block.left"
             [style.width.%]="block.width"
             [matTooltip]="block.from + ' – ' + block.to"
+            matTooltipTouchGestures="off"
           ></span>
         }
       }

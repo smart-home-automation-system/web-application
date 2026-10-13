@@ -321,7 +321,9 @@ e2e/              # Playwright tests
     inside the form field, to save a component - the owner turned it down at once (2026-10-13):
     **a control drawn by the system does not belong in this interface**, and the same goes for
     a hint: `matTooltip`, never the `title` attribute (the button of a row here, the bars of the
-    presence page). A browser test chooses with a click on the `combobox` and on the `option`
+    presence page) - **always with `matTooltipTouchGestures="off"`**: left on, the tooltip sets
+    `touch-action: none` on its element on a phone, and a swipe that starts on a bar no longer
+    scrolls the page (found in review). A browser test chooses with a click on the `combobox` and on the `option`
     (the list opens over the page, outside the form); a unit test opens the `MatSelect` and
     takes the option (`choose` in `devices.spec`), and gives the select a turn (`await
     settled()`) before it reads what the field shows.
@@ -577,8 +579,8 @@ season. Both are nothing but values of CSS variables, in two files:
   and the details of single components (glass cards, the tinted navigation entry, the segmented
   control), given as values of `--mat-sys-*` and of component variables through Material's
   `*-overrides` mixins. **Restyle a component there, through its variables** — a selector
-  reaching into Material's DOM is the last resort (two exist, in `components`: the blur of a
-  card, and the gradient of a filled button) and breaks on an upgrade. Material's own component
+  reaching into Material's DOM is the last resort (three exist, in `components`: the blur of a
+  card, the gradient of a filled button, and the corners of the list of a select) and breaks on an upgrade. Material's own component
   styles are appended **after** this stylesheet, so a rule of equal specificity on one of its
   classes silently loses (`.mat-mdc-card { border }` did) — prefer the variable, or an appearance
   that has one: every card is `appearance="outlined"`, because only the outlined card has an edge

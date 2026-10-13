@@ -349,8 +349,9 @@ $_shadows: (
   }
 
   // The list of a select has the corners of the menu; Material gives it none of its own to set
-  // (it squares the top, to hang from the field).
-  div.mat-mdc-select-panel {
+  // (it squares the edge that meets the field, below it or above). Material's rules come after
+  // this stylesheet and one of them carries two classes: the pane named twice outweighs both.
+  .cdk-overlay-pane.cdk-overlay-pane div.mat-mdc-select-panel {
     border-radius: $radius-menu;
   }
 
