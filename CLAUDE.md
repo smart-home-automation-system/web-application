@@ -315,10 +315,16 @@ e2e/              # Playwright tests
   - **An Eaton device is the Eaton configuration** `amx-service` is answered from: the form of
     one says what a change does, and the question before removing one says what the house
     loses. Keep both when the page changes.
-  - **The room and the kind are the `<select>` of the browser** inside Material's form field
-    (`matNativeControl`): twenty rooms do not fit a row of toggles, and Material's own select
-    is a component with an overlay the application does not have yet. A browser test chooses
-    with `selectOption`, a unit test sets `value` and dispatches `change`.
+  - **The room and the kind are Material's select** (`mat-select`, themed in `_zorza.scss` with
+    `select-overrides` and `option-overrides`; its list has the corners of the menu through
+    the one selector no variable reaches). The first version used the `<select>` of the browser
+    inside the form field, to save a component - the owner turned it down at once (2026-10-13):
+    **a control drawn by the system does not belong in this interface**, and the same goes for
+    a hint: `matTooltip`, never the `title` attribute (the button of a row here, the bars of the
+    presence page). A browser test chooses with a click on the `combobox` and on the `option`
+    (the list opens over the page, outside the form); a unit test opens the `MatSelect` and
+    takes the option (`choose` in `devices.spec`), and gives the select a turn (`await
+    settled()`) before it reads what the field shows.
   - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
     Polish a comma and no dot.
   - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,

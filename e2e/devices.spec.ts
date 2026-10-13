@@ -13,6 +13,12 @@ const room = (page: Page, name: string): Locator => page.locator(`[data-room="${
 const device = (page: Page, name: string): Locator =>
   page.getByTestId('device').filter({ has: page.getByTestId('name').getByText(name, { exact: true }) });
 
+/** Chooses from a select of a form: its list opens over the page, outside the form. */
+async function choose(form: Locator, label: string, option: string): Promise<void> {
+  await form.getByRole('combobox', { name: label }).click();
+  await form.page().getByRole('option', { name: option, exact: true }).click();
+}
+
 async function open(page: Page): Promise<void> {
   await page.goto('/devices');
   await expect(page.getByTestId('device')).toHaveCount(13);
@@ -80,8 +86,8 @@ test.describe('adding a device', () => {
     await expect(form).toContainText('Choose what the device is.');
 
     await form.getByLabel('Name').fill('Loft blinds');
-    await form.getByLabel('Room').selectOption('loft');
-    await form.getByLabel('Kind').selectOption('blinds');
+    await choose(form, 'Room', 'loft');
+    await choose(form, 'Kind', 'Blinds');
     // blinds are wired: a Shelly or the AMX system, never Bluetooth
     await expect(form.getByTestId('binding').getByRole('radio')).toHaveText([
       'Shelly on the network',
@@ -111,8 +117,8 @@ test.describe('adding a device', () => {
     await form.getByRole('button', { name: 'Add a device' }).click();
 
     await form.getByLabel('Name').fill('  Loft blinds ');
-    await form.getByLabel('Room').selectOption('loft');
-    await form.getByLabel('Kind').selectOption('blinds');
+    await choose(form, 'Room', 'loft');
+    await choose(form, 'Kind', 'Blinds');
     await form.getByLabel('Address').fill('192.0.2.60');
     await form.getByLabel('Device id').fill('shellyplus2pm-0a0b0c0d0e99');
     await form.getByTestId('channel').getByRole('radio', { name: '0' }).click();
@@ -139,9 +145,9 @@ test.describe('adding a device', () => {
     const office = room(page, 'office');
     await office.getByRole('button', { name: 'Add a device here' }).click();
     // the room of the card is the one offered
-    await expect(office.getByLabel('Room')).toHaveValue('office');
+    await expect(office.getByRole('combobox', { name: 'Room' })).toHaveText('office');
     await office.getByLabel('Name').fill('Office desk lamp');
-    await office.getByLabel('Kind').selectOption('light');
+    await choose(office, 'Kind', 'Light');
     await office.getByTestId('binding').getByRole('radio', { name: 'Eaton' }).click();
     await office.getByTestId('gateway').getByRole('radio', { name: 'lights' }).click();
     // the point another device has on that gateway
@@ -162,7 +168,7 @@ test.describe('adding a device', () => {
     const kitchen = room(page, 'kitchen');
     await kitchen.getByRole('button', { name: 'Add a device here' }).click();
     await kitchen.getByLabel('Name').fill('Kitchen door sensor');
-    await kitchen.getByLabel('Kind').selectOption('opening sensor');
+    await choose(kitchen, 'Kind', 'Opening sensor');
     await kitchen.getByTestId('binding').getByRole('radio', { name: 'Bluetooth' }).click();
     // capitals and dashes are the same address
     await kitchen.getByLabel('Bluetooth address').fill('7C-C6-B6-00-00-09');
@@ -184,11 +190,11 @@ test.describe('changing a device', () => {
 
     const form = room(page, 'office').locator('app-smart-device-form');
     // the registry refuses another kind for a device it has
-    await expect(form.getByLabel('Kind')).toBeDisabled();
+    await expect(form.getByRole('combobox', { name: 'Kind' })).toBeDisabled();
     await expect(form).toContainText('The kind of a registered device cannot be changed.');
     await expect(form.getByLabel('Address')).toHaveValue('192.0.2.23');
     await form.getByLabel('Name').fill('Bedroom main light');
-    await form.getByLabel('Room').selectOption('bedroom');
+    await choose(form, 'Room', 'bedroom');
     await form.getByRole('button', { name: 'Save' }).click();
 
     await expect(room(page, 'bedroom').getByTestId('name')).toHaveText([

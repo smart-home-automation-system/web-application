@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatSelect } from '@angular/material/select';
 
 import { provideI18nTesting } from '../../../testing/i18n';
 import { SmartDevice } from '../../data-access/devices/device-registry-api';
@@ -79,9 +80,35 @@ describe('Devices', () => {
     // a button starts with the name of its icon: the label is what follows it
     [...within.querySelectorAll('button')].find((one) => text(one).includes(label));
 
-  function type(input: HTMLInputElement | HTMLSelectElement, value: string): void {
+  function type(input: HTMLInputElement, value: string): void {
     input.value = value;
-    input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? 'change' : 'input'));
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  /** The select of a form - Material's, whose list opens in an overlay outside the fixture. */
+  function select(within: HTMLElement, testId: string): MatSelect {
+    const host = within.querySelector(`[data-testid="${testId}"]`);
+    return fixture.debugElement.query((one) => one.nativeElement === host).injector.get(MatSelect);
+  }
+
+  /** What a select offers, by opening it. */
+  function offered(within: HTMLElement, testId: string): unknown[] {
+    const chosen = select(within, testId);
+    chosen.open();
+    fixture.detectChanges();
+    const values = chosen.options.map((option) => option.value as unknown);
+    chosen.close();
+    fixture.detectChanges();
+    return values;
+  }
+
+  /** Chooses as somebody would: opens the list and takes the option. */
+  function choose(within: HTMLElement, testId: string, value: string): void {
+    const chosen = select(within, testId);
+    chosen.open();
+    fixture.detectChanges();
+    chosen.options.find((option) => option.value === value)!._selectViaInteraction();
     fixture.detectChanges();
   }
 
@@ -198,15 +225,17 @@ describe('Devices', () => {
   });
 
   // the card of a room this version does not know still offers that room, and shows it
-  it('offers the room of the card a device is added from, known here or not', () => {
+  it('offers the room of the card a device is added from, known here or not', async () => {
     answerTheRegistryWith([{ ...LIGHT, room: 'winter garden' }]);
 
     button(roomCard('winter garden'), 'Add a device here')!.click();
-    fixture.detectChanges();
+    // a select shows what it holds a turn after it was given it
+    await settled();
 
-    const rooms = roomCard('winter garden').querySelector<HTMLSelectElement>('[data-testid="room"]')!;
-    expect(rooms.value).toBe('winter garden');
-    expect([...rooms.options].map((one) => one.value)).toContain('winter garden');
+    expect(select(roomCard('winter garden'), 'room').value).toBe('winter garden');
+    expect(offered(roomCard('winter garden'), 'room')).toContain('winter garden');
+    // and it is what the field shows, not an empty one
+    expect(text(roomCard('winter garden').querySelector('[data-testid="room"]'))).toBe('winter garden');
   });
 
   it('says so when the registry is empty, and when its answer is no list', () => {
@@ -231,8 +260,8 @@ describe('Devices', () => {
     fixture.detectChanges();
 
     type(registry.querySelector<HTMLInputElement>('input')!, 'Office desk lamp');
-    type(registry.querySelector<HTMLSelectElement>('[data-testid="room"]')!, 'office');
-    type(registry.querySelector<HTMLSelectElement>('[data-testid="kind"]')!, 'temperature sensor');
+    choose(registry, 'room', 'office');
+    choose(registry, 'kind', 'temperature sensor');
     // a sensor may be reached any of the three ways
     expect(
       [...registry.querySelectorAll('[data-testid="binding"] button')].map((one) => text(one)),
@@ -273,8 +302,8 @@ describe('Devices', () => {
     fixture.detectChanges();
 
     type(registry.querySelector<HTMLInputElement>('input')!, 'Second sensor');
-    type(registry.querySelector<HTMLSelectElement>('[data-testid="room"]')!, 'office');
-    type(registry.querySelector<HTMLSelectElement>('[data-testid="kind"]')!, 'temperature sensor');
+    choose(registry, 'room', 'office');
+    choose(registry, 'kind', 'temperature sensor');
     registry.querySelectorAll<HTMLElement>('[data-testid="binding"] button')[1].click();
     fixture.detectChanges();
     type([...registry.querySelectorAll<HTMLInputElement>('input')].at(-1)!, '48');
@@ -294,7 +323,7 @@ describe('Devices', () => {
     fixture.detectChanges();
     const form = row(3).querySelector<HTMLElement>('app-smart-device-form')!;
     // the registry refuses another kind for a device it has
-    expect(form.querySelector<HTMLSelectElement>('[data-testid="kind"]')!.disabled).toBe(true);
+    expect(select(form, 'kind').disabled).toBe(true);
 
     form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
     fixture.detectChanges();
@@ -308,7 +337,7 @@ describe('Devices', () => {
     fixture.detectChanges();
     const form = row(3).querySelector<HTMLElement>('app-smart-device-form')!;
 
-    type(form.querySelector<HTMLSelectElement>('[data-testid="room"]')!, 'bedroom');
+    choose(form, 'room', 'bedroom');
     form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
     await settled();
 

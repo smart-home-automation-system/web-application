@@ -143,7 +143,7 @@
                     matIconButton
                     type="button"
                     [disabled]="busy() || shown.kind !== 'view'"
-                    [attr.title]="
+                    [matTooltip]="
                       t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse')
                     "
                     (click)="setEnabled(device, !device.enabled)"
