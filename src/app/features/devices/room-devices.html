@@ -73,14 +73,21 @@
                     <span class="badge badge--off" data-testid="switched-off">{{
                       t('devices.device.switchedOff')
                     }}</span>
+                  } @else if (device.enabled !== true) {
+                    <span class="badge badge--off" data-testid="state-unknown">{{
+                      t('devices.device.stateUnknown')
+                    }}</span>
                   }
                   @if (device.vendor; as vendor) {
                     @let name = vendorLabel(vendor);
                     <span class="badge" data-testid="vendor">{{ name ? t(name) : vendor }}</span>
                   }
-                  @if (device.shelly?.generation; as generation) {
+                  @if (device.shelly?.generation !== undefined) {
+                    @let generation = numberOf(device.shelly?.generation);
                     <span class="badge" data-testid="generation">{{
-                      t('devices.device.generation', { generation })
+                      generation === undefined
+                        ? device.shelly?.generation
+                        : t('devices.device.generation', { generation })
                     }}</span>
                   }
                 </span>
@@ -89,7 +96,12 @@
                     @case ('shelly') {
                       <span class="code">{{ device.shelly?.address }}</span>
                       @if (device.shelly?.channel !== undefined) {
-                        <span>{{ t('devices.device.channel', { channel: device.shelly?.channel }) }}</span>
+                        @let channel = numberOf(device.shelly?.channel);
+                        <span>{{
+                          channel === undefined
+                            ? device.shelly?.channel
+                            : t('devices.device.channel', { channel })
+                        }}</span>
                       }
                       @if (device.shelly?.deviceId; as deviceId) {
                         <span class="code device__id">{{ deviceId }}</span>
@@ -98,7 +110,10 @@
                     @case ('eaton') {
                       <span>{{ t('devices.device.gateway') }}</span>
                       <span class="code">{{ device.eaton?.gateway }}</span>
-                      <span>{{ t('devices.device.point', { point: device.eaton?.point }) }}</span>
+                      @let point = numberOf(device.eaton?.point);
+                      <span>{{
+                        point === undefined ? device.eaton?.point : t('devices.device.point', { point })
+                      }}</span>
                     }
                     @case ('bthome') {
                       <span>{{ t('devices.device.bluetooth') }}</span>
@@ -114,34 +129,32 @@
                 <button
                   matIconButton
                   type="button"
-                  [disabled]="busy()"
+                  [disabled]="busy() || shown.kind !== 'view'"
                   (click)="open({ kind: 'edit', id: device.id })"
                 >
                   <mat-icon>edit</mat-icon>
                   <span class="visually-hidden">{{ t('devices.device.edit') }} {{ device.name }}</span>
                 </button>
-                <button
-                  matIconButton
-                  type="button"
-                  [disabled]="busy()"
-                  (click)="setEnabled(device, device.enabled === false)"
-                >
-                  <mat-icon>{{ device.enabled === false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-                  <span class="visually-hidden"
-                    >{{
-                      t(
-                        device.enabled === false
-                          ? 'devices.device.switchOn'
-                          : 'devices.device.switchOff'
-                      )
-                    }}
-                    {{ device.name }}</span
+                <!-- a switch needs a state to switch from: none is offered for a device the
+                     registry says neither of -->
+                @if (device.enabled === true || device.enabled === false) {
+                  <button
+                    matIconButton
+                    type="button"
+                    [disabled]="busy() || shown.kind !== 'view'"
+                    (click)="setEnabled(device, !device.enabled)"
                   >
-                </button>
+                    <mat-icon>{{ device.enabled ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                    <span class="visually-hidden"
+                      >{{ t(device.enabled ? 'devices.device.switchOff' : 'devices.device.switchOn') }}
+                      {{ device.name }}</span
+                    >
+                  </button>
+                }
                 <button
                   matIconButton
                   type="button"
-                  [disabled]="busy()"
+                  [disabled]="busy() || shown.kind !== 'view'"
                   (click)="open({ kind: 'remove', id: device.id })"
                 >
                   <mat-icon>delete</mat-icon>

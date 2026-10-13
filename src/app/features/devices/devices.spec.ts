@@ -124,11 +124,89 @@ describe('Devices', () => {
     expect(text(row(20).querySelector('[data-testid="binding"]'))).toBe(
       'The registry does not say how this device is reached.',
     );
-    // a device without the field is not "switched off"
+    // a device without the field is not "switched off" - and not "on" either: it is said to be
+    // not given, and no switch is offered that would need a state to switch from
     expect(row(20).querySelector('[data-testid="switched-off"]')).toBeNull();
+    expect(text(row(20).querySelector('[data-testid="state-unknown"]'))).toBe('On or off not given');
+    expect(button(row(20), 'Switch o')).toBeUndefined();
+    // the entry without an id is counted, not dropped without a word
+    expect(text(page().querySelector('[data-testid="skipped"]'))).toBe(
+      'Entries of the registry without an id, not shown: 1',
+    );
     // a kind and a vendor this version does not know are shown as they come
     expect(text(row(21).querySelector('[data-testid="kind"]'))).toBe('wind sensor');
     expect(text(row(21).querySelector('[data-testid="vendor"]'))).toBe('acme');
+  });
+
+  // nothing checks an answer, and only a number of our own reading is a translation parameter:
+  // a text with a placeholder of its own in it would otherwise never come back
+  it('prints a channel, a point or a generation that is no number as it came', () => {
+    answerTheRegistryWith([
+      {
+        id: 30,
+        name: 'Odd Shelly',
+        room: 'office',
+        kind: 'light',
+        vendor: 'shelly',
+        shelly: { address: '192.0.2.70', generation: '{{ generation }}', channel: '{{ channel }}' },
+      },
+      {
+        id: 31,
+        name: 'Odd Eaton',
+        room: 'office',
+        kind: 'light',
+        vendor: 'eaton',
+        eaton: { gateway: 'lights', point: '{{ point }}' },
+      },
+    ]);
+
+    expect(text(row(30).querySelector('[data-testid="generation"]'))).toBe('{{ generation }}');
+    expect(text(row(30).querySelector('[data-testid="binding"]'))).toBe('192.0.2.70 {{ channel }}');
+    expect(text(row(31).querySelector('[data-testid="binding"]'))).toBe('gateway lights {{ point }}');
+  });
+
+  // a change made from another row would close the form with what was typed into it, or put
+  // its failure into a form that never made it
+  it('lets nothing else of a card be pressed while a form or a question is open in it', () => {
+    answerTheRegistryWith([LIGHT, SENSOR, BLINDS]);
+
+    button(row(3), 'Edit')!.click();
+    fixture.detectChanges();
+
+    expect(button(row(4), 'Switch off')!.disabled).toBe(true);
+    expect(button(row(4), 'Edit')!.disabled).toBe(true);
+    expect(button(row(4), 'Remove')!.disabled).toBe(true);
+    // another card is another matter
+    expect(button(row(7), 'Switch on')!.disabled).toBe(false);
+  });
+
+  // the registry is what the AMX system is answered from: said in the form, before it is saved
+  it('says in the form of an Eaton device what a change of it does to the house', () => {
+    answerTheRegistryWith([LIGHT, SENSOR]);
+
+    button(row(4), 'Edit')!.click();
+    fixture.detectChanges();
+    expect(text(row(4).querySelector('[data-testid="eaton-note"]'))).toContain(
+      'The AMX system reads this device for every datagram of its point',
+    );
+
+    button(row(4), 'Cancel')!.click();
+    fixture.detectChanges();
+    button(row(3), 'Edit')!.click();
+    fixture.detectChanges();
+    expect(row(3).querySelector('[data-testid="eaton-note"]')).toBeNull();
+  });
+
+  // the card of a room this version does not know still offers that room, and shows it
+  it('offers the room of the card a device is added from, known here or not', () => {
+    answerTheRegistryWith([{ ...LIGHT, room: 'winter garden' }]);
+
+    button(roomCard('winter garden'), 'Add a device here')!.click();
+    fixture.detectChanges();
+
+    const rooms = roomCard('winter garden').querySelector<HTMLSelectElement>('[data-testid="room"]')!;
+    expect(rooms.value).toBe('winter garden');
+    expect([...rooms.options].map((one) => one.value)).toContain('winter garden');
   });
 
   it('says so when the registry is empty, and when its answer is no list', () => {

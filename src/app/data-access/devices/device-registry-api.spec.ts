@@ -179,6 +179,44 @@ describe('DeviceRegistryApi', () => {
 
       expect(body).toEqual({ ...DETAILS, colourTemperature: 2700 });
     });
+
+    // the same inside the binding the device keeps - and not for a binding the form replaced
+    it('sends back what a binding holds and this version does not know, while the binding stays', async () => {
+      const newer = {
+        ...LIGHT,
+        shelly: { ...LIGHT.shelly, profile: 'switch' },
+      } as RegisteredDevice;
+
+      const kept = await carriedOut(registry.replace(newer, { ...DETAILS, name: 'Renamed' }), {
+        method: 'PUT',
+        url: '/home/device/registry/3',
+      });
+      expect(kept.body).toEqual({
+        ...DETAILS,
+        name: 'Renamed',
+        shelly: { ...DETAILS.shelly, profile: 'switch' },
+      });
+
+      const replaced = await carriedOut(
+        registry.replace(newer, {
+          name: 'Office main light',
+          room: 'office',
+          kind: 'light',
+          enabled: true,
+          vendor: 'eaton',
+          eaton: { gateway: 'lights', point: 7 },
+        }),
+        { method: 'PUT', url: '/home/device/registry/3' },
+      );
+      expect(replaced.body).toEqual({
+        name: 'Office main light',
+        room: 'office',
+        kind: 'light',
+        enabled: true,
+        vendor: 'eaton',
+        eaton: { gateway: 'lights', point: 7 },
+      });
+    });
   });
 
   it('switches a device off and on with the operations made for it', async () => {

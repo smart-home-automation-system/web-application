@@ -27,7 +27,7 @@
         } @else if (adding()) {
           <h2 class="registry__form-title">{{ t('devices.registry.newDevice') }}</h2>
           <app-smart-device-form
-            [others]="list"
+            [others]="entries() ?? []"
             [busy]="registry.changing()"
             [failure]="addFailure()"
             (saved)="add($event)"
@@ -41,6 +41,11 @@
                 : t('devices.registry.count', { count: list.length })
             }}
           </p>
+          @if (skipped() > 0) {
+            <p class="registry__note" data-testid="skipped">
+              {{ t('devices.registry.skipped', { count: skipped() }) }}
+            </p>
+          }
           <button
             matButton="filled"
             type="button"
@@ -63,7 +68,7 @@
         <app-room-devices
           [group]="room"
           [floor]="floor.label"
-          [all]="devices() ?? []"
+          [all]="entries() ?? []"
           [registry]="registry"
           [attr.data-floor]="floor.id"
         />

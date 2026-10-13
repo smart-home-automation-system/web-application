@@ -75,10 +75,14 @@ export function normaliseName(text: string): string {
   return text.trim();
 }
 
-/** Counted in characters, as the registry counts them - a name of one letter and an emoji is two. */
+/**
+ * The two bounds are counted differently, as the registry counts them: the least in characters
+ * (`DeviceRules` and the schema - a letter and an emoji are two), the most in the units of the
+ * string (`@Size` of the model - an emoji is two of the fifty).
+ */
 export function nameProblem(text: string): MessageKey | undefined {
-  const length = [...normaliseName(text)].length;
-  return length < NAME_MIN_LENGTH || length > NAME_MAX_LENGTH
+  const name = normaliseName(text);
+  return [...name].length < NAME_MIN_LENGTH || name.length > NAME_MAX_LENGTH
     ? 'devices.problem.nameLength'
     : undefined;
 }

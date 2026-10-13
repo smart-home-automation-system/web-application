@@ -11,6 +11,7 @@ import {
   DeviceDetails,
   DeviceRegistryApi,
   RegisteredDevice,
+  SmartDevice,
 } from '../../data-access/devices/device-registry-api';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
@@ -52,18 +53,32 @@ export class Devices {
   protected readonly registry = inject(DeviceRegistryApi).watchDevices();
 
   /**
-   * The devices of the answer, or `undefined` when the answer is not a list of them. Nothing
-   * checks an answer at runtime: an entry without an id cannot be addressed, so it cannot be
-   * shown with the buttons that would address it.
+   * What the registry answered, or `undefined` when the answer is not a list. Every entry that
+   * is an object, shown or not: a binding one of them holds is taken.
    */
-  protected readonly devices = computed((): readonly RegisteredDevice[] | undefined => {
+  protected readonly entries = computed((): readonly SmartDevice[] | undefined => {
     const answer: unknown = this.registry.value();
     return Array.isArray(answer)
-      ? (answer as unknown[]).filter(
-          (entry): entry is RegisteredDevice =>
-            isRecord(entry) && typeof entry['id'] === 'number' && Number.isFinite(entry['id']),
-        )
+      ? (answer as unknown[]).filter((entry): entry is SmartDevice => isRecord(entry))
       : undefined;
+  });
+
+  /**
+   * The devices that can be shown. Nothing checks an answer at runtime: an entry without an
+   * id cannot be addressed, so it gets no row with the buttons that would address it - it is
+   * counted instead (`skipped`), not dropped without a word.
+   */
+  protected readonly devices = computed((): readonly RegisteredDevice[] | undefined =>
+    this.entries()?.filter(
+      (entry): entry is RegisteredDevice =>
+        typeof entry.id === 'number' && Number.isFinite(entry.id),
+    ),
+  );
+
+  /** How many entries of the answer are not shown, for want of an id. */
+  protected readonly skipped = computed(() => {
+    const answer: unknown = this.registry.value();
+    return Array.isArray(answer) ? answer.length - (this.devices()?.length ?? 0) : 0;
   });
 
   protected readonly floors = computed(() => groupByFloor(this.devices() ?? []));

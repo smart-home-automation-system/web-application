@@ -86,6 +86,10 @@ describe('the rules of a device', () => {
     ['abc', undefined],
     ['ab\u{1F4A1}', undefined],
     ['x'.repeat(50), undefined],
+    // the most is counted in the units of the string, as @Size of the model counts: an emoji
+    // is two of the fifty
+    ['💡'.repeat(25), undefined],
+    ['💡'.repeat(26), 'devices.problem.nameLength'],
   ])('judge the name "%s"', (name, problem) => {
     expect(nameProblem(name)).toBe(problem);
   });

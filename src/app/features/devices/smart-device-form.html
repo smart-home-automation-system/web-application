@@ -39,6 +39,11 @@
       }
     </mat-form-field>
 
+    @if (device()?.eaton) {
+      <!-- the registry is what the AMX system is answered from, for every datagram of the point -->
+      <p class="form__warning" data-testid="eaton-note">{{ t('devices.form.eatonNote') }}</p>
+    }
+
     @if (chosenKind() !== '') {
       <div class="form__group" role="group" [attr.aria-labelledby]="id + '-binding'">
         <h3 class="form__label" [id]="id + '-binding'">{{ t('devices.form.binding') }}</h3>
@@ -67,8 +72,9 @@
             <input
               matInput
               class="code"
-              inputmode="decimal"
               autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
               maxlength="15"
               [formControl]="address"
             />
@@ -274,6 +280,9 @@
       }
     }
 
+    @if (device() && device()?.enabled !== true && device()?.enabled !== false) {
+      <p class="form__note" data-testid="enabled-unknown">{{ t('devices.form.enabledUnknown') }}</p>
+    }
     <mat-slide-toggle
       data-testid="enabled"
       [checked]="enabled()"

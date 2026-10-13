@@ -43,6 +43,15 @@
   color: var(--mat-sys-on-error-container);
 }
 
+// what a change brings with it: a tinted strip, like a failure, but not one
+.form__warning {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
 // an address, an id, a point: read letter by letter
 .code {
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;

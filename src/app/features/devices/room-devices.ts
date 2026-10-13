@@ -23,6 +23,7 @@ import {
   DeviceDetails,
   DeviceRegistry,
   RegisteredDevice,
+  SmartDevice,
 } from '../../data-access/devices/device-registry-api';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
@@ -57,6 +58,10 @@ const VIEW: Panel = { kind: 'view' };
  * registry has them. **What cannot be undone asks first**, in the card itself: removing a
  * device.
  *
+ * **One thing at a time in a card**: while a form or a question is open, the buttons of the
+ * other rows wait - a change made from one of them would close the form with what was typed
+ * into it, or put its failure into a form that never made it.
+ *
  * A device moved to another room leaves this card and appears in the other one - which is why
  * the card emits nothing after a change: it may be gone by then.
  */
@@ -86,8 +91,11 @@ export class RoomDevices {
   readonly group = input.required<RoomGroup>();
   /** The key of the name of the floor the room lies on. */
   readonly floor = input.required<MessageKey>();
-  /** The whole registry: what a binding must not repeat. */
-  readonly all = input.required<readonly RegisteredDevice[]>();
+  /**
+   * Everything the registry answered, an entry this page cannot show included: what a binding
+   * must not repeat.
+   */
+  readonly all = input.required<readonly SmartDevice[]>();
   readonly registry = input.required<DeviceRegistry>();
 
   private readonly injector = inject(Injector);
@@ -101,6 +109,15 @@ export class RoomDevices {
   protected readonly placementLabel = placementLabel;
   protected readonly vendorLabel = vendorLabel;
   protected readonly bindingOf = bindingOf;
+
+  /**
+   * A value of the answer as a number - or `undefined` for anything else. Nothing checks an
+   * answer, and only a number of our own reading may be a parameter of a translation: text
+   * from outside is printed as it came.
+   */
+  protected numberOf(value: unknown): number | undefined {
+    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  }
 
   protected readonly panel = signal<Panel>(VIEW);
   /** Why the last change asked for in this card was not carried out. */
@@ -127,13 +144,8 @@ export class RoomDevices {
     });
   }
 
-  /** The device a form or a question of this card is about. */
-  protected deviceOf(id: number): RegisteredDevice | undefined {
-    return this.devices().find((device) => device.id === id);
-  }
-
   /** Every device of the registry but one: what the binding of that one must not repeat. */
-  protected othersThan(id: number | undefined): readonly RegisteredDevice[] {
+  protected othersThan(id: number | undefined): readonly SmartDevice[] {
     return this.all().filter((device) => device.id !== id);
   }
 

@@ -97,7 +97,8 @@ export interface DeviceRegistry extends PollingResource<readonly SmartDevice[] |
    * Replaces the device as the registry holds it now with what the form holds. The registry
    * keeps the id, the kind and the time of registration; everything else is what is sent, and
    * what is not sent is gone. So what `before` carries and this version does not know of -
-   * a field a later `smart-home-sdk` added - is sent back with the rest.
+   * a field a later `smart-home-sdk` added, to the device or to the binding it keeps - is sent
+   * back with the rest.
    */
   replace(before: RegisteredDevice, device: DeviceDetails): Promise<ChangeOutcome>;
   /** Switches a device on or off for the services, without touching anything else of it. */
@@ -154,8 +155,7 @@ export class DeviceRegistryApi {
       ...registry,
       changing,
       add: (details) => change([this.api.post('/device/registry', sent(details))]),
-      replace: (before, details) =>
-        change([this.api.put(device(before.id), { ...unknownFieldsOf(before), ...sent(details) })]),
+      replace: (before, details) => change([this.api.put(device(before.id), replaced(before, details))]),
       setEnabled: (id, enabled) =>
         change([this.api.post(`${device(id)}/${enabled ? 'enable' : 'disable'}`)]),
       remove: (id) => change([this.api.delete(device(id))]),
@@ -168,8 +168,34 @@ function sent(details: DeviceDetails): Record<string, unknown> {
   return Object.fromEntries(Object.entries(details).filter(([, value]) => value !== undefined));
 }
 
-function unknownFieldsOf(device: SmartDevice): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(device).filter(([field]) => !KNOWN_FIELDS.includes(field)),
-  );
+/** The fields of each binding this version sets itself. */
+const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  shelly: ['address', 'generation', 'deviceId', 'channel'] satisfies readonly (keyof ShellyBinding)[],
+  eaton: ['gateway', 'point'] satisfies readonly (keyof EatonBinding)[],
+  bthome: ['address'] satisfies readonly (keyof BthomeBinding)[],
+};
+
+/**
+ * The body of a `PUT`: the form, and with it whatever the device holds that this version does
+ * not know of - at the top, and inside the binding the device keeps. A binding the form no
+ * longer has is not sent, with whatever it held.
+ */
+function replaced(before: SmartDevice, details: DeviceDetails): Record<string, unknown> {
+  const body: Record<string, unknown> = { ...unknownFieldsOf(before, KNOWN_FIELDS), ...sent(details) };
+  for (const [binding, known] of Object.entries(KNOWN_BINDING_FIELDS)) {
+    const held: unknown = (before as Record<string, unknown>)[binding];
+    const kept: unknown = body[binding];
+    if (isObject(held) && isObject(kept)) {
+      body[binding] = { ...unknownFieldsOf(held, known), ...kept };
+    }
+  }
+  return body;
+}
+
+function unknownFieldsOf(holder: object, known: readonly string[]): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(holder).filter(([field]) => !known.includes(field)));
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

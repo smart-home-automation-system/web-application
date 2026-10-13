@@ -178,7 +178,9 @@ export class SmartDeviceForm implements OnInit {
   protected readonly chosenKind = signal('');
 
   /** The rooms and the kinds on offer - with the one the device has, known here or not. */
-  protected readonly rooms = computed(() => withHeld(ROOM_NAMES, this.device()?.room));
+  protected readonly rooms = computed(() =>
+    withHeld(withHeld(ROOM_NAMES, this.device()?.room), this.room()),
+  );
   protected readonly kinds = computed(() => withHeld(DEVICE_KINDS, this.device()?.kind));
 
   /** The ways a device of the chosen kind can be reached. */
