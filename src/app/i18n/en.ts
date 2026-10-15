@@ -451,6 +451,7 @@ export const en = {
       temperatureSensor: 'Temperature sensor',
       weatherStation: 'Weather station',
       bthomeGateway: 'Bluetooth gateway',
+      pushButton: 'Push button',
     },
     lightKind: {
       relay: 'switched',
