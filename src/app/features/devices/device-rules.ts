@@ -30,14 +30,17 @@ const DEVICE_ID = /^[A-Za-z0-9_-]{3,50}$/;
 
 /**
  * The bindings a device of a kind can be reached through. What moves and what lights is wired
- * - a relay of a Shelly or an actor of the AMX system; a sensor is whatever reports it; the
- * weather station is read through a Bluetooth gateway, and such a gateway is itself a Shelly.
+ * - a relay of a Shelly or an actor of the AMX system. A push button is wired too, though it
+ * only reports: a wall transmitter of the AMX system or an input of a Shelly. A sensor is
+ * whatever reports it; the weather station is read through a Bluetooth gateway, and such a
+ * gateway is itself a Shelly.
  * A kind this version does not know is offered all three: the registry decides.
  */
 export function bindingsOf(kind: string): readonly Binding[] {
   switch (kind) {
     case 'blinds':
     case 'light':
+    case 'push button':
       return ['shelly', 'eaton'];
     case 'weather station':
       return ['bthome'];

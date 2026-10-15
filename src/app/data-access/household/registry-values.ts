@@ -39,7 +39,7 @@ export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
- * `SmartVendor`, `EatonGatewayType` of `smart-home-sdk` 1.8.0) - copies, like the ones above,
+ * `SmartVendor`, `EatonGatewayType` of `smart-home-sdk` 1.9.0) - copies, like the ones above,
  * and under the same rule: they are what the administration of the devices offers, and what
  * the registry already holds is shown and sent back as it is.
  */
@@ -52,6 +52,7 @@ export const DEVICE_KINDS = [
   'temperature sensor',
   'weather station',
   'bthome gateway',
+  'push button',
 ] as const;
 
 export type DeviceKind = (typeof DEVICE_KINDS)[number];

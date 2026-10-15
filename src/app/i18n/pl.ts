@@ -448,6 +448,7 @@ export const pl: Messages = {
       temperatureSensor: 'Czujnik temperatury',
       weatherStation: 'Stacja pogodowa',
       bthomeGateway: 'Bramka Bluetooth',
+      pushButton: 'Przycisk',
     },
     lightKind: {
       relay: 'przełączane',

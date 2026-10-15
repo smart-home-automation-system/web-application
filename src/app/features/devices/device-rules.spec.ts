@@ -46,6 +46,7 @@ describe('the rules of a device', () => {
     ['temperature sensor', ['shelly', 'eaton', 'bthome']],
     ['weather station', ['bthome']],
     ['bthome gateway', ['shelly']],
+    ['push button', ['shelly', 'eaton']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });

@@ -409,6 +409,7 @@ function possibleBindingsOf(kind: string): readonly string[] {
   switch (kind) {
     case 'blinds':
     case 'light':
+    case 'push button':
       return ['shelly', 'eaton'];
     case 'weather station':
       return ['bthome'];
