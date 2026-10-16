@@ -106,7 +106,7 @@ const AT_THE_START: readonly StoredDevice[] = [
   {
     id: 8,
     name: 'Hall motion sensor',
-    room: 'hall down',
+    room: 'hall up',
     kind: 'motion sensor',
     enabled: true,
     vendor: 'shelly',
