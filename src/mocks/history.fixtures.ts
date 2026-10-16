@@ -1,5 +1,6 @@
 import { RoomHistory } from '../app/data-access/heating/heating-api';
 import { WaterHistory } from '../app/data-access/water/water-api';
+import { WeatherHistory } from '../app/data-access/weather/weather-api';
 import { houseTime } from './house-time';
 
 /** A refusal of a range, as the services answer it: a 400 with the reason, without a code. */
@@ -145,6 +146,144 @@ export function roomHistory(
       : buckets(range, now).map((at) => ({
           at: localDateTime(at),
           value: round(level + 1.2 * Math.sin(dayAngle(at) - 2.4)),
+        })),
+  };
+}
+
+/** The metrics `weather-service` stores, by the names of its read API. */
+const WEATHER_METRICS = [
+  'battery',
+  'pressure',
+  'illuminance',
+  'dewPoint',
+  'voltage',
+  'raining',
+  'humidity',
+  'wind',
+  'gust',
+  'temperature',
+  'uv',
+  'windDirection',
+  'precipitation',
+] as const;
+
+/** A refusal of `weather-service` with its code: the metric it does not know. */
+export interface WeatherHistoryRefusal extends HistoryRefusal {
+  readonly code: 'UNKNOWN_METRIC';
+}
+
+/** The hour of the day of a moment on the wall clock, with its fraction. */
+const hourOf = (seconds: number) => (seconds % DAY) / HOUR;
+/** A wave over the day with its peak at `peak` o'clock. */
+const daily = (seconds: number, peak: number) =>
+  Math.cos((2 * Math.PI * (hourOf(seconds) - peak)) / 24);
+/** Daylight: nothing before 07:00 and after 18:00, the most at half past twelve. */
+const daylight = (seconds: number) => {
+  const hour = hourOf(seconds);
+  return hour <= 7 || hour >= 18 ? 0 : 32_000 * Math.sin((Math.PI * (hour - 7)) / 11);
+};
+/** The mock garden gets an hour of rain every other morning, from 05:00 to 06:00. */
+const rainingAt = (seconds: number) =>
+  Math.floor(seconds / DAY) % 2 === 0 && hourOf(seconds) >= 5 && hourOf(seconds) < 6;
+/** The running total of the rain gauge: 1200 at the start of time, 24 for every hour of rain. */
+const gaugeAt = (seconds: number) => {
+  const days = Math.floor(seconds / DAY);
+  const rainyDaysBefore = Math.ceil(days / 2);
+  const hour = hourOf(seconds);
+  const today = days % 2 === 0 ? Math.min(Math.max(hour - 5, 0), 1) : 0;
+  return 1200 + 24 * (rainyDaysBefore + today);
+};
+
+/** One bucket of one metric: its average, and the lowest and highest reading. */
+function weatherBucket(
+  metric: (typeof WEATHER_METRICS)[number],
+  at: number,
+  width: number,
+): { avg: number; min?: number; max?: number } {
+  const spread = (avg: number, by: number) => ({
+    avg: round(avg),
+    min: round(avg - by),
+    max: round(avg + by),
+  });
+  const middle = at + width / 2;
+  switch (metric) {
+    case 'temperature':
+      return spread(9 + 5 * daily(middle, 15), 0.3);
+    case 'dewPoint':
+      return spread(5.5 + 1.5 * daily(middle, 15), 0.2);
+    case 'humidity':
+      return spread(76 - 16 * daily(middle, 15), 1);
+    case 'illuminance': {
+      const low = daylight(at);
+      const high = daylight(at + width);
+      return {
+        avg: round(daylight(middle)),
+        min: round(Math.min(low, high)),
+        max: round(Math.max(low, high, daylight(middle))),
+      };
+    }
+    case 'wind':
+      return spread(2.6 + 1.4 * daily(middle, 14) + 0.4 * Math.sin(middle / 1_700), 0.5);
+    case 'gust':
+      return spread(4.2 + 2.2 * daily(middle, 14) + 0.8 * Math.sin(middle / 1_100), 1.2);
+    case 'windDirection':
+      // a circular mean: no lowest and no highest
+      return { avg: round((230 + 70 * Math.sin(middle / 40_000) + 360) % 360) };
+    case 'pressure':
+      return spread(1009 + 4 * Math.sin(middle / ((3 * DAY) / (2 * Math.PI))), 0.15);
+    case 'precipitation':
+      return {
+        avg: round((gaugeAt(at) + gaugeAt(at + width)) / 2),
+        min: gaugeAt(at),
+        max: gaugeAt(at + width),
+      };
+    case 'raining':
+      return {
+        avg: rainingAt(middle) ? 1 : 0,
+        min: rainingAt(at) ? 1 : 0,
+        max: rainingAt(middle) ? 1 : 0,
+      };
+    case 'uv':
+      return spread(round(daylight(middle) / 9_000), 0);
+    case 'battery':
+      return spread(98, 0);
+    case 'voltage':
+      return spread(5.1, 0);
+  }
+}
+
+/**
+ * `GET /home/weather/history?metric=&from=&to=`, in the shape of a real answer: a garden with a
+ * day and a night - the warmest afternoon, daylight from seven to six, a wind that rises after
+ * noon, an hour of rain every other morning on the running total of the gauge - and the hour of
+ * yesterday the station of the mock house was silent. Invented values. An unknown metric is
+ * refused as the service refuses it, with its code.
+ */
+export function weatherHistory(
+  metric: string | null,
+  from: string | null,
+  to: string | null,
+  fresh: boolean,
+  now: Date = new Date(),
+): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
+  const known = WEATHER_METRICS.find((name) => name === metric);
+  if (known === undefined) {
+    return { status: 400, message: 'Unknown metric', code: 'UNKNOWN_METRIC' };
+  }
+  const range = readRange(from, to, WATER_BUCKETS);
+  if (isHistoryRefusal(range)) {
+    return range;
+  }
+  return {
+    metric: known,
+    from: localDateTime(range.from),
+    to: localDateTime(range.to),
+    bucketSeconds: range.bucket,
+    points: fresh
+      ? []
+      : buckets(range, now).map((at) => ({
+          at: localDateTime(at),
+          ...weatherBucket(known, at, range.bucket),
         })),
   };
 }

@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 0,
+    "white": 220
+  },
+  "files": {
+    "weather-2560.webp": {
+      "bytes": 391202,
+      "quality": 64
+    },
+    "weather-1280.webp": {
+      "bytes": 169188,
+      "quality": 82
+    }
+  },
+  "darkest": "#0d0e06",
+  "lightest": "#dcdcdc",
+  "top": {
+    "darkest": "#9e772f",
+    "lightest": "#dcdcdc"
+  }
+}

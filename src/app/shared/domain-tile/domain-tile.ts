@@ -7,23 +7,23 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { PollingResource } from '../../core/api/polling-resource';
 import { MessageKey } from '../../i18n/messages';
-import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
-import { DataFreshness } from '../../shared/data-freshness/data-freshness';
+import { ApiErrorStrip } from '../api-error/api-error-strip';
+import { DataFreshness } from '../data-freshness/data-freshness';
 
 /** A domain of the house: the colour of its cards (`--app-domain-…` in `_seasons.scss`). */
 export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather';
 
 /**
- * One tile of the overview: a card about one call, whose title leads to the dashboard that has
- * the rest - plain text while the domain has no dashboard yet. The tile tells what every card of
- * a polled resource tells - the bar until the first answer, the freshness, the failure next to
- * the last value - and the content says what the answer holds.
+ * A card about one call of one domain of the house - a tile of the overview, whose title leads to
+ * the dashboard that has the rest, and a card of the weather page, whose title is plain text. The
+ * tile tells what every card of a polled resource tells - the bar until the first answer, the
+ * freshness, the failure next to the last value - and the content says what the answer holds.
  *
  * **One call, one tile**: a tile that is fed by its own resource keeps working, and keeps its
  * own failure, when the service of the tile next to it is down.
  */
 @Component({
-  selector: 'app-overview-tile',
+  selector: 'app-domain-tile',
   imports: [
     MatCardModule,
     MatIconModule,
@@ -69,10 +69,10 @@ export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather
       </mat-card>
     </ng-container>
   `,
-  styleUrl: './overview-tile.scss',
+  styleUrl: './domain-tile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OverviewTile {
+export class DomainTile {
   /**
    * Key of the title - the name of the dashboard the tile leads to, or of its part. Not `title`:
    * written as a plain attribute that would also be the tooltip of the element.

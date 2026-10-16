@@ -1,4 +1,4 @@
-import { LineChart } from 'echarts/charts';
+import { BarChart, LineChart } from 'echarts/charts';
 import {
   GridComponent,
   LegendComponent,
@@ -15,6 +15,14 @@ import { SVGRenderer } from 'echarts/renderers';
  *
  * SVG, not canvas: sharp at every zoom of a phone, and a test can look at what was drawn.
  */
-use([LineChart, GridComponent, LegendComponent, MarkAreaComponent, TooltipComponent, SVGRenderer]);
+use([
+  LineChart,
+  BarChart,
+  GridComponent,
+  LegendComponent,
+  MarkAreaComponent,
+  TooltipComponent,
+  SVGRenderer,
+]);
 
 export { init };

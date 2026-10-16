@@ -157,9 +157,7 @@ describe('Overview', () => {
     expect(await link('water')).toBe('/water');
     expect(await link('boiler')).toBe('/boiler');
     expect(await link('presence')).toBe('/presence');
-    // no weather page yet: its title is plain text, not a link to a page that does not exist
-    expect((await tile('weather')).querySelector('a')).toBeNull();
-    expect(words((await tile('weather')).querySelector('mat-card-title'))).toBe('Weather');
+    expect(await link('weather')).toBe('/weather');
   });
 
   describe('the heating of the house', () => {

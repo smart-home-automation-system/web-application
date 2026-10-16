@@ -62,6 +62,7 @@ test.describe('without a profile', () => {
             'Heating',
             'Hot water',
             'Boiler room',
+            'Weather',
             'Presence',
             'My room',
             'Household',

@@ -45,8 +45,6 @@ test.describe('overview', () => {
     await expect(weather).toContainText(/Rain\s+None/);
     await expect(weather).toContainText(/Daylight\s+18,450 lx/);
     await expect(weather.getByTestId('weather-measured')).toHaveText(/Measured 1 min\.? ago/);
-    // no page of its own yet: the title leads nowhere
-    await expect(weather.getByRole('link')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
@@ -56,6 +54,7 @@ test.describe('overview', () => {
     ['tile-water', 'Hot water', '/water'],
     ['tile-boiler', 'Boiler room', '/boiler'],
     ['tile-presence', 'At home now', '/presence'],
+    ['tile-weather', 'Weather', '/weather'],
   ] as const) {
     test(`leads from "${name}" to ${address}`, async ({ page }) => {
       await page.goto('/overview');
@@ -160,14 +159,12 @@ test.describe('overview', () => {
       await expect(page.getByTestId('tile-weather')).toContainText('Temperature');
       await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
 
-      const boxes = await page
-        .locator('.tiles > *')
-        .evaluateAll((tiles) =>
-          tiles.map((tile) => {
-            const box = tile.getBoundingClientRect();
-            return { left: box.left, right: box.right, top: Math.round(box.top) };
-          }),
-        );
+      const boxes = await page.locator('.tiles > *').evaluateAll((tiles) =>
+        tiles.map((tile) => {
+          const box = tile.getBoundingClientRect();
+          return { left: box.left, right: box.right, top: Math.round(box.top) };
+        }),
+      );
       const main = await page.getByRole('main').evaluate((element) => {
         const box = element.getBoundingClientRect();
         const style = getComputedStyle(element);

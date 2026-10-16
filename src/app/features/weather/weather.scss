@@ -1,0 +1,86 @@
+@use '../../shared/domain-tile/tile-content';
+
+$gap: 12px;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+// The page stands in the middle of a wide screen, like the overview, and its rows are always
+// full: the six cards in one row, two rows of three, three of two or one column, and the six
+// charts in rows of three, of two or in one column - never a row of four with two under it and
+// an empty half beside them (owner, 2026-10-16, the overview). The counts follow the width of the
+// page, not of the window. Cards side by side end on one line (owner, 2026-10-10): their
+// contents differ by a line or two.
+.page-header,
+.cards,
+.charts {
+  max-width: 1600px;
+  margin-inline: auto;
+}
+
+.cards,
+.charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $gap;
+  align-items: stretch;
+}
+
+.charts {
+  margin-top: $gap;
+}
+
+@container (min-width: 500px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 760px) {
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1440px) {
+  .cards {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .charts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+// the value a card is looked at for
+.tile__row--lead strong {
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+}
+
+// The direction: the dial and the words beside it, which may take two lines in a narrow card
+// rather than run out of it.
+.tile__row--compass {
+  align-items: center;
+
+  dd {
+    align-items: center;
+  }
+
+  strong {
+    white-space: normal;
+  }
+}
+
+// what a value means, under it: the pressure at the station, the gauge without its unit
+.tile__note {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

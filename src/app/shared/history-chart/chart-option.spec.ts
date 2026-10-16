@@ -132,9 +132,102 @@ describe('chartOption', () => {
     expect(option({ locale: 'pl-PL' }).yAxis.axisLabel.formatter(21.5)).toBe('21,5 °C');
   });
 
+  describe('an amount per bucket', () => {
+    const RAIN: ChartLine = { ...TANK, key: 'rain', name: 'Rain', bars: true };
+    const raw = (overrides: Partial<ChartInput>) =>
+      chartOption(input(overrides), COLORS) as {
+        yAxis: { type: string; min?: unknown; scale?: boolean };
+        series: { type: string; data: unknown; connectNulls?: boolean }[];
+      };
+
+    it('is drawn as bars, on an axis that starts at zero', () => {
+      const drawn = raw({ lines: [RAIN] });
+
+      expect(drawn.series[0].type).toBe('bar');
+      expect(drawn.series[0].data).toBe(RAIN.points);
+      expect(drawn.yAxis.type).toBe('value');
+      expect(drawn.yAxis.min).toBe(0);
+    });
+
+    it('leaves the lines of the same chart lines', () => {
+      expect(raw({ lines: [TANK, RAIN] }).series.map((series) => series.type)).toEqual([
+        'line',
+        'bar',
+      ]);
+    });
+  });
+
+  it('never steps the axis over the bounds of the value', () => {
+    const bounded = option({ bounds: { min: 0, max: 100 } });
+
+    expect(bounded.yAxis.min({ min: 0.4 })).toBe(0);
+    expect(bounded.yAxis.max({ max: 99.6 })).toBe(100);
+    // around the values as before, inside the bounds
+    expect(bounded.yAxis.min({ min: 60.2 })).toBe(59);
+  });
+
+  // nothing at or below zero lies on a log axis: the night is drawn at 1 and told as measured
+  it('lifts what is not above zero to 1 on a log axis, and the tooltip says what was measured', () => {
+    const NIGHT: ChartLine = {
+      ...TANK,
+      key: 'light',
+      name: 'Daylight',
+      points: [
+        [at('2026-10-08T02:00:00'), 0],
+        [at('2026-10-08T02:05:00'), null],
+        [at('2026-10-08T12:00:00'), 30_000],
+      ],
+    };
+    const drawn = chartOption(
+      input({ lines: [NIGHT], logarithmic: true, unit: 'lx', decimals: 0 }),
+      COLORS,
+    ) as {
+      series: { data: unknown }[];
+      tooltip: { formatter(hovered: unknown): string };
+    };
+
+    expect(drawn.series[0].data).toEqual([
+      [at('2026-10-08T02:00:00'), 1],
+      [at('2026-10-08T02:05:00'), null],
+      [at('2026-10-08T12:00:00'), 30_000],
+    ]);
+    const text = drawn.tooltip.formatter([
+      {
+        seriesName: 'Daylight',
+        seriesIndex: 0,
+        dataIndex: 0,
+        value: [at('2026-10-08T02:00:00'), 1],
+        marker: '<i></i>',
+      },
+    ]);
+    expect(text).toContain('Daylight: <strong>0 lx</strong>');
+  });
+
+  it('draws the value axis in powers of ten when asked to', () => {
+    const drawn = chartOption(input({ logarithmic: true }), COLORS) as {
+      yAxis: { type: string; logBase: number; min?: unknown };
+    };
+
+    expect(drawn.yAxis.type).toBe('log');
+    expect(drawn.yAxis.logBase).toBe(10);
+    expect(drawn.yAxis.min).toBeUndefined();
+  });
+
+  it('writes no unit where it is not known, and no space for it', () => {
+    expect(option({ unit: '' }).yAxis.axisLabel.formatter(4311)).toBe('4,311');
+  });
+
   describe('the tooltip', () => {
     const hovered = (rows: { seriesName: string; value: [number, number | null] }[]) =>
       rows.map((row) => ({ ...row, marker: '<i></i>' }));
+
+    it('writes the decimals it is asked for', () => {
+      const text = option({ unit: 'lx', decimals: 0 }).tooltip.formatter(
+        hovered([{ seriesName: 'Tank', value: [at('2026-10-08T14:20:00'), 18450.4] }]),
+      );
+
+      expect(text).toContain('Tank: <strong>18,450 lx</strong>');
+    });
 
     it('says when and what, with the unit', () => {
       const text = option().tooltip.formatter(

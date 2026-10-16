@@ -16,7 +16,7 @@ import {
   temperatureSensors,
   turnHeating,
 } from './heating.fixtures';
-import { isHistoryRefusal, roomHistory, waterHistory } from './history.fixtures';
+import { isHistoryRefusal, roomHistory, waterHistory, weatherHistory } from './history.fixtures';
 import {
   addDevice,
   addMember,
@@ -67,11 +67,13 @@ function report(answer: object): MockReply {
     : { status: 200, body: answer };
 }
 
-/** A history, or the refusal of its range - a 400 with the reason, without a code. */
+/** A history, or the refusal of its range - a 400 with the reason, and the code if it has one. */
 function history(answer: object): MockReply {
-  return isHistoryRefusal(answer)
-    ? { status: answer.status, body: { errors: [{ message: answer.message }] } }
-    : { status: 200, body: answer };
+  if (!isHistoryRefusal(answer)) {
+    return { status: 200, body: answer };
+  }
+  const code = 'code' in answer ? { code: answer.code } : {};
+  return { status: answer.status, body: { errors: [{ message: answer.message, ...code }] } };
 }
 
 const from = (request: HttpRequest<unknown>) => request.params.get('from');
@@ -294,6 +296,12 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/weather/current',
     reply: (_, fresh) => ({ status: 200, body: fresh ? {} : currentWeather() }),
+  },
+  {
+    method: 'GET',
+    path: '/home/weather/history',
+    reply: (request, fresh) =>
+      history(weatherHistory(request.params.get('metric'), from(request), to(request), fresh)),
   },
   {
     method: 'GET',

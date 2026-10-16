@@ -22,7 +22,7 @@ import { toRoomViews } from '../../shared/room-heating/room-views';
 import { toDeviceView } from '../boiler-room/boiler-device';
 import { FLOORS } from '../heating/floors';
 import { summarise, toSensorRows } from '../heating/sensor-rows';
-import { OverviewTile } from './overview-tile';
+import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { PERSON_STATE_LABELS, lastCheck, summariseRooms, toPeople } from './overview-views';
 
 /** The rooms that are no part of the house: a garden and a sauna are not its coldest and warmest. */
@@ -53,7 +53,7 @@ interface DeviceLine {
     HeatingSwitch,
     HouseAgePipe,
     LocalNumberPipe,
-    OverviewTile,
+    DomainTile,
   ],
   templateUrl: './overview.html',
   styleUrl: './overview.scss',

@@ -182,6 +182,21 @@ for (const language of ['en', 'pl'] as const) {
           });
         });
 
+        test(`weather${suffix}`, async ({ page }, testInfo) => {
+          await useScenario(page, scenario);
+          await page.goto('/weather');
+          await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
+          if (scenario === 'default') {
+            // the six charts are drawn before the picture is taken
+            await expect(page.locator('.chart__plot svg')).toHaveCount(6);
+          }
+          await photoIsShown(page);
+          await page.screenshot({
+            path: shot(testInfo.project.name, scheme, language, `weather${suffix}`),
+            fullPage: true,
+          });
+        });
+
         test(`boiler room${suffix}`, async ({ page }, testInfo) => {
           await useScenario(page, scenario);
           await page.goto('/boiler');
@@ -402,7 +417,10 @@ for (const language of ['en', 'pl'] as const) {
           path: shot(testInfo.project.name, scheme, language, 'devices-form'),
         });
 
-        await page.locator('[data-room="office"] app-smart-device-form button[type="button"]').last().click();
+        await page
+          .locator('[data-room="office"] app-smart-device-form button[type="button"]')
+          .last()
+          .click();
         await page.locator('[data-testid="registry"] .registry__add').click();
         await page.locator('[data-testid="registry"] input').first().fill('Lo');
         // the list of a select opens over the page: a picture of it, then a choice from it
