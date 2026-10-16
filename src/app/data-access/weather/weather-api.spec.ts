@@ -3,13 +3,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { WeatherApi, WeatherHistoryQuery } from './weather-api';
+import { HistoryRange } from '../../core/time/history-range';
+import { WeatherApi } from './weather-api';
 
-const DAY: WeatherHistoryQuery = {
-  metric: 'temperature',
-  from: '2026-10-15T15:00:00',
-  to: '2026-10-16T15:00:00',
-};
+const DAY: HistoryRange = { from: '2026-10-15T15:00:00', to: '2026-10-16T15:00:00' };
+const WEEK: HistoryRange = { from: '2026-10-09T00:00:00', to: '2026-10-16T00:00:00' };
 
 describe('WeatherApi', () => {
   let http: HttpTestingController;
@@ -82,7 +80,9 @@ describe('WeatherApi', () => {
 
   describe('the history', () => {
     it('asks for one metric with the two ends of the range and nothing else', () => {
-      TestBed.runInInjectionContext(() => TestBed.inject(WeatherApi).watchHistory(() => DAY));
+      TestBed.runInInjectionContext(() =>
+        TestBed.inject(WeatherApi).watchHistory('temperature', () => DAY),
+      );
 
       const history = call('/home/weather/history');
 
@@ -93,23 +93,23 @@ describe('WeatherApi', () => {
       history.flush({ metric: 'temperature', bucketSeconds: 300, points: [] });
     });
 
-    it('asks again at once for another metric, and tags the answer with its question', () => {
-      const query = signal(DAY);
+    it('asks again at once for another range, and tags the answer with it', () => {
+      const range = signal(DAY);
       const history = TestBed.runInInjectionContext(() =>
-        TestBed.inject(WeatherApi).watchHistory(query),
+        TestBed.inject(WeatherApi).watchHistory('wind', range),
       );
       const first = call('/home/weather/history');
 
-      const wind: WeatherHistoryQuery = { ...DAY, metric: 'wind' };
-      query.set(wind);
+      range.set(WEEK);
       TestBed.tick();
       const second = call('/home/weather/history');
 
       expect(first.cancelled).toBe(true);
       expect(second.request.params.get('metric')).toBe('wind');
-      second.flush({ metric: 'wind', bucketSeconds: 300, points: [] });
-      expect(history.value()?.query).toBe(wind);
-      expect(history.settledFor()?.query).toBe(wind);
+      expect(second.request.params.get('from')).toBe('2026-10-09T00:00:00');
+      second.flush({ metric: 'wind', bucketSeconds: 1800, points: [] });
+      expect(history.value()?.query).toBe(WEEK);
+      expect(history.settledFor()?.query).toBe(WEEK);
     });
   });
 });

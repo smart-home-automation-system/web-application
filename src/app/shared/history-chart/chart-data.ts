@@ -20,6 +20,11 @@ export interface ChartLine {
   readonly points: readonly LinePoint[];
   /** A line that is not a measurement - a schedule - is dashed. */
   readonly dashed?: boolean;
+  /**
+   * Drawn as a bar per point, not as a line: an amount per bucket - the rain that fell in it -
+   * which is no level between two points. A `null` is simply no bar.
+   */
+  readonly bars?: boolean;
 }
 
 /** The lowest and the highest value of a line. */

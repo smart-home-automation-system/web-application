@@ -26,6 +26,17 @@ export interface WeatherReading {
   readonly gust?: MetricReading<number>;
   readonly illuminance?: MetricReading<number>;
   readonly raining?: MetricReading<boolean>;
+  /** hPa at the station, not reduced to sea level. */
+  readonly pressure?: MetricReading<number>;
+  readonly uv?: MetricReading<number>;
+  /** Where the wind comes from, in degrees clockwise from north. */
+  readonly windDirection?: MetricReading<number>;
+  /** The running total of the station's rain gauge; its unit is not confirmed yet. */
+  readonly precipitation?: MetricReading<number>;
+  /** % */
+  readonly battery?: MetricReading<number>;
+  /** V */
+  readonly voltage?: MetricReading<number>;
 }
 
 /**
@@ -81,7 +92,29 @@ export function toWeatherReading(
     gust: metric(of('gust'), isNumber, timeZone),
     illuminance: metric(of('illuminance'), isNumber, timeZone),
     raining: metric(of('raining'), isBoolean, timeZone),
+    pressure: metric(of('pressure'), isNumber, timeZone),
+    uv: metric(of('uv'), isNumber, timeZone),
+    windDirection: metric(of('windDirection'), isNumber, timeZone),
+    precipitation: metric(of('precipitation'), isNumber, timeZone),
+    battery: metric(of('battery'), isNumber, timeZone),
+    voltage: metric(of('voltage'), isNumber, timeZone),
   };
+}
+
+/**
+ * The point of the compass a direction is nearest to, of eight: `n`, `ne`, ... `nw`.
+ * `undefined` for a value that is no angle.
+ */
+export type CompassPoint = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
+
+const COMPASS: readonly CompassPoint[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+
+export function compassPoint(degrees: number): CompassPoint | undefined {
+  if (!Number.isFinite(degrees)) {
+    return undefined;
+  }
+  const turned = ((degrees % 360) + 360) % 360;
+  return COMPASS[Math.round(turned / 45) % 8];
 }
 
 /** The icon the strip leads with. Rain that is not known is not "no rain", but it is no rain icon. */

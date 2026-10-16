@@ -87,11 +87,6 @@ export interface WeatherHistory {
   readonly points?: readonly WeatherHistoryPoint[];
 }
 
-/** A history of one metric over one range: the question of `watchHistory`. */
-export interface WeatherHistoryQuery extends HistoryRange {
-  readonly metric: WeatherMetric;
-}
-
 // the station sends a packet about every 10 s, and each metric only on a change: a minute is
 // enough for a strip that shows the weather, not a measurement
 const POLL_CURRENT_EVERY_MS = 60_000;
@@ -122,18 +117,20 @@ export class WeatherApi {
   }
 
   /**
-   * The history of one metric over a range - asked again whenever `query()` changes, the answer
-   * tagged with the question it is for. The page asks with `from` / `to` and never chooses the
-   * bucket. `query` has to be a signal with an `equal`. Call in an injection context.
+   * The history of one metric for the range `range()` gives - asked again whenever that changes,
+   * the answer tagged with the range it is for (the object itself: a `HistoryPeriod` knows its
+   * ranges by identity). The page asks with `from` / `to` and never chooses the bucket. Call in
+   * an injection context.
    */
   watchHistory(
-    query: () => WeatherHistoryQuery,
-  ): QueryResource<WeatherHistoryQuery, WeatherHistory | null> {
+    metric: WeatherMetric,
+    range: () => HistoryRange,
+  ): QueryResource<HistoryRange, WeatherHistory | null> {
     return queryResource(
-      query,
+      range,
       (asked) =>
         this.api.get<WeatherHistory | null>('/weather/history', {
-          metric: asked.metric,
+          metric,
           from: asked.from,
           to: asked.to,
         }),

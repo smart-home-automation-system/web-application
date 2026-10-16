@@ -49,6 +49,7 @@ describe('routes', () => {
     ['heating', 'heating'],
     ['water', 'water'],
     ['boiler', 'boiler'],
+    ['weather', 'weather'],
     ['presence', 'presence'],
     ['household', 'household'],
     ['devices', 'devices'],

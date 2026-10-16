@@ -1,5 +1,11 @@
 import { CurrentWeather } from './weather-api';
-import { WINDY_FROM_MS, leadingIcon, newestOf, toWeatherReading } from './weather-reading';
+import {
+  WINDY_FROM_MS,
+  compassPoint,
+  leadingIcon,
+  newestOf,
+  toWeatherReading,
+} from './weather-reading';
 
 const ZONE = 'Europe/Warsaw';
 
@@ -44,6 +50,12 @@ describe('toWeatherReading', () => {
       gust: undefined,
       illuminance: undefined,
       raining: undefined,
+      pressure: undefined,
+      uv: undefined,
+      windDirection: undefined,
+      precipitation: undefined,
+      battery: undefined,
+      voltage: undefined,
     });
   });
 
@@ -118,5 +130,26 @@ describe('newestOf', () => {
   it('answers nothing when none of them says when it was measured', () => {
     expect(newestOf([reading.wind, undefined])).toBeUndefined();
     expect(newestOf([])).toBeUndefined();
+  });
+});
+
+describe('compassPoint', () => {
+  it.each([
+    [0, 'n'],
+    [22.4, 'n'],
+    [22.5, 'ne'],
+    [90, 'e'],
+    [180, 's'],
+    [237.5, 'sw'],
+    [317, 'nw'],
+    [337.6, 'n'],
+    [360, 'n'],
+    [-45, 'nw'],
+  ] as const)('reads %s° as %s', (degrees, point) => {
+    expect(compassPoint(degrees)).toBe(point);
+  });
+
+  it('reads nothing into a value that is no angle', () => {
+    expect(compassPoint(Number.NaN)).toBeUndefined();
   });
 });

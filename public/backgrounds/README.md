@@ -17,6 +17,7 @@ argument of the script) - by as little as makes `npm run check:contrast` pass.
 | `boiler` | Boiler room | 2026-10-08, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `room` | My room | 2026-10-09, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `household` | Household | 2026-10-09, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
+| `weather` | Weather | 2026-10-16, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 
 ## Prompts
 
@@ -159,3 +160,20 @@ wall are a shade too dark for the dark title of the light scheme.
 Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
 owner on 2026-10-13 (HAS-231). Tones `0-230`: the shade of the floor lamp is nearly white, too
 bright under the glass of a card for the secondary text of the dark scheme.
+
+### `weather`
+
+> Photorealistic wide photograph of the garden of a modern house in changeable autumn weather,
+> the things spread from the left edge to the right: a white weather station on a slim metal pole
+> with its small wind vane and rain collector, a wooden garden table with chairs wet from a
+> passing shower, ornamental grasses bending in the wind, a young birch with yellow leaves, the
+> corner of the house with a glass wall and an outdoor wall thermometer, a lawn with puddles.
+> Broken clouds with patches of light, the sun breaking through on the right. Even, mid-toned
+> light along the top of the frame: soft grey-blue clouds, no bright sun disc and no dark storm
+> cloud at the top. No large empty sky, lawn or wall; no people, no text, no brand logos.
+> Realistic photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-16 (HAS-241). Tones `0-220`: the sky breaking through on the right is nearly
+white, too bright for the title and for the secondary text on glass of the dark scheme in summer
+and winter; `0-225` still failed by a hair.

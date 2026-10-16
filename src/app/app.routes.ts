@@ -45,6 +45,12 @@ const pages: Page[] = [
     loadComponent: () => import('./features/boiler-room/boiler-room').then((m) => m.BoilerRoom),
   },
   {
+    path: 'weather',
+    title: 'nav.weather',
+    data: { background: 'weather' },
+    loadComponent: () => import('./features/weather/weather').then((m) => m.Weather),
+  },
+  {
     path: 'presence',
     title: 'nav.presence',
     data: { background: 'presence' },

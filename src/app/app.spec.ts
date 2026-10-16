@@ -75,6 +75,7 @@ describe('application routing', () => {
         'Heating',
         'Hot water',
         'Boiler room',
+        'Weather',
         'Presence',
         'My room',
         'Household',
@@ -100,6 +101,7 @@ describe('application routing', () => {
 
     const offered = [...document.querySelectorAll<HTMLAnchorElement>('a[mat-menu-item]')];
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
+      '/weather',
       '/presence',
       '/room',
       '/household',
@@ -109,7 +111,7 @@ describe('application routing', () => {
     ]);
     expect(
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
-    ).toEqual(['Presence', 'My room', 'Household', 'Devices', 'Settings', 'About']);
+    ).toEqual(['Weather', 'Presence', 'My room', 'Household', 'Devices', 'Settings', 'About']);
     document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
   });
 
@@ -192,6 +194,7 @@ describe('application routing', () => {
           'Ogrzewanie',
           'Ciepła woda',
           'Kotłownia',
+          'Pogoda',
           'Obecność',
           'Mój pokój',
           'Domownicy',

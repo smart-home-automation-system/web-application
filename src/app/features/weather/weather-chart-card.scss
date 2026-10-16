@@ -1,0 +1,44 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+// as tall as its place: the charts of a row end on one line
+.chart {
+  --app-domain: var(--app-domain-weather);
+
+  height: 100%;
+  box-sizing: border-box;
+}
+
+// tighter than Material's 16 px all round, like the cards above it
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+// what the picture says in numbers: per line the lowest and the highest bucket, or the sum
+.chart__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__name {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.chart__note {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

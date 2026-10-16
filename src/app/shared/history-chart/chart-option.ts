@@ -28,9 +28,21 @@ export interface ChartInput {
   readonly from: number;
   readonly to: number;
   readonly band?: ChartBand;
-  /** The unit written after every value, `°C`. */
+  /** The unit written after every value, `°C`; empty for a value without a known unit. */
   readonly unit: string;
   readonly locale: string;
+  /**
+   * A logarithmic value axis - for a light that spans 0 to 100 000 lx in a day, where a linear
+   * axis shows the whole night as one flat line. Every value has to be above zero then.
+   */
+  readonly logarithmic?: boolean;
+  /** Decimals of a value in the tooltip; one or two by default (what the services round to). */
+  readonly decimals?: number;
+  /**
+   * What the value can never go past - a wind below 0 m/s, a humidity above 100 %. The axis keeps
+   * a step of air around the values, but never steps over these.
+   */
+  readonly bounds?: { readonly min?: number; readonly max?: number };
 }
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
@@ -102,7 +114,15 @@ const markerOf = (color: string) =>
  */
 export function chartOption(input: ChartInput, colors: ChartColors): EChartsCoreOption {
   const span = input.to - input.from;
-  const value = numberFormat(input.locale, VALUE);
+  const value = numberFormat(
+    input.locale,
+    input.decimals === undefined
+      ? VALUE
+      : { minimumFractionDigits: input.decimals, maximumFractionDigits: input.decimals },
+  );
+  const bars = input.lines.some((line) => line.bars);
+  /** A value with its unit; no space and no unit where the unit is not known. */
+  const withUnit = (text: string, unitText: string) => (unitText ? `${text} ${unitText}` : text);
   const axisValue = numberFormat(input.locale, { maximumFractionDigits: 1 });
   const text = { color: colors.text, fontFamily: colors.fontFamily };
   const band = input.band;
@@ -151,7 +171,7 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
         const row = (marker: string, name: string, reading: number) =>
           // the markers are markup of ECharts and of this file; a name is ours, and escaped
           // all the same
-          `${marker}${escapeHtml(name)}: <strong>${value.format(reading)} ${unit}</strong>`;
+          `${marker}${escapeHtml(name)}: <strong>${withUnit(value.format(reading), unit)}</strong>`;
         const lines = [
           ...measured.flatMap((hoveredRow) => {
             const reading = hoveredRow.value?.[1];
@@ -185,42 +205,67 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
       splitLine: { show: false },
     },
     yAxis: {
-      type: 'value',
-      // around the values, not from zero: a room moves by a degree or two
-      scale: true,
-      // the band is part of the picture also while every reading lies on one side of it
-      min: (extent: { min: number }) =>
-        Math.floor(band === undefined ? extent.min : Math.min(extent.min, band.low)) - 1,
-      max: (extent: { max: number }) =>
-        Math.ceil(band === undefined ? extent.max : Math.max(extent.max, band.high)) + 1,
-      axisLabel: { ...text, formatter: (at: number) => `${axisValue.format(at)} ${input.unit}` },
+      ...(input.logarithmic
+        ? // powers of ten, chosen by the library around the values
+          { type: 'log', logBase: 10 }
+        : bars
+          ? // an amount starts at nothing: a bar measured from anywhere else lies about its size
+            { type: 'value', min: 0 }
+          : {
+              type: 'value',
+              // around the values, not from zero: a room moves by a degree or two
+              scale: true,
+              // the band is part of the picture also while every reading lies on one side of it
+              min: (extent: { min: number }) =>
+                Math.max(
+                  input.bounds?.min ?? -Infinity,
+                  Math.floor(band === undefined ? extent.min : Math.min(extent.min, band.low)) - 1,
+                ),
+              max: (extent: { max: number }) =>
+                Math.min(
+                  input.bounds?.max ?? Infinity,
+                  Math.ceil(band === undefined ? extent.max : Math.max(extent.max, band.high)) + 1,
+                ),
+            }),
+      axisLabel: { ...text, formatter: (at: number) => withUnit(axisValue.format(at), input.unit) },
       splitLine: { lineStyle: { color: colors.grid, opacity: 0.35 } },
     },
-    series: input.lines.map((line, index) => ({
-      type: 'line',
-      id: line.key,
-      name: line.name,
-      data: line.points,
-      // a break in the line is a gap in the readings: never bridged
-      connectNulls: false,
-      // a point between two gaps has no line to either side, and would not be drawn at all
-      showSymbol: !line.dashed,
-      symbol: 'circle',
-      symbolSize: 2.5,
-      lineStyle: { width: 2, type: line.dashed ? 'dashed' : 'solid' },
-      emphasis: { disabled: true },
-      ...(index === 0 && band !== undefined
+    series: input.lines.map((line, index) =>
+      line.bars
         ? {
-            markArea: {
-              silent: true,
-              itemStyle: { color: colors.text, opacity: 0.12 },
-              // no words inside the picture: a line crosses the band anywhere, and would cross
-              // them - the caller says next to the chart what the shaded band is
-              label: { show: false },
-              data: [[{ name: band.name, yAxis: band.low }, { yAxis: band.high }]],
-            },
+            type: 'bar',
+            id: line.key,
+            name: line.name,
+            data: line.points,
+            barMaxWidth: 10,
+            emphasis: { disabled: true },
           }
-        : {}),
-    })),
+        : {
+            type: 'line',
+            id: line.key,
+            name: line.name,
+            data: line.points,
+            // a break in the line is a gap in the readings: never bridged
+            connectNulls: false,
+            // a point between two gaps has no line to either side, and would not be drawn at all
+            showSymbol: !line.dashed,
+            symbol: 'circle',
+            symbolSize: 2.5,
+            lineStyle: { width: 2, type: line.dashed ? 'dashed' : 'solid' },
+            emphasis: { disabled: true },
+            ...(index === 0 && band !== undefined
+              ? {
+                  markArea: {
+                    silent: true,
+                    itemStyle: { color: colors.text, opacity: 0.12 },
+                    // no words inside the picture: a line crosses the band anywhere, and would cross
+                    // them - the caller says next to the chart what the shaded band is
+                    label: { show: false },
+                    data: [[{ name: band.name, yAxis: band.low }, { yAxis: band.high }]],
+                  },
+                }
+              : {}),
+          },
+    ),
   };
 }

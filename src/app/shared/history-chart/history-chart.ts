@@ -70,6 +70,12 @@ export class HistoryChart {
   readonly label = input.required<string>();
   readonly band = input<ChartBand>();
   readonly unit = input('°C');
+  /** A logarithmic value axis; every value has to be above zero. */
+  readonly logarithmic = input(false);
+  /** Decimals of a value in the tooltip; one or two when not given. */
+  readonly decimals = input<number>();
+  /** What the value can never go past; the axis never steps over it. */
+  readonly bounds = input<{ readonly min?: number; readonly max?: number }>();
 
   private readonly engine = inject(ChartEngine);
   private readonly theme = inject(ThemeStore);
@@ -131,6 +137,9 @@ export class HistoryChart {
         band: this.band(),
         unit: this.unit(),
         locale: this.locale(),
+        logarithmic: this.logarithmic(),
+        decimals: this.decimals(),
+        bounds: this.bounds(),
       };
       chart?.draw(chartOption(option, readColors(this.plot().nativeElement)));
     });

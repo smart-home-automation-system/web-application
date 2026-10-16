@@ -1,0 +1,352 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('weather.page.title') }}</h1>
+  </header>
+
+  @let r = reading();
+  @let c = cards();
+
+  <section class="cards" [attr.aria-label]="t('weather.page.now')">
+    <!-- temperature, dew point and humidity -->
+    <app-domain-tile
+      heading="weather.cards.temperature"
+      icon="device_thermostat"
+      domain="weather"
+      waitingLabel="weather.page.loading"
+      [resource]="current"
+      data-testid="card-temperature"
+    >
+      @if (c.temperature.shown) {
+        <dl class="tile__rows">
+          @if (r.temperature; as metric) {
+            <div class="tile__row tile__row--lead" data-metric="temperature">
+              <dt>{{ t('weather.metric.temperature') }}</dt>
+              <dd>
+                @if (metric.stale && !c.temperature.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: ONE_DECIMAL }} °C</strong>
+              </dd>
+            </div>
+          }
+          @if (r.dewPoint; as metric) {
+            <div class="tile__row" data-metric="dewPoint">
+              <dt>{{ t('weather.metric.dewPoint') }}</dt>
+              <dd>
+                @if (metric.stale && !c.temperature.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: ONE_DECIMAL }} °C</strong>
+              </dd>
+            </div>
+          }
+          @if (r.humidity; as metric) {
+            <div class="tile__row" data-metric="humidity">
+              <dt>{{ t('weather.metric.humidity') }}</dt>
+              <dd>
+                @if (metric.stale && !c.temperature.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: WHOLE }} %</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+        @if (c.temperature.newest; as last) {
+          @if (last.measuredAt | houseAge; as age) {
+            <p
+              class="tile__detail"
+              [class.tile__detail--alert]="last.allStale"
+              data-testid="measured"
+            >
+              {{ t(last.allStale ? 'weather.measuredOutOfDate' : 'weather.measured', { age }) }}
+            </p>
+          }
+        }
+      } @else if (!current.error()) {
+        <p class="tile__detail">{{ t('weather.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- wind, gust and where the wind comes from -->
+    <app-domain-tile
+      heading="weather.cards.wind"
+      icon="air"
+      domain="weather"
+      waitingLabel="weather.page.loading"
+      [resource]="current"
+      data-testid="card-wind"
+    >
+      @if (c.wind.shown) {
+        <dl class="tile__rows">
+          @if (r.wind; as metric) {
+            <div class="tile__row tile__row--lead" data-metric="wind">
+              <dt>{{ t('weather.metric.wind') }}</dt>
+              <dd>
+                @if (metric.stale && !c.wind.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: ONE_DECIMAL }} m/s</strong>
+              </dd>
+            </div>
+          }
+          @if (r.gust; as metric) {
+            <div class="tile__row" data-metric="gust">
+              <dt>{{ t('weather.metric.gust') }}</dt>
+              <dd>
+                @if (metric.stale && !c.wind.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: ONE_DECIMAL }} m/s</strong>
+              </dd>
+            </div>
+          }
+          @if (r.windDirection; as metric) {
+            <div class="tile__row tile__row--compass" data-metric="windDirection">
+              <dt>{{ t('weather.metric.windDirection') }}</dt>
+              <dd>
+                @if (metric.stale && !c.wind.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <app-wind-compass [from]="metric.value" />
+                <strong>
+                  @if (windFrom(); as point) {
+                    {{ t('weather.compass.from', { point: t(compassLabels[point]) }) }}
+                  }
+                  ({{ metric.value | localNumber: WHOLE }}°)</strong
+                >
+              </dd>
+            </div>
+          }
+        </dl>
+        @if (c.wind.newest; as last) {
+          @if (last.measuredAt | houseAge; as age) {
+            <p
+              class="tile__detail"
+              [class.tile__detail--alert]="last.allStale"
+              data-testid="measured"
+            >
+              {{ t(last.allStale ? 'weather.measuredOutOfDate' : 'weather.measured', { age }) }}
+            </p>
+          }
+        }
+      } @else if (!current.error()) {
+        <p class="tile__detail">{{ t('weather.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- rain now and the gauge of the station -->
+    <app-domain-tile
+      heading="weather.cards.rain"
+      icon="rainy"
+      domain="weather"
+      waitingLabel="weather.page.loading"
+      [resource]="current"
+      data-testid="card-rain"
+    >
+      @if (c.rain.shown) {
+        <dl class="tile__rows">
+          @if (r.raining; as metric) {
+            <div class="tile__row tile__row--lead" data-metric="raining">
+              <dt>{{ t('weather.metric.rainNow') }}</dt>
+              <dd>
+                @if (metric.stale && !c.rain.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong [class.tile__quiet]="!metric.value">{{
+                  t(metric.value ? 'overview.weather.raining' : 'overview.weather.dry')
+                }}</strong>
+              </dd>
+            </div>
+          }
+          @if (r.precipitation; as metric) {
+            <div class="tile__row" data-metric="precipitation">
+              <dt>{{ t('weather.metric.gauge') }}</dt>
+              <dd>
+                @if (metric.stale && !c.rain.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: WHOLE }}</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+        @if (r.precipitation) {
+          <p class="tile__note">{{ t('weather.cards.gaugeNote') }}</p>
+        }
+        @if (c.rain.newest; as last) {
+          @if (last.measuredAt | houseAge; as age) {
+            <p
+              class="tile__detail"
+              [class.tile__detail--alert]="last.allStale"
+              data-testid="measured"
+            >
+              {{ t(last.allStale ? 'weather.measuredOutOfDate' : 'weather.measured', { age }) }}
+            </p>
+          }
+        }
+      } @else if (!current.error()) {
+        <p class="tile__detail">{{ t('weather.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- pressure at the station -->
+    <app-domain-tile
+      heading="weather.cards.pressure"
+      icon="speed"
+      domain="weather"
+      waitingLabel="weather.page.loading"
+      [resource]="current"
+      data-testid="card-pressure"
+    >
+      @if (r.pressure; as metric) {
+        <dl class="tile__rows">
+          <div class="tile__row tile__row--lead" data-metric="pressure">
+            <dt>{{ t('weather.metric.pressure') }}</dt>
+            <dd>
+              <strong>{{ metric.value | localNumber: ONE_DECIMAL }} hPa</strong>
+            </dd>
+          </div>
+        </dl>
+        <p class="tile__note">{{ t('weather.cards.pressureNote') }}</p>
+        @if (c.pressure.newest; as last) {
+          @if (last.measuredAt | houseAge; as age) {
+            <p
+              class="tile__detail"
+              [class.tile__detail--alert]="last.allStale"
+              data-testid="measured"
+            >
+              {{ t(last.allStale ? 'weather.measuredOutOfDate' : 'weather.measured', { age }) }}
+            </p>
+          }
+        }
+      } @else if (!current.error()) {
+        <p class="tile__detail">{{ t('weather.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- daylight and UV -->
+    <app-domain-tile
+      heading="weather.cards.light"
+      icon="light_mode"
+      domain="weather"
+      waitingLabel="weather.page.loading"
+      [resource]="current"
+      data-testid="card-light"
+    >
+      @if (c.light.shown) {
+        <dl class="tile__rows">
+          @if (r.illuminance; as metric) {
+            <div class="tile__row tile__row--lead" data-metric="illuminance">
+              <dt>{{ t('weather.metric.illuminance') }}</dt>
+              <dd>
+                @if (metric.stale && !c.light.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: WHOLE }} lx</strong>
+              </dd>
+            </div>
+          }
+          @if (r.uv; as metric) {
+            <div class="tile__row" data-metric="uv">
+              <dt>{{ t('weather.metric.uv') }}</dt>
+              <dd>
+                @if (metric.stale && !c.light.newest?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: ONE_DECIMAL }}</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+        @if (c.light.newest; as last) {
+          @if (last.measuredAt | houseAge; as age) {
+            <p
+              class="tile__detail"
+              [class.tile__detail--alert]="last.allStale"
+              data-testid="measured"
+            >
+              {{ t(last.allStale ? 'weather.measuredOutOfDate' : 'weather.measured', { age }) }}
+            </p>
+          }
+        }
+      } @else if (!current.error()) {
+        <p class="tile__detail">{{ t('weather.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- the station: its own call, the status; the battery comes with the weather -->
+    <app-domain-tile
+      heading="weather.cards.station"
+      icon="sensors"
+      domain="weather"
+      waitingLabel="weather.page.loadingStation"
+      [resource]="status"
+      data-testid="card-station"
+    >
+      @let s = station();
+      @if (status.value() !== undefined) {
+        @if (s.silent === true) {
+          <p class="tile__lead tile__lead--alert" data-testid="station-silent">
+            <mat-icon>warning</mat-icon>
+            <span>{{ t('weather.station.silent') }}</span>
+          </p>
+        }
+        <dl class="tile__rows">
+          <div class="tile__row" data-metric="gateway">
+            <dt>{{ t('weather.station.gateway') }}</dt>
+            <dd>
+              @if (!s.registered) {
+                <strong class="tile__quiet">{{ t('weather.station.notRegistered') }}</strong>
+              } @else if (s.reachable === undefined) {
+                <strong class="tile__quiet">{{ t('weather.station.notChecked') }}</strong>
+              } @else {
+                <strong [class.tile__quiet]="!s.reachable">{{
+                  t(s.reachable ? 'weather.station.reachable' : 'weather.station.unreachable')
+                }}</strong>
+              }
+            </dd>
+          </div>
+          <div class="tile__row" data-metric="lastReading">
+            <dt>{{ t('weather.station.lastReading') }}</dt>
+            <dd>
+              @if (s.lastReadingAt | houseAge; as age) {
+                <strong>{{ age }}</strong>
+              } @else {
+                <strong class="tile__quiet">{{ t('weather.station.notHeard') }}</strong>
+              }
+            </dd>
+          </div>
+          @if (r.battery; as metric) {
+            <div class="tile__row" data-metric="battery">
+              <dt>{{ t('weather.station.battery') }}</dt>
+              <dd>
+                @if (metric.stale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: WHOLE }} %</strong>
+              </dd>
+            </div>
+          }
+          @if (r.voltage; as metric) {
+            <div class="tile__row" data-metric="voltage">
+              <dt>{{ t('weather.station.voltage') }}</dt>
+              <dd>
+                @if (metric.stale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: ONE_DECIMAL }} V</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+      }
+    </app-domain-tile>
+  </section>
+
+  <section class="charts" [attr.aria-label]="t('weather.page.history')">
+    @for (chart of charts; track chart.spec.key) {
+      <app-weather-chart-card [chart]="chart" [(preset)]="period.preset" />
+    }
+  </section>
+</ng-container>
