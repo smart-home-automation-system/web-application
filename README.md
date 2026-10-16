@@ -47,8 +47,9 @@ dashboards:
   leads to the dashboard that has the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
   the outdoor temperature and humidity, led by an icon of rain or of a strong wind (8 m/s), with
-  the age of the reading. A failed call, or a station not heard yet, shrinks it to an icon whose
-  tooltip (a tap on a phone) says why.
+  the age of the reading. A failed call keeps the last reading, its age marked, with the reason
+  in a tooltip (a tap on a phone); with nothing to show - no answer yet, or a station not heard
+  yet - it shrinks to an icon whose tooltip says why.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the
   temperature of each with the age of its reading, the temperature its schedule asks for right

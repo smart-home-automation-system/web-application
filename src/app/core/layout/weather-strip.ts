@@ -22,10 +22,12 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
  * that of the reading (`measuredAt`), not of the call: the service keeps the last value of a
  * station that fell silent, and says so with `stale`.
  *
- * Not a card: a failed call - or a station not heard since the service started - collapses the
- * strip to an icon, and the reason is its tooltip. The icon is a button, so the tooltip is there
- * for a keyboard and for a tap on a phone; the touch gestures of the tooltip are off, or a swipe
- * starting on the panel would not scroll.
+ * Not a card. A call that fails keeps the last reading on screen, its age marked with the
+ * warning, and the reason is the tooltip of the strip (owner, 2026-10-16). With no reading to show
+ * - a station not heard since the service started, or a call that failed before any answer - the
+ * strip collapses to an icon whose tooltip says why. Either way the tooltip is there for a
+ * keyboard and for a tap on a phone; its touch gestures are off, or a swipe starting on the panel
+ * would not scroll.
  */
 @Component({
   selector: 'app-weather-strip',
@@ -58,11 +60,24 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
         </button>
       } @else if (!weather.loading()) {
         @let r = reading();
+        @let failure = weather.error();
+        <!-- a failed call keeps the last reading, marked; the reason is the tooltip of the strip,
+             which then takes the focus and a tap -->
         <div
           class="weather"
+          [class.weather--failed]="failure"
           role="group"
           data-testid="weather-strip"
           [attr.aria-label]="t('weather.label')"
+          [attr.tabindex]="failure ? 0 : null"
+          [matTooltip]="
+            failure ? t('weather.unavailable') + ' ' + (describe(failure) | displayText) : ''
+          "
+          [matTooltipDisabled]="!failure"
+          matTooltipTouchGestures="off"
+          #reason="matTooltip"
+          (click)="failure && reason.show()"
+          (keydown.enter)="failure && reason.show()"
         >
           <mat-icon class="weather__icon" aria-hidden="true">{{ icon() }}</mat-icon>
           <span class="weather__text">
@@ -84,17 +99,23 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
                 >
               }
             </span>
-            @if (newest(); as last) {
+            @let last = newest();
+            @if (last || failure) {
               <span
                 class="weather__age"
-                [class.weather__age--stale]="last.allStale || weather.stale()"
+                [class.weather__age--stale]="last?.allStale || weather.stale()"
                 data-testid="weather-age"
               >
-                @if (last.allStale || weather.stale()) {
+                @if (last?.allStale || weather.stale()) {
                   <mat-icon aria-hidden="true">warning</mat-icon>&ngsp;
                 }
-                <span>{{ last.measuredAt | houseAge }}</span>
-                @if (last.allStale) {
+                @if (last) {
+                  <span>{{ last.measuredAt | houseAge }}</span>
+                }
+                @if (failure) {
+                  <!-- the reason itself is the tooltip, which a screen reader hears as well -->
+                  <span class="visually-hidden">&ngsp;{{ t('weather.unavailable') }}</span>
+                } @else if (last?.allStale) {
                   <span class="visually-hidden">&ngsp;{{ t('weather.outOfDate') }}</span>
                 } @else if (weather.stale()) {
                   <!-- the station may be fine: it is the call that is late -->
@@ -133,20 +154,27 @@ export class WeatherStrip {
     ]);
   });
 
-  protected readonly collapsed = computed((): Collapsed | undefined => {
-    const error = this.weather.error();
-    if (error !== undefined) {
-      return { failure: describeApiError(error) };
-    }
-    if (this.weather.loading()) {
-      return undefined;
-    }
-    // nothing the strip shows: the thermometer alone would read as a reading
+  protected readonly describe = describeApiError;
+
+  /** Whether the strip has anything to show: the thermometer alone would read as a reading. */
+  private readonly shown = computed(() => {
     const reading = this.reading();
-    const shown =
+    return (
       reading.temperature !== undefined ||
       reading.humidity !== undefined ||
-      this.icon() !== 'device_thermostat';
-    return shown ? undefined : { noReading: true };
+      this.icon() !== 'device_thermostat'
+    );
+  });
+
+  /**
+   * The strip is an icon only while it has no reading to show: a call that fails after an answer
+   * leaves that answer on screen, marked (owner, 2026-10-16).
+   */
+  protected readonly collapsed = computed((): Collapsed | undefined => {
+    if (this.weather.loading() || this.shown()) {
+      return undefined;
+    }
+    const error = this.weather.error();
+    return error !== undefined ? { failure: describeApiError(error) } : { noReading: true };
   });
 }

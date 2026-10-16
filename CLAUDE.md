@@ -419,9 +419,11 @@ e2e/              # Playwright tests
   drawn** - the service leaves out what the station was never heard of, so `{}` is "no reading
   yet", never zeros, and an unknown rain is no rain icon and no "None". The age is the newest
   `measuredAt` of what is shown; the service's `stale` (30 min) marks a row, or the whole line
-  when every metric is. **The strip is no card** (the task's rule): a failed call or nothing
-  heard collapses it to a `cloud_off` button whose `matTooltip` tells why - the click calls
-  `show()`, not `toggle()`, or on a desktop it closes what the hover opened. Below 480 px the
+  when every metric is. **The strip is no card, and a failed call keeps the last reading**
+  (owner, 2026-10-16, over the task's "collapse"): the age gets the warning and the reason is the
+  `matTooltip` of the strip, which then takes the focus and a tap. Only a strip with nothing to
+  show - no answer yet, or `{}` - collapses to a `cloud_off` button whose tooltip tells why. A
+  click calls `show()`, not `toggle()`, or on a desktop it closes what the hover opened. Below 480 px the
   brand keeps only the house, so the bar of a phone holds the weather. The tile has no link until
   the weather page exists (`OverviewTile.link` is optional); the domain colour is `weather`.
   `watchStatus` and `watchHistory` are there for the weather page (HAS-241). `SHELL_READS`

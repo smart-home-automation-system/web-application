@@ -109,8 +109,36 @@ describe('WeatherStrip', () => {
   });
 
   // a failure is no card: the strip becomes an icon, and its tooltip tells why
-  it('collapses to an icon with the reason in its tooltip when the call fails', async () => {
+  // owner, 2026-10-16: the last reading stays, marked, and the tooltip tells why
+  it('keeps the last reading, marked, when a later call fails', async () => {
     answer(weather, WEATHER);
+    fail(weather, new ApiError('server', 502));
+
+    const shown = await strip();
+    expect(shown?.tagName).toBe('DIV');
+    expect(words(shown?.querySelector('[data-testid="weather-temperature"]'))).toBe('16.1 °C');
+    const age = shown?.querySelector('[data-testid="weather-age"]');
+    expect(age?.classList).toContain('weather__age--stale');
+    expect(words(age)).toBe('warning 2 min ago The weather could not be read.');
+    expect(tooltip()?.disabled).toBe(false);
+    expect(tooltip()?.message).toBe(
+      'The weather could not be read. The service is not available right now (error 502).',
+    );
+    // the focus and a tap reach the tooltip
+    expect(shown?.getAttribute('tabindex')).toBe('0');
+    const show = vi.spyOn(tooltip() as MatTooltip, 'show');
+    (shown as HTMLElement).click();
+    expect(show).toHaveBeenCalledOnce();
+  });
+
+  it('has no tooltip and takes no focus while the calls answer', async () => {
+    answer(weather, WEATHER);
+
+    expect((await strip())?.getAttribute('tabindex')).toBeNull();
+    expect(tooltip()?.disabled).toBe(true);
+  });
+
+  it('collapses to an icon with the reason in its tooltip when no call has answered', async () => {
     fail(weather, new ApiError('network', 0));
 
     const shown = await strip();

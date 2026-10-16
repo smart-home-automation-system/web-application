@@ -83,3 +83,15 @@
     outline-offset: 2px;
   }
 }
+
+// a reading kept after a failed call: the strip takes the focus and a tap for its tooltip
+.weather--failed {
+  cursor: pointer;
+  border-radius: var(--mat-sys-corner-small);
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-on-surface);
+    outline-offset: 4px;
+  }
+}
