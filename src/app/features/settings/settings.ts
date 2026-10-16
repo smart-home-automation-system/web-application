@@ -68,6 +68,8 @@ export class Settings {
     { name: 'water', label: 'domain.water' },
     { name: 'boiler', label: 'domain.boiler' },
     { name: 'household', label: 'domain.household' },
+    { name: 'devices', label: 'domain.devices' },
+    { name: 'weather', label: 'domain.weather' },
   ];
 
   protected chooseScheme(choice: SchemeChoice): void {

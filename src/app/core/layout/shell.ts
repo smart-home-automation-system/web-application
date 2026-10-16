@@ -22,9 +22,11 @@ import { LanguageMenu } from './language-menu';
 import { NAV_ITEMS, splitForBottomBar } from './navigation';
 import { Notices } from './notices';
 import { ViewBackground } from './view-background';
+import { WeatherStrip } from './weather-strip';
 
 /**
- * The frame around every page: the panel (brand, main navigation, profile, language), what
+ * The frame around every page: the panel (brand, main navigation, the weather outside, profile,
+ * language), what
  * concerns every page (no connection to the house, a new version) and the routed content, over
  * the photo of the open view and the glow of the season. The panel is a column on
  * the left of a wide screen and a bar across the top of a phone, where the navigation is a
@@ -49,6 +51,7 @@ import { ViewBackground } from './view-background';
     LanguageMenu,
     Notices,
     ViewBackground,
+    WeatherStrip,
   ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',

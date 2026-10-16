@@ -214,5 +214,106 @@
         <p class="tile__detail">{{ t('presence.now.none') }}</p>
       }
     </app-overview-tile>
+
+    <!-- no dashboard of its own yet: the title is no link -->
+    <app-overview-tile
+      heading="overview.weather.title"
+      icon="partly_cloudy_day"
+      domain="weather"
+      waitingLabel="overview.weather.loading"
+      [resource]="weather"
+      data-testid="tile-weather"
+    >
+      @let outside = weatherReading();
+      @let last = weatherNewest();
+      @if (weatherShown()) {
+        @if (outside.temperature; as temperature) {
+          <dl class="tile__rows tile__rows--big">
+            <div class="tile__row" data-metric="temperature">
+              <dt>{{ t('overview.weather.temperature') }}</dt>
+              <dd>
+                @if (temperature.stale && !last?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ temperature.value | localNumber: ONE_DECIMAL }} °C</strong>
+              </dd>
+            </div>
+          </dl>
+        }
+        <dl class="tile__rows">
+          @if (outside.dewPoint; as dewPoint) {
+            <div class="tile__row" data-metric="dewPoint">
+              <dt>{{ t('overview.weather.dewPoint') }}</dt>
+              <dd>
+                @if (dewPoint.stale && !last?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ dewPoint.value | localNumber: ONE_DECIMAL }} °C</strong>
+              </dd>
+            </div>
+          }
+          @if (outside.wind || outside.gust) {
+            <div class="tile__row" data-metric="wind">
+              <dt>{{ t('overview.weather.wind') }}</dt>
+              <dd>
+                @if ((outside.wind?.stale || outside.gust?.stale) && !last?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                @if (outside.wind; as wind) {
+                  <strong>{{ wind.value | localNumber: ONE_DECIMAL }} m/s</strong>
+                }
+                @if (outside.gust; as gust) {
+                  <span class="tile__age">{{
+                    t('overview.weather.gusts', { speed: (gust.value | localNumber: ONE_DECIMAL) })
+                  }}</span>
+                }
+              </dd>
+            </div>
+          }
+          @if (outside.raining; as raining) {
+            <div class="tile__row" data-metric="raining">
+              <dt>{{ t('overview.weather.rain') }}</dt>
+              <dd>
+                @if (raining.stale && !last?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong [class.tile__quiet]="!raining.value">{{
+                  t(raining.value ? 'overview.weather.raining' : 'overview.weather.dry')
+                }}</strong>
+              </dd>
+            </div>
+          }
+          @if (outside.illuminance; as illuminance) {
+            <div class="tile__row" data-metric="illuminance">
+              <dt>{{ t('overview.weather.illuminance') }}</dt>
+              <dd>
+                @if (illuminance.stale && !last?.allStale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ illuminance.value | localNumber: WHOLE }} lx</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+        @if (last?.measuredAt | houseAge; as age) {
+          <p
+            class="tile__detail"
+            [class.tile__detail--alert]="last?.allStale"
+            data-testid="weather-measured"
+          >
+            {{
+              t(
+                last?.allStale ? 'overview.weather.measuredOutOfDate' : 'overview.weather.measured',
+                {
+                  age,
+                }
+              )
+            }}
+          </p>
+        }
+      } @else if (!weather.error()) {
+        <p class="tile__detail">{{ t('weather.noReading') }}</p>
+      }
+    </app-overview-tile>
   </section>
 </ng-container>

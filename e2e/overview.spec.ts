@@ -37,6 +37,16 @@ test.describe('overview', () => {
     await expect(boiler).toContainText('Heating pump');
 
     await expect(page.getByTestId('tile-presence')).toContainText(/At home|Away/);
+
+    const weather = page.getByTestId('tile-weather');
+    await expect(weather).toContainText(/Temperature\s+14\.3 °C/);
+    await expect(weather).toContainText(/Dew point\s+7\.4 °C/);
+    await expect(weather).toContainText(/Wind\s+2\.4 m\/s\s+gusts 3\.8 m\/s/);
+    await expect(weather).toContainText(/Rain\s+None/);
+    await expect(weather).toContainText(/Daylight\s+18,450 lx/);
+    await expect(weather.getByTestId('weather-measured')).toHaveText(/Measured 1 min\.? ago/);
+    // no page of its own yet: the title leads nowhere
+    await expect(weather.getByRole('link')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
@@ -70,6 +80,9 @@ test.describe('overview', () => {
     // no relay has answered: nothing is said about how many rooms are heated
     await expect(rooms.getByTestId('rooms-heating')).toHaveCount(0);
     await expect(page.getByTestId('tile-boiler')).not.toContainText('Running');
+    await expect(page.getByTestId('tile-weather')).toContainText(
+      'No reading from the weather station yet.',
+    );
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
@@ -80,11 +93,17 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(6);
+    await expect(alerts).toHaveCount(7);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
-    for (const tile of ['tile-rooms', 'tile-sensors', 'tile-water', 'tile-boiler']) {
+    for (const tile of [
+      'tile-rooms',
+      'tile-sensors',
+      'tile-water',
+      'tile-boiler',
+      'tile-weather',
+    ]) {
       await expect(page.getByTestId(tile).getByRole('alert')).toHaveCount(1);
     }
     await expect(
@@ -101,6 +120,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
     // every tile has its answer: none is still a progress bar of another height
     await expect(page.getByTestId('tile-boiler')).toContainText('Furnace');
+    await expect(page.getByTestId('tile-weather')).toContainText('Temperature');
     await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
 
     const tops = await page
@@ -115,14 +135,14 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(6);
+    expect(tops).toHaveLength(7);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(6);
+      expect(new Set(tops).size).toBe(7);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(6);
+      expect(heights).toHaveLength(7);
       expect(new Set(heights).size).toBe(1);
     }
   });
@@ -134,6 +154,9 @@ test.describe('overview', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Przegląd' })).toBeVisible();
     await expect(page.getByTestId('tile-water')).toContainText(/Zasobnik\s+40,6 °C/);
     await expect(page.getByTestId('tile-sensors')).toContainText('bathroom down');
+    await expect(page.getByTestId('tile-weather')).toContainText(
+      /Wiatr\s+2,4 m\/s\s+porywy 3,8 m\/s/,
+    );
     await expect(
       page.getByTestId('tile-boiler').getByRole('link', { name: 'Kotłownia' }),
     ).toBeVisible();

@@ -26,6 +26,10 @@
   --app-domain: var(--app-domain-household);
 }
 
+.tile[data-domain='weather'] {
+  --app-domain: var(--app-domain-weather);
+}
+
 // tighter than Material's 16 px all round: the tiles are read, not touched
 mat-card-header {
   padding: 12px 12px 0;
