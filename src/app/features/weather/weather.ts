@@ -14,8 +14,10 @@ import {
 import { MessageKey } from '../../i18n/messages';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { historyPeriod } from '../../shared/history-chart/history-period';
+import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
+import { ReadingAge } from './reading-age';
 import { WEATHER_CHARTS, weatherChart } from './weather-charts';
 import { WeatherChartCard } from './weather-chart-card';
 import { WindCompass } from './wind-compass';
@@ -40,7 +42,8 @@ const COMPASS_LABELS: Readonly<Record<NonNullable<ReturnType<typeof compassPoint
  * cards of the hot water: a card has to be true read by itself. What the answer leaves out has no
  * row; the age of a card is the newest reading of its metrics, a row the service calls stale is
  * marked, and when all are the whole card says so. The station card reads the status of the
- * station (`GET /weather/status`) - its call - and the battery of the current weather beside it.
+ * station (`GET /weather/status`) - its call, whose freshness and failure it tells - and the
+ * battery of the current weather beside it, with the failure of that call told apart.
  *
  * **The charts share one period**: choosing 7 days on one of them shows 7 days on all - the
  * page is one look at the weather, not six. Each chart asks for its metrics with `from` / `to`
@@ -51,9 +54,11 @@ const COMPASS_LABELS: Readonly<Record<NonNullable<ReturnType<typeof compassPoint
   imports: [
     MatIconModule,
     TranslocoDirective,
+    ApiErrorStrip,
     DomainTile,
     HouseAgePipe,
     LocalNumberPipe,
+    ReadingAge,
     WeatherChartCard,
     WindCompass,
   ],
@@ -77,6 +82,8 @@ export class Weather {
     maximumFractionDigits: 1,
   };
   protected readonly WHOLE: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
+  /** The total of the gauge as it counts: in tenths, written only where it has them. */
+  protected readonly GAUGE: Intl.NumberFormatOptions = { maximumFractionDigits: 1 };
   protected readonly compassLabels = COMPASS_LABELS;
 
   protected readonly reading = computed(() => toWeatherReading(this.current.value(), this.zone));
@@ -96,6 +103,17 @@ export class Weather {
       light: card([r.illuminance, r.uv]),
     };
   });
+
+  /**
+   * A metric is marked when the service calls it stale and the rest of its card is not - when all
+   * of them are, the age of the card says it once.
+   */
+  protected outOfDate(
+    metric: MetricReading<unknown>,
+    card: { readonly newest?: { readonly allStale: boolean } },
+  ): boolean {
+    return metric.stale && !card.newest?.allStale;
+  }
 
   /** The point of the compass the wind comes from; `undefined` while not known. */
   protected readonly windFrom = computed(() => {

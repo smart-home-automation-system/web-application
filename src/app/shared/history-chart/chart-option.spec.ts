@@ -166,6 +166,43 @@ describe('chartOption', () => {
     expect(bounded.yAxis.min({ min: 60.2 })).toBe(59);
   });
 
+  // nothing at or below zero lies on a log axis: the night is drawn at 1 and told as measured
+  it('lifts what is not above zero to 1 on a log axis, and the tooltip says what was measured', () => {
+    const NIGHT: ChartLine = {
+      ...TANK,
+      key: 'light',
+      name: 'Daylight',
+      points: [
+        [at('2026-10-08T02:00:00'), 0],
+        [at('2026-10-08T02:05:00'), null],
+        [at('2026-10-08T12:00:00'), 30_000],
+      ],
+    };
+    const drawn = chartOption(
+      input({ lines: [NIGHT], logarithmic: true, unit: 'lx', decimals: 0 }),
+      COLORS,
+    ) as {
+      series: { data: unknown }[];
+      tooltip: { formatter(hovered: unknown): string };
+    };
+
+    expect(drawn.series[0].data).toEqual([
+      [at('2026-10-08T02:00:00'), 1],
+      [at('2026-10-08T02:05:00'), null],
+      [at('2026-10-08T12:00:00'), 30_000],
+    ]);
+    const text = drawn.tooltip.formatter([
+      {
+        seriesName: 'Daylight',
+        seriesIndex: 0,
+        dataIndex: 0,
+        value: [at('2026-10-08T02:00:00'), 1],
+        marker: '<i></i>',
+      },
+    ]);
+    expect(text).toContain('Daylight: <strong>0 lx</strong>');
+  });
+
   it('draws the value axis in powers of ten when asked to', () => {
     const drawn = chartOption(input({ logarithmic: true }), COLORS) as {
       yAxis: { type: string; logBase: number; min?: unknown };

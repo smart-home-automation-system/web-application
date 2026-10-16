@@ -107,7 +107,8 @@ export const WEATHER_CHARTS: readonly WeatherChartSpec[] = [
     label: 'weather.charts.precipitation.label',
     icon: 'rainy',
     unit: '',
-    decimals: 0,
+    // the gauge counts in tenths; a light shower is a bar of 0.2, not of 0
+    decimals: 1,
     note: 'weather.charts.precipitation.note',
     lines: [{ metric: 'precipitation', name: 'weather.metric.rain', color: 1, drawn: 'rain' }],
   },
@@ -156,9 +157,9 @@ const finite = (value: unknown): value is number =>
 /**
  * The rain of every bucket, from the running total of the gauge: the highest total of a bucket
  * less the highest of the bucket before - so a shower across the edge of two buckets is counted
- * once, and whole. After a gap, for the first bucket and where the total went down (the gauge
- * was reset) the rain of a bucket is what it rose by inside itself, `max - min` - the rule the
- * service states. A bucket without a total has no bar.
+ * once, and whole. After a gap, for the first bucket and for a bucket that starts below the one
+ * before (the gauge was reset) the rain of a bucket is what it rose by inside itself, `max - min`
+ * - the rule the service states. A bucket without a total has no bar.
  */
 export function rainPerBucket(points: unknown, bucketSeconds: unknown): LinePoint[] {
   if (!Array.isArray(points)) {
@@ -179,8 +180,8 @@ export function rainPerBucket(points: unknown, bucketSeconds: unknown): LinePoin
   return read.map(({ at, min, max }, index): LinePoint => {
     const before = read[index - 1];
     const adjacent = before !== undefined && bucketMs !== undefined && at - before.at <= bucketMs;
-    const sincePrevious = adjacent ? max - before.max : undefined;
-    const rain = sincePrevious !== undefined && sincePrevious >= 0 ? sincePrevious : max - min;
+    // the gauge starts where it stood: a bucket that starts lower was reset in between
+    const rain = adjacent && min >= before.max ? max - before.max : max - min;
     return [at, Math.max(0, Math.round(rain * 100) / 100)];
   });
 }
@@ -196,14 +197,6 @@ function pointsOf(drawn: Drawn, answer: { points?: unknown; bucketSeconds?: unkn
       return rainPerBucket(answer?.points, answer?.bucketSeconds);
   }
 }
-
-/**
- * Nothing at or below zero can lie on a logarithmic axis - and the light of the night is 0 lx.
- * Drawn there as 1 lx, the floor of the axis; the numbers under the chart are of the real
- * values.
- */
-const onLogAxis = (points: readonly LinePoint[]): LinePoint[] =>
-  points.map(([at, value]) => [at, value === null ? null : Math.max(value, 1)]);
 
 /**
  * The chart of `spec`: a history per line, all for the period of the page. Call in an injection
@@ -233,22 +226,33 @@ export function weatherChart(spec: WeatherChartSpec, period: HistoryPeriod): Wea
     error: computed(() =>
       histories.map(({ resource }) => resource.error()).find((error) => error !== undefined),
     ),
+    // the oldest of the answers there are; a line that never answered is told by its failure
     lastUpdated: computed(() => {
-      const times = histories.map(({ resource }) => resource.lastUpdated());
-      return times.some((time) => time === undefined)
-        ? undefined
-        : Math.min(...(times as number[]));
+      const times = histories
+        .map(({ resource }) => resource.lastUpdated())
+        .filter((time): time is number => time !== undefined);
+      return times.length === 0 ? undefined : Math.min(...times);
     }),
     stale: computed(() => histories.some(({ resource }) => resource.stale())),
-    axis: computed(() =>
-      histories.map(({ shown }) => shown.axis()).find((axis) => axis !== undefined),
-    ),
+    // When the hour turns one line may already have the new range while the other still shows
+    // the old one: the axis spans both, so neither is cut at an end.
+    axis: computed(() => {
+      const axes = histories
+        .map(({ shown }) => shown.axis())
+        .filter((axis): axis is { from: number; to: number } => axis !== undefined);
+      return axes.length === 0
+        ? undefined
+        : {
+            from: Math.min(...axes.map((axis) => axis.from)),
+            to: Math.max(...axes.map((axis) => axis.to)),
+          };
+    }),
     lines: computed(() =>
       measured().map(({ line, name, points }): ChartLine => ({
         key: line.metric,
         name,
         color: line.color,
-        points: spec.logarithmic ? onLogAxis(points) : points,
+        points,
         bars: line.drawn === 'rain',
       })),
     ),

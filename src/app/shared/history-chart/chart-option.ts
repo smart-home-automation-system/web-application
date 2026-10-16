@@ -104,6 +104,13 @@ export function valueAt(points: readonly LinePoint[], at: number): number | unde
   return undefined;
 }
 
+/**
+ * Nothing at or below zero lies on a logarithmic axis - and the light of the night is 0 lx. Such
+ * a point is drawn at 1, the floor of the axis; the tooltip still says what was measured.
+ */
+const onLogAxis = (points: readonly LinePoint[]): LinePoint[] =>
+  points.map(([at, value]) => [at, value === null ? null : Math.max(value, 1)]);
+
 /** The dot before a row of the tooltip, in the colour of its line - a colour the browser resolved. */
 const markerOf = (color: string) =>
   `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${escapeHtml(color)};"></span>`;
@@ -161,8 +168,15 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
         const rows = (Array.isArray(hovered) ? hovered : [hovered]) as {
           readonly value?: readonly [number, number | null];
           readonly seriesName?: string;
+          readonly seriesIndex?: number;
+          readonly dataIndex?: number;
           readonly marker?: string;
         }[];
+        /** The value of the point as measured - on a log axis the drawn one may be lifted to 1. */
+        const measuredValue = (hoveredRow: (typeof rows)[number]) =>
+          hoveredRow.seriesIndex !== undefined && hoveredRow.dataIndex !== undefined
+            ? input.lines[hoveredRow.seriesIndex]?.points[hoveredRow.dataIndex]?.[1]
+            : hoveredRow.value?.[1];
         // The moment is that of a measured point. A line of steps has points at its edges only,
         // so ECharts lists it where the pointer is near an edge and nowhere else - or twice,
         // where two steps share one: what it asks for at the moment is read off the line here.
@@ -174,7 +188,7 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
           `${marker}${escapeHtml(name)}: <strong>${withUnit(value.format(reading), unit)}</strong>`;
         const lines = [
           ...measured.flatMap((hoveredRow) => {
-            const reading = hoveredRow.value?.[1];
+            const reading = measuredValue(hoveredRow);
             return typeof reading === 'number'
               ? [row(hoveredRow.marker ?? '', hoveredRow.seriesName ?? '', reading)]
               : [];
@@ -244,7 +258,7 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
             type: 'line',
             id: line.key,
             name: line.name,
-            data: line.points,
+            data: input.logarithmic ? onLogAxis(line.points) : line.points,
             // a break in the line is a gap in the readings: never bridged
             connectNulls: false,
             // a point between two gaps has no line to either side, and would not be drawn at all

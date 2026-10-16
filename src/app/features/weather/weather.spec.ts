@@ -127,8 +127,10 @@ describe('Weather', () => {
 
   // the gauge is a running total whose unit nobody has confirmed: no "mm" is made up
   it('writes the gauge without a unit, and says why', async () => {
-    answer(current, WEATHER);
+    answer(current, { ...WEATHER, precipitation: metric(4311.2) });
 
+    // the gauge counts in tenths
+    expect(await row('rain', 'precipitation')).toBe('Rain gauge 4,311.2');
     expect(words(await card('rain'))).toContain('its unit is not confirmed yet');
   });
 
@@ -161,7 +163,7 @@ describe('Weather', () => {
     expect(await row('temperature', 'humidity')).toBe('Humidity out of date 70 %');
     const measured = (await card('pressure')).querySelector('[data-testid="measured"]');
     expect(words(measured)).toBe('Measured 1 hr ago - the station has not been heard since.');
-    expect(measured?.classList).toContain('tile__detail--alert');
+    expect(measured?.classList).toContain('age--alert');
   });
 
   it('keeps the last values next to the failure of the call', async () => {
@@ -194,6 +196,19 @@ describe('Weather', () => {
       expect(await row('station', 'lastReading')).toBe('Last heard Not heard yet');
       // the weather has not answered: no battery is made up
       expect((await card('station')).querySelector('[data-metric="battery"]')).toBeNull();
+    });
+
+    // the battery comes with another call: its failure is told on this card too, apart
+    it('tells the failure of the weather call beside the battery it would give', async () => {
+      answer(status, STATUS);
+      answer(current, WEATHER);
+      fail(current, new ApiError('server', 502));
+
+      const alert = (await card('station')).querySelector('[role="alert"]');
+      expect(words(alert)).toContain('The battery and the voltage could not be read.');
+      expect(words(alert)).toContain('502');
+      // the status itself answered: the card still says what it says
+      expect(await row('station', 'gateway')).toBe('Gateway Answers');
     });
 
     it('says so when the registry has no station', async () => {

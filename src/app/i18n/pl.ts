@@ -294,6 +294,7 @@ export const pl: Messages = {
       battery: 'Bateria',
       voltage: 'Napięcie',
       silent: 'Stacja milczy od 30 minut.',
+      batteryFailed: 'Nie udało się odczytać baterii i napięcia.',
     },
     charts: {
       total: 'suma',

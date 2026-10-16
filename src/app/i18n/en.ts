@@ -295,6 +295,7 @@ export const en = {
       battery: 'Battery',
       voltage: 'Voltage',
       silent: 'The station has not been heard for 30 minutes.',
+      batteryFailed: 'The battery and the voltage could not be read.',
     },
     charts: {
       total: 'total',

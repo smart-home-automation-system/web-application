@@ -48,6 +48,14 @@ describe('rainPerBucket', () => {
     ]);
   });
 
+  // a gauge starts where it stood: a bucket that starts lower was reset, whatever it ends at
+  it('counts a reset of the gauge from the bucket itself, also when it ends above the one before', () => {
+    expect(rainPerBucket([bucket('05:00', 11, 12), bucket('05:05', 0, 12.5)], 300)).toEqual([
+      [at('2026-10-16T05:00:00'), 1],
+      [at('2026-10-16T05:05:00'), 12.5],
+    ]);
+  });
+
   it('does not count a reset of the gauge as negative rain', () => {
     expect(rainPerBucket([bucket('05:00', 4300, 4311), bucket('05:05', 0, 3)], 300)).toEqual([
       [at('2026-10-16T05:00:00'), 11],
@@ -148,7 +156,9 @@ describe('weatherChart', () => {
     expect(chart.lines().map((line) => line.points[0][1])).toEqual([2, 7.5]);
   });
 
-  it('draws the dark of the night at 1 lx on the axis of powers of ten, and says 0 in numbers', () => {
+  // the chart lifts the night to 1 lx for its axis of powers of ten (chart-option); the line and
+  // the numbers under the chart keep what was measured
+  it('keeps the dark of the night at 0 lx, in the line and in the numbers', () => {
     const chart = chartOf('illuminance');
     answerQuery(
       resources.get('illuminance')!,
@@ -159,7 +169,7 @@ describe('weatherChart', () => {
       ]),
     );
 
-    expect(chart.lines()[0].points.map(([, value]) => value)).toEqual([1, 1]);
+    expect(chart.lines()[0].points.map(([, value]) => value)).toEqual([0, 0.4]);
     expect(chart.facts()[0]).toMatchObject({ kind: 'range', lowest: 0, highest: 0.4 });
   });
 
@@ -193,6 +203,25 @@ describe('weatherChart', () => {
     expect(chart.error()?.status).toBe(502);
     expect(chart.stale()).toBe(true);
     expect(chart.lines().map((line) => line.key)).toEqual(['wind']);
+  });
+
+  // the hour turned: one line has the new range, the other still the old one
+  it('spans its axis over the ranges of all its lines', () => {
+    const chart = chartOf('temperature');
+    const NEXT_HOUR: HistoryRange = { from: '2026-10-15T16:00:00', to: '2026-10-16T17:00:00' };
+    answerQuery(resources.get('temperature')!, NEXT_HOUR, history([]));
+    answerQuery(resources.get('dewPoint')!, DAY, history([]));
+
+    expect(chart.axis()).toEqual({ from: at(DAY.from), to: at(NEXT_HOUR.to) });
+  });
+
+  it('keeps the freshness of a line that answered while the other never did', () => {
+    const chart = chartOf('wind');
+    answerQuery(resources.get('wind')!, DAY, history([]));
+    resources.get('wind')!.lastUpdated.set(2_000);
+    failQuery(resources.get('gust')!, DAY, new ApiError('client', 400));
+
+    expect(chart.lastUpdated()).toBe(2_000);
   });
 
   it('is as fresh as its oldest answer', () => {
