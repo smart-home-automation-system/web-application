@@ -397,7 +397,9 @@ e2e/              # Playwright tests
   of the overview read the answer with one function (`toWaterReading`, `isOutOfDate` in
   `data-access/water/water-reading.ts`). Known limit, as for every age here: it is counted by
   the clock of the browser, so one that is minutes off sees the warning early or late.
-- **The overview is one tile per call** (HAS-201, `features/overview/`): `OverviewTile` tells
+- **The overview is one tile per call** (HAS-201, `features/overview/`): `DomainTile`
+  (`shared/domain-tile/`, shared with the weather page since HAS-241, the styles of its content
+  in `_tile-content.scss`, which the page that projects them `@use`s) tells
   the bar, the freshness and the failure of its resource, the content says what the answer
   holds, the title is the link to the dashboard. A tile reuses the reading of its dashboard
   (`toRoomViews`, `toSensorRows`, `toDeviceView`) and claims no more than it: `heating` is
@@ -424,10 +426,35 @@ e2e/              # Playwright tests
   `matTooltip` of the strip, which then takes the focus and a tap. Only a strip with nothing to
   show - no answer yet, or `{}` - collapses to a `cloud_off` button whose tooltip tells why. A
   click calls `show()`, not `toggle()`, or on a desktop it closes what the hover opened. Below 480 px the
-  brand keeps only the house, so the bar of a phone holds the weather. The tile has no link until
-  the weather page exists (`OverviewTile.link` is optional); the domain colour is `weather`.
-  `watchStatus` and `watchHistory` are there for the weather page (HAS-241). `SHELL_READS`
+  brand keeps only the house, so the bar of a phone holds the weather. The tile leads to the
+  weather page; the domain colour is `weather`. `SHELL_READS`
   (`src/testing/overview-reads.ts`) lets a test that renders the shell pass the read of the strip.
+- **The weather page** (HAS-241, `features/weather/`, the administrator's) is cards of the weather
+  now and six charts of its history. What to keep:
+  - **The cards read the resource of the strip** (`CurrentWeatherStore`) and each tells its
+    freshness and failure - the owner's rule of the two hot-water cards. A card's age is
+    `ReadingAge` over `newestOf` its metrics; a row the service calls stale is tagged through
+    `outOfDate()` unless the whole card is. **The station card reads its own call**
+    (`watchStatus`) and the battery of the weather beside it, so the failure of the weather call
+    is told there too, apart (found in review).
+  - **The six charts share one period** (`historyPeriod()` of the page, bound to every frame): the
+    page is one look at the weather. A chart is a spec (`WEATHER_CHARTS`) turned into resources
+    by `weatherChart()` - one `watchHistory(metric, range)` per line; it waits until every line
+    has its answer, tells the first failure, is as fresh as the oldest answer there is, and **its
+    axis spans the ranges of all its lines** (when the hour turns one line may be an hour ahead -
+    found in review).
+  - **What a line draws of a bucket**: the average; the gust its maximum; **the rain is a bar per
+    bucket from the running total of the gauge** (`rainPerBucket`: the highest total less the
+    highest of the bucket before, or `max - min` after a gap and where the bucket starts below
+    the one before - a reset). The gauge has no confirmed unit (`weather-service` README), so
+    no unit is written; it counts in tenths.
+  - **The daylight is on a logarithmic axis** (`logarithmic` of `HistoryChart`): the chart lifts
+    0 lx to 1 for drawing only - the line, the tooltip and the numbers keep the measured value.
+    `bounds` keeps an axis inside what a value can be (wind from 0, humidity 0-100 %); `bars` of a
+    `ChartLine` draws bars, on an axis from 0.
+  - **The rows are always full** (owner, 2026-10-16, the overview): container queries give the
+    cards 6 / 3 / 2 / 1 columns and the charts 3 / 2 / 1 - never a row of four with two under it.
+  - The photo `weather` (a garden with the station) has its tones narrowed to `0-220`.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason
