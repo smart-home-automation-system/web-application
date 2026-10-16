@@ -447,6 +447,13 @@ e2e/              # Playwright tests
   the demand and the circulation are stacked next to the tank, the two sides stretched to one
   height. It bounds the rule below, it does not undo it: a card is still not stretched to a
   neighbour several times its size, and in the one column of a phone nothing is evened out.
+- **The board of the overview stands in the middle, and so does a last row that is not full**
+  (owner, 2026-10-16, HAS-240: "the empty part on the right makes no sense"). The columns are
+  counted by container queries on the width of the page (`overview.scss`), every tile spans two
+  tracks of a grid of twice the columns, and the first tile of the last row is moved half a tile
+  in for every empty place (`:nth-child(<c>n + 1):nth-last-child(<r>)`) - for any number of
+  tiles. **Each count of columns has a range with an upper bound**: without it the rule of three
+  columns also moved the seventh tile of a page of four (found by the browser test).
 - **A card is as big as what it says** (owner, 2026-10-08, HAS-195): never stretched to the
   height of its neighbour (`align-items: start` on a grid of cards) or across a wide screen and
   left mostly empty. Where a box has to be taller than its text - the furnace next to two

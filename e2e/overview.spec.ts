@@ -147,6 +147,50 @@ test.describe('overview', () => {
     }
   });
 
+  // a wide screen: the board in the middle, and a last row that is not full under the middle of
+  // the row above, not against its left edge (owner, 2026-10-16)
+  for (const width of [1440, 2560]) {
+    test(`centres the board and its last row on a screen ${width} px wide`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name === 'phone', 'one column on a phone');
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto('/overview');
+      // the page is there and every tile has its answer
+      await expect(page.getByTestId('tile-weather')).toContainText('Temperature');
+      await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
+
+      const boxes = await page
+        .locator('.tiles > *')
+        .evaluateAll((tiles) =>
+          tiles.map((tile) => {
+            const box = tile.getBoundingClientRect();
+            return { left: box.left, right: box.right, top: Math.round(box.top) };
+          }),
+        );
+      const main = await page.getByRole('main').evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          left: box.left + parseFloat(style.paddingLeft),
+          right: box.right - parseFloat(style.paddingRight),
+        };
+      });
+      const rows = [...new Set(boxes.map((box) => box.top))].map((top) =>
+        boxes.filter((box) => box.top === top),
+      );
+      const middle = (row: typeof boxes) => (row[0].left + row[row.length - 1].right) / 2;
+
+      expect(rows.length).toBeGreaterThan(1);
+      const last = rows[rows.length - 1];
+      expect(last.length).toBeLessThan(rows[0].length);
+      // the middle of every row is the middle of the page
+      for (const row of rows) {
+        expect(Math.abs(middle(row) - (main.left + main.right) / 2)).toBeLessThan(2);
+      }
+    });
+  }
+
   test('speaks Polish, except for the identifiers of the rooms', async ({ page }) => {
     await startIn(page, 'pl');
     await page.goto('/overview');
