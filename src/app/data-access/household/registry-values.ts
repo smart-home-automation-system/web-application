@@ -18,7 +18,7 @@ export const ROOM_NAMES: readonly string[] = [
   'tobi',
   'office',
   'bathroom up',
-  'hall_up',
+  'hall up',
   'stairs',
   'kitchen',
   'living room',

@@ -39,11 +39,13 @@ test('lists every device of the registry by floor and room, with how it is reach
     'bedroom',
     'loft',
     'garden',
+    'hall up',
     'kitchen',
-    'hall down',
   ]);
   await expect(room(page, 'office').getByTestId('floor')).toHaveText('Upper floor');
   await expect(room(page, 'kitchen').getByTestId('floor')).toHaveText('Other');
+  // HAS-289: the corridor upstairs, written with a space as every room of two words
+  await expect(room(page, 'hall up').getByTestId('floor')).toHaveText('Other');
   await expect(room(page, 'office').getByTestId('name')).toHaveText([
     'Office door blinds',
     'Office window blinds',
@@ -266,7 +268,7 @@ test.describe('removing a device', () => {
     await sensor.getByRole('group').getByRole('button', { name: 'Remove' }).click();
 
     await expect(page.getByTestId('device')).toHaveCount(12);
-    await expect(room(page, 'hall down')).toHaveCount(0);
+    await expect(room(page, 'hall up')).toHaveCount(0);
   });
 });
 
