@@ -11,13 +11,13 @@ import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 
 /** A domain of the house: the colour of its cards (`--app-domain-…` in `_seasons.scss`). */
-export type TileDomain = 'heating' | 'water' | 'boiler' | 'household';
+export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather';
 
 /**
  * One tile of the overview: a card about one call, whose title leads to the dashboard that has
- * the rest. The tile tells what every card of a polled resource tells - the bar until the first
- * answer, the freshness, the failure next to the last value - and the content says what the
- * answer holds.
+ * the rest - plain text while the domain has no dashboard yet. The tile tells what every card of
+ * a polled resource tells - the bar until the first answer, the freshness, the failure next to
+ * the last value - and the content says what the answer holds.
  *
  * **One call, one tile**: a tile that is fed by its own resource keeps working, and keeps its
  * own failure, when the service of the tile next to it is down.
@@ -41,10 +41,14 @@ export type TileDomain = 'heating' | 'water' | 'boiler' | 'household';
             <mat-icon>{{ icon() }}</mat-icon>
           </div>
           <mat-card-title>
-            <a class="tile__link" [routerLink]="link()">
-              <span>{{ t(heading()) }}</span>
-              <mat-icon class="tile__arrow" aria-hidden="true">chevron_right</mat-icon>
-            </a>
+            @if (link(); as path) {
+              <a class="tile__link" [routerLink]="path">
+                <span>{{ t(heading()) }}</span>
+                <mat-icon class="tile__arrow" aria-hidden="true">chevron_right</mat-icon>
+              </a>
+            } @else {
+              {{ t(heading()) }}
+            }
           </mat-card-title>
           <mat-card-subtitle>
             <app-data-freshness
@@ -77,8 +81,8 @@ export class OverviewTile {
   /** Name of a Material Symbols icon. */
   readonly icon = input.required<string>();
   readonly domain = input.required<TileDomain>();
-  /** The address of the dashboard. */
-  readonly link = input.required<string>();
+  /** The address of the dashboard; none while the domain has no page of its own. */
+  readonly link = input<string>();
   /** The call the tile is about: its bar, its freshness and its failure. */
   readonly resource = input.required<PollingResource<unknown>>();
   /** Key of what a screen reader hears for the bar. */

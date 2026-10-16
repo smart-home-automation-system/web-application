@@ -117,6 +117,23 @@ $panel-width: 220px;
     margin-right: 0;
     padding: 4px 12px;
   }
+
+  // On a phone the bar also carries the weather: the house alone stands for the brand, and the
+  // name stays for a screen reader (a copy of .visually-hidden of styles.scss, which no media
+  // query can switch on)
+  @media (max-width: 479.98px) {
+    span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+  }
 }
 
 // the house, in the colour of the season
@@ -147,9 +164,13 @@ $panel-width: 220px;
   }
 }
 
+// on a phone between the brand and the profile; in the column at the bottom, above the profile
 .shell__weather {
+  flex: none;
+
   @media (min-width: $wide) {
     margin-top: auto;
+    padding: 0 12px;
   }
 }
 

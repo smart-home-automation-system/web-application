@@ -5,7 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
 import { provideI18nTesting, useLanguage } from '../../testing/i18n';
-import { isOverviewRead } from '../../testing/overview-reads';
+import { isOverviewRead, isShellRead } from '../../testing/overview-reads';
 import { routes } from '../app.routes';
 import { ProfileStore } from '../core/profile/profile-store';
 import { Profile } from '../core/profile/profile';
@@ -72,6 +72,21 @@ describe('profiles in the application', () => {
     await settle();
   }
 
+  /** The weather service answers the strip of the panel. */
+  async function weatherAnswers(): Promise<void> {
+    (await vi.waitFor(() => http.expectOne('/home/weather/current'))).flush({
+      temperature: { value: 7.5, measuredAt: '2026-10-16T14:00:00', stale: false },
+    });
+    await settle();
+  }
+
+  function weather(): string | undefined {
+    return page()
+      .querySelector('[data-testid="weather-temperature"]')
+      ?.textContent?.replace(/s+/g, ' ')
+      .trim();
+  }
+
   function sideNavigation(): (string | undefined)[] {
     return [...page().querySelectorAll('.shell__side-nav a')].map((a) =>
       a.querySelector('.mat-mdc-list-item-title')?.textContent?.trim(),
@@ -90,6 +105,8 @@ describe('profiles in the application', () => {
     // the overview of the administrator reads one call per tile - the state of the switch among
     // them, which is the administrator's to see; a change of it is still not let through
     http.match(isOverviewRead);
+    // the weather of the panel, which every page reads for everybody
+    http.match(isShellRead);
     http.verify();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('smart-home.language.Borys');
@@ -134,6 +151,16 @@ describe('profiles in the application', () => {
       expect(sideNavigation()).toEqual([]);
       expect(page().querySelector('.shell__bottom-nav')).toBeNull();
       expect(page().querySelector('.shell__profile')).toBeNull();
+    });
+
+    // the weather is for everybody: nobody chosen yet sees it too
+    it('shows the weather in the panel of the picker', async () => {
+      await start();
+      await harness.navigateByUrl('/profiles');
+      await registryAnswers();
+      await weatherAnswers();
+
+      expect(weather()).toBe('7.5 °C');
     });
 
     it('says so when nobody is registered', async () => {
@@ -474,6 +501,14 @@ describe('profiles in the application', () => {
       expect(
         page().querySelector('[data-testid="room-heating"] mat-card-title')?.textContent?.trim(),
       ).toBe('loft');
+    });
+
+    it('sees the weather in the panel', async () => {
+      await start(BORYS);
+      await harness.navigateByUrl('/room');
+      await weatherAnswers();
+
+      expect(weather()).toBe('7.5 °C');
     });
 
     it('may open a personal link and the error page', async () => {

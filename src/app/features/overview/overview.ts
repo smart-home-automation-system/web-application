@@ -12,6 +12,8 @@ import {
 } from '../../data-access/presence/presence-api';
 import { WaterApi } from '../../data-access/water/water-api';
 import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
+import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
+import { newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
 import { MessageKey } from '../../i18n/messages';
 import { HeatingSwitch } from '../../shared/heating-switch/heating-switch';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
@@ -39,7 +41,7 @@ interface DeviceLine {
  * dashboard with the few facts somebody looks for first, each leading to the page that has the
  * rest.
  *
- * Six calls feed the page and each has one tile, with its own freshness and its own failure:
+ * Seven calls feed the page and each has one tile, with its own freshness and its own failure:
  * the page is whole when one service is down, and says which. The tiles claim what their
  * dashboards claim and nothing more - what an answer leaves out is "not known" here too.
  */
@@ -71,11 +73,14 @@ export class Overview {
   protected readonly water = inject(WaterApi).watchTemperatures();
   protected readonly boiler = inject(BoilerApi).watchStatus();
   protected readonly presence = inject(PresenceApi).watchNow();
+  // the resource of the strip in the panel: one poller, so the two never tell different answers
+  protected readonly weather = inject(CurrentWeatherStore).current;
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   };
+  protected readonly WHOLE: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
   protected readonly personState = PERSON_STATE_LABELS;
 
   // ---- rooms ----
@@ -142,6 +147,23 @@ export class Overview {
       ? last.lastCheckedAt
       : undefined;
   });
+
+  // ---- weather ----
+
+  /** The reading the strip of the panel shows too, read with the same function. */
+  protected readonly weatherReading = computed(() =>
+    toWeatherReading(this.weather.value(), this.zone),
+  );
+  /** The metrics of the tile: whatever of them the answer has. */
+  private readonly weatherMetrics = computed(() => {
+    const { temperature, dewPoint, wind, gust, raining, illuminance } = this.weatherReading();
+    return [temperature, dewPoint, wind, gust, raining, illuminance];
+  });
+  protected readonly weatherShown = computed(() =>
+    this.weatherMetrics().some((metric) => metric !== undefined),
+  );
+  /** The last the station was heard of what the tile shows, and whether all of it is stale. */
+  protected readonly weatherNewest = computed(() => newestOf(this.weatherMetrics()));
 
   // ---- sensors ----
 

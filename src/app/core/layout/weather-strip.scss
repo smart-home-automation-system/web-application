@@ -1,0 +1,97 @@
+// The weather in the panel: plain text on the glass of the panel, no card. On a phone it sits in
+// the bar across the top, between the brand and the profile; in the column of a wide screen it
+// is a line of its own above the profile.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--mat-sys-on-surface);
+}
+
+.weather__icon {
+  flex: none;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.weather__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.weather__values {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: var(--mat-sys-label-large);
+  letter-spacing: var(--mat-sys-label-large-tracking);
+  color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  strong {
+    font: var(--mat-sys-title-medium);
+    letter-spacing: var(--mat-sys-title-medium-tracking);
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.weather__age {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+
+  .mat-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+  }
+}
+
+// a reading the station has not confirmed for half an hour, or a call that is late: the shade of
+// an error made for text on glass
+.weather__age--stale {
+  color: var(--mat-sys-on-error-container);
+}
+
+// collapsed to an icon: a button only so that its tooltip can be reached by a keyboard and a tap
+.weather--collapsed {
+  appearance: none;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mat-sys-corner-full);
+  background: none;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-on-surface);
+    outline-offset: 2px;
+  }
+}
+
+// a reading kept after a failed call: the strip takes the focus and a tap for its tooltip
+.weather--failed {
+  cursor: pointer;
+  border-radius: var(--mat-sys-corner-small);
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-on-surface);
+    outline-offset: 4px;
+  }
+}

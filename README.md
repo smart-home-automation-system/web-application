@@ -40,10 +40,16 @@ dashboards:
 - **Overview**: the house at a glance, the landing page of the administrator - the switch of the
   heating (the card of the heating page) and a tile per dashboard: the rooms (how many, how many
   are being heated, the coldest and the warmest of the house with the age of each reading), the
-  temperature sensors that fell silent, the hot water, the boiler room and who is at home - with
-  a warning when the detection has not checked for more than five minutes. Each tile is fed by one call, so it has its own
+  temperature sensors that fell silent, the hot water, the boiler room, who is at home - with
+  a warning when the detection has not checked for more than five minutes - and the weather
+  (temperature, dew point, wind and gusts, rain, daylight; no link until the weather page). Each tile is fed by one call, so it has its own
   freshness and its own failure and the page stays whole while one service is down; its title
   leads to the dashboard that has the rest.
+- **The weather strip**: in the panel of every page, for every member and on the profile picker:
+  the outdoor temperature and humidity, led by an icon of rain or of a strong wind (8 m/s), with
+  the age of the reading. A failed call keeps the last reading, its age marked, with the reason
+  in a tooltip (a tap on a phone); with nothing to show - no answer yet, or a station not heard
+  yet - it shrinks to an icon whose tooltip says why.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the
   temperature of each with the age of its reading, the temperature its schedule asks for right
@@ -296,6 +302,7 @@ Endpoints used today:
 | `GET` | `/home/water/temperature/history?from=&to=` | Both temperatures over a range, averaged into buckets (hot water). Asked when the period changes, then every 3 min. Needs `water-service` 0.6.0 or later |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room, overview), polled every 30 s |
+| `GET` | `/home/weather/current` | Every metric of the weather station with `value`, `measuredAt` and `stale` (the strip on every page, overview), polled every 60 s by one resource for both. A metric never heard is not in the answer and is not drawn; `{}` is a station not heard yet. Needs `weather-service` 0.4.0 and `api-gateway-service` 0.6.0 or later |
 | `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the switch on "My room"). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened - and after every change made on the Household page |
 | `GET` | `/home/household` | The whole registry - every member, switched off or not, with phone, role, rooms, permissions and devices (household). By the Household page only, polled every 60 s while it is open and read again after every change |
 | `POST` | `/home/household/member` | Adds a member, with role, rooms and permissions (household) |

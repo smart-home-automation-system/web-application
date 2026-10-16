@@ -14,6 +14,7 @@ import {
 } from '../../data-access/heating/heating-api';
 import { PresenceApi, ResidentPresence } from '../../data-access/presence/presence-api';
 import { WaterApi, WaterTemperatures } from '../../data-access/water/water-api';
+import { CurrentWeather, WeatherApi } from '../../data-access/weather/weather-api';
 import { Overview } from './overview';
 
 // 18:30 in the house (summer time, UTC+2)
@@ -52,7 +53,17 @@ const PEOPLE: readonly ResidentPresence[] = [
   { name: 'Cecylia', present: false, lastCheckedAt: null },
 ];
 
-type Tile = 'rooms' | 'sensors' | 'water' | 'boiler' | 'presence';
+const WEATHER: CurrentWeather = {
+  temperature: { value: 12.34, measuredAt: '2026-10-10T18:29:10', stale: false },
+  dewPoint: { value: 6.07, measuredAt: '2026-10-10T18:29:10', stale: false },
+  wind: { value: 3.2, measuredAt: '2026-10-10T18:29:20', stale: false },
+  gust: { value: 5.71, measuredAt: '2026-10-10T18:29:20', stale: false },
+  raining: { value: false, measuredAt: '2026-10-10T18:28:40', stale: false },
+  illuminance: { value: 21310, measuredAt: '2026-10-10T18:29:00', stale: false },
+  humidity: { value: 58, measuredAt: '2026-10-10T18:29:10', stale: false },
+};
+
+type Tile = 'rooms' | 'sensors' | 'water' | 'boiler' | 'presence' | 'weather';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -61,6 +72,7 @@ describe('Overview', () => {
   let water: FakeResource<WaterTemperatures | null>;
   let boiler: FakeResource<BoilerStatus>;
   let presence: FakeResource<readonly ResidentPresence[] | null>;
+  let weather: FakeResource<CurrentWeather | null>;
   let turned: boolean[];
   let fixture: ComponentFixture<Overview>;
 
@@ -72,6 +84,7 @@ describe('Overview', () => {
     water = fakeResource();
     boiler = fakeResource();
     presence = fakeResource();
+    weather = fakeResource();
     turned = [];
     TestBed.configureTestingModule({
       providers: [
@@ -93,6 +106,7 @@ describe('Overview', () => {
         { provide: WaterApi, useValue: { watchTemperatures: () => water } },
         { provide: BoilerApi, useValue: { watchStatus: () => boiler } },
         { provide: PresenceApi, useValue: { watchNow: () => presence } },
+        { provide: WeatherApi, useValue: { watchCurrent: () => weather } },
       ],
     });
     fixture = TestBed.createComponent(Overview);
@@ -120,10 +134,11 @@ describe('Overview', () => {
     });
     answer(boiler, BOILER);
     answer(presence, PEOPLE);
+    answer(weather, WEATHER);
   }
 
   it('shows a progress bar in every tile until its call has answered', async () => {
-    for (const name of ['rooms', 'sensors', 'water', 'boiler', 'presence'] as const) {
+    for (const name of ['rooms', 'sensors', 'water', 'boiler', 'presence', 'weather'] as const) {
       expect((await tile(name)).querySelector('mat-progress-bar'), name).toBeTruthy();
     }
 
@@ -142,6 +157,9 @@ describe('Overview', () => {
     expect(await link('water')).toBe('/water');
     expect(await link('boiler')).toBe('/boiler');
     expect(await link('presence')).toBe('/presence');
+    // no weather page yet: its title is plain text, not a link to a page that does not exist
+    expect((await tile('weather')).querySelector('a')).toBeNull();
+    expect(words((await tile('weather')).querySelector('mat-card-title'))).toBe('Weather');
   });
 
   describe('the heating of the house', () => {
@@ -325,6 +343,89 @@ describe('Overview', () => {
     });
   });
 
+  describe('the weather', () => {
+    const row = async (metric: string) =>
+      words((await tile('weather')).querySelector(`[data-metric="${metric}"]`));
+
+    it('shows the temperature, the dew point, the wind, the rain and the daylight', async () => {
+      answer(weather, WEATHER);
+
+      expect(await row('temperature')).toBe('Temperature 12.3 °C');
+      expect(await row('dewPoint')).toBe('Dew point 6.1 °C');
+      expect(await row('wind')).toBe('Wind 3.2 m/s gusts 5.7 m/s');
+      expect(await row('raining')).toBe('Rain None');
+      expect(await row('illuminance')).toBe('Daylight 21,310 lx');
+      // the newest of the readings the tile shows: the wind, 40 s before now
+      expect(words((await tile('weather')).querySelector('[data-testid="weather-measured"]'))).toBe(
+        'Measured 40 sec ago',
+      );
+    });
+
+    it('says when it rains', async () => {
+      answer(weather, {
+        raining: { value: true, measuredAt: '2026-10-10T18:29:00', stale: false },
+      });
+
+      expect(await row('raining')).toBe('Rain Raining');
+    });
+
+    // a metric the station was never heard of is not in the answer: nothing is drawn for it,
+    // never a zero, and an unknown rain is not "no rain"
+    it('draws nothing for a metric the answer leaves out', async () => {
+      answer(weather, { temperature: WEATHER.temperature, gust: WEATHER.gust });
+
+      expect(await row('temperature')).toBe('Temperature 12.3 °C');
+      expect(await row('wind')).toBe('Wind gusts 5.7 m/s');
+      for (const metric of ['dewPoint', 'raining', 'illuminance']) {
+        expect(
+          (await tile('weather')).querySelector(`[data-metric="${metric}"]`),
+          metric,
+        ).toBeNull();
+      }
+    });
+
+    it('marks a metric the service calls stale, while the others are fresh', async () => {
+      answer(weather, {
+        ...WEATHER,
+        illuminance: { value: 120, measuredAt: '2026-10-10T17:40:00', stale: true },
+      });
+
+      expect(await row('illuminance')).toBe('Daylight out of date 120 lx');
+      expect(await row('temperature')).toBe('Temperature 12.3 °C');
+    });
+
+    it('says so once the station has not been heard of anything for a while', async () => {
+      const old = { measuredAt: '2026-10-10T17:40:00', stale: true };
+      answer(weather, {
+        temperature: { ...old, value: 9.5 },
+        raining: { ...old, value: false },
+      });
+
+      const measured = (await tile('weather')).querySelector('[data-testid="weather-measured"]');
+      expect(words(measured)).toBe('Measured 50 min ago - the station has not been heard since.');
+      expect(measured?.classList).toContain('tile__detail--alert');
+      // told once for the whole tile, not on every row
+      expect(await row('temperature')).toBe('Temperature 9.5 °C');
+    });
+
+    it('says that the station was not heard yet for an empty answer', async () => {
+      answer(weather, {});
+
+      expect(words(await tile('weather'))).toContain('No reading from the weather station yet.');
+    });
+
+    it('reads nothing into an answer that is no object, or values of another kind', async () => {
+      answer(weather, {
+        temperature: { value: 'warm' as unknown as number, measuredAt: 'yesterday' },
+        raining: { value: 1 as unknown as boolean },
+      });
+
+      expect(words(await tile('weather'))).toContain('No reading from the weather station yet.');
+      answer(weather, null);
+      expect(words(await tile('weather'))).toContain('No reading from the weather station yet.');
+    });
+  });
+
   describe('when one service is down', () => {
     it('tells the failure in its tile and leaves the others as they are', async () => {
       answerAll();
@@ -360,5 +461,6 @@ describe('Overview', () => {
     expect(words(page().querySelector('h1'))).toBe('Przegląd');
     expect(words(await tile('rooms'))).toContain('Najchłodniejszy bedroom 18,9 °C');
     expect(words(await tile('presence'))).toContain('Aurelia W domu');
+    expect(words(await tile('weather'))).toContain('Wiatr 3,2 m/s porywy 5,7 m/s');
   });
 });

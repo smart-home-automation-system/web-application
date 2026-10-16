@@ -55,6 +55,21 @@ export const en = {
       muted: 'muted',
       unknown: 'The service does not say which sensors are reporting.',
     },
+    weather: {
+      title: 'Weather',
+      loading: 'Loading the weather',
+      temperature: 'Temperature',
+      dewPoint: 'Dew point',
+      wind: 'Wind',
+      gusts: 'gusts {{ speed }} m/s',
+      rain: 'Rain',
+      raining: 'Raining',
+      dry: 'None',
+      illuminance: 'Daylight',
+      outOfDate: 'out of date',
+      measured: 'Measured {{ age }}',
+      measuredOutOfDate: 'Measured {{ age }} - the station has not been heard since.',
+    },
   },
   history: {
     loading: 'Loading the history',
@@ -212,6 +227,17 @@ export const en = {
     running: 'Running',
     stopped: 'Stopped',
     noStatus: 'No status yet',
+  },
+  // the weather station, as the strip of the panel shows it on every page
+  weather: {
+    label: 'Weather outside',
+    raining: 'Raining',
+    windy: 'Strong wind',
+    humidity: 'humidity',
+    outOfDate: 'The station has not been heard since.',
+    late: 'The weather has not been updated since.',
+    noReading: 'No reading from the weather station yet.',
+    unavailable: 'The weather could not be read.',
   },
   profiles: {
     title: 'Choose your profile',
@@ -608,6 +634,8 @@ export const en = {
     water: 'Hot water',
     boiler: 'Boiler room',
     household: 'Household',
+    devices: 'Devices',
+    weather: 'Weather',
   },
   // names of the seasons, as a label and inside a sentence
   season: {

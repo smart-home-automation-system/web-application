@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every tile has told its failure before the picture is taken
-        await expect(page.getByRole('alert')).toHaveCount(6, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(7, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),

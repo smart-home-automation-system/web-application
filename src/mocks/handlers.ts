@@ -38,6 +38,11 @@ import {
   presenceReport,
 } from './presence.fixtures';
 import { WATER_HEATING_DEMAND, waterTemperatures } from './water.fixtures';
+import {
+  STATION_STATUS_BEFORE_FIRST_READING,
+  currentWeather,
+  stationStatus,
+} from './weather.fixtures';
 
 export interface MockReply {
   readonly status: number;
@@ -282,6 +287,20 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     reply: (_, fresh) => ({
       status: 200,
       body: fresh ? BOILER_STATUS_BEFORE_FIRST_LOOK : boilerStatus(),
+    }),
+  },
+  {
+    // just after a start the service has heard of no metric: an empty object, never zeros
+    method: 'GET',
+    path: '/home/weather/current',
+    reply: (_, fresh) => ({ status: 200, body: fresh ? {} : currentWeather() }),
+  },
+  {
+    method: 'GET',
+    path: '/home/weather/status',
+    reply: (_, fresh) => ({
+      status: 200,
+      body: fresh ? STATION_STATUS_BEFORE_FIRST_READING : stationStatus(),
     }),
   },
 ];

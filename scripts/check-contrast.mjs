@@ -23,7 +23,7 @@ import { SEASONS } from '../src/app/core/theme/season.ts';
 const DIST = fileURLToPath(new URL('../dist/web-application/browser', import.meta.url));
 const TEXT = 4.5;
 const NON_TEXT = 3;
-const DOMAINS = ['heating', 'water', 'boiler', 'household', 'devices'];
+const DOMAINS = ['heating', 'water', 'boiler', 'household', 'devices', 'weather'];
 
 // How much of the season's primary colour the glow (`--app-glow` in _seasons.scss) lays over
 // the page: its strongest point sits under the panel, the page text next to it, the cards see
@@ -62,6 +62,8 @@ const PAIRS = [
   ['on-surface', 'panel', TEXT],
   ['on-surface-variant', 'panel', TEXT],
   ['primary', 'panel', TEXT],
+  // the age of a weather reading that is out of date, in the strip of the panel
+  ['on-error-container', 'panel', TEXT],
   // body text and secondary text on every level of Material's surfaces (menus, snack bars)
   ...[
     'surface',
@@ -148,6 +150,7 @@ const PHOTO_PAIRS = photos.flatMap(({ name }) =>
       ['on-surface', `${under}-panel`, TEXT],
       ['on-surface-variant', `${under}-panel`, TEXT],
       ['primary', `${under}-panel`, TEXT],
+      ['on-error-container', `${under}-panel`, TEXT],
     ];
   }),
 );

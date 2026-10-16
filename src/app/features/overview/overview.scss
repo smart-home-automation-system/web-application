@@ -1,18 +1,68 @@
-// The tiles fill the width of the window before the page asks to be scrolled: one column on a
-// phone, as many of at least 280 px as fit beyond it. The tiles of a row are of one height
-// (owner, 2026-10-10): this page is a board of tiles of a kind, and a ragged row of them does
-// not look right - unlike the cards of a dashboard, each as tall as what it says.
+// The columns are counted from the width of the page, not of the window (the panel takes its
+// part): as many tiles of at least 280 px as fit, up to five.
+$tile-min: 280px;
+$gap: 12px;
+$max-columns: 5;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+// The board and its title stand in the middle of a wide screen, not against its left edge
+// (owner, 2026-10-16: "the empty part on the right makes no sense").
+.page-header,
+.tiles {
+  max-width: 1600px;
+  margin-inline: auto;
+}
+
+// The tiles fill the width of the page before it asks to be scrolled: one column on a phone, as
+// many as fit beyond it. The tiles are of one height (owner, 2026-10-10): this page is a board of
+// tiles of a kind, and a ragged row of them does not look right - unlike the cards of a
+// dashboard, each as tall as what it says.
+//
+// A last row that is not full stands in the middle, under the row above (owner, 2026-10-16).
+// A grid cannot centre a row by itself, so every tile spans two tracks of a grid of twice the
+// columns, and the first tile of the last row starts half a tile in for every place left empty:
+// `:nth-child(<c>n + 1):nth-last-child(<r>)` is that tile when <r> tiles are left for the last
+// row of <c> columns - for whatever number of tiles the page has.
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $gap;
   align-items: stretch;
-  max-width: 1600px;
+}
 
-  // every row as tall as the tallest tile of the page, not only of its own row; in the one
-  // column of a phone there is no row to even out, and a tile is as tall as what it says
-  @media (min-width: 600px) {
-    grid-auto-rows: 1fr;
+// the width from which a row holds this many tiles
+@function fits($columns) {
+  @return $columns * $tile-min + ($columns - 1) * $gap;
+}
+
+// Each count of columns has a range of its own: the rule that centres a last row of three
+// columns must not apply to a page that has four.
+@for $columns from 2 through $max-columns {
+  $range: '(min-width: #{fits($columns)})';
+  @if $columns < $max-columns {
+    $range: '#{$range} and (max-width: #{fits($columns + 1) - 0.02px})';
+  }
+  @container #{$range} {
+    .tiles {
+      grid-template-columns: repeat(#{$columns * 2}, minmax(0, 1fr));
+      // every row as tall as the tallest tile of the page, not only of its own row; in the one
+      // column of a phone there is no row to even out, and a tile is as tall as what it says
+      grid-auto-rows: 1fr;
+
+      > * {
+        grid-column: span 2;
+      }
+
+      @for $left from 1 through $columns - 1 {
+        > :nth-child(#{$columns}n + 1):nth-last-child(#{$left}) {
+          grid-column: #{$columns - $left + 1} / span 2;
+        }
+      }
+    }
   }
 }
 
