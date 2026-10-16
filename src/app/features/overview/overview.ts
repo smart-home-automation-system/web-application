@@ -12,7 +12,7 @@ import {
 } from '../../data-access/presence/presence-api';
 import { WaterApi } from '../../data-access/water/water-api';
 import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
-import { WeatherApi } from '../../data-access/weather/weather-api';
+import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
 import { MessageKey } from '../../i18n/messages';
 import { HeatingSwitch } from '../../shared/heating-switch/heating-switch';
@@ -73,7 +73,8 @@ export class Overview {
   protected readonly water = inject(WaterApi).watchTemperatures();
   protected readonly boiler = inject(BoilerApi).watchStatus();
   protected readonly presence = inject(PresenceApi).watchNow();
-  protected readonly weather = inject(WeatherApi).watchCurrent();
+  // the resource of the strip in the panel: one poller, so the two never tell different answers
+  protected readonly weather = inject(CurrentWeatherStore).current;
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,

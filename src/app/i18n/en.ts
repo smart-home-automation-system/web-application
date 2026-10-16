@@ -235,6 +235,7 @@ export const en = {
     windy: 'Strong wind',
     humidity: 'humidity',
     outOfDate: 'The station has not been heard since.',
+    late: 'The weather has not been updated since.',
     noReading: 'No reading from the weather station yet.',
     unavailable: 'The weather could not be read.',
   },

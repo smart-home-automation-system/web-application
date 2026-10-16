@@ -99,6 +99,15 @@ describe('WeatherStrip', () => {
     expect(words(age)).toBe('warning 1 hr ago The station has not been heard since.');
   });
 
+  it('marks the age, and says why, when the call is late though the station is not', async () => {
+    answer(weather, WEATHER);
+    weather.stale.set(true);
+
+    const age = (await strip())?.querySelector('[data-testid="weather-age"]');
+    expect(age?.classList).toContain('weather__age--stale');
+    expect(words(age)).toBe('warning 2 min ago The weather has not been updated since.');
+  });
+
   // a failure is no card: the strip becomes an icon, and its tooltip tells why
   it('collapses to an icon with the reason in its tooltip when the call fails', async () => {
     answer(weather, WEATHER);
@@ -118,11 +127,13 @@ describe('WeatherStrip', () => {
     fail(weather, new ApiError('server', 502));
     const button = (await strip()) as HTMLButtonElement;
     const tip = tooltip() as MatTooltip;
-    const toggle = vi.spyOn(tip, 'toggle');
+    const show = vi.spyOn(tip, 'show');
 
     button.click();
 
-    expect(toggle).toHaveBeenCalledOnce();
+    // show, not toggle: on a desktop the pointer has opened it already, and a click must not
+    // close what it came to read
+    expect(show).toHaveBeenCalledOnce();
   });
 
   it('collapses with "no reading yet" when the station was heard of nothing', async () => {

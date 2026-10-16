@@ -234,6 +234,7 @@ export const pl: Messages = {
     windy: 'Silny wiatr',
     humidity: 'wilgotność',
     outOfDate: 'Od tamtej pory stacja milczy.',
+    late: 'Od tamtej pory pogoda nie została odświeżona.',
     noReading: 'Brak jeszcze odczytu ze stacji pogodowej.',
     unavailable: 'Nie udało się odczytać pogody.',
   },

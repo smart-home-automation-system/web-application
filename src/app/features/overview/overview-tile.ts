@@ -15,9 +15,9 @@ export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather
 
 /**
  * One tile of the overview: a card about one call, whose title leads to the dashboard that has
- * the rest - plain text while the domain has no dashboard yet. The tile tells what every card of a polled resource tells - the bar until the first
- * answer, the freshness, the failure next to the last value - and the content says what the
- * answer holds.
+ * the rest - plain text while the domain has no dashboard yet. The tile tells what every card of
+ * a polled resource tells - the bar until the first answer, the freshness, the failure next to
+ * the last value - and the content says what the answer holds.
  *
  * **One call, one tile**: a tile that is fed by its own resource keeps working, and keeps its
  * own failure, when the service of the tile next to it is down.

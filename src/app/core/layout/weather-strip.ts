@@ -3,7 +3,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { WeatherApi } from '../../data-access/weather/weather-api';
+import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { leadingIcon, newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
 import { DisplayText } from '../../i18n/messages';
 import { describeApiError } from '../../shared/api-error/describe-api-error';
@@ -52,7 +52,7 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
           "
           matTooltipTouchGestures="off"
           #tip="matTooltip"
-          (click)="tip.toggle()"
+          (click)="tip.show()"
         >
           <mat-icon aria-hidden="true">cloud_off</mat-icon>
         </button>
@@ -90,12 +90,15 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
                 [class.weather__age--stale]="last.allStale || weather.stale()"
                 data-testid="weather-age"
               >
-                @if (last.allStale) {
+                @if (last.allStale || weather.stale()) {
                   <mat-icon aria-hidden="true">warning</mat-icon>&ngsp;
                 }
                 <span>{{ last.measuredAt | houseAge }}</span>
                 @if (last.allStale) {
                   <span class="visually-hidden">&ngsp;{{ t('weather.outOfDate') }}</span>
+                } @else if (weather.stale()) {
+                  <!-- the station may be fine: it is the call that is late -->
+                  <span class="visually-hidden">&ngsp;{{ t('weather.late') }}</span>
                 }
               </span>
             }
@@ -109,7 +112,7 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
 })
 export class WeatherStrip {
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
-  protected readonly weather = inject(WeatherApi).watchCurrent();
+  protected readonly weather = inject(CurrentWeatherStore).current;
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,

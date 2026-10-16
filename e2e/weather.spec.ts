@@ -37,6 +37,26 @@ test.describe('weather strip', () => {
     }
   });
 
+  // the bar across the top lasts up to 840 px, and the brand keeps its name from 480 px
+  for (const width of [480, 600, 839]) {
+    test(`fits the bar of a window ${width} px wide`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/overview');
+      await expect(strip(page).getByTestId('weather-temperature')).toBeVisible();
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      const panel = await page.locator('.shell__panel').boundingBox();
+      const language = await page.getByRole('button', { name: /Change language/ }).boundingBox();
+
+      expect(overflow).toBe(0);
+      expect(language!.x + language!.width).toBeLessThanOrEqual(panel!.x + panel!.width);
+      // the bar stays one row: nothing was pushed under the brand
+      expect(panel!.height).toBeLessThan(80);
+    });
+  }
+
   test.describe('for nobody chosen yet', () => {
     test.use({ profile: 'none' });
 
