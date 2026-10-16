@@ -408,8 +408,24 @@ e2e/              # Playwright tests
   age of its reading, because the service keeps the last one of a sensor that fell silent. **A new tile is a new resource** - two values of two calls in one tile would tell
   one failure for both. An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
-  the overview through the real routes lets its six reads through with `isOverviewRead`
+  the overview through the real routes lets its seven reads through with `isOverviewRead`
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
+- **The weather is one resource for the whole application** (HAS-240, `CurrentWeatherStore` in
+  `data-access/weather/`, polling `GET /weather/current` every minute, stale after two missed
+  calls): the strip of the panel (`core/layout/weather-strip.ts`) is on every page, for everybody
+  and the picker too, and the weather tile of the overview reads the same resource - two pollers
+  asked twice a minute and could tell two answers side by side (found in review). Both read the
+  answer with `toWeatherReading` (`weather-reading.ts`): **a metric the answer leaves out is not
+  drawn** - the service leaves out what the station was never heard of, so `{}` is "no reading
+  yet", never zeros, and an unknown rain is no rain icon and no "None". The age is the newest
+  `measuredAt` of what is shown; the service's `stale` (30 min) marks a row, or the whole line
+  when every metric is. **The strip is no card** (the task's rule): a failed call or nothing
+  heard collapses it to a `cloud_off` button whose `matTooltip` tells why - the click calls
+  `show()`, not `toggle()`, or on a desktop it closes what the hover opened. Below 480 px the
+  brand keeps only the house, so the bar of a phone holds the weather. The tile has no link until
+  the weather page exists (`OverviewTile.link` is optional); the domain colour is `weather`.
+  `watchStatus` and `watchHistory` are there for the weather page (HAS-241). `SHELL_READS`
+  (`src/testing/overview-reads.ts`) lets a test that renders the shell pass the read of the strip.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason
@@ -594,7 +610,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
