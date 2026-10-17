@@ -1,0 +1,339 @@
+<ng-container *transloco="let t">
+  @let room = data.overview();
+  <h2 mat-dialog-title class="detail__title">
+    <!-- a room is shown by its identifier, as everywhere in the application -->
+    {{ room.room }}
+    <span class="detail__floor">{{ t(data.floor) }}</span>
+  </h2>
+
+  <mat-dialog-content class="detail" data-testid="room-detail">
+    <!-- temperature -->
+    <section class="section" data-section="temperature">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">thermostat</mat-icon>{{ t('rooms.row.temperature') }}
+      </h3>
+      <!-- 0 °C is a reading: the test is for a number, not for a truthy value -->
+      @let temperature = room.heating?.temperature;
+      @if (temperature !== undefined) {
+        <p class="section__value">
+          {{ temperature | localNumber: ONE_DECIMAL }}&nbsp;°C
+          @if (room.heating?.measuredAt | houseAge; as age) {
+            <span class="section__note">{{ t('heating.rooms.measured') }} {{ age }}</span>
+          }
+        </p>
+      } @else if (room.heating || room.temperatureSensors.length > 0) {
+        <p class="section__note">{{ t('heating.rooms.noReading') }}</p>
+      } @else {
+        <p class="section__note">{{ t('rooms.noDevice') }}</p>
+      }
+    </section>
+
+    <!-- heating: shown, never set here - the heating page is the one place -->
+    <section class="section" data-section="heating">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">mode_heat</mat-icon>{{ t('rooms.row.heating') }}
+      </h3>
+      @let heaters = room.heating?.heaters;
+      @if (heaters && heaters.length > 0) {
+        <ul class="list">
+          @for (heater of heaters; track $index) {
+            <li class="list__row" [attr.data-state]="heaterState(heater)">
+              <span>{{ t(heaterKindLabel(heater)) }}</span>
+              <span class="list__state">{{ t(heaterStateLabel(heater)) }}</span>
+            </li>
+          }
+        </ul>
+        @if (room.heating?.window?.hold === true) {
+          <p class="section__warning" data-testid="detail-held">{{ t('window.held') }}</p>
+        }
+        <a matButton routerLink="/heating" class="section__link">
+          <mat-icon>open_in_new</mat-icon>{{ t('rooms.heating.setOnHeatingPage') }}
+        </a>
+      } @else if (heaters === undefined && room.heating) {
+        <p class="section__note">{{ t('heating.rooms.heatersUnknown') }}</p>
+      } @else {
+        <p class="section__note">{{ t('heating.rooms.noHeater') }}</p>
+      }
+    </section>
+
+    <!-- lights: switched through amx-service; no service keeps their state yet -->
+    <section class="section" data-section="lights">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">lightbulb</mat-icon>{{ t('rooms.row.lights') }}
+      </h3>
+      @if (room.lights.length === 0) {
+        <p class="section__note">{{ t('rooms.noDevice') }}</p>
+      } @else {
+        <p class="section__note">{{ t('rooms.lights.stateUnknown') }}</p>
+        <ul class="list">
+          @for (light of room.lights; track light.id) {
+            @let command = stateOf(light.id);
+            @let point = eatonPoint(light);
+            <li class="list__row list__row--control" [attr.data-light]="light.id">
+              <span class="list__name">
+                <mat-icon class="list__bulb" aria-hidden="true">lightbulb</mat-icon>
+                {{ light.name ?? t('rooms.unnamed') }}
+              </span>
+              @if (point !== undefined) {
+                <span class="list__controls">
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    [disabled]="command?.sending"
+                    (click)="switchLight(light, true)"
+                  >
+                    {{ t('rooms.lights.on') }}
+                    <span class="visually-hidden">{{ light.name }}</span>
+                  </button>
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    [disabled]="command?.sending"
+                    (click)="switchLight(light, false)"
+                  >
+                    {{ t('rooms.lights.off') }}
+                    <span class="visually-hidden">{{ light.name }}</span>
+                  </button>
+                </span>
+                @if (light.lightKind === 'dimmer') {
+                  <span class="list__slider">
+                    <mat-slider min="0" max="100" step="10" discrete>
+                      <input
+                        matSliderThumb
+                        #lightLevel
+                        value="50"
+                        [attr.aria-label]="t('rooms.lights.level') + ' ' + (light.name ?? '')"
+                      />
+                    </mat-slider>
+                    <button
+                      matButton
+                      type="button"
+                      [disabled]="command?.sending"
+                      (click)="setLevel(light, lightLevel.valueAsNumber)"
+                    >
+                      {{ t('rooms.lights.setLevel') }}
+                    </button>
+                  </span>
+                }
+                @if (command?.sent) {
+                  <span class="list__sent" role="status">{{ t('rooms.lights.sent') }}</span>
+                }
+                @if (command?.error; as error) {
+                  <app-api-error-strip [error]="error" [summary]="t('rooms.commandFailed')" />
+                }
+              } @else {
+                <span class="section__note">{{ t('rooms.lights.noControl') }}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- blinds: commands, the pause of their schedules, and what the schedules make of today -->
+    <section class="section" data-section="blinds">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">blinds</mat-icon>{{ t('rooms.row.blinds') }}
+      </h3>
+      @if (room.blinds.length === 0) {
+        <p class="section__note">{{ t('rooms.noDevice') }}</p>
+      } @else {
+        <ul class="list list--blinds">
+          @for (blind of room.blinds; track blind.device.id) {
+            @let command = stateOf(blind.device.id);
+            @let shown = positionLabel(blind);
+            <li class="blind" [attr.data-blind]="blind.device.id">
+              <div class="blind__head">
+                <span class="list__name">{{ blind.device.name ?? t('rooms.unnamed') }}</span>
+                <span class="list__state" data-testid="blind-position">{{
+                  t(shown.key, { position: shown.position })
+                }}</span>
+              </div>
+              @if (blind.window; as window) {
+                @if (window.state !== 'no sensor') {
+                  <span class="section__note" [attr.data-state]="window.state">
+                    <mat-icon class="list__bulb" aria-hidden="true">{{
+                      windowIcon(window.state)
+                    }}</mat-icon>
+                    {{ t(windowLabel(window.state)) }}
+                  </span>
+                }
+              }
+              @if (blind.state?.reachable === false) {
+                <span class="section__warning">{{ t('rooms.blinds.unreachable') }}</span>
+              }
+              <span class="list__controls">
+                <button
+                  matButton="outlined"
+                  type="button"
+                  [disabled]="command?.sending"
+                  (click)="move(blind, 'open')"
+                >
+                  <mat-icon>arrow_upward</mat-icon>{{ t('rooms.blinds.open') }}
+                  <span class="visually-hidden">{{ blind.device.name }}</span>
+                </button>
+                <button
+                  matButton="outlined"
+                  type="button"
+                  [disabled]="command?.sending"
+                  (click)="move(blind, 'stop')"
+                >
+                  <mat-icon>stop</mat-icon>{{ t('rooms.blinds.stop') }}
+                  <span class="visually-hidden">{{ blind.device.name }}</span>
+                </button>
+                <button
+                  matButton="outlined"
+                  type="button"
+                  [disabled]="command?.sending"
+                  (click)="move(blind, 'close')"
+                >
+                  <mat-icon>arrow_downward</mat-icon>{{ t('rooms.blinds.close') }}
+                  <span class="visually-hidden">{{ blind.device.name }}</span>
+                </button>
+              </span>
+              @if (blind.device.positioning === true) {
+                <span class="list__slider">
+                  <mat-slider min="0" max="100" step="10" discrete>
+                    <input
+                      matSliderThumb
+                      #blindPosition
+                      [value]="blind.state?.position ?? 50"
+                      [attr.aria-label]="
+                        t('rooms.blinds.positionLabel') + ' ' + (blind.device.name ?? '')
+                      "
+                    />
+                  </mat-slider>
+                  <button
+                    matButton
+                    type="button"
+                    [disabled]="command?.sending"
+                    (click)="moveTo(blind, blindPosition.valueAsNumber)"
+                  >
+                    {{ t('rooms.blinds.goTo') }}
+                  </button>
+                </span>
+              }
+              <mat-slide-toggle
+                class="blind__pause"
+                data-testid="blind-pause"
+                [checked]="blind.state?.schedulePausedSince !== undefined"
+                [disabled]="command?.sending || blind.state === undefined"
+                (toggleChange)="pause(blind)"
+              >
+                {{ t('rooms.blinds.pause') }}
+              </mat-slide-toggle>
+              @if (blind.state?.schedulePausedSince | houseAge; as age) {
+                <span class="section__note" data-testid="blind-paused"
+                  >{{ t('rooms.blinds.pausedSince') }} {{ age }}</span
+                >
+              }
+              @if (command?.error; as error) {
+                <app-api-error-strip [error]="error" [summary]="t('rooms.commandFailed')" />
+              }
+              <app-blind-schedules [blind]="blind.device.id" />
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- motion: what the registry has; no service keeps what the sensors saw yet -->
+    <section class="section" data-section="motion">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">motion_sensor_active</mat-icon>{{ t('rooms.row.motion') }}
+      </h3>
+      @if (room.motion.length === 0) {
+        <p class="section__note">{{ t('rooms.noDevice') }}</p>
+      } @else {
+        <ul class="list">
+          @for (sensor of room.motion; track sensor.id) {
+            <li class="list__row">
+              <span>{{ sensor.name ?? t('rooms.unnamed') }}</span>
+              <span class="list__state">{{ t('rooms.stateUnknown') }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="section" data-section="presence">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">person</mat-icon>{{ t('rooms.row.presence') }}
+      </h3>
+      @if (room.residents.length === 0 && room.presenceSensors.length === 0) {
+        <p class="section__note">{{ t('rooms.presence.nobody') }}</p>
+      } @else {
+        <ul class="list">
+          @for (resident of room.residents; track resident.name) {
+            <!-- a member's name is text from outside: printed as it is -->
+            <li class="list__row" [attr.data-present]="resident.present">
+              <span>{{ resident.name }}</span>
+              <span class="list__state">{{
+                resident.present === true
+                  ? t('rooms.presence.home')
+                  : resident.present === false
+                    ? t('rooms.presence.away')
+                    : t('rooms.presence.notObserved')
+              }}</span>
+            </li>
+          }
+          @for (sensor of room.presenceSensors; track sensor.id) {
+            <li class="list__row">
+              <span>{{ sensor.name ?? t('rooms.unnamed') }}</span>
+              <span class="list__state">{{ t('rooms.stateUnknown') }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="section" data-section="openingSensors">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">sensor_door</mat-icon>{{ t('rooms.row.openingSensors') }}
+      </h3>
+      @let window = room.heating?.window;
+      @if (window && window.state !== 'no sensor') {
+        <p class="section__value" [attr.data-state]="window.state">
+          {{ t(windowLabel(window.state)) }}
+          @if (window.openSince | houseAge; as age) {
+            <span class="section__note">{{ t('window.opened') }} {{ age }}</span>
+          }
+        </p>
+      }
+      @if (room.openingSensors.length === 0) {
+        <p class="section__note">{{ t('rooms.noDevice') }}</p>
+      } @else {
+        <ul class="list">
+          @for (sensor of room.openingSensors; track sensor.id) {
+            <li class="list__row">
+              <span>{{ sensor.name ?? t('rooms.unnamed') }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="section" data-section="other">
+      <h3 class="section__title">
+        <mat-icon aria-hidden="true">devices_other</mat-icon>{{ t('rooms.row.other') }}
+      </h3>
+      @if (room.other.length === 0) {
+        <p class="section__note">{{ t('rooms.noDevice') }}</p>
+      } @else {
+        <ul class="list">
+          @for (device of room.other; track device.id) {
+            <li class="list__row">
+              <span>{{ device.name ?? t('rooms.unnamed') }}</span>
+              <!-- the kind as the registry has it, printed as it is -->
+              <span class="list__state">{{ device.kind }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close>{{ t('rooms.close') }}</button>
+  </mat-dialog-actions>
+</ng-container>

@@ -6,6 +6,7 @@ import {
   HeatingStatus,
   Room,
   RoomHeater,
+  RoomWindow,
   TemperatureSensor,
 } from '../app/data-access/heating/heating-api';
 import { houseTime } from './house-time';
@@ -187,6 +188,20 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
   ];
   const bathroom = [period(DAY_NAMES, '05:00:00', '23:00:00', 23)];
 
+  // HAS-232: the windows of a room - the bedroom held by a door open for twelve minutes, the
+  // living room with a sensor not heard of, the office closed; every other room without a sensor
+  const windows: Readonly<Record<string, RoomWindow>> = fresh
+    ? {}
+    : {
+        office: { state: 'closed', hold: false },
+        bedroom: { state: 'open', openSince: houseTime(now, 12 * MINUTE + 5), hold: true },
+        'living room': { state: 'unknown', hold: false },
+      };
+  const withWindow = (one: Room): Room => ({
+    ...one,
+    window: windows[one.name ?? ''] ?? { state: 'no sensor', hold: false },
+  });
+
   return [
     room('office', { value: 21.3, secondsAgo: 2 * MINUTE }, () => [
       heater('radiator', office, { working: false, secondsAgo: 2 * MINUTE }, 21.3),
@@ -211,5 +226,5 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
     ]),
     room('sauna', undefined, () => []),
     room('garden', { value: 7.5, secondsAgo: 47 * DAY }, () => []),
-  ];
+  ].map(withWindow);
 }

@@ -1,0 +1,59 @@
+// The sources, then the floors of the house: each a row of cards of one size, standing in the
+// middle of the page when it does not fill it - the layout of the devices page
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sources {
+  --app-domain: var(--app-domain-devices);
+  align-self: center;
+  width: min(100%, 960px);
+}
+
+.sources__content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 6px 16px;
+  padding: 12px 16px;
+}
+
+.source {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.source__name {
+  font: var(--mat-sys-label-large);
+}
+
+.rooms__note {
+  margin: 0;
+  text-align: center;
+  color: var(--mat-sys-on-background);
+}
+
+.floor__name {
+  margin: 0 0 10px;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-background);
+}
+
+.floor__rooms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+}
+
+// one column on a phone: the cards take its width
+@media (max-width: 479px) {
+  .floor__rooms app-room-tile {
+    --room-card-width: 100%;
+  }
+}

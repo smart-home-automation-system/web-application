@@ -121,7 +121,12 @@ describe('mock API', () => {
       ]);
       // a room that never reported, rooms without a heater, a heater without a schedule,
       // a relay that has not answered and a room with two heaters
-      expect(named('sauna')).toEqual({ name: 'sauna', mode: 'HEATING', heaters: [] });
+      expect(named('sauna')).toEqual({
+        name: 'sauna',
+        mode: 'HEATING',
+        heaters: [],
+        window: { state: 'no sensor', hold: false },
+      });
       expect(named('loft').heaters).toEqual([]);
       expect(named('bathroom down').heaters?.[0].schedules).toEqual([]);
       expect(named('wardrobe').heaters?.[0].working).toBeUndefined();

@@ -1,0 +1,128 @@
+.detail__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.detail__floor {
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.detail {
+  display: grid;
+  gap: 14px;
+}
+
+.section {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.section__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--mat-sys-title-small);
+}
+
+.section__value {
+  margin: 0;
+  font: var(--mat-sys-body-large);
+  font-weight: 600;
+}
+
+.section__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  font-weight: 400;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.section__warning {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-error-container);
+}
+
+.section__link {
+  justify-self: start;
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 12px;
+  font: var(--mat-sys-body-medium);
+}
+
+.list__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.list__state {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.list__controls,
+.list__slider {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.list__slider mat-slider {
+  width: 160px;
+}
+
+.list__sent {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-primary-container);
+}
+
+// no service keeps the state of a light: the bulb is drawn faint, never lit
+.mat-icon.list__bulb {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  opacity: 0.55;
+}
+
+.blind {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+.blind__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.blind__pause {
+  justify-self: start;
+}

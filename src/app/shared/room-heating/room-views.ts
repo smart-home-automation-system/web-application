@@ -32,6 +32,21 @@ export interface HeaterView {
   readonly unreadablePeriods: number;
 }
 
+/**
+ * The windows and doors of a room (HAS-232): `open` - one is open; `closed` - every one is;
+ * `no sensor` - the room has none; `unknown` - a sensor has not been heard of. A state this
+ * version does not know is `unknown` too: never read as closed.
+ */
+export type WindowStateView = 'open' | 'closed' | 'no sensor' | 'unknown';
+
+export interface WindowView {
+  readonly state: WindowStateView;
+  /** House wall-clock time it opened at; only while open. */
+  readonly openSince?: string;
+  /** The heating of the room is held by it; `undefined` when the service does not say. */
+  readonly hold: boolean | undefined;
+}
+
 /** A room as its card shows it. */
 export interface RoomView {
   /** The identifier of the room in the backend, printed as it is. */
@@ -49,6 +64,23 @@ export interface RoomView {
   readonly target?: number;
   /** `undefined` when the answer carries no list of heaters; empty for a room without one. */
   readonly heaters: readonly HeaterView[] | undefined;
+  /** `undefined` when the answer says nothing about the windows (a service before 1.10.0). */
+  readonly window?: WindowView;
+}
+
+const WINDOW_STATES: readonly WindowStateView[] = ['open', 'closed', 'no sensor', 'unknown'];
+
+/** The window of an answer - of a room of the heating, of a blind - or `undefined` without one. */
+export function toWindowView(entry: unknown): WindowView | undefined {
+  if (!isRecord(entry) || typeof entry['state'] !== 'string') {
+    return undefined;
+  }
+  const state = WINDOW_STATES.find((known) => known === entry['state']) ?? 'unknown';
+  return {
+    state,
+    openSince: state === 'open' ? text(entry['openSince']) : undefined,
+    hold: typeof entry['hold'] === 'boolean' ? entry['hold'] : undefined,
+  };
 }
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
@@ -149,6 +181,7 @@ export function toRoomViews(answer: unknown): RoomView[] {
           undefined,
         ),
         heaters: Array.isArray(list) ? list.map(toHeater) : undefined,
+        window: toWindowView(entry['window']),
       },
     ];
   });

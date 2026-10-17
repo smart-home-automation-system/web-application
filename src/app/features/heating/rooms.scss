@@ -182,6 +182,29 @@ mat-card-content {
   white-space: nowrap;
 }
 
+// HAS-232: the windows of the room; an open one in the colour of a warning, the hold as a badge
+.room__window {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.room__window[data-state='open'] {
+  color: var(--mat-sys-error);
+}
+
+.mat-icon.room__window-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.badge--held {
+  border-color: var(--mat-sys-error);
+  color: var(--mat-sys-error);
+  white-space: normal;
+}
+
 .room__panel {
   display: grid;
   gap: 12px;

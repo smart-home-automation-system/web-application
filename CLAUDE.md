@@ -143,7 +143,8 @@ e2e/              # Playwright tests
   as a key) together with its route. **The order is the priority on a phone**: its bottom bar has
   five places, and with more entries than that it shows the first four and "More" for the rest
   (`splitForBottomBar`; owner's choice, 2026-10-08) - so what is opened daily goes first, the
-  settings and the build last. A page behind "More" marks the button as the open entry.
+  settings and the build last. The owner's order (2026-10-17, HAS-232): Overview, My room,
+  Weather, Rooms, then the rest. A page behind "More" marks the button as the open entry.
 - **Layout**: the shell renders both navigations and CSS shows one (side list from 840 px, bottom
   bar below). Use the `--mat-sys-*` variables for every colour and font — never a literal — so
   themes can change them. Global building blocks (`.page-header`, `.message-page`) are in
@@ -362,6 +363,43 @@ e2e/              # Playwright tests
     wall switches, a motion and a door sensor, a weather display (`devices`, prompt in
     `public/backgrounds/README.md`). Its white end is narrowed to 230: a lit lamp shade under a
     card failed the secondary text of the dark scheme - a photo with a lamp in it will again.
+- **The rooms of the house** (HAS-232, `features/rooms/`, the administrator's; owner 2026-10-17)
+  is the devices page read the other way round: every room floor by floor (`groupByFloor` of the
+  devices page), a card of one size per room (`RoomTile`, the width of the devices card) with one
+  line for each of the owner's rows - temperature first, heating, lights, blinds, motion,
+  presence, windows, other (`rowOf`: a kind of no row of its own, and one this version does not
+  know, is `other`) - and a window with the devices of the room (`RoomDetail`). What to keep:
+  - **Four calls, told once**: the registry, the rooms of the heating, the blinds and who is at
+    home - each with its freshness and failure in the strip at the top, never on a room card.
+    `toRoomOverview` puts them together per room; what a service did not answer is "not known".
+    A switched-off device is left out (no service uses it).
+  - **Controls for the lights and the blinds only** (owner): the heating is shown, and set on the
+    heating page (a link). **No question before a command** (owner, 2026-10-17 - frequent and
+    reversible; the rule of the question stays for the switch of the heating of the whole house).
+  - **No optimistic state**: a command to a blind is followed by a read of the blinds
+    (`refreshBlinds`), and only that answer moves the screen; one command per device at a time.
+    **The pause switch does not flip itself** (`disableToggleValue` of the slide toggle,
+    `toggleChange`): it shows `schedulePausedSince` of the service - found in review, a failed
+    pause left the toggle of Material on.
+  - **A light has no state anywhere yet** (light-service does not exist): a bulb is drawn faint,
+    never on or off, and a command is told as *sent*. Only an Eaton light has controls
+    (`POST /home/amx/lights/{point}`, a dimmer `/level` - `LightsApi`); a Shelly light says
+    it is not controlled from here yet. When light-service comes, its state replaces the faint bulb.
+  - **The pause of the schedules of a blind** (`blinds-service`, `PUT` / `DELETE
+    /blinds/{id}/schedule-pause`) ends by itself with the next run it prevents; `BlindSchedules`
+    (`GET /blinds/{id}/schedules`, one resource per blind, made anew for each) shows today's
+    schedules of a blind - which ran, which the pause held back. The decisions and outcomes are
+    the values of `blinds-service`, translated in `room-labels.ts`; one this version does not know
+    is printed as it came.
+  - **0 °C is a reading**: a number is tested with `!== undefined`, never with `@if (x; as y)`
+    (found in review).
+  - **The heating page tells the windows of a room** (`window` of `GET /heating/rooms`,
+    `heating-service` 1.10.0; `toWindowView` in `shared/room-heating/room-views.ts`): open with
+    since when, closed, a sensor not heard of - and the hold of its heating as a badge. A room
+    without a sensor says nothing; a state this version does not know is "not heard of", never
+    closed. The values are those of the window of a blind, the same words in both places.
+  - **The dashboard writes to the house in five places now**: the heating switch, the two
+    registries, and - from this view - the blinds and the Eaton lights.
 - **A history is a chart of what the service stored** (HAS-201, `shared/history-chart/`,
   used by the hot water and by the open room of the heating page). What to keep:
   - **The page asks with `from` / `to` and never chooses the bucket** - the services do, and say

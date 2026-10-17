@@ -1,0 +1,165 @@
+<ng-container *transloco="let t">
+  @let room = overview();
+  <mat-card
+    appearance="outlined"
+    class="room card--domain"
+    data-testid="room-tile"
+    [attr.data-room-tile]="room.room"
+  >
+    <mat-card-header>
+      <!-- a room is shown by its identifier, as everywhere in the application -->
+      <mat-card-title>{{ room.room }}</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <dl class="rows">
+        <!-- the reading of the heating; a room it does not have, and no sensor, has none -->
+        <div class="rows__row" data-row="temperature">
+          <dt>
+            <mat-icon aria-hidden="true">thermostat</mat-icon>{{ t('rooms.row.temperature') }}
+          </dt>
+          <dd>
+            <!-- 0 °C is a reading: the test is for a number, not for a truthy value -->
+            @let temperature = room.heating?.temperature;
+            @if (temperature !== undefined) {
+              {{ temperature | localNumber: ONE_DECIMAL }}&nbsp;°C
+            } @else if (room.heating || room.temperatureSensors.length > 0) {
+              <span class="rows__none">{{ t('rooms.unknown') }}</span>
+            } @else {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            }
+          </dd>
+        </div>
+
+        <div class="rows__row" data-row="heating">
+          <dt><mat-icon aria-hidden="true">mode_heat</mat-icon>{{ t('rooms.row.heating') }}</dt>
+          <dd>
+            @let heaters = room.heating?.heaters;
+            @if (room.heating?.window?.hold === true) {
+              <span class="rows__held" data-testid="tile-held">{{ t('rooms.heating.held') }}</span>
+            } @else if (heaters && heaters.length > 0) {
+              @for (heater of heaters; track $index) {
+                @let state = heaterState(heater);
+                <mat-icon class="rows__icon" [attr.data-state]="state" aria-hidden="true">{{
+                  heater.kind === 'floor' ? 'floor' : 'heat'
+                }}</mat-icon>
+                <span class="visually-hidden">{{
+                  t(
+                    state === 'on'
+                      ? 'rooms.heating.on'
+                      : state === 'off'
+                        ? 'rooms.heating.off'
+                        : 'rooms.unknown'
+                  )
+                }}</span>
+              }
+            } @else if (heaters === undefined && room.heating) {
+              <span class="rows__none">{{ t('rooms.unknown') }}</span>
+            } @else {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            }
+          </dd>
+        </div>
+
+        <div class="rows__row" data-row="lights">
+          <dt><mat-icon aria-hidden="true">lightbulb</mat-icon>{{ t('rooms.row.lights') }}</dt>
+          <dd>
+            @if (room.lights.length === 0) {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            } @else {
+              <!-- no service keeps the state of a light yet: every bulb is drawn as not known -->
+              @for (light of room.lights; track light.id) {
+                <mat-icon class="rows__icon" data-state="unknown" aria-hidden="true"
+                  >lightbulb</mat-icon
+                >
+              }
+              <span class="visually-hidden">{{
+                t('rooms.lights.count', { count: room.lights.length })
+              }}</span>
+            }
+          </dd>
+        </div>
+
+        <div class="rows__row" data-row="blinds">
+          <dt><mat-icon aria-hidden="true">blinds</mat-icon>{{ t('rooms.row.blinds') }}</dt>
+          <dd>
+            @if (room.blinds.length === 0) {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            } @else {
+              @for (blind of room.blinds; track blind.device.id; let last = $last) {
+                @let shown = positionLabel(blind);
+                <span>{{ t(shown.key, { position: shown.position }) }}</span>
+                @if (!last) {
+                  <span aria-hidden="true">&nbsp;·&nbsp;</span>
+                }
+              }
+            }
+          </dd>
+        </div>
+
+        <div class="rows__row" data-row="motion">
+          <dt>
+            <mat-icon aria-hidden="true">motion_sensor_active</mat-icon>{{ t('rooms.row.motion') }}
+          </dt>
+          <dd>
+            @if (room.motion.length === 0) {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            } @else {
+              {{ t('rooms.pieces', { count: room.motion.length }) }}
+            }
+          </dd>
+        </div>
+
+        <div class="rows__row" data-row="presence">
+          <dt><mat-icon aria-hidden="true">person</mat-icon>{{ t('rooms.row.presence') }}</dt>
+          <dd>
+            @if (room.residents.length > 0) {
+              {{ t('rooms.presence.atHome', { count: present(), of: room.residents.length }) }}
+            } @else if (room.presenceSensors.length > 0) {
+              {{ t('rooms.pieces', { count: room.presenceSensors.length }) }}
+            } @else {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            }
+          </dd>
+        </div>
+
+        <div class="rows__row" data-row="openingSensors">
+          <dt>
+            <mat-icon aria-hidden="true">sensor_door</mat-icon>{{ t('rooms.row.openingSensors') }}
+          </dt>
+          <dd>
+            @let window = room.heating?.window;
+            @if (window && window.state !== 'no sensor') {
+              <span [class.rows__held]="window.state === 'open'" [attr.data-state]="window.state">{{
+                t(windowLabel(window.state))
+              }}</span>
+            } @else if (room.openingSensors.length > 0) {
+              {{ t('rooms.pieces', { count: room.openingSensors.length }) }}
+            } @else {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            }
+          </dd>
+        </div>
+
+        <div class="rows__row" data-row="other">
+          <dt><mat-icon aria-hidden="true">devices_other</mat-icon>{{ t('rooms.row.other') }}</dt>
+          <dd>
+            @if (room.other.length === 0) {
+              <span class="rows__none">{{ t('rooms.none') }}</span>
+            } @else {
+              {{ t('rooms.pieces', { count: room.other.length }) }}
+            }
+          </dd>
+        </div>
+      </dl>
+    </mat-card-content>
+
+    <mat-card-actions class="room__actions">
+      <button matButton type="button" (click)="details.emit()">
+        <mat-icon>tune</mat-icon>
+        {{ t('rooms.details') }}
+        <span class="visually-hidden">{{ room.room }}</span>
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</ng-container>
