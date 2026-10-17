@@ -17,12 +17,18 @@ export const FLOORS: readonly { id: string; label: MessageKey; rooms: readonly s
   {
     id: 'ground',
     label: 'heating.rooms.floor.ground',
-    rooms: ['living room', 'cinema', 'bathroom down', 'entrance', 'garage'],
+    rooms: ['living room', 'kitchen', 'cinema', 'bathroom down', 'entrance', 'garage', 'boiler'],
   },
   {
     id: 'upper',
     label: 'heating.rooms.floor.upper',
     rooms: ['office', 'tobi', 'livia', 'bedroom', 'wardrobe', 'bathroom up'],
+  },
+  // the halls and the stairs between the floors (owner, 2026-10-17, HAS-290): a group of their own
+  {
+    id: 'circulation',
+    label: 'heating.rooms.floor.circulation',
+    rooms: ['hall down', 'stairs', 'hall up'],
   },
   { id: 'attic', label: 'heating.rooms.floor.attic', rooms: ['loft'] },
   { id: 'outside', label: 'heating.rooms.floor.outside', rooms: ['sanctum', 'sauna', 'garden'] },

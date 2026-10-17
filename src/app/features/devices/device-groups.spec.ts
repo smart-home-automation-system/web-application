@@ -40,15 +40,17 @@ describe('the devices by floor and room', () => {
   it('have every room of the house, a room without a device included', () => {
     const floors = groupByFloor(
       [device('Office light', 'office', 'light')],
-      ['office', 'loft', 'kitchen'],
+      ['office', 'loft', 'kitchen', 'hall up'],
     );
 
     expect(
       floors.map((floor) => [floor.id, floor.rooms.map((one) => [one.room, one.devices.length])]),
     ).toEqual([
+      ['ground', [['kitchen', 0]]],
       ['upper', [['office', 1]]],
+      // the halls and the stairs are a group of their own (owner, 2026-10-17)
+      ['circulation', [['hall up', 0]]],
       ['attic', [['loft', 0]]],
-      ['other', [['kitchen', 0]]],
     ]);
   });
 
@@ -65,15 +67,12 @@ describe('the devices by floor and room', () => {
       [],
     );
 
-    expect(floors.map((floor) => floor.id)).toEqual(['upper', 'other']);
-    // the rooms of the registry in its order, then what it does not list, by name
-    expect(floors[1].rooms.map((one) => one.room)).toEqual([
-      'kitchen',
-      'hall down',
-      '',
-      'winter garden',
-    ]);
-    expect(floors[1].label).toBe('heating.rooms.floor.other');
+    expect(floors.map((floor) => floor.id)).toEqual(['ground', 'upper', 'circulation', 'other']);
+    expect(floors[0].rooms.map((one) => one.room)).toEqual(['kitchen']);
+    expect(floors[2].rooms.map((one) => one.room)).toEqual(['hall down']);
+    // what the floors do not list, by name
+    expect(floors[3].rooms.map((one) => one.room)).toEqual(['', 'winter garden']);
+    expect(floors[3].label).toBe('heating.rooms.floor.other');
   });
 
   it('put the devices of a room in the order of the kinds, then by name', () => {
@@ -107,20 +106,29 @@ describe('the devices by floor and room', () => {
 });
 
 describe('the devices of a room by kind', () => {
-  it('count every kind the registry offers, none included, then a kind this version does not know', () => {
+  it('count the kinds a card lists, none included, and every other kind as one row', () => {
     const counts = countByKind([
       device('Door blinds', 'office', 'blinds'),
       device('Window blinds', 'office', 'blinds'),
       device('Light', 'office', 'light'),
+      device('Weather station', 'garden', 'weather station'),
+      device('Gateway', 'garden', 'bthome gateway'),
       device('Something new', 'office', 'wind sensor'),
     ]);
 
-    expect(counts.slice(0, 3)).toEqual([
-      { kind: 'blinds', count: 2 },
-      { kind: 'light', count: 1 },
-      { kind: 'opening sensor', count: 0 },
+    expect(counts.map((one) => one.kind)).toEqual([
+      'blinds',
+      'light',
+      'opening sensor',
+      'motion sensor',
+      'presence sensor',
+      'temperature sensor',
+      'push button',
+      'other',
     ]);
-    expect(counts.at(-1)).toEqual({ kind: 'wind sensor', count: 1 });
-    expect(counts.filter((one) => one.count === 0).length).toBe(counts.length - 3);
+    expect(counts[0]).toEqual({ kind: 'blinds', count: 2 });
+    expect(counts[2]).toEqual({ kind: 'opening sensor', count: 0 });
+    // the weather station, a gateway and a kind this version does not know
+    expect(counts.at(-1)).toEqual({ kind: 'other', count: 3 });
   });
 });

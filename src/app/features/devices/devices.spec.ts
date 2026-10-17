@@ -167,7 +167,7 @@ describe('Devices', () => {
 
       expect(
         [...page().querySelectorAll('[data-floor]')].map((one) => one.getAttribute('data-floor')),
-      ).toEqual(['ground', 'upper', 'attic', 'outside', 'other']);
+      ).toEqual(['ground', 'upper', 'circulation', 'attic', 'outside']);
       expect(text(page().querySelector('[data-floor="upper"] h2'))).toBe('Upper floor');
       expect(text(page().querySelector('[data-testid="registry"] [data-testid="count"]'))).toBe(
         'Devices: 3',
@@ -181,16 +181,22 @@ describe('Devices', () => {
       expect(text(card('office').querySelector('[data-kind="presence sensor"]'))).toBe(
         'Presence sensor none',
       );
-      expect(card('office').querySelectorAll('[data-kind]')).toHaveLength(9);
+      expect(card('office').querySelectorAll('[data-kind]')).toHaveLength(8);
+      expect(text(card('office').querySelector('[data-kind="other"]'))).toBe('Other none');
       expect(text(card('loft').querySelector('[data-testid="count"]'))).toBe('Devices: 0');
       // no device is listed on the page itself
       expect(page().querySelector('[data-testid="device"]')).toBeNull();
     });
 
-    it('count a kind this version does not know under its own name', () => {
-      answerTheRegistryWith([{ id: 21, name: 'Wind sensor', room: 'office', kind: 'wind sensor' }]);
+    // the weather station, the Bluetooth gateways and a kind this version does not know
+    it('count every kind a card does not list as other', () => {
+      answerTheRegistryWith([
+        { id: 21, name: 'Wind sensor', room: 'office', kind: 'wind sensor' },
+        { id: 22, name: 'Office gateway', room: 'office', kind: 'bthome gateway' },
+      ]);
 
-      expect(text(card('office').querySelector('[data-kind="wind sensor"]'))).toBe('wind sensor 1');
+      expect(text(card('office').querySelector('[data-kind="other"]'))).toBe('Other 2');
+      expect(card('office').querySelector('[data-kind="bthome gateway"]')).toBeNull();
     });
   });
 
@@ -216,6 +222,37 @@ describe('Devices', () => {
       'Blinds · outside the window · open or closed only',
     );
     expect(row(7).querySelector('[data-testid="not-used"]')).not.toBeNull();
+  });
+
+  // review of the redesign: a form open or a change on its way keeps the window open
+  it('does not let the window close while a form is open in it', async () => {
+    answerTheRegistryWith([LIGHT]);
+    await openRoom('office');
+    const ref = TestBed.inject(MatDialog).openDialogs[0];
+    expect(ref.disableClose).toBe(false);
+
+    button(row(3), 'Edit')!.click();
+    await settled();
+    expect(ref.disableClose).toBe(true);
+
+    button(row(3), 'Cancel')!.click();
+    await settled();
+    expect(ref.disableClose).toBe(false);
+  });
+
+  // nothing is known of a room while the registry answers no list - it is not an empty room
+  it('says in an open window that the registry did not answer, not that the room is empty', async () => {
+    answerTheRegistryWith([LIGHT]);
+    const office = await openRoom('office');
+
+    vi.advanceTimersByTime(60_000);
+    http.expectOne({ method: 'GET', url: '/home/device/registry' }).flush({ unexpected: true });
+    await settled();
+
+    expect(text(office.querySelector('[data-testid="unreadable"]'))).toBe(
+      'The registry did not answer with its devices.',
+    );
+    expect(office.querySelector('[data-testid="no-devices"]')).toBeNull();
   });
 
   it('says in the window of an empty room that it has no device yet', async () => {

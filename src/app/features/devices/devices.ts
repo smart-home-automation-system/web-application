@@ -99,6 +99,7 @@ export class Devices {
     );
     const data: RoomDialogData = {
       group,
+      readable: computed(() => this.devices() !== undefined),
       floor,
       all: computed(() => this.entries() ?? []),
       registry: this.registry,
@@ -108,7 +109,6 @@ export class Devices {
       ...ROOM_DIALOG_SIZE,
       data,
       autoFocus: startAdding ? 'first-tabbable' : 'dialog',
-      ariaLabel: room,
     });
   }
 }

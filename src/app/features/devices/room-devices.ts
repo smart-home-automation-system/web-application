@@ -120,6 +120,12 @@ export class RoomDevices implements OnInit {
   /** A change asked for in this card is on its way. */
   protected readonly saving = signal(false);
 
+  /**
+   * A form or a question is open, or a change asked for here is on its way: the window must not
+   * close now - it would drop what was typed, or the failure of the change with it.
+   */
+  readonly holding = computed(() => this.panel().kind !== 'view' || this.saving());
+
   /** A change is on its way, from this card or another: one at a time. */
   protected readonly busy = computed(() => this.registry().changing());
   protected readonly devices = computed(() => this.group().devices);

@@ -7,18 +7,31 @@
       <span class="dialog__room">{{ group.room || t('devices.room.unknown') }}</span>
       <span class="dialog__floor">
         <span data-testid="floor">{{ t(data.floor) }}</span>
-        <span>· {{ t('devices.room.count', { count: group.devices.length }) }}</span>
+        @if (data.readable()) {
+          <span>· {{ t('devices.room.count', { count: group.devices.length }) }}</span>
+        }
       </span>
+      <!-- the registry is polled: how fresh is what the window shows -->
+      <app-data-freshness
+        [lastUpdated]="data.registry.lastUpdated()"
+        [stale]="data.registry.stale()"
+      />
     </div>
   </div>
 
   <mat-dialog-content class="dialog__content">
-    <app-room-devices
-      [group]="group"
-      [all]="data.all()"
-      [registry]="data.registry"
-      [startAdding]="data.startAdding"
-    />
+    <app-api-error-strip [error]="data.registry.error()" />
+    @if (data.readable()) {
+      <app-room-devices
+        [group]="group"
+        [all]="data.all()"
+        [registry]="data.registry"
+        [startAdding]="data.startAdding"
+      />
+    } @else {
+      <!-- not "no device": nothing is known of the room while the registry answers no list -->
+      <p class="dialog__note" data-testid="unreadable">{{ t('devices.registry.unreadable') }}</p>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions class="dialog__actions">

@@ -133,6 +133,7 @@ export const en = {
       floor: {
         ground: 'Ground floor',
         upper: 'Upper floor',
+        circulation: 'Circulation',
         attic: 'Attic',
         outside: 'Outside',
         other: 'Other',
@@ -471,6 +472,7 @@ export const en = {
       details: 'Details',
       addShort: 'Add',
       none: 'none',
+      other: 'Other',
       pieces: '{{ count }}',
       empty: 'No device in this room yet.',
       close: 'Close',

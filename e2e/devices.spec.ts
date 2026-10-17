@@ -49,9 +49,9 @@ test('lays the rooms out floor by floor, each counting its devices by kind', asy
   await expect(page.getByTestId('floor').locator('h2')).toHaveText([
     'Ground floor',
     'Upper floor',
+    'Circulation',
     'Attic',
     'Outside',
-    'Other',
   ]);
   // every room of the house, an empty one too - in the order of the house
   await expect(
@@ -64,7 +64,9 @@ test('lays the rooms out floor by floor, each counting its devices by kind', asy
     /Presence sensor\s*none/,
   );
   // HAS-289: the corridor upstairs, written with a space as every room of two words
-  await expect(page.locator('[data-floor="other"] [data-room-card="hall up"]')).toBeVisible();
+  await expect(page.locator('[data-floor="circulation"] [data-room-card="hall up"]')).toBeVisible();
+  // the weather station and the Bluetooth gateways count as other
+  await expect(card(page, 'garden').locator('[data-kind="other"]')).toHaveText(/Other\s*2/);
 
   // the cards are all of one size
   const sizes = await page.locator('[data-room-card]').evaluateAll((cards) =>

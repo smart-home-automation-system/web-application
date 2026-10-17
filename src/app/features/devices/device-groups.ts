@@ -61,21 +61,35 @@ export function groupByFloor(
   ].filter((floor) => floor.rooms.length > 0);
 }
 
+/** The kinds a card of a room lists one by one; every other one is counted as `other`. */
+export const LISTED_KINDS = [
+  'blinds',
+  'light',
+  'opening sensor',
+  'motion sensor',
+  'presence sensor',
+  'temperature sensor',
+  'push button',
+] as const;
+
+/** The row of a card for every kind it does not list. */
+export const OTHER_KINDS = 'other';
+
 /**
- * The devices of a room counted by kind: every kind the registry offers, none included - the card
- * of a room says what it has and what it has not - then each kind this version does not know.
+ * The devices of a room counted by kind: every kind of `LISTED_KINDS`, none included - the card
+ * of a room says what it has and what it has not - then one row, `other`, for the rest: the
+ * weather station and the Bluetooth gateways, which belong to no room's use (owner, 2026-10-17),
+ * and a kind this version does not know.
  */
 export function countByKind(devices: readonly RegisteredDevice[]): readonly KindCount[] {
+  const listed: readonly string[] = LISTED_KINDS;
   const count = (kind: string) => devices.filter((device) => device.kind === kind).length;
-  const unknown = [...new Set(devices.map((device) => device.kind ?? ''))]
-    .filter((kind) => !(DEVICE_KINDS as readonly string[]).includes(kind))
-    .sort((left, right) => left.localeCompare(right, 'en'));
   return [
-    ...DEVICE_KINDS.map((kind) => ({ kind, count: count(kind) })),
-    ...unknown.map((kind) => ({
-      kind,
-      count: devices.filter((device) => (device.kind ?? '') === kind).length,
-    })),
+    ...LISTED_KINDS.map((kind) => ({ kind, count: count(kind) })),
+    {
+      kind: OTHER_KINDS,
+      count: devices.filter((device) => !listed.includes(device.kind ?? '')).length,
+    },
   ];
 }
 
