@@ -17,7 +17,7 @@ export const FLOORS: readonly { id: string; label: MessageKey; rooms: readonly s
   {
     id: 'ground',
     label: 'heating.rooms.floor.ground',
-    rooms: ['living room', 'cinema', 'bathroom down', 'entrance', 'garage', 'kitchen', 'boiler'],
+    rooms: ['living room', 'kitchen', 'cinema', 'bathroom down', 'entrance', 'garage', 'boiler'],
   },
   {
     id: 'upper',
