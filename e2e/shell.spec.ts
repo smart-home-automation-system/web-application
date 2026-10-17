@@ -125,7 +125,7 @@ test.describe('when the backend fails', () => {
     await expect(page.getByText('No data received')).toHaveCount(7);
     // the shell keeps working without the backend
     await expect(
-      page.getByRole('navigation').getByRole('link', { name: 'Hot water' }).first(),
+      page.getByRole('navigation').getByRole('link', { name: 'Weather' }).first(),
     ).toBeVisible();
   });
 

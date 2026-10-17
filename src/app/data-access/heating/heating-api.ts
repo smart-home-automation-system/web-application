@@ -80,6 +80,19 @@ export interface RoomHeater {
 }
 
 /**
+ * The windows and doors of a room (`heating-service` 1.10.0, HAS-232), worked out by the service
+ * when asked, from every opening sensor of the room.
+ */
+export interface RoomWindow {
+  /** `open`, `closed`, `no sensor` or `unknown` - the values of the window of a blind too. */
+  readonly state?: string;
+  /** House wall-clock time the window open longest opened at; only while `open`. */
+  readonly openSince?: string;
+  /** The heating of the room is held: a window or a door has stood open for three minutes. */
+  readonly hold?: boolean;
+}
+
+/**
  * One room of `GET /home/heating/rooms`. A missing field means "not known", never off or zero:
  * the service leaves out whatever was not measured, reported or decided yet. After a start of
  * the service a room has its last stored temperature and, until its sensor reports again,
@@ -93,6 +106,8 @@ export interface Room {
   readonly temperature?: RoomReading;
   readonly humidity?: RoomReading;
   readonly heaters?: readonly RoomHeater[];
+  /** Missing from a service older than 1.10.0 - then nothing is said about the windows. */
+  readonly window?: RoomWindow;
 }
 
 /** `GET /home/heating/floor-pump`: `{}` until the relay of the pump has answered. */

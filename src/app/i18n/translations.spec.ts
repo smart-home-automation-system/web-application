@@ -63,6 +63,10 @@ describe('translations', () => {
       'devices.vendor.shelly',
       'devices.vendor.eaton',
       'devices.binding.bthome',
+      // a number, and the word of the button of a blind both languages use
+      'rooms.pieces',
+      'rooms.blinds.position',
+      'rooms.blinds.stop',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

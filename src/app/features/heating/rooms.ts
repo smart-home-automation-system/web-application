@@ -16,6 +16,7 @@ import {
 } from '../../shared/room-heating/heater-labels';
 import { HeaterWeek } from '../../shared/room-heating/heater-week';
 import { RoomView, SchedulePeriod, toRoomViews } from '../../shared/room-heating/room-views';
+import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
 import { groupByFloor } from './floors';
 import { RoomHistory } from './room-history';
 
@@ -98,6 +99,8 @@ export class Rooms {
   protected readonly kindLabel = heaterKindLabel;
   protected readonly kindIcon = heaterKindIcon;
   protected readonly stateLabel = heaterStateLabel;
+  protected readonly windowIcon = windowStateIcon;
+  protected readonly windowLabel = windowStateLabel;
 
   /**
    * An address inside the page for the panel of a room. By its place, not by its name: a name

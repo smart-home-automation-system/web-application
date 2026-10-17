@@ -18,16 +18,18 @@ export interface NavItem {
  * The order matters on a phone: its bottom bar holds five places. Up to five entries are all
  * shown; from the sixth on the bar shows the first four and a "More" button that lists the rest
  * (`splitForBottomBar`). So what is looked at most goes first, and what is opened once in a
- * while - the settings, the build - last.
+ * while - the settings, the build - last. The owner's order (2026-10-17, HAS-232): the overview,
+ * my room, the weather and the rooms of the house first, the rest as it was.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/overview', label: 'nav.overview', icon: 'dashboard', access: 'admin' },
+  { path: '/room', label: 'nav.myRoom', icon: 'bed', access: 'member' },
+  { path: '/weather', label: 'nav.weather', icon: 'partly_cloudy_day', access: 'admin' },
+  { path: '/rooms', label: 'nav.rooms', icon: 'meeting_room', access: 'admin' },
   { path: '/heating', label: 'nav.heating', icon: 'mode_heat', access: 'admin' },
   { path: '/water', label: 'nav.hotWater', icon: 'water_drop', access: 'admin' },
   { path: '/boiler', label: 'nav.boilerRoom', icon: 'water_heater', access: 'admin' },
-  { path: '/weather', label: 'nav.weather', icon: 'partly_cloudy_day', access: 'admin' },
   { path: '/presence', label: 'nav.presence', icon: 'location_home', access: 'admin' },
-  { path: '/room', label: 'nav.myRoom', icon: 'bed', access: 'member' },
   { path: '/household', label: 'nav.household', icon: 'group', access: 'admin' },
   { path: '/devices', label: 'nav.devices', icon: 'devices_other', access: 'admin' },
   { path: '/settings', label: 'nav.settings', icon: 'settings', access: 'admin' },

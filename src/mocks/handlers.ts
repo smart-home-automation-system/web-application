@@ -1,5 +1,13 @@
 import { HttpRequest } from '@angular/common/http';
 
+import {
+  blindSchedules,
+  blindsByRoom,
+  moveBlind,
+  moveBlindTo,
+  pauseBlind,
+  switchLight,
+} from './blinds.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import {
   addDevice as addRegisteredDevice,
@@ -218,6 +226,47 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: /^\/home\/household\/member\/([^/]+)\/device$/,
     reply: (request, _, [name]) =>
       removeDevice(decodeURIComponent(name), request.params.get('mac')),
+  },
+  // the blinds (HAS-232): their state, the commands, the pause and the schedules of one
+  { method: 'GET', path: '/home/blinds', reply: () => ({ status: 200, body: blindsByRoom() }) },
+  {
+    method: 'POST',
+    path: /^\/home\/blinds\/(\d+)$/,
+    reply: (request, _fresh, [id]) => moveBlind(id, request.params.get('command')),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/blinds\/(\d+)\/position$/,
+    reply: (request, _fresh, [id]) => moveBlindTo(id, request.params.get('value')),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/blinds\/(\d+)\/schedule-pause$/,
+    reply: (_request, _fresh, [id]) => pauseBlind(id, true),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/blinds\/(\d+)\/schedule-pause$/,
+    reply: (_request, _fresh, [id]) => pauseBlind(id, false),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/blinds\/(\d+)\/schedules$/,
+    reply: (_request, _fresh, [id]) => blindSchedules(id),
+  },
+  // the Eaton lights through amx-service: the frame goes out, nothing is kept
+  {
+    method: 'POST',
+    path: /^\/home\/amx\/lights\/(\d+)$/,
+    reply: (request, _fresh, [point]) => switchLight(point, request.params.get('turn')),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/amx\/lights\/(\d+)\/level$/,
+    reply: (_request, _fresh, [point]) => ({
+      status: 202,
+      body: { point: Number(point), status: 'OK' },
+    }),
   },
   {
     // every device of the house: asked for by the administration page of the devices

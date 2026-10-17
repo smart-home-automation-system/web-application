@@ -101,6 +101,30 @@
                           }
                         </span>
                       }
+
+                      <!-- HAS-232: a room without a sensor says nothing about its windows -->
+                      @if (room.window; as window) {
+                        @if (window.state !== 'no sensor') {
+                          <span
+                            class="room__detail room__window"
+                            data-testid="room-window"
+                            [attr.data-state]="window.state"
+                          >
+                            <mat-icon class="room__window-icon" aria-hidden="true">{{
+                              windowIcon(window.state)
+                            }}</mat-icon>
+                            {{ t(windowLabel(window.state)) }}
+                            @if (window.openSince | houseAge; as age) {
+                              &ngsp;{{ t('window.opened') }}&ngsp;{{ age }}
+                            }
+                          </span>
+                        }
+                        @if (window.hold === true) {
+                          <span class="badge badge--held" data-testid="room-held">{{
+                            t('window.held')
+                          }}</span>
+                        }
+                      }
                     </span>
                   </button>
 
