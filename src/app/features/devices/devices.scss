@@ -1,32 +1,54 @@
-// The registry first, then the rooms in the order of the house - as many cards side by side as
-// the window has room for, one column on a phone, five or six on a wide screen - every card as
-// tall as what it says.
-.registry {
-  --app-domain: var(--app-domain-devices);
+// The registry, then the floors of the house: each a row of cards of one size, standing in the
+// middle of the page when it does not fill it (owner, 2026-10-17, HAS-290)
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-mat-card-content {
-  padding-top: 8px;
+.registry {
+  --app-domain: var(--app-domain-devices);
+  align-self: center;
+  width: min(100%, 720px);
+}
+
+.registry__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 4px;
+  padding: 12px 16px;
+
+  mat-progress-bar {
+    flex-basis: 100%;
+  }
 }
 
 .registry__note {
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--mat-sys-on-surface-variant);
 }
 
-.registry__form-title {
-  margin: 0 0 8px;
+.floor__name {
+  margin: 0 0 10px;
+  text-align: center;
   font: var(--mat-sys-title-medium);
   letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-background);
 }
 
-.registry__add {
-  margin-bottom: 8px;
+.floor__rooms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
 }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
-  gap: 16px;
-  align-items: start;
+// one column on a phone: the cards take its width
+@media (max-width: 479px) {
+  .floor__rooms app-room-card {
+    --room-card-width: 100%;
+  }
 }

@@ -17,7 +17,8 @@ import type { MockReply } from './handlers';
  * with the same status and the same `code`.
  *
  * Invented devices: the addresses are of the range reserved for documentation, the device ids
- * and the Bluetooth addresses made up. The blinds of the living room are switched off.
+ * and the Bluetooth addresses made up. The blinds of the living room are switched off; the
+ * office window blinds have the sensor of their window (HAS-290).
  */
 type StoredDevice = SmartDevice & { id: number; name: string; room: string; kind: string };
 
@@ -32,6 +33,7 @@ const AT_THE_START: readonly StoredDevice[] = [
     shelly: { address: '192.0.2.21', generation: 1 },
     placement: 'external',
     positioning: true,
+    openingSensors: [14],
   },
   {
     id: 2,
@@ -163,6 +165,15 @@ const AT_THE_START: readonly StoredDevice[] = [
     },
     lightKind: 'rgbw',
   },
+  {
+    id: 14,
+    name: 'Office window sensor',
+    room: 'office',
+    kind: 'opening sensor',
+    enabled: true,
+    vendor: 'shelly',
+    bthome: { address: '7c:c6:b6:00:00:03' },
+  },
 ];
 
 let devices: StoredDevice[] = structuredClone([...AT_THE_START]);
@@ -236,6 +247,18 @@ export function removeDevice(id: string): MockReply {
   if (existing === undefined) {
     return noSuchDevice(id);
   }
+  // an opening sensor that blinds still name stays (HAS-290)
+  const users = devices.filter((one) => one.openingSensors?.includes(existing.id));
+  if (users.length > 0) {
+    return refusal(
+      409,
+      'DEVICE_CONFLICT',
+      'Device conflict',
+      `The device ${existing.id} is the opening sensor of the blinds ${users
+        .map((one) => `${one.id} [${one.name}]`)
+        .join(', ')} - remove it from their openingSensors first`,
+    );
+  }
   devices = devices.filter((one) => one !== existing);
   return { status: 204, body: null };
 }
@@ -255,7 +278,7 @@ function deviceOf(body: unknown): Draft | undefined {
     return undefined;
   }
   const { name, room, kind, enabled, vendor, shelly, eaton, bthome } = body;
-  const { lightKind, placement, positioning } = body;
+  const { lightKind, placement, positioning, openingSensors } = body;
   if (typeof name !== 'string' || name.length < 3 || name.length > 50) {
     return undefined;
   }
@@ -274,6 +297,14 @@ function deviceOf(body: unknown): Draft | undefined {
   if (positioning !== undefined && typeof positioning !== 'boolean') {
     return undefined;
   }
+  // a list of ids from 1 - a null among them passes the model, as in the SDK
+  if (
+    openingSensors !== undefined &&
+    (!Array.isArray(openingSensors) ||
+      openingSensors.some((one) => one !== null && !whole(one, 1, Number.MAX_SAFE_INTEGER)))
+  ) {
+    return undefined;
+  }
   const bindings = { shelly: shellyOf(shelly), eaton: eatonOf(eaton), bthome: bthomeOf(bthome) };
   if (Object.values(bindings).includes(null)) {
     return undefined;
@@ -290,6 +321,9 @@ function deviceOf(body: unknown): Draft | undefined {
     ...(lightKind === undefined ? {} : { lightKind }),
     ...(placement === undefined ? {} : { placement }),
     ...(positioning === undefined ? {} : { positioning }),
+    ...(Array.isArray(openingSensors) && openingSensors.length > 0
+      ? { openingSensors: openingSensors as number[] }
+      : {}),
   };
 }
 
@@ -401,6 +435,24 @@ function brokenRuleOf(device: Draft): string | undefined {
     device.kind !== 'blinds'
   ) {
     return `placement and positioning describe blinds, not a device of the kind [${device.kind}]`;
+  }
+  const sensors = device.openingSensors ?? [];
+  if (sensors.length > 0) {
+    if (device.kind !== 'blinds') {
+      return `openingSensors describe the window of blinds, not a device of the kind [${device.kind}]`;
+    }
+    if (sensors.some((one) => one === null)) {
+      return 'openingSensors hold the ids of devices, and one of them is null';
+    }
+    if (new Set(sensors).size !== sensors.length) {
+      return `openingSensors name a sensor more than once: [${sensors.join(', ')}]`;
+    }
+    const missing = sensors.filter(
+      (one) => !devices.some((device) => device.id === one && device.kind === 'opening sensor'),
+    );
+    if (missing.length > 0) {
+      return `openingSensors name devices that are no registered opening sensor: [${missing.join(', ')}]`;
+    }
   }
   return undefined;
 }

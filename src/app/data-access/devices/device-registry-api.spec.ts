@@ -168,6 +168,24 @@ describe('DeviceRegistryApi', () => {
       });
     });
 
+    // HAS-290: the opening sensors are the form's - cleared in it, they are not sent back
+    it('sends the opening sensors of the form and not the ones the blinds had', async () => {
+      const blinds = { ...LIGHT, kind: 'blinds', lightKind: undefined, openingSensors: [9, 14] } as RegisteredDevice;
+      const rest = { ...DETAILS, lightKind: undefined };
+
+      const cleared = await carriedOut(registry.replace(blinds, { ...rest, kind: 'blinds' }), {
+        method: 'PUT',
+        url: '/home/device/registry/3',
+      });
+      expect(cleared.body).not.toHaveProperty('openingSensors');
+
+      const chosen = await carriedOut(
+        registry.replace(blinds, { ...rest, kind: 'blinds', openingSensors: [14] }),
+        { method: 'PUT', url: '/home/device/registry/3' },
+      );
+      expect(chosen.body).toHaveProperty('openingSensors', [14]);
+    });
+
     // a field a later smart-home-sdk added: this version shows nothing of it and must not drop it
     it('sends back what the registry holds and this version does not know', async () => {
       const newer = { ...LIGHT, colourTemperature: 2700 } as RegisteredDevice;

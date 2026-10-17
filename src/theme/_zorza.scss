@@ -239,6 +239,23 @@ $_shadows: (
   );
 
   // A segmented control (the colour scheme on the Settings page): a pill of glass.
+  // the window of a room of the devices (HAS-290): opaque like a menu - it stands over the page,
+  // and its text is checked on that surface
+  @include mat.dialog-overrides(
+    (
+      container-color: var(--mat-sys-surface-container-high),
+      container-shape: $radius-card,
+      container-elevation-shadow: var(--mat-sys-level4),
+      container-max-width: 100vw,
+      subhead-color: var(--mat-sys-on-surface),
+      subhead-size: 1.25rem,
+      subhead-weight: 600,
+      supporting-text-color: var(--mat-sys-on-surface),
+      supporting-text-size: 1rem,
+      supporting-text-tracking: 0,
+    )
+  );
+
   @include mat.button-toggle-overrides(
     (
       shape: $radius-pill,

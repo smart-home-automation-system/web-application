@@ -299,17 +299,32 @@ e2e/              # Playwright tests
     indexes of the registry), against **every entry the registry answered** (`entries`), also
     one the page cannot show. It is a strip in the form, not the error of one control: a
     channel is taken together with an address.
-  - **One thing at a time in a card**: while a form or a question is open in a room card, the
-    buttons of its other rows are disabled. A change made from one of them ends in
-    `panel.set(VIEW)` or in `failure` - it would close the form with what was typed into it,
-    or put its failure into a form that never made it (found in review).
-  - **A device is a row, a room is a card.** The registry will hold well over a hundred
-    devices; the rooms stand in the order of the house (`groupByFloor`, on `FLOORS` of the
-    heating page), a room that list does not know in a last group, and the floor is said on
-    the card - all cards share one grid, so the page fills a wide screen.
+  - **A room is a card of one size, a floor a row of them; the devices are in a window**
+    (owner, 2026-10-17, HAS-290 - the cards of the first version grew with their lists and
+    looked untidy). `RoomCard` counts the devices of its room by kind - every kind of
+    `DEVICE_KINDS`, "none" included, then a kind this version does not know - so every card
+    says the same rows; its title is one line (ellipsis). The width is a share of the row
+    (`clamp(176px, (100% - 60px) / 6, 230px)`): six rooms of a floor on one line at 1440 px, a
+    row that does not fill the page in its middle. **Every room of the house has a card**, an
+    empty one too (`groupByFloor` takes `ROOM_NAMES`): there is no global "add a device" any
+    more - "Add" of a card is where a device is added to that room.
+  - **The window of a room** (`RoomDialog`, the dialog of Material - themed in `_zorza.scss`,
+    opaque `surface-container-high` like a menu) has one size for every room
+    (`ROOM_DIALOG_SIZE`) and holds `RoomDevices` - the list, the forms and the questions, as the
+    cards had them. It is given **signals** (`group`, `all`), not values: it follows the
+    registry, so a device moved to another room leaves it. "Add" of the card opens it with the
+    form open (`startAdding`, scrolled to); "Details" with the list, whose own "Add a device
+    here" opens the form. A unit test finds the window outside the fixture (`document`), a
+    `MatSelect` in it through `getDebugNode`, and turns the animations off
+    (`MATERIAL_ANIMATIONS`); a browser test that takes a picture of it waits until
+    `document.getAnimations()` is empty - it fades in.
+  - **One thing at a time in a window**: while a form or a question is open in it, the buttons of
+    its other rows are disabled. A change made from one of them ends in `panel.set(VIEW)` or in
+    `failure` - it would close the form with what was typed into it, or put its failure into a
+    form that never made it (found in review).
   - **What the answer does not say**: a device without a name, a kind or a binding has words
     for each; one without `enabled` is neither "not used" nor offered the button that changes it; an entry
-    without an id gets no row and is counted in the registry card. **A channel, a point or a
+    without an id gets no row and is counted in the registry strip. **A channel, a point or a
     generation is a translation parameter only when it is a number** (`numberOf`) - anything
     else is printed as it came.
   - **An Eaton device is the Eaton configuration** `amx-service` is answered from: the form of
@@ -327,6 +342,15 @@ e2e/              # Playwright tests
     (the list opens over the page, outside the form); a unit test opens the `MatSelect` and
     takes the option (`choose` in `devices.spec`), and gives the select a turn (`await
     settled()`) before it reads what the field shows.
+  - **The window sensors of blinds** (HAS-290, `openingSensors`, `smart-home-sdk` 1.11.0): a
+    `mat-select multiple` of the opening sensors of the registry (`others`), by room and name; an
+    id the blinds hold that the registry does not is kept as an option of its own, so a save
+    never drops it unseen. `openingSensors` is in `KNOWN_FIELDS` - cleared in the form, it is
+    not sent back - and in `sameDevice`. A sensor that blinds still name is not offered for
+    removal (`blindsUsing`): the registry refuses it with `DEVICE_CONFLICT`, whose text names
+    both causes. The schedules of `blinds-service` have no page yet: when they get one it copies
+    `per blind`, `window`, `windowClosed`, `nextDay` and the empty-window text of
+    `INVALID_SCHEDULE` (HAS-290).
   - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
     Polish a comma and no dot.
   - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,

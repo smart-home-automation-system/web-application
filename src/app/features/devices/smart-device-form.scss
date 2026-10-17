@@ -64,3 +64,8 @@
   gap: 8px;
   margin-top: 4px;
 }
+
+// the room after the name of a sensor on offer: the name is what is chosen
+.form__option-note {
+  color: var(--mat-sys-on-surface-variant);
+}

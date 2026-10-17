@@ -1,0 +1,53 @@
+<ng-container *transloco="let t">
+  <mat-card
+    appearance="outlined"
+    class="room card--domain"
+    data-testid="room-card"
+    [attr.data-room-card]="group().room"
+  >
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>meeting_room</mat-icon></div>
+      <!-- a room is shown by its identifier, as everywhere in the application -->
+      <mat-card-title>{{ group().room || t('devices.room.unknown') }}</mat-card-title>
+      <mat-card-subtitle data-testid="count">{{
+        t('devices.room.count', { count: group().devices.length })
+      }}</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <dl class="kinds" data-testid="kinds">
+        @for (one of counts(); track one.kind) {
+          <div
+            class="kinds__row"
+            [class.kinds__row--none]="one.count === 0"
+            [attr.data-kind]="one.kind"
+          >
+            @let label = kindLabel(one.kind);
+            <!-- a kind this version does not know is named as the registry has it -->
+            <dt>{{ label ? t(label) : one.kind || t('devices.device.unknownKind') }}</dt>
+            <dd>
+              {{
+                one.count === 0
+                  ? t('devices.room.none')
+                  : t('devices.room.pieces', { count: one.count })
+              }}
+            </dd>
+          </div>
+        }
+      </dl>
+    </mat-card-content>
+
+    <mat-card-actions class="room__actions">
+      <button matButton type="button" [disabled]="busy()" (click)="details.emit()">
+        <mat-icon>list</mat-icon>
+        {{ t('devices.room.details') }}
+        <span class="visually-hidden">{{ group().room }}</span>
+      </button>
+      <button matButton type="button" [disabled]="busy()" (click)="add.emit()">
+        <mat-icon>add</mat-icon>
+        {{ t('devices.room.addShort') }}
+        <span class="visually-hidden">{{ group().room }}</span>
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</ng-container>

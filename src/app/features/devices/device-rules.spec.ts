@@ -3,12 +3,14 @@ import { DEVICE_KINDS } from '../../data-access/household/registry-values';
 import {
   addressProblem,
   bindingOf,
-  bindingTaken,
   bindingsOf,
+  bindingTaken,
+  blindsUsing,
   bluetoothAddressProblem,
   chosenProblem,
   deviceIdProblem,
   nameProblem,
+  openingSensorsOf,
   pointOf,
   pointProblem,
   sameDevice,
@@ -22,7 +24,12 @@ const SHELLY: SmartDevice = {
   kind: 'blinds',
   enabled: true,
   vendor: 'shelly',
-  shelly: { address: '192.0.2.22', generation: 2, deviceId: 'shellyplus2pm-0a0b0c0d0e01', channel: 0 },
+  shelly: {
+    address: '192.0.2.22',
+    generation: 2,
+    deviceId: 'shellyplus2pm-0a0b0c0d0e01',
+    channel: 0,
+  },
 };
 const GATEWAY: SmartDevice = {
   id: 10,
@@ -107,12 +114,17 @@ describe('the rules of a device', () => {
     },
   );
 
-  it.each(['', '192.0.2', '192.0.2.256', '192.0.2.017', '192.0.2.17:80', 'office.local', 'a.b.c.d'])(
-    'refuse "%s" as an address',
-    (address) => {
-      expect(addressProblem(address)).toBe('devices.problem.address');
-    },
-  );
+  it.each([
+    '',
+    '192.0.2',
+    '192.0.2.256',
+    '192.0.2.017',
+    '192.0.2.17:80',
+    'office.local',
+    'a.b.c.d',
+  ])('refuse "%s" as an address', (address) => {
+    expect(addressProblem(address)).toBe('devices.problem.address');
+  });
 
   describe('about the id of a Shelly', () => {
     // from the second generation on a device without it could be driven and never heard
@@ -258,8 +270,39 @@ describe('the rules of a device', () => {
       [{ shelly: undefined, eaton: { gateway: 'blinds', point: 3 }, vendor: 'eaton' }],
       [{ placement: 'external' }],
       [{ positioning: false }],
+      [{ openingSensors: [9] }],
     ])('see the change %j', (change) => {
       expect(sameDevice(SHELLY, { ...details, ...change })).toBe(false);
+    });
+
+    // HAS-290: the order of the sensors is the registry's too
+    it('see the opening sensors in their order', () => {
+      const linked = { ...SHELLY, openingSensors: [9, 14] };
+      expect(sameDevice(linked, { ...details, openingSensors: [9, 14] })).toBe(true);
+      expect(sameDevice(linked, { ...details, openingSensors: [14, 9] })).toBe(false);
+      expect(sameDevice(linked, details)).toBe(false);
+    });
+  });
+
+  // HAS-290: the sensors of a window, read from an answer nothing checks
+  describe('about the opening sensors of blinds', () => {
+    it('reads the ids that are numbers and nothing else', () => {
+      expect(
+        openingSensorsOf({ openingSensors: [9, '14', null, 2.5, 14] as unknown as number[] }),
+      ).toEqual([9, 14]);
+      expect(openingSensorsOf({})).toEqual([]);
+      expect(openingSensorsOf({ openingSensors: 'none' as unknown as number[] })).toEqual([]);
+    });
+
+    it('finds the blinds that name a sensor', () => {
+      const all = [
+        { id: 1, kind: 'blinds', openingSensors: [14] },
+        { id: 2, kind: 'blinds', openingSensors: [9, 14] },
+        { id: 3, kind: 'blinds' },
+        { id: 4, kind: 'light', openingSensors: [14] },
+      ];
+      expect(blindsUsing(14, all).map((one) => one.id)).toEqual([1, 2]);
+      expect(blindsUsing(5, all)).toEqual([]);
     });
   });
 });

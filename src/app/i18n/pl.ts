@@ -453,25 +453,32 @@ export const pl: Messages = {
   devices: {
     title: 'Urządzenia',
     registry: {
-      title: 'Rejestr',
       loading: 'Wczytywanie rejestru urządzeń',
       unreadable: 'Rejestr nie odpowiedział listą urządzeń.',
       empty: 'Nie zarejestrowano jeszcze żadnego urządzenia.',
       count: 'Urządzenia: {{ count }}',
       skipped: 'Wpisy rejestru bez identyfikatora, niepokazane: {{ count }}',
-      add: 'Dodaj urządzenie',
       newDevice: 'Nowe urządzenie',
     },
     room: {
       unknown: 'Bez pokoju',
       count: 'Urządzenia: {{ count }}',
       add: 'Dodaj urządzenie tutaj',
+      details: 'Szczegóły',
+      addShort: 'Dodaj',
+      none: 'brak',
+      pieces: '{{ count }} szt.',
+      empty: 'W tym pokoju nie ma jeszcze urządzeń.',
+      close: 'Zamknij',
     },
     device: {
       unnamed: 'Bez nazwy',
       unknownKind: 'Nie podano rodzaju',
       positioning: 'można ustawić w pozycji',
       noPositioning: 'tylko otwarte lub zamknięte',
+      openingSensors: 'Czujniki okna:',
+      sensorInUse:
+        'Rolety mają ten czujnik jako czujnik swojego okna i rejestr go zachowa, dopóki nie zostanie z nich usunięty:',
       notUsed: 'Nieużywane przez serwisy',
       useUnknown: 'Nie podano, czy używane przez serwisy',
       generation: 'Gen {{ generation }}',
@@ -518,6 +525,11 @@ export const pl: Messages = {
       placement: 'Umiejscowienie',
       positioning: 'Można ustawić w pozycji',
       notKnown: 'Nie wiadomo',
+      openingSensors: 'Czujniki okna',
+      openingSensorsHint: 'Tylko czujniki tego okna. Bez czujnika okno liczy się jako zamknięte.',
+      noOpeningSensors: 'W rejestrze nie ma czujnika otwarcia',
+      sensorNotUsed: 'nieużywany: okno liczy się bez niego',
+      unknownSensor: 'Urządzenie {{ id }} (spoza rejestru)',
       yes: 'Tak',
       no: 'Nie',
       enabled: 'Używane przez serwisy',
@@ -552,7 +564,8 @@ export const pl: Messages = {
       notFound: 'Tego urządzenia nie ma już w rejestrze.',
       invalid:
         'Rejestr odrzucił urządzenie: jego rodzaj, producent i sposób dostępu do siebie nie pasują.',
-      conflict: 'Do innego urządzenia rejestru prowadzi już ta sama droga.',
+      conflict:
+        'Do innego urządzenia rejestru prowadzi już ta sama droga albo rolety wciąż mają ten czujnik.',
     },
     kind: {
       blinds: 'Rolety',

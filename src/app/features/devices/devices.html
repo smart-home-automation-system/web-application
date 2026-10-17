@@ -3,19 +3,11 @@
     <h1>{{ t('devices.title') }}</h1>
   </header>
 
-  <div class="cards">
-  <!-- the registry itself: how fresh the list is, why it could not be read, and the way to
-       register a device - one resource, one card -->
+  <!-- the registry itself: how fresh the list is, how many devices it holds and why it could not be
+       read - one resource, one card -->
   <mat-card appearance="outlined" class="registry card--domain" data-testid="registry">
-    <mat-card-header>
-      <div mat-card-avatar class="domain-badge"><mat-icon>devices_other</mat-icon></div>
-      <mat-card-title>{{ t('devices.registry.title') }}</mat-card-title>
-      <mat-card-subtitle>
-        <app-data-freshness [lastUpdated]="registry.lastUpdated()" [stale]="registry.stale()" />
-      </mat-card-subtitle>
-    </mat-card-header>
-
-    <mat-card-content>
+    <mat-card-content class="registry__content">
+      <app-data-freshness [lastUpdated]="registry.lastUpdated()" [stale]="registry.stale()" />
       @if (registry.loading()) {
         <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('devices.registry.loading')" />
       } @else {
@@ -24,15 +16,6 @@
           @if (!registry.error()) {
             <p class="registry__note">{{ t('devices.registry.unreadable') }}</p>
           }
-        } @else if (adding()) {
-          <h2 class="registry__form-title">{{ t('devices.registry.newDevice') }}</h2>
-          <app-smart-device-form
-            [others]="entries() ?? []"
-            [busy]="registry.changing()"
-            [failure]="addFailure()"
-            (saved)="add($event)"
-            (cancelled)="stopAdding()"
-          />
         } @else {
           <p class="registry__note" data-testid="count">
             {{
@@ -46,33 +29,29 @@
               {{ t('devices.registry.skipped', { count: skipped() }) }}
             </p>
           }
-          <button
-            matButton="filled"
-            type="button"
-            class="registry__add"
-            [disabled]="registry.changing()"
-            (click)="startAdding()"
-          >
-            <mat-icon>add</mat-icon>
-            {{ t('devices.registry.add') }}
-          </button>
         }
-        <app-api-error-strip [error]="registry.error()" />
       }
     </mat-card-content>
+    <app-api-error-strip [error]="registry.error()" />
   </mat-card>
 
-    <!-- the rooms in the order of the house, floor by floor; the floor is said on the card -->
+  @if (devices() !== undefined) {
+    <!-- a floor is a row of rooms in the order of the house; a row that does not fill the page
+         stands in its middle -->
     @for (floor of floors(); track floor.id) {
-      @for (room of floor.rooms; track room.room) {
-        <app-room-devices
-          [group]="room"
-          [floor]="floor.label"
-          [all]="entries() ?? []"
-          [registry]="registry"
-          [attr.data-floor]="floor.id"
-        />
-      }
+      <section class="floor" data-testid="floor" [attr.data-floor]="floor.id">
+        <h2 class="floor__name">{{ t(floor.label) }}</h2>
+        <div class="floor__rooms">
+          @for (room of floor.rooms; track room.room) {
+            <app-room-card
+              [group]="room"
+              [busy]="registry.changing()"
+              (details)="openRoom(room.room, floor.label, false)"
+              (add)="openRoom(room.room, floor.label, true)"
+            />
+          }
+        </div>
+      </section>
     }
-  </div>
+  }
 </ng-container>

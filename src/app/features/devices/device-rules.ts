@@ -172,6 +172,27 @@ export function bindingTaken(
 }
 
 /**
+ * The opening sensors a device of the answer names - the ids that are numbers; nothing checks an
+ * answer. None for a device without the list.
+ */
+export function openingSensorsOf(device: SmartDevice): readonly number[] {
+  const held: unknown = device.openingSensors;
+  return Array.isArray(held)
+    ? held.filter((id): id is number => typeof id === 'number' && Number.isInteger(id))
+    : [];
+}
+
+/**
+ * The blinds of the registry that name an opening sensor of their window - the registry refuses
+ * to remove a sensor while any does (the 409 `DEVICE_CONFLICT`, HAS-290).
+ */
+export function blindsUsing(sensor: number, all: readonly SmartDevice[]): readonly SmartDevice[] {
+  return all.filter(
+    (device) => device.kind === 'blinds' && openingSensorsOf(device).includes(sensor),
+  );
+}
+
+/**
  * Whether the form holds the device as the registry does - then saving it is no change, and
  * no write is made for it: every write stores the whole row.
  */
@@ -193,6 +214,7 @@ export function sameDevice(before: SmartDevice, details: DeviceDetails): boolean
       device.lightKind,
       device.placement,
       device.positioning,
+      openingSensorsOf(device),
     ]);
   return shown(before) === shown(details);
 }
