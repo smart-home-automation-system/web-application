@@ -19,7 +19,9 @@
             <mat-icon aria-hidden="true">thermostat</mat-icon>{{ t('rooms.row.temperature') }}
           </dt>
           <dd>
-            @if (room.heating?.temperature; as temperature) {
+            <!-- 0 °C is a reading: the test is for a number, not for a truthy value -->
+            @let temperature = room.heating?.temperature;
+            @if (temperature !== undefined) {
               {{ temperature | localNumber: ONE_DECIMAL }}&nbsp;°C
             } @else if (room.heating || room.temperatureSensors.length > 0) {
               <span class="rows__none">{{ t('rooms.unknown') }}</span>

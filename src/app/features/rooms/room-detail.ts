@@ -2,7 +2,10 @@ import { ChangeDetectionStrategy, Component, Signal, inject, signal } from '@ang
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import {
+  MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS,
+  MatSlideToggleModule,
+} from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -79,6 +82,9 @@ interface CommandState {
   styleUrl: './room-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   preserveWhitespaces: true,
+  providers: [
+    { provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } },
+  ],
 })
 export class RoomDetail {
   protected readonly data = inject<RoomDetailData>(MAT_DIALOG_DATA);
@@ -132,7 +138,13 @@ export class RoomDetail {
     this.send(blind.device.id, this.blindsApi.moveTo(blind.device.id, position), true);
   }
 
-  protected pause(blind: BlindRow, paused: boolean): void {
+  /**
+   * The switch shows what the service says, not the click: it does not flip itself
+   * (`disableToggleValue`), and moves when the blinds read again say the pause began or ended -
+   * a pause that failed leaves it as it was (found in review). A click asks for the other state.
+   */
+  protected pause(blind: BlindRow): void {
+    const paused = blind.state?.schedulePausedSince === undefined;
     const id = blind.device.id;
     this.send(
       id,

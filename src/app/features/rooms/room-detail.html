@@ -12,7 +12,9 @@
       <h3 class="section__title">
         <mat-icon aria-hidden="true">thermostat</mat-icon>{{ t('rooms.row.temperature') }}
       </h3>
-      @if (room.heating?.temperature; as temperature) {
+      <!-- 0 °C is a reading: the test is for a number, not for a truthy value -->
+      @let temperature = room.heating?.temperature;
+      @if (temperature !== undefined) {
         <p class="section__value">
           {{ temperature | localNumber: ONE_DECIMAL }}&nbsp;°C
           @if (room.heating?.measuredAt | houseAge; as age) {
@@ -216,7 +218,7 @@
                 data-testid="blind-pause"
                 [checked]="blind.state?.schedulePausedSince !== undefined"
                 [disabled]="command?.sending || blind.state === undefined"
-                (change)="pause(blind, $event.checked)"
+                (toggleChange)="pause(blind)"
               >
                 {{ t('rooms.blinds.pause') }}
               </mat-slide-toggle>

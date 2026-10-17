@@ -1,6 +1,6 @@
 import { Locator, Page } from '@playwright/test';
 
-import { expect, test } from './support';
+import { expect, test, useScenario } from './support';
 
 /**
  * The room view (HAS-232), fed by the mock API: the device registry of the mock house, its
@@ -43,6 +43,20 @@ test('moves a blind and pauses its schedules, reading the blinds back', async ({
   await blind.getByRole('switch').click();
   await expect(blind.getByTestId('blind-paused')).toContainText('Paused');
   await expect(blind.getByTestId('blind-schedules')).toContainText('Close at dusk');
+});
+
+// no optimistic state: the switch shows what the blinds service says, not the click (found in review)
+test('leaves the pause switch as it was when the pause failed', async ({ page }) => {
+  await useScenario(page, 'writes-fail');
+  await page.goto('/rooms');
+  const window = await openRoom(page, 'office');
+  const blind = window.locator('[data-blind="1"]');
+
+  await blind.getByRole('switch').click();
+
+  await expect(blind.getByRole('alert')).toBeVisible();
+  await expect(blind.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(blind.getByTestId('blind-paused')).toHaveCount(0);
 });
 
 test('switches a light and says it was sent, never that it is on', async ({ page }) => {
