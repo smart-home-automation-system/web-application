@@ -56,6 +56,14 @@ dashboards:
   voltage) - and six charts of the history over 24 hours, 7 or 30 days, one period for all:
   temperature and dew point, humidity, wind and gusts, daylight (logarithmic), rain per interval,
   pressure.
+- **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
+  each kind of thing in it - temperature, heating, lights, blinds, motion, presence, windows, the
+  rest - and a window with its devices: the **lights** (an Eaton light switched on or off, a
+  dimmer set; no service keeps the state of a light yet, so the window says a command was sent,
+  never that a light is on) and the **blinds** (open, stop, close, a position, and the pause of
+  their schedules until their next run, with today's schedules of each blind). The heating of a
+  room is shown there and set on the heating page only. Nothing asks before a command; nothing is
+  shown before the services say so - a blind is read again after every command.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the
   temperature of each with the age of its reading, the temperature its schedule asks for right
@@ -299,7 +307,7 @@ Endpoints used today:
 | `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating, and my room for a member with `heating_switch`), polled every 30 s, and once more right after every change of the switch |
 | `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating, and my room for a member with `heating_switch`), after a confirmation. Its answer is not used: the state is read again |
 | `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
-| `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating, overview), polled every 30 s. Needs `heating-service` 1.8.0 or later |
+| `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating, overview, rooms), polled every 30 s. Needs `heating-service` 1.8.0 or later; its `window` (the windows of the room and the hold of its heating) from 1.10.0 |
 | `GET` | `/home/heating/rooms/{name}` | One room, by the identifier the registry gives a profile (my room), polled every 30 s for the room on screen. A 404 with the code `NOT_FOUND_ROOM` is shown as "the heating service does not know this room" |
 | `GET` | `/home/heating/rooms/{name}/temperature/history?from=&to=` | The stored temperatures of a room, averaged into buckets (heating, the open room). Asked when the room is opened or the period changes, then every 5 min. Needs `heating-service` 1.9.0 or later |
 | `GET` | `/home/heating/floor-pump` | What the relay of the floor heating pump last reported (heating), polled every 30 s |
@@ -326,7 +334,12 @@ Endpoints used today:
 | `POST` | `/home/household/member/{name}/device` | Adds a device to a member (household) |
 | `PATCH` | `/home/household/member/{name}/device?mac=` | Changes the device a member has under that MAC address (household) |
 | `DELETE` | `/home/household/member/{name}/device?mac=` | Removes that device (household), after a confirmation |
-| `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices). By the Devices page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
+| `GET` | `/home/blinds` | Every blind by room with its state, position, window and `schedulePausedSince` (rooms), polled every 10 s and right after every command. Needs `blinds-service` 0.8.0 for the pause |
+| `GET` | `/home/blinds/{id}/schedules` | The schedules of one blind today - window, decision, whether it ran for the blind (rooms, the window of a room), polled every 60 s while the window is open |
+| `POST` | `/home/blinds/{id}?command=open\|close\|stop&source=dashboard`, `/home/blinds/{id}/position?value=` | Moves a blind (rooms). No question first; its answer is not used: the blinds are read again |
+| `PUT` / `DELETE` | `/home/blinds/{id}/schedule-pause` | Pauses the schedules of a blind until their next run, or ends the pause (rooms) |
+| `POST` | `/home/amx/lights/{point}?turn=on\|off`, `/home/amx/lights/{point}/level?value=` | Switches an Eaton light, sets a dimmer (rooms). The frame is sent; nothing reads the light back |
+| `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |
 | `POST` | `/home/device/registry/{id}/enable`, `.../disable` | Switches a device on or off for the services (devices) |
