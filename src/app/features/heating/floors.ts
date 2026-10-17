@@ -28,7 +28,7 @@ export const FLOORS: readonly { id: string; label: MessageKey; rooms: readonly s
   {
     id: 'circulation',
     label: 'heating.rooms.floor.circulation',
-    rooms: ['hall down', 'hall up', 'stairs'],
+    rooms: ['hall down', 'stairs', 'hall up'],
   },
   { id: 'attic', label: 'heating.rooms.floor.attic', rooms: ['loft'] },
   { id: 'outside', label: 'heating.rooms.floor.outside', rooms: ['sanctum', 'sauna', 'garden'] },
