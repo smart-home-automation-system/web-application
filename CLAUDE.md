@@ -327,6 +327,15 @@ e2e/              # Playwright tests
     (the list opens over the page, outside the form); a unit test opens the `MatSelect` and
     takes the option (`choose` in `devices.spec`), and gives the select a turn (`await
     settled()`) before it reads what the field shows.
+  - **The window sensors of blinds** (HAS-290, `openingSensors`, `smart-home-sdk` 1.11.0): a
+    `mat-select multiple` of the opening sensors of the registry (`others`), by room and name; an
+    id the blinds hold that the registry does not is kept as an option of its own, so a save
+    never drops it unseen. `openingSensors` is in `KNOWN_FIELDS` - cleared in the form, it is
+    not sent back - and in `sameDevice`. A sensor that blinds still name is not offered for
+    removal (`blindsUsing`): the registry refuses it with `DEVICE_CONFLICT`, whose text names
+    both causes. The schedules of `blinds-service` have no page yet: when they get one it copies
+    `per blind`, `window`, `windowClosed`, `nextDay` and the empty-window text of
+    `INVALID_SCHEDULE` (HAS-290).
   - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
     Polish a comma and no dot.
   - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,

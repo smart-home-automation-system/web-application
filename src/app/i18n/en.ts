@@ -476,6 +476,9 @@ export const en = {
       unknownKind: 'Kind not given',
       positioning: 'can be sent to a position',
       noPositioning: 'open or closed only',
+      openingSensors: 'Window sensors:',
+      sensorInUse:
+        'Blinds name this sensor as a sensor of their window, and the registry keeps it until it is taken out of them:',
       notUsed: 'Not used by the services',
       useUnknown: 'Use by the services not given',
       generation: 'Gen {{ generation }}',
@@ -522,6 +525,10 @@ export const en = {
       placement: 'Placement',
       positioning: 'Can be sent to a position',
       notKnown: 'Not known',
+      openingSensors: 'Window sensors',
+      openingSensorsHint: 'The sensors of this window only. Without one the window counts as closed.',
+      noOpeningSensors: 'No opening sensor in the registry',
+      unknownSensor: 'Device {{ id }} (not in the registry)',
       yes: 'Yes',
       no: 'No',
       enabled: 'Used by the services',
@@ -556,7 +563,8 @@ export const en = {
       notFound: 'This device is no longer in the registry.',
       invalid:
         'The registry refused the device: its kind, its vendor and the way it is reached do not fit together.',
-      conflict: 'Another device of the registry is already reached this way.',
+      conflict:
+        'Another device of the registry is already reached this way, or blinds still name this sensor.',
     },
     kind: {
       blinds: 'Blinds',

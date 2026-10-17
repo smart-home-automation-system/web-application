@@ -275,6 +275,35 @@
             <mat-button-toggle value="no">{{ t('devices.form.no') }}</mat-button-toggle>
           </mat-button-toggle-group>
         </div>
+
+        <!-- HAS-290: the sensors of this window, never of the room -->
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ t('devices.form.openingSensors') }}</mat-label>
+          <mat-select
+            data-testid="opening-sensors"
+            multiple
+            [value]="openingSensors()"
+            [disabled]="busy()"
+            (selectionChange)="openingSensors.set($event.value)"
+          >
+            @for (sensor of sensorOptions(); track sensor.id) {
+              <mat-option [value]="sensor.id">
+                @if (sensor.name !== undefined) {
+                  <!-- the names are the household's own: printed as they are -->
+                  {{ sensor.name }}
+                  @if (sensor.room) {
+                    <span class="form__option-note">· {{ sensor.room }}</span>
+                  }
+                } @else {
+                  {{ t('devices.form.unknownSensor', { id: sensor.id }) }}
+                }
+              </mat-option>
+            } @empty {
+              <mat-option disabled>{{ t('devices.form.noOpeningSensors') }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>{{ t('devices.form.openingSensorsHint') }}</mat-hint>
+        </mat-form-field>
       }
     }
 

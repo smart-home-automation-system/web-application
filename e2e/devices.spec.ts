@@ -5,9 +5,9 @@ import { expect, startIn, test, useScenario } from './support';
 /**
  * The administration of the device registry, fed by the mock API - whose registry can be
  * changed, in the memory of the page, and refuses what the real one refuses. Nothing here
- * reaches a real registry. The mock house has thirteen invented devices: Shelly ones of every
- * generation, Eaton ones on both gateways, two Bluetooth sensors, and blinds that are switched
- * off.
+ * reaches a real registry. The mock house has fourteen invented devices: Shelly ones of every
+ * generation, Eaton ones on both gateways, three Bluetooth sensors, blinds that are switched
+ * off and blinds with the sensor of their window.
  */
 const room = (page: Page, name: string): Locator => page.locator(`[data-room="${name}"]`);
 const device = (page: Page, name: string): Locator =>
@@ -21,7 +21,7 @@ async function choose(form: Locator, label: string, option: string): Promise<voi
 
 async function open(page: Page): Promise<void> {
   await page.goto('/devices');
-  await expect(page.getByTestId('device')).toHaveCount(13);
+  await expect(page.getByTestId('device')).toHaveCount(14);
 }
 
 test('lists every device of the registry by floor and room, with how it is reached', async ({
@@ -30,7 +30,7 @@ test('lists every device of the registry by floor and room, with how it is reach
   await open(page);
 
   await expect(page.getByRole('heading', { level: 1, name: 'Devices' })).toBeVisible();
-  await expect(page.getByTestId('registry').getByTestId('count')).toHaveText('Devices: 13');
+  await expect(page.getByTestId('registry').getByTestId('count')).toHaveText('Devices: 14');
   // the rooms in the order of the house, floor by floor; a room the list of floors does not
   // know - the kitchen, a hall - comes last
   await expect(page.getByTestId('room').locator('mat-card-title')).toHaveText([
@@ -50,6 +50,7 @@ test('lists every device of the registry by floor and room, with how it is reach
     'Office door blinds',
     'Office window blinds',
     'Office main light',
+    'Office window sensor',
     'Office temperature sensor 48',
   ]);
 
@@ -113,7 +114,7 @@ test.describe('adding a device', () => {
     await expect(form.getByTestId('binding-taken')).toHaveText(
       'Another device already has this channel of the Shelly at this address.',
     );
-    await expect(page.getByTestId('device')).toHaveCount(13);
+    await expect(page.getByTestId('device')).toHaveCount(14);
   });
 
   test('registers a Shelly as entered, in its room', async ({ page }) => {
@@ -131,7 +132,7 @@ test.describe('adding a device', () => {
     await form.getByTestId('positioning').getByRole('radio', { name: 'Yes' }).click();
     await form.getByRole('button', { name: 'Add', exact: true }).click();
 
-    await expect(page.getByTestId('device')).toHaveCount(14);
+    await expect(page.getByTestId('device')).toHaveCount(15);
     const added = device(page, 'Loft blinds');
     await expect(room(page, 'loft').getByTestId('name')).toContainText(['Loft blinds']);
     await expect(added.getByTestId('generation')).toHaveText('Gen 2');
@@ -140,7 +141,7 @@ test.describe('adding a device', () => {
     await expect(added.getByTestId('kind')).toContainText('outside the window');
     // the form is gone, and the button is back
     await expect(form.getByRole('button', { name: 'Add a device' })).toBeVisible();
-    await expect(form.getByTestId('count')).toHaveText('Devices: 14');
+    await expect(form.getByTestId('count')).toHaveText('Devices: 15');
   });
 
   test('registers an Eaton device and a Bluetooth sensor from the card of their room', async ({
@@ -183,7 +184,7 @@ test.describe('adding a device', () => {
     const sensor = device(page, 'Kitchen door sensor');
     await expect(sensor.getByTestId('binding')).toContainText('Bluetooth 7c:c6:b6:00:00:09');
     await expect(sensor.getByTestId('vendor')).toHaveText('Other');
-    await expect(page.getByTestId('device')).toHaveCount(15);
+    await expect(page.getByTestId('device')).toHaveCount(16);
   });
 });
 
@@ -206,7 +207,7 @@ test.describe('changing a device', () => {
       'Bedroom light strip',
       'Bedroom main light',
     ]);
-    await expect(room(page, 'office').getByTestId('device')).toHaveCount(3);
+    await expect(room(page, 'office').getByTestId('device')).toHaveCount(4);
     // everything else of the device is as it was
     const moved = device(page, 'Bedroom main light');
     await expect(moved.getByTestId('binding')).toContainText('shelly1pmg3-0a0b0c0d0e02');
@@ -239,6 +240,38 @@ test.describe('changing a device', () => {
   });
 });
 
+// HAS-290: the sensors of the window of one blinds, never of the room
+test.describe('the window sensors of blinds', () => {
+  test('shows the sensor of a window, and links another one', async ({ page }) => {
+    await open(page);
+    const blinds = device(page, 'Office window blinds');
+    await expect(blinds.getByTestId('opening-sensors')).toHaveText('Window sensors: Office window sensor');
+
+    await blinds.getByRole('button', { name: 'Edit Office window blinds' }).click();
+    const form = room(page, 'office').locator('app-smart-device-form');
+    const sensors = form.getByRole('combobox', { name: 'Window sensors' });
+    await expect(sensors).toContainText('Office window sensor');
+    await sensors.click();
+    await page.getByRole('option', { name: /Kitchen window sensor/ }).click();
+    await page.keyboard.press('Escape');
+    await form.getByRole('button', { name: 'Save' }).click();
+
+    await expect(blinds.getByTestId('opening-sensors')).toHaveText(
+      'Window sensors: Kitchen window sensor, Office window sensor',
+    );
+  });
+
+  test('keeps a sensor the blinds still name', async ({ page }) => {
+    await open(page);
+    const sensor = device(page, 'Office window sensor');
+
+    await sensor.getByRole('button', { name: 'Remove Office window sensor' }).click();
+    const question = sensor.getByRole('group');
+    await expect(question.getByTestId('sensor-in-use')).toContainText('Office window blinds');
+    await expect(question.getByRole('button', { name: 'Remove' })).toBeDisabled();
+  });
+});
+
 test.describe('removing a device', () => {
   test('asks first, and says what the house loses with an Eaton device', async ({ page }) => {
     await open(page);
@@ -255,7 +288,7 @@ test.describe('removing a device', () => {
 
     await question.getByRole('button', { name: 'Cancel' }).click();
     await expect(sensor.getByRole('group')).toHaveCount(0);
-    await expect(page.getByTestId('device')).toHaveCount(13);
+    await expect(page.getByTestId('device')).toHaveCount(14);
   });
 
   test('removes the device, and its room with the last one', async ({ page }) => {
@@ -267,7 +300,7 @@ test.describe('removing a device', () => {
     await expect(sensor.getByTestId('eaton-warning')).toHaveCount(0);
     await sensor.getByRole('group').getByRole('button', { name: 'Remove' }).click();
 
-    await expect(page.getByTestId('device')).toHaveCount(12);
+    await expect(page.getByTestId('device')).toHaveCount(13);
     await expect(room(page, 'hall up')).toHaveCount(0);
   });
 });

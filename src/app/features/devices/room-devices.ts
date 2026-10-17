@@ -37,7 +37,12 @@ import {
   placementLabel,
   vendorLabel,
 } from './device-labels';
-import { bindingOf, sameDevice } from './device-rules';
+import {
+  bindingOf,
+  blindsUsing,
+  openingSensorsOf,
+  sameDevice,
+} from './device-rules';
 import { SmartDeviceForm } from './smart-device-form';
 
 /** What the card shows besides its devices: nothing more, a form, or a question. */
@@ -144,6 +149,22 @@ export class RoomDevices {
         this.panel.set(VIEW);
       }
     });
+  }
+
+  /**
+   * The opening sensors of the window of blinds (HAS-290), by their names in the registry - an
+   * id it does not hold is shown as the id.
+   */
+  protected sensorsOf(device: SmartDevice): readonly { readonly id: number; readonly name?: string }[] {
+    return openingSensorsOf(device).map((id) => ({
+      id,
+      name: this.all().find((one) => one.id === id)?.name,
+    }));
+  }
+
+  /** The blinds that name this device as a sensor of their window: the registry keeps it. */
+  protected usersOf(device: RegisteredDevice): readonly SmartDevice[] {
+    return blindsUsing(device.id, this.all());
   }
 
   /** Every device of the registry but one: what the binding of that one must not repeat. */

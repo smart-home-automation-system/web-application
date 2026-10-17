@@ -400,10 +400,24 @@ for (const language of ['en', 'pl'] as const) {
       // a question open in another card, and the form of a new device with what it refuses
       test('devices', async ({ page }, testInfo) => {
         await page.goto('/devices');
-        await expect(page.getByTestId('device')).toHaveCount(13);
+        await expect(page.getByTestId('device')).toHaveCount(14);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices'),
         });
+
+        // HAS-290: the form of blinds with the sensors of their window
+        await page.locator('[data-device="1"] .device__actions button').first().click();
+        await expect(page.locator('[data-device="1"] app-smart-device-form')).toBeVisible();
+        // the form is taller than the window: the page with the field of the sensors in view
+        await page.locator('[data-device="1"] [data-testid="opening-sensors"]').scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'devices-window-sensors'),
+        });
+        await page
+          .locator('[data-device="1"] app-smart-device-form button[type="button"]')
+          .last()
+          .click();
+        await expect(page.locator('[data-device="1"] app-smart-device-form')).toHaveCount(0);
 
         await page.locator('[data-device="3"] .device__actions button').first().click();
         await expect(page.locator('[data-device="3"] app-smart-device-form')).toBeVisible();

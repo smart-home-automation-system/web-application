@@ -38,6 +38,26 @@ const BLINDS: SmartDevice = {
   positioning: false,
 };
 
+// HAS-290: the window of the terrace blinds has two sensors, one of them in the registry
+const WINDOW_SENSOR: SmartDevice = {
+  id: 14,
+  name: 'Terrace door sensor',
+  room: 'living room',
+  kind: 'opening sensor',
+  enabled: true,
+  vendor: 'shelly',
+  bthome: { address: '7c:c6:b6:00:00:03' },
+};
+const KITCHEN_SENSOR: SmartDevice = {
+  id: 9,
+  name: 'Kitchen window sensor',
+  room: 'kitchen',
+  kind: 'opening sensor',
+  enabled: true,
+  vendor: 'shelly',
+  bthome: { address: '7c:c6:b6:00:00:01' },
+};
+
 describe('Devices', () => {
   let http: HttpTestingController;
   let fixture: ComponentFixture<Devices>;
@@ -399,6 +419,61 @@ describe('Devices', () => {
     await settled();
 
     expect(page().querySelector('[data-device="4"]')).toBeNull();
+  });
+
+  // HAS-290
+  describe('the window sensors of blinds', () => {
+    it('shows the sensors of a window by their names, and an id the registry does not hold as an id', () => {
+      answerTheRegistryWith([{ ...BLINDS, openingSensors: [14, 99] }, WINDOW_SENSOR]);
+
+      expect(text(row(7).querySelector('[data-testid="opening-sensors"]'))).toBe(
+        'Window sensors: Terrace door sensor, Device 99 (not in the registry)',
+      );
+      expect(row(14).querySelector('[data-testid="opening-sensors"]')).toBeNull();
+    });
+
+    it('offers the opening sensors of the registry and sends the ones chosen, in their order', async () => {
+      answerTheRegistryWith([BLINDS, WINDOW_SENSOR, KITCHEN_SENSOR, LIGHT]);
+      button(row(7), 'Edit')!.click();
+      fixture.detectChanges();
+      const form = row(7).querySelector<HTMLElement>('app-smart-device-form')!;
+
+      // by room and then by name; never a device of another kind
+      expect(offered(form, 'opening-sensors')).toEqual([9, 14]);
+      choose(form, 'opening-sensors', 14 as unknown as string);
+      choose(form, 'opening-sensors', 9 as unknown as string);
+      form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await settled();
+
+      const request = http.expectOne({ method: 'PUT', url: '/home/device/registry/7' });
+      expect(request.request.body).toHaveProperty('openingSensors', [9, 14]);
+      request.flush({});
+      await settled();
+      answerTheRegistryWith([BLINDS, WINDOW_SENSOR, KITCHEN_SENSOR, LIGHT]);
+    });
+
+    it('keeps an id the blinds hold that is no sensor of the registry', async () => {
+      answerTheRegistryWith([{ ...BLINDS, openingSensors: [99] }, WINDOW_SENSOR]);
+      button(row(7), 'Edit')!.click();
+      fixture.detectChanges();
+      const form = row(7).querySelector<HTMLElement>('app-smart-device-form')!;
+
+      expect(offered(form, 'opening-sensors')).toEqual([14, 99]);
+      expect(select(form, 'opening-sensors').value).toEqual([99]);
+    });
+
+    it('does not offer to remove a sensor blinds still name, and says which', async () => {
+      answerTheRegistryWith([{ ...BLINDS, openingSensors: [14] }, WINDOW_SENSOR]);
+
+      button(row(14), 'Remove')!.click();
+      await settled();
+      const question = row(14).querySelector<HTMLElement>('[role="group"]')!;
+
+      expect(text(question.querySelector('[data-testid="sensor-in-use"]'))).toContain(
+        'Living room terrace blinds',
+      );
+      expect(button(question, 'Remove')!.disabled).toBe(true);
+    });
   });
 
   it('does not warn about the AMX system for a device it does not ask for', async () => {

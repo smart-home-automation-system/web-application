@@ -106,7 +106,9 @@ dashboards:
   the order of the house, each with what it is and how it is reached: the address, channel and
   MQTT id of a Shelly, the gateway and point of an Eaton device, the address of a Bluetooth
   sensor. And the forms to register a device, change one, switch one off and on for the
-  services, and remove one. **The kind decides what the form asks for**: the ways such a device
+  services, and remove one. Blinds are given **the sensors of their own window** (HAS-290), picked
+  from the opening sensors of the registry - none means a window that counts as closed; a sensor
+  that blinds still name is not offered for removal. **The kind decides what the form asks for**: the ways such a device
   can be reached, and the fields of that kind alone; the kind of a registered device cannot be
   changed. What the registry would refuse is said before anything is sent - a name of 3 to 50
   characters, an address, the id a Shelly of generation 2 or later reports under, a point from
@@ -326,7 +328,7 @@ Endpoints used today:
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |
 | `POST` | `/home/device/registry/{id}/enable`, `.../disable` | Switches a device on or off for the services (devices) |
-| `DELETE` | `/home/device/registry/{id}` | Removes a device (devices), after a confirmation |
+| `DELETE` | `/home/device/registry/{id}` | Removes a device (devices), after a confirmation; an opening sensor that blinds still name is refused (`409 DEVICE_CONFLICT`, `database-service` 0.16.0) and not offered |
 
 What the application relies on, in every call:
 

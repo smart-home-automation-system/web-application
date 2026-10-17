@@ -32,7 +32,8 @@ export interface BthomeBinding {
 
 /**
  * A device as the registry holds it (`GET /home/device/registry`, `SmartDevice` of
- * `smart-home-sdk` 1.8.0, served by `database-service` and routed by the gateway from 0.5.0).
+ * `smart-home-sdk` 1.8.0 - `openingSensors` since 1.11.0 - served by `database-service` and
+ * routed by the gateway from 0.5.0).
  * Every field is optional here: nothing checks an answer, and the service leaves out what a
  * device does not have - two of the three bindings always, and the fields of another kind.
  *
@@ -57,6 +58,11 @@ export interface SmartDevice {
   readonly placement?: string;
   /** Blinds only: whether they can be sent to a position; missing means "not known". */
   readonly positioning?: boolean;
+  /**
+   * Blinds only (HAS-290): the ids of the opening sensors on their window, in the order given;
+   * missing means none - a window without a sensor, which the blinds service takes as closed.
+   */
+  readonly openingSensors?: readonly number[];
 }
 
 /** A device that can be addressed: one the registry gave an id. */
@@ -78,6 +84,7 @@ export interface DeviceDetails {
   readonly lightKind?: string;
   readonly placement?: string;
   readonly positioning?: boolean;
+  readonly openingSensors?: readonly number[];
 }
 
 /**
@@ -123,6 +130,7 @@ const KNOWN_FIELDS: readonly string[] = [
   'lightKind',
   'placement',
   'positioning',
+  'openingSensors',
 ] satisfies readonly (keyof SmartDevice)[];
 
 @Injectable({ providedIn: 'root' })
