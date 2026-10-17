@@ -133,6 +133,7 @@ export const pl: Messages = {
       floor: {
         ground: 'Parter',
         upper: 'Piętro',
+        circulation: 'Komunikacja',
         attic: 'Poddasze',
         outside: 'Na zewnątrz',
         other: 'Pozostałe pokoje',
@@ -467,6 +468,7 @@ export const pl: Messages = {
       details: 'Szczegóły',
       addShort: 'Dodaj',
       none: 'brak',
+      other: 'Inne',
       pieces: '{{ count }} szt.',
       empty: 'W tym pokoju nie ma jeszcze urządzeń.',
       close: 'Zamknij',

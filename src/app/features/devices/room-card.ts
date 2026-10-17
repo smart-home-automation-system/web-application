@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { RoomDevices as RoomGroup, countByKind } from './device-groups';
+import { OTHER_KINDS, RoomDevices as RoomGroup, countByKind } from './device-groups';
 import { kindLabel } from './device-labels';
 
 /**
@@ -32,5 +32,6 @@ export class RoomCard {
   readonly add = output();
 
   protected readonly kindLabel = kindLabel;
+  protected readonly other = OTHER_KINDS;
   protected readonly counts = computed(() => countByKind(this.group().devices));
 }

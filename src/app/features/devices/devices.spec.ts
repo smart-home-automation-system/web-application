@@ -167,7 +167,7 @@ describe('Devices', () => {
 
       expect(
         [...page().querySelectorAll('[data-floor]')].map((one) => one.getAttribute('data-floor')),
-      ).toEqual(['ground', 'upper', 'attic', 'outside', 'other']);
+      ).toEqual(['ground', 'upper', 'circulation', 'attic', 'outside']);
       expect(text(page().querySelector('[data-floor="upper"] h2'))).toBe('Upper floor');
       expect(text(page().querySelector('[data-testid="registry"] [data-testid="count"]'))).toBe(
         'Devices: 3',
@@ -181,16 +181,22 @@ describe('Devices', () => {
       expect(text(card('office').querySelector('[data-kind="presence sensor"]'))).toBe(
         'Presence sensor none',
       );
-      expect(card('office').querySelectorAll('[data-kind]')).toHaveLength(9);
+      expect(card('office').querySelectorAll('[data-kind]')).toHaveLength(8);
+      expect(text(card('office').querySelector('[data-kind="other"]'))).toBe('Other none');
       expect(text(card('loft').querySelector('[data-testid="count"]'))).toBe('Devices: 0');
       // no device is listed on the page itself
       expect(page().querySelector('[data-testid="device"]')).toBeNull();
     });
 
-    it('count a kind this version does not know under its own name', () => {
-      answerTheRegistryWith([{ id: 21, name: 'Wind sensor', room: 'office', kind: 'wind sensor' }]);
+    // the weather station, the Bluetooth gateways and a kind this version does not know
+    it('count every kind a card does not list as other', () => {
+      answerTheRegistryWith([
+        { id: 21, name: 'Wind sensor', room: 'office', kind: 'wind sensor' },
+        { id: 22, name: 'Office gateway', room: 'office', kind: 'bthome gateway' },
+      ]);
 
-      expect(text(card('office').querySelector('[data-kind="wind sensor"]'))).toBe('wind sensor 1');
+      expect(text(card('office').querySelector('[data-kind="other"]'))).toBe('Other 2');
+      expect(card('office').querySelector('[data-kind="bthome gateway"]')).toBeNull();
     });
   });
 

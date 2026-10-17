@@ -301,11 +301,16 @@ e2e/              # Playwright tests
     channel is taken together with an address.
   - **A room is a card of one size, a floor a row of them; the devices are in a window**
     (owner, 2026-10-17, HAS-290 - the cards of the first version grew with their lists and
-    looked untidy). `RoomCard` counts the devices of its room by kind - every kind of
-    `DEVICE_KINDS`, "none" included, then a kind this version does not know - so every card
-    says the same rows; its title is one line (ellipsis). The width is a share of the row
-    (`clamp(176px, (100% - 60px) / 6, 230px)`): six rooms of a floor on one line at 1440 px, a
-    row that does not fill the page in its middle. **Every room of the house has a card**, an
+    looked untidy). `RoomCard` counts the devices of its room by kind - the seven kinds of
+    `LISTED_KINDS`, "none" included, and one row `other` for the weather station, the Bluetooth
+    gateways and a kind this version does not know (owner) - so every card says the same rows;
+    its title, subtitle and rows are one line each (ellipsis). No badge on it - the colour of the
+    domain runs along the top edge - and 12 px sides: the width is a share of the row
+    (`clamp(150px, (100% - 72px) / 7, 230px)`), seven rooms of a floor on one line at 1440 px
+    (154 px each, checked in both languages), a row that does not fill the page in its middle.
+  - **The floors of `FLOORS` are the floors of the house plus `circulation`** (owner, 2026-10-17):
+    the kitchen and the boiler room on the ground floor; the halls and the stairs a group of their
+    own, "Circulation" / "Komunikacja". The heating page shares the list. **Every room of the house has a card**, an
     empty one too (`groupByFloor` takes `ROOM_NAMES`): there is no global "add a device" any
     more - "Add" of a card is where a device is added to that room.
   - **The window of a room** (`RoomDialog`, the dialog of Material - themed in `_zorza.scss`,

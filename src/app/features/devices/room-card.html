@@ -6,7 +6,6 @@
     [attr.data-room-card]="group().room"
   >
     <mat-card-header>
-      <div mat-card-avatar class="domain-badge"><mat-icon>meeting_room</mat-icon></div>
       <!-- a room is shown by its identifier, as everywhere in the application -->
       <mat-card-title>{{ group().room || t('devices.room.unknown') }}</mat-card-title>
       <mat-card-subtitle data-testid="count">{{
@@ -23,8 +22,9 @@
             [attr.data-kind]="one.kind"
           >
             @let label = kindLabel(one.kind);
-            <!-- a kind this version does not know is named as the registry has it -->
-            <dt>{{ label ? t(label) : one.kind || t('devices.device.unknownKind') }}</dt>
+            <dt>
+              {{ one.kind === other ? t('devices.room.other') : label ? t(label) : one.kind }}
+            </dt>
             <dd>
               {{
                 one.count === 0
