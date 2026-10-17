@@ -1,11 +1,20 @@
-import { ChangeDetectionStrategy, Component, Signal, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Signal,
+  effect,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { DeviceRegistry, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { MessageKey } from '../../i18n/messages';
+import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
+import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { RoomDevices as RoomGroup } from './device-groups';
 import { RoomDevices } from './room-devices';
 
@@ -13,6 +22,8 @@ import { RoomDevices } from './room-devices';
 export interface RoomDialogData {
   /** The room and its devices, as the registry has them now. */
   readonly group: Signal<RoomGroup>;
+  /** False while the registry answers with no list: then nothing is known of the room. */
+  readonly readable: Signal<boolean>;
   /** The key of the name of the floor the room lies on. */
   readonly floor: MessageKey;
   /** Everything the registry answered: what a binding must not repeat. */
@@ -36,11 +47,29 @@ export const ROOM_DIALOG_SIZE = {
  */
 @Component({
   selector: 'app-room-dialog',
-  imports: [MatButtonModule, MatDialogModule, MatIconModule, TranslocoDirective, RoomDevices],
+  imports: [
+    MatButtonModule,
+    MatDialogModule,
+    MatIconModule,
+    TranslocoDirective,
+    ApiErrorStrip,
+    DataFreshness,
+    RoomDevices,
+  ],
   templateUrl: './room-dialog.html',
   styleUrl: './room-dialog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RoomDialog {
   protected readonly data = inject<RoomDialogData>(MAT_DIALOG_DATA);
+  private readonly dialogRef = inject(MatDialogRef);
+  private readonly room = viewChild(RoomDevices);
+
+  constructor() {
+    // Escape and a click beside the window close it only while nothing is open in it: a form
+    // would lose what was typed, a change on its way the place its failure is told
+    effect(() => {
+      this.dialogRef.disableClose = this.room()?.holding() ?? false;
+    });
+  }
 }

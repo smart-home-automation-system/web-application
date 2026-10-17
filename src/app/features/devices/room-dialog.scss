@@ -38,3 +38,8 @@
 .dialog__actions {
   justify-content: flex-end;
 }
+
+.dialog__note {
+  margin: 8px 0;
+  color: var(--mat-sys-on-surface-variant);
+}

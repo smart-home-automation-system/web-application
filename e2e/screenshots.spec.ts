@@ -435,6 +435,14 @@ for (const language of ['en', 'pl'] as const) {
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-editing'),
         });
+        // the window stays open over a question: it is answered first
+        await page
+          .locator('[data-device="4"]')
+          .getByRole('group')
+          .getByRole('button')
+          .first()
+          .click();
+        await expect(page.locator('[data-device="4"]').getByRole('group')).toHaveCount(0);
         await page.keyboard.press('Escape');
         await expect(dialog).toHaveCount(0);
 
