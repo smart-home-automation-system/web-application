@@ -257,7 +257,7 @@ test.describe('the window sensors of blinds', () => {
     await form.getByRole('button', { name: 'Save' }).click();
 
     await expect(blinds.getByTestId('opening-sensors')).toHaveText(
-      'Window sensors: Kitchen window sensor, Office window sensor',
+      'Window sensors: Office window sensor, Kitchen window sensor',
     );
   });
 

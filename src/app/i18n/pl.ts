@@ -524,6 +524,7 @@ export const pl: Messages = {
       openingSensors: 'Czujniki okna',
       openingSensorsHint: 'Tylko czujniki tego okna. Bez czujnika okno liczy się jako zamknięte.',
       noOpeningSensors: 'W rejestrze nie ma czujnika otwarcia',
+      sensorNotUsed: 'nieużywany: okno liczy się bez niego',
       unknownSensor: 'Urządzenie {{ id }} (spoza rejestru)',
       yes: 'Tak',
       no: 'Nie',

@@ -174,7 +174,10 @@ export class SmartDeviceForm implements OnInit {
   /** `undefined`: not known. */
   protected readonly positioning = signal<boolean | undefined>(undefined);
   protected readonly enabled = signal(true);
-  /** Blinds only (HAS-290): the ids of the opening sensors on their window, in the order chosen. */
+  /**
+   * Blinds only (HAS-290): the ids of the opening sensors on their window - as the registry holds
+   * them until the select is touched, then in the order of its options (the order means nothing).
+   */
   protected readonly openingSensors = signal<readonly number[]>([]);
   /** Which binding of the form another device already has - found when the form was sent. */
   protected readonly taken = signal<MessageKey | undefined>(undefined);
@@ -192,16 +195,34 @@ export class SmartDeviceForm implements OnInit {
    * The opening sensors of the registry a window can be given, by room and name - and an id the
    * blinds hold that is none of them, kept as it is, so that saving does not drop it unseen.
    */
+  /** What the field shows of the sensors chosen: their names, without the rooms of the list. */
+  protected readonly chosenSensors = computed(() =>
+    this.openingSensors().map(
+      (id) => this.sensorOptions().find((option) => option.id === id) ?? { id, name: undefined },
+    ),
+  );
+
   protected readonly sensorOptions = computed((): readonly SensorOption[] => {
     const registered = this.others()
-      .filter((device): device is SmartDevice & { id: number } =>
-        device.kind === 'opening sensor' && typeof device.id === 'number')
-      .map((device) => ({ id: device.id, name: device.name, room: device.room }))
-      .sort((left, right) =>
-        (left.room ?? '').localeCompare(right.room ?? '') || (left.name ?? '').localeCompare(right.name ?? ''));
+      .filter(
+        (device): device is SmartDevice & { id: number } =>
+          device.kind === 'opening sensor' && typeof device.id === 'number',
+      )
+      .map((device) => ({
+        id: device.id,
+        name: device.name,
+        room: device.room,
+        // blinds-service leaves a switched-off sensor out of its window
+        off: device.enabled === false,
+      }))
+      .sort(
+        (left, right) =>
+          roomOrder(left.room) - roomOrder(right.room) ||
+          (left.name ?? '').localeCompare(right.name ?? ''),
+      );
     const held = openingSensorsOf(this.device() ?? {})
       .filter((id) => !registered.some((option) => option.id === id))
-      .map((id) => ({ id, name: undefined, room: undefined }));
+      .map((id) => ({ id, name: undefined, room: undefined, off: false }));
     return [...registered, ...held];
   });
 
@@ -371,6 +392,13 @@ interface SensorOption {
   readonly id: number;
   readonly name: string | undefined;
   readonly room: string | undefined;
+  readonly off: boolean;
+}
+
+/** The rooms in the order of the SDK, the order of the registry; one it does not know last. */
+function roomOrder(room: string | undefined): number {
+  const index = room === undefined ? -1 : ROOM_NAMES.indexOf(room);
+  return index === -1 ? ROOM_NAMES.length : index;
 }
 
 /** What is offered, with the value a device holds when that is none of them. */

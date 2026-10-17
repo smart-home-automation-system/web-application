@@ -136,7 +136,9 @@
               [disabled]="busy()"
               (change)="setChannel($event.value)"
             >
-              <mat-button-toggle [value]="notSet">{{ t('devices.form.noChannel') }}</mat-button-toggle>
+              <mat-button-toggle [value]="notSet">{{
+                t('devices.form.noChannel')
+              }}</mat-button-toggle>
               @for (one of channels; track one) {
                 <mat-button-toggle [value]="'' + one">{{ one }}</mat-button-toggle>
               }
@@ -286,6 +288,12 @@
             [disabled]="busy()"
             (selectionChange)="openingSensors.set($event.value)"
           >
+            <mat-select-trigger>
+              @for (sensor of chosenSensors(); track sensor.id; let last = $last) {
+                {{ sensor.name ?? t('devices.form.unknownSensor', { id: sensor.id })
+                }}{{ last ? '' : ', ' }}
+              }
+            </mat-select-trigger>
             @for (sensor of sensorOptions(); track sensor.id) {
               <mat-option [value]="sensor.id">
                 @if (sensor.name !== undefined) {
@@ -293,6 +301,9 @@
                   {{ sensor.name }}
                   @if (sensor.room) {
                     <span class="form__option-note">· {{ sensor.room }}</span>
+                  }
+                  @if (sensor.off) {
+                    <span class="form__option-note">· {{ t('devices.form.sensorNotUsed') }}</span>
                   }
                 } @else {
                   {{ t('devices.form.unknownSensor', { id: sensor.id }) }}

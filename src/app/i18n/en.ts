@@ -528,6 +528,7 @@ export const en = {
       openingSensors: 'Window sensors',
       openingSensorsHint: 'The sensors of this window only. Without one the window counts as closed.',
       noOpeningSensors: 'No opening sensor in the registry',
+      sensorNotUsed: 'not used: the window counts without it',
       unknownSensor: 'Device {{ id }} (not in the registry)',
       yes: 'Yes',
       no: 'No',
