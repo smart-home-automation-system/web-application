@@ -1,0 +1,40 @@
+// The window has the same size for every room (ROOM_DIALOG_SIZE): the title and the button stay,
+// the list in between scrolls
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  --app-domain: var(--app-domain-devices);
+}
+
+.dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog__heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dialog__room {
+  overflow-wrap: anywhere;
+}
+
+.dialog__floor {
+  font: var(--mat-sys-body-medium);
+  letter-spacing: var(--mat-sys-body-medium-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.dialog__content {
+  flex: 1 1 auto;
+  // Material caps the content at 65vh; the window has a fixed size and the content fills it
+  max-height: none;
+}
+
+.dialog__actions {
+  justify-content: flex-end;
+}

@@ -1,23 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { ApiError } from '../../core/api/api-error';
 import { isRecord } from '../../core/util/is-record';
 import {
-  DeviceDetails,
   DeviceRegistryApi,
   RegisteredDevice,
   SmartDevice,
 } from '../../data-access/devices/device-registry-api';
+import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
-import { groupByFloor } from './device-groups';
-import { RoomDevices } from './room-devices';
-import { SmartDeviceForm } from './smart-device-form';
+import { RoomDevices as RoomGroup, groupByFloor } from './device-groups';
+import { RoomCard } from './room-card';
+import { ROOM_DIALOG_SIZE, RoomDialog, RoomDialogData } from './room-dialog';
 
 /**
  * The administration of the device registry: every device `database-service` holds for the
@@ -31,19 +29,21 @@ import { SmartDeviceForm } from './smart-device-form';
  * The registry is what the services read to know their devices, and - for an Eaton device -
  * what `amx-service` asks with every datagram of its point: a change here takes effect in the
  * house, which is why nothing is changed without a form or a question.
+ *
+ * **A room is a card of one size, a floor a row of them** (owner, 2026-10-17, HAS-290): the card
+ * counts the devices of its room by kind; the devices, and every change of them - adding one
+ * included - are in a window of one size for every room (`RoomDialog`). Every room of the
+ * house has its card, an empty one too: that is where a device is added to it.
  */
 @Component({
   selector: 'app-devices',
   imports: [
-    MatButtonModule,
     MatCardModule,
-    MatIconModule,
     MatProgressBarModule,
     TranslocoDirective,
     ApiErrorStrip,
     DataFreshness,
-    RoomDevices,
-    SmartDeviceForm,
+    RoomCard,
   ],
   templateUrl: './devices.html',
   styleUrl: './devices.scss',
@@ -83,27 +83,32 @@ export class Devices {
 
   protected readonly floors = computed(() => groupByFloor(this.devices() ?? []));
 
-  protected readonly adding = signal(false);
-  /** Why the device of the form was not added. */
-  protected readonly addFailure = signal<ApiError | undefined>(undefined);
+  private readonly dialog = inject(MatDialog);
 
-  protected startAdding(): void {
-    this.addFailure.set(undefined);
-    this.adding.set(true);
-  }
-
-  protected stopAdding(): void {
-    this.addFailure.set(undefined);
-    this.adding.set(false);
-  }
-
-  protected async add(details: DeviceDetails): Promise<void> {
-    this.addFailure.set(undefined);
-    const outcome = await this.registry.add(details);
-    if (outcome.carriedOut) {
-      this.adding.set(false);
-    } else {
-      this.addFailure.set(outcome.failure);
-    }
+  /**
+   * The window of a room. It is given signals, not values: the registry is read again after every
+   * change, and the window shows the room as it is then - a room the registry no longer has a
+   * device in is still the room, with none.
+   */
+  protected openRoom(room: string, floor: MessageKey, startAdding: boolean): void {
+    const group = computed(
+      (): RoomGroup =>
+        this.floors()
+          .flatMap((one) => one.rooms)
+          .find((one) => one.room === room) ?? { room, devices: [] },
+    );
+    const data: RoomDialogData = {
+      group,
+      floor,
+      all: computed(() => this.entries() ?? []),
+      registry: this.registry,
+      startAdding,
+    };
+    this.dialog.open(RoomDialog, {
+      ...ROOM_DIALOG_SIZE,
+      data,
+      autoFocus: startAdding ? 'first-tabbable' : 'dialog',
+      ariaLabel: room,
+    });
   }
 }

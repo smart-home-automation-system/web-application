@@ -1,0 +1,27 @@
+<ng-container *transloco="let t">
+  @let group = data.group();
+  <div class="dialog__title" mat-dialog-title>
+    <div class="domain-badge dialog__badge"><mat-icon>meeting_room</mat-icon></div>
+    <div class="dialog__heading">
+      <!-- a room is shown by its identifier, as everywhere in the application -->
+      <span class="dialog__room">{{ group.room || t('devices.room.unknown') }}</span>
+      <span class="dialog__floor">
+        <span data-testid="floor">{{ t(data.floor) }}</span>
+        <span>· {{ t('devices.room.count', { count: group.devices.length }) }}</span>
+      </span>
+    </div>
+  </div>
+
+  <mat-dialog-content class="dialog__content">
+    <app-room-devices
+      [group]="group"
+      [all]="data.all()"
+      [registry]="data.registry"
+      [startAdding]="data.startAdding"
+    />
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog__actions">
+    <button matButton type="button" mat-dialog-close>{{ t('devices.room.close') }}</button>
+  </mat-dialog-actions>
+</ng-container>

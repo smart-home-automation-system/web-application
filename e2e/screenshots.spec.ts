@@ -396,20 +396,31 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
-      // the administration of the devices: the registry as it is, a device being changed with
-      // a question open in another card, and the form of a new device with what it refuses
+      // the administration of the devices (HAS-290): a card per room, floor by floor; the window
+      // of a room with a device being changed and a question open; the window opened with "Add"
       test('devices', async ({ page }, testInfo) => {
+        const card = (room: string) => page.locator(`[data-room-card="${room}"]`);
         await page.goto('/devices');
-        await expect(page.getByTestId('device')).toHaveCount(14);
+        await expect(page.locator('[data-room-card]').first()).toBeVisible();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices'),
         });
 
-        // HAS-290: the form of blinds with the sensors of their window
+        await card('office').locator('.room__actions button').first().click();
+        const dialog = page.getByRole('dialog');
+        await expect(dialog.getByTestId('device')).toHaveCount(5);
+        // the window fades in: a picture of it once nothing moves any more
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'devices-room'),
+        });
+
+        // the form of blinds with the sensors of their window
         await page.locator('[data-device="1"] .device__actions button').first().click();
-        await expect(page.locator('[data-device="1"] app-smart-device-form')).toBeVisible();
-        // the form is taller than the window: the page with the field of the sensors in view
-        await page.locator('[data-device="1"] [data-testid="opening-sensors"]').scrollIntoViewIfNeeded();
+        await expect(
+          page.locator('[data-device="1"] [data-testid="opening-sensors"]'),
+        ).toBeVisible();
+        await page.locator('[data-device="1"] [data-testid="opening-sensors"]').hover();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-window-sensors'),
         });
@@ -417,28 +428,22 @@ for (const language of ['en', 'pl'] as const) {
           .locator('[data-device="1"] app-smart-device-form button[type="button"]')
           .last()
           .click();
-        await expect(page.locator('[data-device="1"] app-smart-device-form')).toHaveCount(0);
 
-        await page.locator('[data-device="3"] .device__actions button').first().click();
-        await expect(page.locator('[data-device="3"] app-smart-device-form')).toBeVisible();
-        await page.locator('[data-device="6"] .device__actions button').last().click();
-        await expect(page.locator('[data-device="6"]').getByRole('group')).toBeVisible();
+        // a question open in the window
+        await page.locator('[data-device="4"] .device__actions button').last().click();
+        await expect(page.locator('[data-device="4"]').getByRole('group')).toBeVisible();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-editing'),
         });
-        // the form is taller than the window: the card by itself
-        await page.locator('[data-room="office"]').screenshot({
-          path: shot(testInfo.project.name, scheme, language, 'devices-form'),
-        });
+        await page.keyboard.press('Escape');
+        await expect(dialog).toHaveCount(0);
 
-        await page
-          .locator('[data-room="office"] app-smart-device-form button[type="button"]')
-          .last()
-          .click();
-        await page.locator('[data-testid="registry"] .registry__add').click();
-        await page.locator('[data-testid="registry"] input').first().fill('Lo');
-        // the list of a select opens over the page: a picture of it, then a choice from it
-        await page.locator('[data-testid="registry"] [data-testid="kind"]').click();
+        // "Add" of a card: the window with the form open; the list of a select over it
+        await card('loft').locator('.room__actions button').last().click();
+        await expect(dialog.locator('app-smart-device-form')).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await dialog.locator('app-smart-device-form input').first().fill('Lo');
+        await dialog.locator('app-smart-device-form [data-testid="kind"]').click();
         await expect(page.locator('.mat-mdc-select-panel')).toHaveCSS('opacity', '1');
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-select'),
@@ -446,8 +451,8 @@ for (const language of ['en', 'pl'] as const) {
         await page
           .getByRole('option', { name: language === 'pl' ? 'Rolety' : 'Blinds', exact: true })
           .click();
-        await page.locator('[data-testid="registry"] button[type="submit"]').click();
-        await page.locator('[data-testid="registry"]').screenshot({
+        await dialog.locator('button[type="submit"]').click();
+        await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-new'),
         });
       });

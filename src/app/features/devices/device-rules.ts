@@ -187,7 +187,9 @@ export function openingSensorsOf(device: SmartDevice): readonly number[] {
  * to remove a sensor while any does (the 409 `DEVICE_CONFLICT`, HAS-290).
  */
 export function blindsUsing(sensor: number, all: readonly SmartDevice[]): readonly SmartDevice[] {
-  return all.filter((device) => device.kind === 'blinds' && openingSensorsOf(device).includes(sensor));
+  return all.filter(
+    (device) => device.kind === 'blinds' && openingSensorsOf(device).includes(sensor),
+  );
 }
 
 /**

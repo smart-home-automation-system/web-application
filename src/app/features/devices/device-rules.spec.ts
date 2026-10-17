@@ -24,7 +24,12 @@ const SHELLY: SmartDevice = {
   kind: 'blinds',
   enabled: true,
   vendor: 'shelly',
-  shelly: { address: '192.0.2.22', generation: 2, deviceId: 'shellyplus2pm-0a0b0c0d0e01', channel: 0 },
+  shelly: {
+    address: '192.0.2.22',
+    generation: 2,
+    deviceId: 'shellyplus2pm-0a0b0c0d0e01',
+    channel: 0,
+  },
 };
 const GATEWAY: SmartDevice = {
   id: 10,
@@ -109,12 +114,17 @@ describe('the rules of a device', () => {
     },
   );
 
-  it.each(['', '192.0.2', '192.0.2.256', '192.0.2.017', '192.0.2.17:80', 'office.local', 'a.b.c.d'])(
-    'refuse "%s" as an address',
-    (address) => {
-      expect(addressProblem(address)).toBe('devices.problem.address');
-    },
-  );
+  it.each([
+    '',
+    '192.0.2',
+    '192.0.2.256',
+    '192.0.2.017',
+    '192.0.2.17:80',
+    'office.local',
+    'a.b.c.d',
+  ])('refuse "%s" as an address', (address) => {
+    expect(addressProblem(address)).toBe('devices.problem.address');
+  });
 
   describe('about the id of a Shelly', () => {
     // from the second generation on a device without it could be driven and never heard
@@ -277,7 +287,9 @@ describe('the rules of a device', () => {
   // HAS-290: the sensors of a window, read from an answer nothing checks
   describe('about the opening sensors of blinds', () => {
     it('reads the ids that are numbers and nothing else', () => {
-      expect(openingSensorsOf({ openingSensors: [9, '14', null, 2.5, 14] as unknown as number[] })).toEqual([9, 14]);
+      expect(
+        openingSensorsOf({ openingSensors: [9, '14', null, 2.5, 14] as unknown as number[] }),
+      ).toEqual([9, 14]);
       expect(openingSensorsOf({})).toEqual([]);
       expect(openingSensorsOf({ openingSensors: 'none' as unknown as number[] })).toEqual([]);
     });

@@ -457,19 +457,23 @@ export const en = {
   devices: {
     title: 'Devices',
     registry: {
-      title: 'Registry',
       loading: 'Loading the device registry',
       unreadable: 'The registry did not answer with its devices.',
       empty: 'No device is registered yet.',
       count: 'Devices: {{ count }}',
       skipped: 'Entries of the registry without an id, not shown: {{ count }}',
-      add: 'Add a device',
       newDevice: 'New device',
     },
     room: {
       unknown: 'No room',
       count: 'Devices: {{ count }}',
       add: 'Add a device here',
+      details: 'Details',
+      addShort: 'Add',
+      none: 'none',
+      pieces: '{{ count }}',
+      empty: 'No device in this room yet.',
+      close: 'Close',
     },
     device: {
       unnamed: 'No name',

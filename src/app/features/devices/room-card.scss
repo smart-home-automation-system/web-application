@@ -1,0 +1,63 @@
+// Every card the same size (owner, 2026-10-17): the same rows of kinds in each, a fixed width,
+// and the page lays them out in one row per floor
+:host {
+  display: block;
+  // six rooms of a floor side by side on a window of 1440 px: a share of the row, within bounds
+  width: var(--room-card-width, clamp(176px, calc((100% - 5 * 12px) / 6), 230px));
+}
+
+.room {
+  --app-domain: var(--app-domain-devices);
+  height: 100%;
+}
+
+// one line, whatever the name: a name of two lines would make its card taller than the others
+mat-card-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+mat-card-header {
+  min-width: 0;
+}
+
+mat-card-content {
+  padding-top: 8px;
+}
+
+.kinds {
+  margin: 0;
+}
+
+.kinds__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+
+  dt,
+  dd {
+    margin: 0;
+  }
+
+  dd {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
+// a kind the room has not: there, but quiet
+.kinds__row--none {
+  color: var(--mat-sys-on-surface-variant);
+
+  dd {
+    font-weight: 400;
+  }
+}
+
+.room__actions {
+  justify-content: space-between;
+}

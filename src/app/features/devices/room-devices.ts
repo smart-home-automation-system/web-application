@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  OnInit,
   Injector,
   afterNextRender,
   computed,
@@ -12,7 +13,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -26,23 +26,11 @@ import {
   RegisteredDevice,
   SmartDevice,
 } from '../../data-access/devices/device-registry-api';
-import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { RoomDevices as RoomGroup } from './device-groups';
 import { changeSummary, describeDeviceError } from './device-errors';
-import {
-  kindIcon,
-  kindLabel,
-  lightKindLabel,
-  placementLabel,
-  vendorLabel,
-} from './device-labels';
-import {
-  bindingOf,
-  blindsUsing,
-  openingSensorsOf,
-  sameDevice,
-} from './device-rules';
+import { kindIcon, kindLabel, lightKindLabel, placementLabel, vendorLabel } from './device-labels';
+import { bindingOf, blindsUsing, openingSensorsOf, sameDevice } from './device-rules';
 import { SmartDeviceForm } from './smart-device-form';
 
 /** What the card shows besides its devices: nothing more, a form, or a question. */
@@ -75,7 +63,6 @@ const VIEW: Panel = { kind: 'view' };
   selector: 'app-room-devices',
   imports: [
     MatButtonModule,
-    MatCardModule,
     MatIconModule,
     MatProgressBarModule,
     MatTooltipModule,
@@ -90,14 +77,14 @@ const VIEW: Panel = { kind: 'view' };
   preserveWhitespaces: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RoomDevices {
+export class RoomDevices implements OnInit {
   /** Two cards on one page must not share the ids their questions are named by. */
   private static cards = 0;
   protected readonly id = `room-devices-${RoomDevices.cards++}`;
 
   readonly group = input.required<RoomGroup>();
-  /** The key of the name of the floor the room lies on. */
-  readonly floor = input.required<MessageKey>();
+  /** Open with the form of a new device - the window was opened with "Add" of the card. */
+  readonly startAdding = input(false);
   /**
    * Everything the registry answered, an entry this page cannot show included: what a binding
    * must not repeat.
@@ -106,6 +93,7 @@ export class RoomDevices {
   readonly registry = input.required<DeviceRegistry>();
 
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly cancelButton = viewChild('cancelButton', { read: ElementRef });
 
   protected readonly describe = describeDeviceError;
@@ -136,6 +124,20 @@ export class RoomDevices {
   protected readonly busy = computed(() => this.registry().changing());
   protected readonly devices = computed(() => this.group().devices);
 
+  ngOnInit(): void {
+    if (this.startAdding()) {
+      this.panel.set({ kind: 'add' });
+      // the form stands below the devices of the room: it is what the window was opened for
+      afterNextRender(
+        () =>
+          this.host.nativeElement
+            .querySelector('.room__form-title')
+            ?.scrollIntoView?.({ block: 'start' }),
+        { injector: this.injector },
+      );
+    }
+  }
+
   constructor() {
     // A form or a question about a device is about that device. When it goes - removed in
     // another tab, moved to another room by the change just made - the panel goes for good:
@@ -155,7 +157,9 @@ export class RoomDevices {
    * The opening sensors of the window of blinds (HAS-290), by their names in the registry - an
    * id it does not hold is shown as the id.
    */
-  protected sensorsOf(device: SmartDevice): readonly { readonly id: number; readonly name?: string }[] {
+  protected sensorsOf(
+    device: SmartDevice,
+  ): readonly { readonly id: number; readonly name?: string }[] {
     return openingSensorsOf(device).map((id) => ({
       id,
       name: this.all().find((one) => one.id === id)?.name,

@@ -1,22 +1,10 @@
 <ng-container *transloco="let t">
   @let shown = panel();
-  <mat-card
-    appearance="outlined"
-    class="room card--domain"
-    data-testid="room"
-    [attr.data-room]="group().room"
-  >
-    <mat-card-header>
-      <div mat-card-avatar class="domain-badge"><mat-icon>meeting_room</mat-icon></div>
-      <!-- a room is shown by its identifier, as everywhere in the application -->
-      <mat-card-title>{{ group().room || t('devices.room.unknown') }}</mat-card-title>
-      <mat-card-subtitle>
-        <span data-testid="floor">{{ t(floor()) }}</span>
-        <span>· {{ t('devices.room.count', { count: devices().length }) }}</span>
-      </mat-card-subtitle>
-    </mat-card-header>
-
-    <mat-card-content>
+  <section class="room" data-testid="room-devices" [attr.data-room]="group().room">
+    <div class="room__content">
+      @if (devices().length === 0 && shown.kind !== 'add') {
+        <p class="room__empty" data-testid="no-devices">{{ t('devices.room.empty') }}</p>
+      }
       <ul class="devices">
         @for (device of devices(); track device.id) {
           <li
@@ -36,7 +24,9 @@
                 (cancelled)="close()"
               />
             } @else {
-              <mat-icon class="device__icon" aria-hidden="true">{{ kindIcon(device.kind) }}</mat-icon>
+              <mat-icon class="device__icon" aria-hidden="true">{{
+                kindIcon(device.kind)
+              }}</mat-icon>
               <div class="device__text">
                 <!-- the name is the household's own: printed as it is, never through the translations -->
                 <span class="device__name" data-testid="name">{{
@@ -74,9 +64,8 @@
                     <span>{{ t('devices.device.openingSensors') }}</span>
                     @for (sensor of sensorsOf(device); track sensor.id; let last = $last) {
                       <span
-                        >{{ sensor.name ?? t('devices.form.unknownSensor', { id: sensor.id }) }}{{
-                          last ? '' : ','
-                        }}</span
+                        >{{ sensor.name ?? t('devices.form.unknownSensor', { id: sensor.id })
+                        }}{{ last ? '' : ',' }}</span
                       >
                     }
                   </span>
@@ -125,7 +114,9 @@
                       <span class="code">{{ device.eaton?.gateway }}</span>
                       @let point = numberOf(device.eaton?.point);
                       <span>{{
-                        point === undefined ? device.eaton?.point : t('devices.device.point', { point })
+                        point === undefined
+                          ? device.eaton?.point
+                          : t('devices.device.point', { point })
                       }}</span>
                     }
                     @case ('bthome') {
@@ -146,7 +137,9 @@
                   (click)="open({ kind: 'edit', id: device.id })"
                 >
                   <mat-icon>edit</mat-icon>
-                  <span class="visually-hidden">{{ t('devices.device.edit') }} {{ device.name }}</span>
+                  <span class="visually-hidden"
+                    >{{ t('devices.device.edit') }} {{ device.name }}</span
+                  >
                 </button>
                 <!-- whether the services use the device - nothing is sent to the device itself. It
                      needs a state to change: none is offered for a device the registry says
@@ -157,7 +150,9 @@
                     type="button"
                     [disabled]="busy() || shown.kind !== 'view'"
                     [matTooltip]="
-                      t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse')
+                      t(
+                        device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse'
+                      )
                     "
                     [matTooltipDisabled]="busy()"
                     matTooltipTouchGestures="off"
@@ -167,7 +162,13 @@
                          what pressing does, and must not look like the switch of a light -->
                     <mat-icon>{{ device.enabled ? 'block' : 'check_circle' }}</mat-icon>
                     <span class="visually-hidden"
-                      >{{ t(device.enabled ? 'devices.device.takeOutOfUse' : 'devices.device.putIntoUse') }}
+                      >{{
+                        t(
+                          device.enabled
+                            ? 'devices.device.takeOutOfUse'
+                            : 'devices.device.putIntoUse'
+                        )
+                      }}
                       {{ device.name }}</span
                     >
                   </button>
@@ -179,7 +180,9 @@
                   (click)="open({ kind: 'remove', id: device.id })"
                 >
                   <mat-icon>delete</mat-icon>
-                  <span class="visually-hidden">{{ t('devices.device.remove') }} {{ device.name }}</span>
+                  <span class="visually-hidden"
+                    >{{ t('devices.device.remove') }} {{ device.name }}</span
+                  >
                 </button>
               </div>
 
@@ -194,7 +197,8 @@
                     <p class="question__warning" data-testid="sensor-in-use">
                       {{ t('devices.device.sensorInUse') }}
                       @for (blinds of users; track blinds.id; let last = $last) {
-                        <strong>{{ blinds.name }}</strong>{{ last ? '' : ',' }}
+                        <strong>{{ blinds.name }}</strong
+                        >{{ last ? '' : ',' }}
                       }
                     </p>
                   }
@@ -205,7 +209,13 @@
                     </p>
                   }
                   <div class="question__answers">
-                    <button #cancelButton matButton type="button" [disabled]="busy()" (click)="close()">
+                    <button
+                      #cancelButton
+                      matButton
+                      type="button"
+                      [disabled]="busy()"
+                      (click)="close()"
+                    >
                       {{ t('devices.form.cancel') }}
                     </button>
                     <button
@@ -254,15 +264,15 @@
           />
         }
       }
-    </mat-card-content>
+    </div>
 
     @if (shown.kind === 'view') {
-      <mat-card-actions class="room__actions">
+      <div class="room__actions">
         <button matButton type="button" [disabled]="busy()" (click)="open({ kind: 'add' })">
           <mat-icon>add</mat-icon>
           {{ t('devices.room.add') }}
         </button>
-      </mat-card-actions>
+      </div>
     }
-  </mat-card>
+  </section>
 </ng-container>

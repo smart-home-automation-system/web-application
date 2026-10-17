@@ -453,19 +453,23 @@ export const pl: Messages = {
   devices: {
     title: 'Urządzenia',
     registry: {
-      title: 'Rejestr',
       loading: 'Wczytywanie rejestru urządzeń',
       unreadable: 'Rejestr nie odpowiedział listą urządzeń.',
       empty: 'Nie zarejestrowano jeszcze żadnego urządzenia.',
       count: 'Urządzenia: {{ count }}',
       skipped: 'Wpisy rejestru bez identyfikatora, niepokazane: {{ count }}',
-      add: 'Dodaj urządzenie',
       newDevice: 'Nowe urządzenie',
     },
     room: {
       unknown: 'Bez pokoju',
       count: 'Urządzenia: {{ count }}',
       add: 'Dodaj urządzenie tutaj',
+      details: 'Szczegóły',
+      addShort: 'Dodaj',
+      none: 'brak',
+      pieces: '{{ count }} szt.',
+      empty: 'W tym pokoju nie ma jeszcze urządzeń.',
+      close: 'Zamknij',
     },
     device: {
       unnamed: 'Bez nazwy',

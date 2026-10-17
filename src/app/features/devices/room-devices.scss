@@ -1,9 +1,10 @@
 .room {
-  --app-domain: var(--app-domain-devices);
+  display: block;
 }
 
-mat-card-content {
-  padding-top: 8px;
+.room__empty {
+  margin: 8px 0;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .devices {
@@ -145,5 +146,5 @@ mat-card-content {
 }
 
 .room__actions {
-  padding: 0 8px 12px;
+  padding-top: 8px;
 }
