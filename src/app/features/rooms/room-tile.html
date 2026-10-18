@@ -113,10 +113,16 @@
         <div class="rows__row" data-row="presence">
           <dt><mat-icon aria-hidden="true">person</mat-icon>{{ t('rooms.row.presence') }}</dt>
           <dd>
-            @if (room.residents.length > 0) {
-              {{ t('rooms.presence.atHome', { count: present(), of: room.residents.length }) }}
-            } @else if (room.presenceSensors.length > 0) {
-              {{ t('rooms.pieces', { count: room.presenceSensors.length }) }}
+            @if (room.presenceSensors.length > 0) {
+              <!-- what a sensor senses is kept by no service yet: every one is drawn as not known -->
+              @for (sensor of room.presenceSensors; track sensor.id) {
+                <mat-icon class="rows__icon" data-state="unknown" aria-hidden="true"
+                  >sensor_occupied</mat-icon
+                >
+              }
+              <span class="visually-hidden">{{
+                t('rooms.presence.count', { count: room.presenceSensors.length })
+              }}</span>
             } @else {
               <span class="rows__none">{{ t('rooms.none') }}</span>
             }

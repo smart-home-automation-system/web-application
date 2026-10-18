@@ -42,7 +42,8 @@ test('moves a blind and pauses its schedules, reading the blinds back', async ({
   await expect(blind.getByTestId('blind-paused')).toHaveCount(0);
   await blind.getByRole('switch').click();
   await expect(blind.getByTestId('blind-paused')).toContainText('Paused');
-  await expect(blind.getByTestId('blind-schedules')).toContainText('Close at dusk');
+  // the schedules have a page of their own (owner, 2026-10-18)
+  await expect(window.getByTestId('blind-schedules')).toHaveCount(0);
 });
 
 // no optimistic state: the switch shows what the blinds service says, not the click (found in review)
@@ -57,6 +58,22 @@ test('leaves the pause switch as it was when the pause failed', async ({ page })
   await expect(blind.getByRole('alert')).toBeVisible();
   await expect(blind.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   await expect(blind.getByTestId('blind-paused')).toHaveCount(0);
+});
+
+// owner, 2026-10-18: the word appearing next to the buttons moves none of them
+test('keeps the buttons of a light in place when the command is told as sent', async ({ page }) => {
+  await page.goto('/rooms');
+  const window = await openRoom(page, 'living room');
+  const light = window.locator('[data-light="5"]');
+  const off = light.getByRole('button', { name: 'Off Living room dimmer' });
+  // the window grows in: measured once nothing moves any more
+  await page.waitForFunction(() => document.getAnimations().length === 0);
+  const before = await off.boundingBox();
+
+  await light.getByRole('button', { name: 'On Living room dimmer' }).click();
+  await expect(light.getByRole('status')).toHaveText('Sent');
+
+  expect(await off.boundingBox()).toEqual(before);
 });
 
 test('switches a light and says it was sent, never that it is on', async ({ page }) => {

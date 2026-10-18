@@ -46,9 +46,6 @@
         @if (room.heating?.window?.hold === true) {
           <p class="section__warning" data-testid="detail-held">{{ t('window.held') }}</p>
         }
-        <a matButton routerLink="/heating" class="section__link">
-          <mat-icon>open_in_new</mat-icon>{{ t('rooms.heating.setOnHeatingPage') }}
-        </a>
       } @else if (heaters === undefined && room.heating) {
         <p class="section__note">{{ t('heating.rooms.heatersUnknown') }}</p>
       } @else {
@@ -72,7 +69,7 @@
             <li class="list__row list__row--control" [attr.data-light]="light.id">
               <span class="list__name">
                 <mat-icon class="list__bulb" aria-hidden="true">lightbulb</mat-icon>
-                {{ light.name ?? t('rooms.unnamed') }}
+                {{ shortName(light.name, room.room, 'light') ?? t('rooms.unnamed') }}
               </span>
               @if (point !== undefined) {
                 <span class="list__controls">
@@ -115,11 +112,16 @@
                     </button>
                   </span>
                 }
-                @if (command?.sent) {
-                  <span class="list__sent" role="status">{{ t('rooms.lights.sent') }}</span>
-                }
+                <!-- always there, so that the word appearing does not move the buttons -->
+                <span class="list__sent" role="status">{{
+                  command?.sent ? t('rooms.lights.sent') : ''
+                }}</span>
                 @if (command?.error; as error) {
-                  <app-api-error-strip [error]="error" [summary]="t('rooms.commandFailed')" />
+                  <app-api-error-strip
+                    class="list__failure"
+                    [error]="error"
+                    [summary]="t('rooms.commandFailed')"
+                  />
                 }
               } @else {
                 <span class="section__note">{{ t('rooms.lights.noControl') }}</span>
@@ -130,7 +132,7 @@
       }
     </section>
 
-    <!-- blinds: commands, the pause of their schedules, and what the schedules make of today -->
+    <!-- blinds: commands and the pause of their schedules; the schedules have a page of their own -->
     <section class="section" data-section="blinds">
       <h3 class="section__title">
         <mat-icon aria-hidden="true">blinds</mat-icon>{{ t('rooms.row.blinds') }}
@@ -144,7 +146,9 @@
             @let shown = positionLabel(blind);
             <li class="blind" [attr.data-blind]="blind.device.id">
               <div class="blind__head">
-                <span class="list__name">{{ blind.device.name ?? t('rooms.unnamed') }}</span>
+                <span class="list__name">{{
+                  shortName(blind.device.name, room.room, 'blinds') ?? t('rooms.unnamed')
+                }}</span>
                 <span class="list__state" data-testid="blind-position">{{
                   t(shown.key, { position: shown.position })
                 }}</span>
@@ -230,7 +234,6 @@
               @if (command?.error; as error) {
                 <app-api-error-strip [error]="error" [summary]="t('rooms.commandFailed')" />
               }
-              <app-blind-schedules [blind]="blind.device.id" />
             </li>
           }
         </ul>
@@ -260,23 +263,10 @@
       <h3 class="section__title">
         <mat-icon aria-hidden="true">person</mat-icon>{{ t('rooms.row.presence') }}
       </h3>
-      @if (room.residents.length === 0 && room.presenceSensors.length === 0) {
-        <p class="section__note">{{ t('rooms.presence.nobody') }}</p>
+      @if (room.presenceSensors.length === 0) {
+        <p class="section__note">{{ t('rooms.noDevice') }}</p>
       } @else {
         <ul class="list">
-          @for (resident of room.residents; track resident.name) {
-            <!-- a member's name is text from outside: printed as it is -->
-            <li class="list__row" [attr.data-present]="resident.present">
-              <span>{{ resident.name }}</span>
-              <span class="list__state">{{
-                resident.present === true
-                  ? t('rooms.presence.home')
-                  : resident.present === false
-                    ? t('rooms.presence.away')
-                    : t('rooms.presence.notObserved')
-              }}</span>
-            </li>
-          }
           @for (sensor of room.presenceSensors; track sensor.id) {
             <li class="list__row">
               <span>{{ sensor.name ?? t('rooms.unnamed') }}</span>

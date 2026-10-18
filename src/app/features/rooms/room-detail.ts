@@ -7,7 +7,6 @@ import {
   MatSlideToggleModule,
 } from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
-import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 
@@ -25,8 +24,7 @@ import {
   heaterStateLabel,
 } from '../../shared/room-heating/heater-labels';
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
-import { BlindSchedules } from './blind-schedules';
-import { BlindRow, RoomOverview } from './room-overview';
+import { BlindRow, RoomOverview, shortName } from './room-overview';
 import { blindPositionLabel } from './room-labels';
 
 /** What the window of a room is opened with: signals, so that it follows the services. */
@@ -71,10 +69,8 @@ interface CommandState {
     MatIconModule,
     MatSlideToggleModule,
     MatSliderModule,
-    RouterLink,
     TranslocoDirective,
     ApiErrorStrip,
-    BlindSchedules,
     HouseAgePipe,
     LocalNumberPipe,
   ],
@@ -103,6 +99,7 @@ export class RoomDetail {
   protected readonly windowLabel = windowStateLabel;
   protected readonly windowIcon = windowStateIcon;
   protected readonly positionLabel = blindPositionLabel;
+  protected readonly shortName = shortName;
 
   /** The point of an Eaton light, which is what `amx-service` switches; `undefined` for any other light. */
   protected eatonPoint(light: RegisteredDevice): number | undefined {

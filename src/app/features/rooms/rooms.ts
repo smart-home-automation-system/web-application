@@ -4,12 +4,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { ProfileStore } from '../../core/profile/profile-store';
 import { isRecord } from '../../core/util/is-record';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, RegisteredDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi } from '../../data-access/heating/heating-api';
-import { PresenceApi } from '../../data-access/presence/presence-api';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
@@ -26,8 +24,8 @@ import { RoomTile } from './room-tile';
  * the room and the controls of its lights and blinds. "My room" stays the resident's page of
  * their own rooms.
  *
- * Four services feed it: the device registry (what is where), the heating (temperatures, heaters,
- * windows), the blinds and presence. Each is one call with its own freshness and failure, told
+ * Three services feed it: the device registry (what is where), the heating (temperatures, heaters,
+ * windows) and the blinds. Each is one call with its own freshness and failure, told
  * once in the strip of sources at the top; a room card says what is known and "not known" where
  * a service did not answer - never off, closed or away.
  */
@@ -49,15 +47,12 @@ export class Rooms {
   protected readonly registry = inject(DeviceRegistryApi).watchDevices();
   protected readonly heating = inject(HeatingApi).watchRooms();
   protected readonly blinds = inject(BlindsApi).watchBlinds();
-  protected readonly presence = inject(PresenceApi).watchNow();
-  private readonly members = inject(ProfileStore).members;
   private readonly dialog = inject(MatDialog);
 
   protected readonly sources = [
     { id: 'registry', label: 'rooms.source.registry' as MessageKey, resource: this.registry },
     { id: 'heating', label: 'rooms.source.heating' as MessageKey, resource: this.heating },
     { id: 'blinds', label: 'rooms.source.blinds' as MessageKey, resource: this.blinds },
-    { id: 'presence', label: 'rooms.source.presence' as MessageKey, resource: this.presence },
   ];
 
   /** The devices that can be shown: an entry without an id cannot be addressed by a control. */
@@ -96,13 +91,6 @@ export class Rooms {
   }
 
   private overviewOf(room: string): RoomOverview {
-    return toRoomOverview(
-      room,
-      this.devices() ?? [],
-      this.heatingRooms(),
-      this.blinds.value(),
-      this.members(),
-      this.presence.value(),
-    );
+    return toRoomOverview(room, this.devices() ?? [], this.heatingRooms(), this.blinds.value());
   }
 }

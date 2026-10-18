@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -35,8 +35,4 @@ export class RoomTile {
   protected readonly heaterState = heaterState;
   protected readonly windowLabel = shortWindowLabel;
   protected readonly positionLabel = blindPositionLabel;
-
-  protected readonly present = computed(
-    () => this.overview().residents.filter((resident) => resident.present === true).length,
-  );
 }

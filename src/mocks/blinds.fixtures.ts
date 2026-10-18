@@ -1,4 +1,4 @@
-import { Blind, BlindSchedule, RoomBlinds } from '../app/data-access/blinds/blinds-api';
+import { Blind, RoomBlinds } from '../app/data-access/blinds/blinds-api';
 import type { MockReply } from './handlers';
 import { houseTime } from './house-time';
 
@@ -151,43 +151,6 @@ export function pauseBlind(id: string, paused: boolean): MockReply {
     blind.pausedSecondsAgo = 0;
   }
   return { status: 204, body: null };
-}
-
-/** The schedules of a blind today: an evening close that ran, and a heat position switched off. */
-export function blindSchedules(id: string, now: Date = new Date()): MockReply {
-  const blind = find(id);
-  if (!blind) {
-    return notFound;
-  }
-  const schedules: BlindSchedule[] = [
-    {
-      scheduleId: 5,
-      name: 'Close at dusk',
-      enabled: true,
-      action: 'close',
-      window: { from: '16:00', to: '21:00' },
-      decision: 'fired today',
-      firedAt: houseTime(now, 3 * 3600 + 5),
-      outcome: blind.pausedSecondsAgo === undefined ? 'moved' : 'paused',
-    },
-    {
-      scheduleId: 6,
-      name: 'Half in the heat',
-      enabled: false,
-      action: 'position',
-      position: 30,
-      decision: 'disabled',
-    },
-    {
-      scheduleId: 7,
-      name: 'Open in the morning',
-      enabled: true,
-      action: 'open',
-      window: { from: '21:00', to: '07:30', nextDay: true },
-      decision: 'before the window',
-    },
-  ];
-  return { status: 200, body: blind.positioning ? schedules : schedules.slice(0, 1) };
 }
 
 /** A light switched through amx-service: the frame went out, nothing is kept. */

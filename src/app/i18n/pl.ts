@@ -462,7 +462,6 @@ export const pl: Messages = {
       registry: 'Urządzenia',
       heating: 'Ogrzewanie',
       blinds: 'Rolety',
-      presence: 'Obecność',
     },
     row: {
       temperature: 'Temperatura',
@@ -471,7 +470,7 @@ export const pl: Messages = {
       blinds: 'Rolety',
       motion: 'Ruch',
       presence: 'Obecność',
-      openingSensors: 'Okna',
+      openingSensors: 'Otwarcia',
       other: 'Inne',
     },
     window: {
@@ -483,7 +482,6 @@ export const pl: Messages = {
       on: 'grzeje',
       off: 'wyłączone',
       held: 'wstrzymane',
-      setOnHeatingPage: 'Ustaw w widoku Ogrzewanie',
     },
     lights: {
       count: 'Światła: {{ count }}',
@@ -515,40 +513,7 @@ export const pl: Messages = {
       unreachable: 'Brak połączenia',
     },
     presence: {
-      atHome: '{{ count }} z {{ of }} w domu',
-      nobody: 'Nikt nie mieszka w tym pokoju i nie ma w nim czujnika obecności.',
-      home: 'w domu',
-      away: 'poza domem',
-      notObserved: 'nieobserwowany',
-    },
-    schedules: {
-      loading: 'Wczytywanie harmonogramów',
-      none: 'Żaden harmonogram nie steruje tą roletą.',
-      unnamed: 'Bez nazwy',
-      nextDay: '(następnego dnia)',
-      disabled: 'wyłączony',
-      action: {
-        open: 'otwórz',
-        close: 'zamknij',
-        position: 'na',
-      },
-      outcome: {
-        moved: 'wykonany',
-        failed: 'nieudany',
-        unsupported: 'nieobsługiwany',
-        paused: 'wstrzymany pauzą',
-      },
-      decision: {
-        disabled: 'wyłączony',
-        notToday: 'nie dziś',
-        noWindow: 'dziś bez okna',
-        fired: 'wykonany dziś',
-        before: 'później dziś',
-        after: 'okno minęło',
-        noBlinds: 'brak znanych rolet',
-        waiting: 'czeka na warunki',
-        fires: 'uruchamia się',
-      },
+      count: 'Czujniki obecności: {{ count }}',
     },
   },
   myRoom: {

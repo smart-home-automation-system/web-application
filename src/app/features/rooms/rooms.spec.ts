@@ -76,7 +76,6 @@ describe('Rooms', () => {
     http.expectOne('/home/device/registry').flush(DEVICES);
     http.expectOne('/home/heating/rooms').flush(HEATING);
     http.expectOne('/home/blinds').flush(BLINDS);
-    http.expectOne('/home/presence/residents/presence').flush([]);
     fixture.detectChanges();
   });
 
@@ -105,28 +104,6 @@ describe('Rooms', () => {
     button(tile('office'), 'Details').click();
     await settled();
     const window = dialog();
-    // the schedules of the blind, asked for by the window once its polling starts
-    vi.advanceTimersByTime(1);
-    http.expectOne('/home/blinds/1/schedules').flush([
-      {
-        scheduleId: 5,
-        name: 'Close at dusk',
-        enabled: true,
-        action: 'close',
-        window: { from: '16:00', to: '21:00' },
-        decision: 'fired today',
-        firedAt: '2026-10-17T17:02:00',
-        outcome: 'paused',
-      },
-      {
-        scheduleId: 6,
-        name: 'Later',
-        enabled: true,
-        action: 'open',
-        decision: 'some new decision',
-      },
-    ]);
-    fixture.detectChanges();
     return window;
   }
 
@@ -142,16 +119,16 @@ describe('Rooms', () => {
     expect(text(tile('kitchen').querySelector('[data-row="temperature"] dd'))).toBe('none');
   });
 
-  it('shows the room in its window with the schedules of its blind', async () => {
+  it('shows the room in its window, its devices by their short names', async () => {
     const window = await openOffice();
 
     expect(text(window.querySelector('[data-section="temperature"]'))).toContain('0.0 °C');
     expect(window.querySelector('[data-testid="detail-held"]')).not.toBeNull();
-    const schedules = text(window.querySelector('[data-testid="blind-schedules"]'));
-    expect(schedules).toContain('Close at dusk');
-    expect(schedules).toContain('held back by the pause');
-    // a decision this version does not know is printed as it came
-    expect(schedules).toContain('some new decision');
+    // the heating is set on its own page only: nothing here leads there
+    expect(window.querySelector('[data-section="heating"] a')).toBeNull();
+    expect(text(window.querySelector('[data-blind="1"] .list__name'))).toBe('Window');
+    // the schedules have a page of their own
+    expect(window.querySelector('[data-testid="blind-schedules"]')).toBeNull();
     // a Shelly light has no control here; an Eaton one has
     expect(text(window.querySelector('[data-light="6"]'))).toContain(
       'Not controlled from here yet',

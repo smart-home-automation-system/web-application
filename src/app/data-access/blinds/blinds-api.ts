@@ -38,35 +38,14 @@ export interface RoomBlinds {
   readonly blinds?: readonly Blind[];
 }
 
-/**
- * A schedule that moves one blind, as the engine sees it now - `GET /home/blinds/{id}/schedules`
- * (HAS-232). `firedAt` / `outcome` are this blind's, once the schedule ran for it in its window.
- */
-export interface BlindSchedule {
-  readonly scheduleId?: number;
-  readonly name?: string;
-  readonly enabled?: boolean;
-  /** `open`, `close` or `position`. */
-  readonly action?: string;
-  readonly position?: number;
-  /** Local times of the house, `HH:mm`; `nextDay` when `to` is the next day. */
-  readonly window?: { readonly from?: string; readonly to?: string; readonly nextDay?: boolean };
-  /** What the schedule does in this minute: `fires`, `fired today`, `waiting for the conditions` ... */
-  readonly decision?: string;
-  readonly firedAt?: string;
-  /** `moved`, `failed`, `unsupported`, `paused`. */
-  readonly outcome?: string;
-}
-
 /** What a blind is asked to do. */
 export type BlindCommand = 'open' | 'close' | 'stop';
 
 // a blind takes up to a minute to move; its state comes from the devices as it goes
 const POLL_EVERY_MS = 10_000;
-const POLL_SCHEDULES_EVERY_MS = 60_000;
 
 /**
- * The blinds of `blinds-service`: their state, the schedules of one, and the commands. A command
+ * The blinds of `blinds-service`: their state and the commands. A command
  * answers when the device took it (202), never that the blind got there: the caller reads the
  * blinds again and shows what they report - no optimistic state.
  */
@@ -79,17 +58,6 @@ export class BlindsApi {
     return pollingResource(() => this.api.get<readonly RoomBlinds[] | null>('/blinds'), {
       intervalMs: POLL_EVERY_MS,
     });
-  }
-
-  /**
-   * The schedules of the blind `id()` names. One resource is for one blind: a caller that shows
-   * another one makes a resource of its own. Call in an injection context.
-   */
-  watchSchedules(id: () => number): PollingResource<readonly BlindSchedule[] | null> {
-    return pollingResource(
-      () => this.api.get<readonly BlindSchedule[] | null>(`/blinds/${id()}/schedules`),
-      { intervalMs: POLL_SCHEDULES_EVERY_MS },
-    );
   }
 
   move(id: number, command: BlindCommand): Observable<void> {

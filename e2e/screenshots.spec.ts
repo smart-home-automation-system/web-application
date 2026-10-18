@@ -404,7 +404,7 @@ for (const language of ['en', 'pl'] as const) {
         await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'rooms') });
 
         await page.locator('[data-room-tile="office"] .room__actions button').click();
-        await expect(page.getByTestId('blind-schedules').first()).toBeVisible();
+        await expect(page.getByTestId('blind-pause').first()).toBeVisible();
         await page.waitForFunction(() => document.getAnimations().length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'rooms-office'),

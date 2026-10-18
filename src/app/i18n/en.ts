@@ -465,7 +465,6 @@ export const en = {
       registry: 'Devices',
       heating: 'Heating',
       blinds: 'Blinds',
-      presence: 'Presence',
     },
     row: {
       temperature: 'Temperature',
@@ -474,7 +473,7 @@ export const en = {
       blinds: 'Blinds',
       motion: 'Motion',
       presence: 'Presence',
-      openingSensors: 'Windows',
+      openingSensors: 'Openings',
       other: 'Other',
     },
     window: {
@@ -486,7 +485,6 @@ export const en = {
       on: 'heating',
       off: 'off',
       held: 'held',
-      setOnHeatingPage: 'Set on the heating page',
     },
     lights: {
       count: 'Lights: {{ count }}',
@@ -518,40 +516,7 @@ export const en = {
       unreachable: 'Not reachable',
     },
     presence: {
-      atHome: '{{ count }} of {{ of }} at home',
-      nobody: 'Nobody lives in this room and it has no presence sensor.',
-      home: 'at home',
-      away: 'away',
-      notObserved: 'not observed',
-    },
-    schedules: {
-      loading: 'Loading the schedules',
-      none: 'No schedule moves this blind.',
-      unnamed: 'Without a name',
-      nextDay: '(next day)',
-      disabled: 'switched off',
-      action: {
-        open: 'open',
-        close: 'close',
-        position: 'to',
-      },
-      outcome: {
-        moved: 'moved',
-        failed: 'failed',
-        unsupported: 'not supported',
-        paused: 'held back by the pause',
-      },
-      decision: {
-        disabled: 'switched off',
-        notToday: 'not today',
-        noWindow: 'no window today',
-        fired: 'ran today',
-        before: 'later today',
-        after: 'window over',
-        noBlinds: 'no blind known',
-        waiting: 'waiting for its conditions',
-        fires: 'running now',
-      },
+      count: 'Presence sensors: {{ count }}',
     },
   },
   myRoom: {

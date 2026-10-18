@@ -1,14 +1,8 @@
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
-import {
-  blindPositionLabel,
-  runOutcomeLabel,
-  scheduleActionLabel,
-  scheduleDecisionLabel,
-  shortWindowLabel,
-} from './room-labels';
+import { blindPositionLabel, shortWindowLabel } from './room-labels';
 
-// the words of the room view for what the services send (HAS-232): every value they are documented
-// to send has its text, and one this version does not know has none - the caller prints it as it came
+// the words of the room view for what the services send (HAS-232): what a service did not say is
+// "not known", never closed
 describe('room labels', () => {
   const blind = { device: { id: 1 } };
 
@@ -24,28 +18,6 @@ describe('room labels', () => {
     expect(blindPositionLabel({ ...blind, state: { position: Number.NaN } }).key).toBe(
       'rooms.blinds.state.unknown',
     );
-  });
-
-  it('names the outcomes, the actions and the decisions of the schedules', () => {
-    expect(['moved', 'failed', 'unsupported', 'paused'].map(runOutcomeLabel)).toEqual([
-      'rooms.schedules.outcome.moved',
-      'rooms.schedules.outcome.failed',
-      'rooms.schedules.outcome.unsupported',
-      'rooms.schedules.outcome.paused',
-    ]);
-    expect(runOutcomeLabel('skipped')).toBeUndefined();
-    expect(['open', 'close', 'position', 'tilt'].map(scheduleActionLabel)).toEqual([
-      'rooms.schedules.action.open',
-      'rooms.schedules.action.close',
-      'rooms.schedules.action.position',
-      undefined,
-    ]);
-    expect(scheduleDecisionLabel('waiting for the conditions')).toBe(
-      'rooms.schedules.decision.waiting',
-    );
-    expect(scheduleDecisionLabel('fires')).toBe('rooms.schedules.decision.fires');
-    expect(scheduleDecisionLabel(undefined)).toBeUndefined();
-    expect(scheduleDecisionLabel('something new')).toBeUndefined();
   });
 
   it('names the windows in full and in short', () => {

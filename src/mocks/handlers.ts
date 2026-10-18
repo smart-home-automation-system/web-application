@@ -1,13 +1,6 @@
 import { HttpRequest } from '@angular/common/http';
 
-import {
-  blindSchedules,
-  blindsByRoom,
-  moveBlind,
-  moveBlindTo,
-  pauseBlind,
-  switchLight,
-} from './blinds.fixtures';
+import { blindsByRoom, moveBlind, moveBlindTo, pauseBlind, switchLight } from './blinds.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import {
   addDevice as addRegisteredDevice,
@@ -227,7 +220,7 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     reply: (request, _, [name]) =>
       removeDevice(decodeURIComponent(name), request.params.get('mac')),
   },
-  // the blinds (HAS-232): their state, the commands, the pause and the schedules of one
+  // the blinds (HAS-232): their state, the commands and the pause of their schedules
   { method: 'GET', path: '/home/blinds', reply: () => ({ status: 200, body: blindsByRoom() }) },
   {
     method: 'POST',
@@ -248,11 +241,6 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'DELETE',
     path: /^\/home\/blinds\/(\d+)\/schedule-pause$/,
     reply: (_request, _fresh, [id]) => pauseBlind(id, false),
-  },
-  {
-    method: 'GET',
-    path: /^\/home\/blinds\/(\d+)\/schedules$/,
-    reply: (_request, _fresh, [id]) => blindSchedules(id),
   },
   // the Eaton lights through amx-service: the frame goes out, nothing is kept
   {

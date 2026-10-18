@@ -367,14 +367,14 @@ e2e/              # Playwright tests
   is the devices page read the other way round: every room floor by floor (`groupByFloor` of the
   devices page), a card of one size per room (`RoomTile`, the width of the devices card) with one
   line for each of the owner's rows - temperature first, heating, lights, blinds, motion,
-  presence, windows, other (`rowOf`: a kind of no row of its own, and one this version does not
+  presence, openings, other (`rowOf`: a kind of no row of its own, and one this version does not
   know, is `other`) - and a window with the devices of the room (`RoomDetail`). What to keep:
-  - **Four calls, told once**: the registry, the rooms of the heating, the blinds and who is at
-    home - each with its freshness and failure in the strip at the top, never on a room card.
+  - **Three calls, told once**: the registry, the rooms of the heating and the blinds - each with
+    its freshness and failure in the strip at the top, never on a room card.
     `toRoomOverview` puts them together per room; what a service did not answer is "not known".
     A switched-off device is left out (no service uses it).
   - **Controls for the lights and the blinds only** (owner): the heating is shown, and set on the
-    heating page (a link). **No question before a command** (owner, 2026-10-17 - frequent and
+    heating page only - nothing in the window leads there (owner, 2026-10-18). **No question before a command** (owner, 2026-10-17 - frequent and
     reversible; the rule of the question stays for the switch of the heating of the whole house).
   - **No optimistic state**: a command to a blind is followed by a read of the blinds
     (`refreshBlinds`), and only that answer moves the screen; one command per device at a time.
@@ -386,11 +386,16 @@ e2e/              # Playwright tests
     (`POST /home/amx/lights/{point}`, a dimmer `/level` - `LightsApi`); a Shelly light says
     it is not controlled from here yet. When light-service comes, its state replaces the faint bulb.
   - **The pause of the schedules of a blind** (`blinds-service`, `PUT` / `DELETE
-    /blinds/{id}/schedule-pause`) ends by itself with the next run it prevents; `BlindSchedules`
-    (`GET /blinds/{id}/schedules`, one resource per blind, made anew for each) shows today's
-    schedules of a blind - which ran, which the pause held back. The decisions and outcomes are
-    the values of `blinds-service`, translated in `room-labels.ts`; one this version does not know
-    is printed as it came.
+    /blinds/{id}/schedule-pause`) ends by itself with the next run it prevents. **The schedules
+    themselves are not shown here** (owner, 2026-10-18): they, and the lights, get pages of their
+    own in the menu; `GET /blinds/{id}/schedules` of `blinds-service` is there for that page.
+  - **What the owner reads in a room** (2026-10-18): the presence row is the **presence sensors**
+    of the room - what they sense, kept by no service yet, so each is a faint icon - never who of
+    the household is at home (that is the presence page); the row of the window and door sensors
+    is "Openings" / "Otwarcia"; a bulb per light and a position per blind, **the door first, then
+    the windows by name** (`doorsFirst`); in the window a device is named without its room and
+    its kind (`shortName`: "Office door blinds" in the office is "Door"). The word "Sent" of a
+    light has its place reserved (`min-width`), so it moves no button when it appears.
   - **0 °C is a reading**: a number is tested with `!== undefined`, never with `@if (x; as y)`
     (found in review).
   - **The heating page tells the windows of a room** (`window` of `GET /heating/rooms`,

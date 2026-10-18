@@ -1,7 +1,5 @@
 import { Blind, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { RegisteredDevice } from '../../data-access/devices/device-registry-api';
-import { ResidentPresence } from '../../data-access/presence/presence-api';
-import { Profile, sameName } from '../../core/profile/profile';
 import { isRecord } from '../../core/util/is-record';
 import { RoomView, WindowView, toWindowView } from '../../shared/room-heating/room-views';
 
@@ -11,13 +9,6 @@ export interface BlindRow {
   readonly state?: Blind;
   /** Its window by its own sensors, read as the heating reads the windows of a room. */
   readonly window?: WindowView;
-}
-
-/** A resident of the room: one whose rooms in the household registry include it. */
-export interface Resident {
-  readonly name: string;
-  /** At home now; `undefined` when presence-service does not say - never read as away. */
-  readonly present: boolean | undefined;
 }
 
 /**
@@ -34,8 +25,8 @@ export interface RoomOverview {
   readonly lights: readonly RegisteredDevice[];
   readonly blinds: readonly BlindRow[];
   readonly motion: readonly RegisteredDevice[];
+  /** The presence sensors of the room - what they sense, not who is at home (owner, 2026-10-18). */
   readonly presenceSensors: readonly RegisteredDevice[];
-  readonly residents: readonly Resident[];
   readonly openingSensors: readonly RegisteredDevice[];
   readonly other: readonly RegisteredDevice[];
 }
@@ -78,8 +69,6 @@ export function toRoomOverview(
   devices: readonly RegisteredDevice[],
   heating: readonly RoomView[] | undefined,
   blinds: readonly RoomBlinds[] | null | undefined,
-  members: readonly Profile[] | undefined,
-  presence: readonly ResidentPresence[] | null | undefined,
 ): RoomOverview {
   const here = devices.filter((device) => device.room === room && device.enabled !== false);
   const of = (row: RoomRow) => here.filter((device) => rowOf(device) === row);
@@ -99,7 +88,7 @@ export function toRoomOverview(
     heating: heating?.find((candidate) => candidate.name === room),
     temperatureSensors: of('temperature'),
     lights: of('lights'),
-    blinds: of('blinds').map((device) => {
+    blinds: [...of('blinds')].sort(doorsFirst).map((device) => {
       const state = states.get(device.id);
       return {
         device,
@@ -109,20 +98,45 @@ export function toRoomOverview(
     }),
     motion: of('motion'),
     presenceSensors: of('presence'),
-    residents: (members ?? [])
-      .filter((member) => member.rooms.includes(room))
-      .map((member) => ({ name: member.name, present: presentOf(member.name, presence) })),
     openingSensors: of('openingSensors'),
     other: of('other'),
   };
 }
 
-function presentOf(
-  name: string,
-  presence: readonly ResidentPresence[] | null | undefined,
-): boolean | undefined {
-  const found = Array.isArray(presence)
-    ? presence.find((entry) => typeof entry.name === 'string' && sameName(entry.name, name))
-    : undefined;
-  return typeof found?.present === 'boolean' ? found.present : undefined;
+/**
+ * The blinds of a room as the owner reads them (2026-10-18): the door first, then the windows -
+ * by name, so "window main" comes before "window second".
+ */
+function doorsFirst(left: RegisteredDevice, right: RegisteredDevice): number {
+  const door = (device: RegisteredDevice) => (/\bdoor\b/i.test(device.name ?? '') ? 0 : 1);
+  return door(left) - door(right) || (left.name ?? '').localeCompare(right.name ?? '');
+}
+
+/**
+ * The name of a device as the window of its room shows it (owner, 2026-10-18): without the room,
+ * which the window names, and without the kind, which the section names - "Office door blinds" in
+ * the office is "Door". A name that is nothing but those is shown whole.
+ */
+export function shortName(
+  name: string | undefined,
+  room: string,
+  kind: string,
+): string | undefined {
+  if (name === undefined) {
+    return undefined;
+  }
+  const words = (text: string) =>
+    text
+      .toLowerCase()
+      .split(/[\s_]+/)
+      .filter(Boolean);
+  const roomWords = words(room);
+  let rest = name.trim().split(/\s+/);
+  if (roomWords.every((word, i) => rest[i]?.toLowerCase() === word)) {
+    rest = rest.slice(roomWords.length);
+  }
+  const kindWords = new Set([...words(kind), kind === 'blinds' ? 'blind' : '']);
+  rest = rest.filter((word, i) => !(i === rest.length - 1 && kindWords.has(word.toLowerCase())));
+  const short = rest.join(' ');
+  return short === '' ? name : short.charAt(0).toUpperCase() + short.slice(1);
 }

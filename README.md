@@ -57,12 +57,12 @@ dashboards:
   temperature and dew point, humidity, wind and gusts, daylight (logarithmic), rain per interval,
   pressure.
 - **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
-  each kind of thing in it - temperature, heating, lights, blinds, motion, presence, windows, the
-  rest - and a window with its devices: the **lights** (an Eaton light switched on or off, a
-  dimmer set; no service keeps the state of a light yet, so the window says a command was sent,
-  never that a light is on) and the **blinds** (open, stop, close, a position, and the pause of
-  their schedules until their next run, with today's schedules of each blind). The heating of a
-  room is shown there and set on the heating page only. Nothing asks before a command; nothing is
+  each kind of thing in it - temperature, heating, lights (a bulb each), blinds (a position each,
+  the door first), motion, presence sensors, openings (windows and doors), the rest - and a window
+  with its devices: the **lights** (an Eaton light switched on or off, a dimmer set; no service
+  keeps the state of a light yet, so the window says a command was sent, never that a light is
+  on) and the **blinds** (open, stop, close, a position, and the pause of their schedules until
+  their next run). The heating of a room is shown there and set on the heating page only. Nothing asks before a command; nothing is
   shown before the services say so - a blind is read again after every command.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the
@@ -335,7 +335,6 @@ Endpoints used today:
 | `PATCH` | `/home/household/member/{name}/device?mac=` | Changes the device a member has under that MAC address (household) |
 | `DELETE` | `/home/household/member/{name}/device?mac=` | Removes that device (household), after a confirmation |
 | `GET` | `/home/blinds` | Every blind by room with its state, position, window and `schedulePausedSince` (rooms), polled every 10 s and right after every command. Needs `blinds-service` 0.8.0 for the pause |
-| `GET` | `/home/blinds/{id}/schedules` | The schedules of one blind today - window, decision, whether it ran for the blind (rooms, the window of a room), polled every 60 s while the window is open |
 | `POST` | `/home/blinds/{id}?command=open\|close\|stop&source=dashboard`, `/home/blinds/{id}/position?value=` | Moves a blind (rooms). No question first; its answer is not used: the blinds are read again |
 | `PUT` / `DELETE` | `/home/blinds/{id}/schedule-pause` | Pauses the schedules of a blind until their next run, or ends the pause (rooms) |
 | `POST` | `/home/amx/lights/{point}?turn=on\|off`, `/home/amx/lights/{point}/level?value=` | Switches an Eaton light, sets a dimmer (rooms). The frame is sent; nothing reads the light back |
