@@ -396,6 +396,21 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the room view (HAS-232): a card per room with the rows of the owner, and the window of a
+      // room with its lights and blinds
+      test('rooms', async ({ page }, testInfo) => {
+        await page.goto('/rooms');
+        await expect(page.locator('[data-room-tile]').first()).toBeVisible();
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'rooms') });
+
+        await page.locator('[data-room-tile="office"] .room__actions button').click();
+        await expect(page.getByTestId('blind-pause').first()).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'rooms-office'),
+        });
+      });
+
       // the administration of the devices (HAS-290): a card per room, floor by floor; the window
       // of a room with a device being changed and a question open; the window opened with "Add"
       test('devices', async ({ page }, testInfo) => {

@@ -72,18 +72,19 @@ describe('application routing', () => {
     expect(navigationLabels()).toEqual({
       side: [
         'Overview',
+        'My room',
+        'Weather',
+        'Rooms',
         'Heating',
         'Hot water',
         'Boiler room',
-        'Weather',
         'Presence',
-        'My room',
         'Household',
         'Devices',
         'Settings',
         'About',
       ],
-      bottom: ['Overview', 'Heating', 'Hot water', 'Boiler room', 'More'],
+      bottom: ['Overview', 'My room', 'Weather', 'Rooms', 'More'],
     });
   });
 
@@ -92,18 +93,18 @@ describe('application routing', () => {
     const http = TestBed.inject(HttpTestingController);
     await vi.waitFor(() => http.expectOne('/home/water/status/temperature'));
     http.expectOne('/home/water/status/active');
+    // the hot water is behind "More" since the owner's order of 2026-10-17 (HAS-232)
     const more = page().querySelector<HTMLButtonElement>('.shell__bottom-more')!;
-    expect(more.classList).not.toContain('shell__bottom-link--active');
-    expect(more.getAttribute('aria-current')).toBeNull();
 
     more.click();
     await settle();
 
     const offered = [...document.querySelectorAll<HTMLAnchorElement>('a[mat-menu-item]')];
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
-      '/weather',
+      '/heating',
+      '/water',
+      '/boiler',
       '/presence',
-      '/room',
       '/household',
       '/devices',
       '/settings',
@@ -111,7 +112,16 @@ describe('application routing', () => {
     ]);
     expect(
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
-    ).toEqual(['Weather', 'Presence', 'My room', 'Household', 'Devices', 'Settings', 'About']);
+    ).toEqual([
+      'Heating',
+      'Hot water',
+      'Boiler room',
+      'Presence',
+      'Household',
+      'Devices',
+      'Settings',
+      'About',
+    ]);
     document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
   });
 
@@ -125,7 +135,9 @@ describe('application routing', () => {
       a.getAttribute('href'),
     );
 
-    expect(current).toEqual(['/boiler', '/boiler']);
+    // the boiler room is behind "More" in the bottom bar (HAS-232): marked at the side only, the
+    // button of "More" standing for it below
+    expect(current).toEqual(['/boiler']);
   });
 
   // a page behind "More" has no entry of its own in the bar: the button stands for it
@@ -191,18 +203,19 @@ describe('application routing', () => {
       expect(navigationLabels()).toEqual({
         side: [
           'Przegląd',
+          'Mój pokój',
+          'Pogoda',
+          'Pokoje',
           'Ogrzewanie',
           'Ciepła woda',
           'Kotłownia',
-          'Pogoda',
           'Obecność',
-          'Mój pokój',
           'Domownicy',
           'Urządzenia',
           'Ustawienia',
           'O aplikacji',
         ],
-        bottom: ['Przegląd', 'Ogrzewanie', 'Ciepła woda', 'Kotłownia', 'Więcej'],
+        bottom: ['Przegląd', 'Mój pokój', 'Pogoda', 'Pokoje', 'Więcej'],
       });
       expect(page().querySelector('[data-testid="app-built"]')?.textContent).toContain(
         'build lokalny',

@@ -51,6 +51,13 @@ const pages: Page[] = [
     loadComponent: () => import('./features/weather/weather').then((m) => m.Weather),
   },
   {
+    // every room of the house, its devices, and the lights and blinds controlled from it (HAS-232)
+    path: 'rooms',
+    title: 'nav.rooms',
+    data: { background: 'devices' },
+    loadComponent: () => import('./features/rooms/rooms').then((m) => m.Rooms),
+  },
+  {
     path: 'presence',
     title: 'nav.presence',
     data: { background: 'presence' },

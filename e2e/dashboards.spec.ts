@@ -575,23 +575,25 @@ test.describe('the navigation with more destinations than a phone has room for',
 
     if (testInfo.project.name === 'phone') {
       const bar = page.locator('.shell__bottom-nav');
+      // the owner's order (2026-10-17, HAS-232): the overview, my room, the weather, the rooms
       await expect(bar.locator('.shell__bottom-label')).toHaveText([
         'Overview',
-        'Heating',
-        'Hot water',
-        'Boiler room',
+        'My room',
+        'Weather',
+        'Rooms',
         'More',
       ]);
 
-      await bar.getByRole('link', { name: 'Boiler room' }).click();
-      await expect(page).toHaveURL(/\/boiler$/);
+      await bar.getByRole('link', { name: 'Rooms' }).click();
+      await expect(page).toHaveURL(/\/rooms$/);
 
       // what did not fit is one tap further
       await bar.getByRole('button', { name: 'More' }).click();
       await expect(page.getByRole('menuitem')).toHaveText([
-        /Weather/,
+        /Heating/,
+        /Hot water/,
+        /Boiler room/,
         /Presence/,
-        /My room/,
         /Household/,
         /Devices/,
         /Settings/,
@@ -607,12 +609,13 @@ test.describe('the navigation with more destinations than a phone has room for',
       const side = page.locator('.shell__side-nav');
       await expect(side.getByRole('link')).toHaveText([
         /Overview/,
+        /My room/,
+        /Weather/,
+        /Rooms/,
         /Heating/,
         /Hot water/,
         /Boiler room/,
-        /Weather/,
         /Presence/,
-        /My room/,
         /Household/,
         /Devices/,
         /Settings/,

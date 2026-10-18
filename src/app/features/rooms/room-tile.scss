@@ -1,0 +1,92 @@
+// A card of one size for every room, as on the devices page (owner, 2026-10-17): the same rows in
+// each, one line each, and a floor laid out in one row
+:host {
+  display: block;
+  width: var(--room-card-width, clamp(150px, calc((100% - 6 * 12px) / 7), 230px));
+}
+
+.room {
+  --app-domain: var(--app-domain-devices);
+  height: 100%;
+}
+
+mat-card-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+mat-card-header {
+  display: block;
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.rows {
+  margin: 0;
+}
+
+.rows__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+
+  dt,
+  dd {
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  dt {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 600;
+  }
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.rows__none {
+  font-weight: 400;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.rows__held {
+  color: var(--mat-sys-error);
+}
+
+// a heater that works in the colour of the domain; one not known, and every bulb, drawn faint
+.rows__icon[data-state='on'] {
+  color: var(--mat-sys-primary);
+}
+
+.rows__icon[data-state='unknown'] {
+  opacity: 0.45;
+}
+
+.room__actions {
+  justify-content: flex-end;
+}
