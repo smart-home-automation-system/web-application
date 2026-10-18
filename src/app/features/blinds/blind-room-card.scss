@@ -1,0 +1,124 @@
+// Every card the same size (owner, 2026-10-18): a fixed width, a line per blind for as many blinds
+// as the room with the most has (`--blind-lines`, set by the page), one line for the state, and
+// the commands of the room at the bottom - the layout of the cards of the devices page
+:host {
+  display: block;
+  width: var(--blind-card-width, 300px);
+}
+
+.room {
+  --app-domain: var(--app-domain-blinds);
+  height: 100%;
+}
+
+// one line, whatever the name: a name of two lines would make its card taller than the others
+mat-card-title,
+mat-card-subtitle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+mat-card-header {
+  display: block;
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+$line: 40px;
+
+.blinds {
+  display: grid;
+  grid-auto-rows: $line;
+  align-content: start;
+  min-height: calc(var(--blind-lines, 1) * #{$line});
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.blind {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.blind__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font: var(--mat-sys-title-small);
+}
+
+.blind__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mat-icon.blind__mark {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.mat-icon.blind__mark--warning {
+  color: var(--mat-sys-on-error-container);
+}
+
+.blind__position {
+  min-width: 4.5em;
+  font-weight: 600;
+}
+
+.blind__position--text {
+  display: inline-block;
+  text-align: center;
+  font: var(--mat-sys-body-medium);
+  font-weight: 600;
+}
+
+.blind__commands {
+  display: inline-flex;
+}
+
+// a line of its own, there when empty too: what appears in it moves nothing
+.status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-error-container);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.status__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.room__actions {
+  justify-content: space-between;
+  padding: 0 4px 4px;
+}
+
+.room__commands {
+  display: inline-flex;
+}

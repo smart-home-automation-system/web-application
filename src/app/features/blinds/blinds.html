@@ -1,0 +1,129 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('blinds.title') }}</h1>
+  </header>
+
+  <!-- the calls the page is made of, each with its freshness and its failure, told once -->
+  <app-sources-strip [sources]="sources" domain="blinds" loadingLabel="blinds.loading" />
+
+  <!-- the holidays and the whole house, side by side and of one height -->
+  <div class="top">
+    <mat-card appearance="outlined" class="top__card card--domain" data-testid="holidays">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>event</mat-icon></div>
+        <mat-card-title>{{ t('blinds.holidays.title') }}</mat-card-title>
+        <mat-card-subtitle>{{
+          t('blinds.holidays.ahead', { days: HOLIDAYS_AHEAD_DAYS })
+        }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="top__content">
+        @if (holidays(); as list) {
+          @if (list.length === 0) {
+            <p class="top__note">{{ t('blinds.holidays.none') }}</p>
+          } @else {
+            <ul class="holidays">
+              @for (day of list; track day.date) {
+                <li data-testid="holiday" [attr.data-date]="day.date">
+                  <span class="holidays__date">{{
+                    day.date + 'T00:00:00' | houseDateTime: DAY_FORMAT
+                  }}</span>
+                  <!-- the name the calendar gives, as it gives it -->
+                  <span class="holidays__reason">{{ day.reason ?? '' }}</span>
+                </li>
+              }
+            </ul>
+          }
+        } @else if (!days.loading()) {
+          <p class="top__note">{{ t('blinds.holidays.unknown') }}</p>
+        }
+        <p class="top__note">{{ t('blinds.holidays.note') }}</p>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- every blind of the house at once: the rooms one after the other -->
+    <mat-card appearance="outlined" class="top__card card--domain" data-testid="house">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>home</mat-icon></div>
+        <mat-card-title>{{ t('blinds.house.title') }}</mat-card-title>
+        <mat-card-subtitle>{{
+          t('blinds.house.count', { blinds: all()?.length ?? 0, rooms: rooms().length })
+        }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="top__content">
+        <div class="house" role="group" [attr.aria-label]="t('blinds.house.commands')">
+          <button
+            matButton="outlined"
+            type="button"
+            data-testid="house-open"
+            [disabled]="houseBusy() || rooms().length === 0"
+            (click)="moveHouse('open')"
+          >
+            <mat-icon>keyboard_double_arrow_up</mat-icon>{{ t('blinds.house.open') }}
+            <span class="visually-hidden">&ngsp;{{ t('blinds.house.commands') }}</span>
+          </button>
+          <button
+            matButton="outlined"
+            type="button"
+            data-testid="house-stop"
+            [disabled]="houseBusy() || rooms().length === 0"
+            (click)="moveHouse('stop')"
+          >
+            <mat-icon>stop_circle</mat-icon>{{ t('blinds.house.stop') }}
+            <span class="visually-hidden">&ngsp;{{ t('blinds.house.commands') }}</span>
+          </button>
+          <button
+            matButton="outlined"
+            type="button"
+            data-testid="house-close"
+            [disabled]="houseBusy() || rooms().length === 0"
+            (click)="moveHouse('close')"
+          >
+            <mat-icon>keyboard_double_arrow_down</mat-icon>{{ t('blinds.house.close') }}
+            <span class="visually-hidden">&ngsp;{{ t('blinds.house.commands') }}</span>
+          </button>
+        </div>
+        <p class="status" role="status" data-testid="house-status">
+          @if (houseStatus(); as said) {
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            <span
+              class="status__text"
+              [matTooltip]="(said.about ? said.about + ': ' : '') + (said.text | displayText)"
+              matTooltipTouchGestures="off"
+              >{{ said.text | displayText }}{{ said.about ? ' - ' + said.about : '' }}</span
+            >
+          }
+        </p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  @if (all() === undefined) {
+    @if (!blinds.loading()) {
+      <p class="note">{{ t('blinds.unreadable') }}</p>
+    }
+  } @else if (floors().length === 0) {
+    <p class="note" data-testid="no-blinds">{{ t('blinds.none') }}</p>
+  }
+
+  <!-- a floor is a row of the rooms on it that have blinds, in the order of the house; a row
+       that does not fill the page stands in its middle - the layout of the devices page -->
+  @for (floor of floors(); track floor.id) {
+    <section class="floor" data-testid="floor" [attr.data-floor]="floor.id">
+      <h2 class="floor__name">{{ t(floor.label) }}</h2>
+      <div class="floor__rooms">
+        @for (group of floor.rooms; track group.room) {
+          <app-blind-room-card
+            [room]="group.room"
+            [blinds]="group.blinds"
+            [schedules]="schedulesCount()?.get(group.room)"
+            [refresh]="refreshBlinds"
+            [commands]="blindCommands"
+            [roomCommands]="roomCommands"
+            [houseBusy]="house()?.sending === true"
+            (openSchedules)="openSchedules(group)"
+          />
+        }
+      </div>
+    </section>
+  }
+</ng-container>

@@ -1,0 +1,123 @@
+// The sources; the holidays and the whole house side by side, of one height; then the floors of
+// the house, each a row of room cards of one size standing in the middle of the page - the layout
+// of the devices page (owner, 2026-10-18)
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+app-sources-strip {
+  align-self: center;
+  width: min(100%, 960px);
+}
+
+.top {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  align-self: center;
+  width: min(100%, 960px);
+}
+
+.top__card {
+  --app-domain: var(--app-domain-blinds);
+}
+
+.top__content {
+  display: grid;
+  gap: 8px;
+}
+
+.top__note,
+.holidays__reason {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.holidays {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+.holidays__date {
+  font-weight: 600;
+}
+
+// the three commands of the house on one line, of one width, at every width of the window (owner,
+// 2026-10-18): short words - the title of the card says it is the whole house
+.house {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+
+  button {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+}
+
+// a line of its own, there when empty too: what appears in it moves nothing
+.status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-error-container);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.status__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.note {
+  margin: 0;
+  text-align: center;
+  color: var(--mat-sys-on-background);
+}
+
+.floor__name {
+  margin: 0 0 10px;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-background);
+}
+
+.floor__rooms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+}
+
+// one column on a phone: the cards take its width
+@media (max-width: 479px) {
+  .floor__rooms app-blind-room-card {
+    --blind-card-width: 100%;
+  }
+}

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Signal, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,9 +8,8 @@ import {
 } from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
 import { TranslocoDirective } from '@jsverse/transloco';
-import { Observable } from 'rxjs';
 
-import { ApiError, toApiError } from '../../core/api/api-error';
+import { CommandState, DeviceCommands } from '../../core/api/device-commands';
 import { BlindCommand, BlindsApi } from '../../data-access/blinds/blinds-api';
 import { RegisteredDevice } from '../../data-access/devices/device-registry-api';
 import { LightsApi } from '../../data-access/lights/lights-api';
@@ -24,8 +23,9 @@ import {
   heaterStateLabel,
 } from '../../shared/room-heating/heater-labels';
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
-import { BlindRow, RoomOverview, shortName } from './room-overview';
-import { blindPositionLabel } from './room-labels';
+import { blindPositionLabel } from '../../shared/blinds/blind-position';
+import { shortName } from '../../shared/device-names/device-names';
+import { BlindRow, RoomOverview } from './room-overview';
 
 /** What the window of a room is opened with: signals, so that it follows the services. */
 export interface RoomDetailData {
@@ -42,14 +42,6 @@ export const ROOM_DETAIL_SIZE = {
   height: 'min(760px, calc(100dvh - 48px))',
   maxWidth: '100vw',
 } as const;
-
-/** How a command to one device went, by its id. */
-interface CommandState {
-  readonly sending: boolean;
-  readonly error?: ApiError;
-  /** A light only: the frame went out - its state is still not known. */
-  readonly sent?: boolean;
-}
 
 /**
  * The devices of one room in a window of their own (HAS-232), by the owner's rows, with what the
@@ -87,7 +79,8 @@ export class RoomDetail {
   private readonly blindsApi = inject(BlindsApi);
   private readonly lightsApi = inject(LightsApi);
 
-  protected readonly commands = signal<ReadonlyMap<number, CommandState>>(new Map());
+  /** One command per device at a time; a light is told as sent - its state is still not known. */
+  private readonly commands = new DeviceCommands<number>();
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
@@ -101,6 +94,9 @@ export class RoomDetail {
   protected readonly positionLabel = blindPositionLabel;
   protected readonly shortName = shortName;
 
+  // a blind is read again after every command; only that answer moves what is on screen
+  private readonly readBack = () => this.data.refreshBlinds();
+
   /** The point of an Eaton light, which is what `amx-service` switches; `undefined` for any other light. */
   protected eatonPoint(light: RegisteredDevice): number | undefined {
     const point = light.eaton?.point;
@@ -110,29 +106,37 @@ export class RoomDetail {
   }
 
   protected stateOf(id: number): CommandState | undefined {
-    return this.commands().get(id);
+    return this.commands.stateOf(id);
   }
 
   protected switchLight(light: RegisteredDevice, on: boolean): void {
     const point = this.eatonPoint(light);
     if (point !== undefined) {
-      this.send(light.id, this.lightsApi.switch(point, on), false);
+      this.commands.send(light.id, this.lightsApi.switch(point, on));
     }
   }
 
   protected setLevel(light: RegisteredDevice, level: number): void {
     const point = this.eatonPoint(light);
     if (point !== undefined) {
-      this.send(light.id, this.lightsApi.setLevel(point, level), false);
+      this.commands.send(light.id, this.lightsApi.setLevel(point, level));
     }
   }
 
   protected move(blind: BlindRow, command: BlindCommand): void {
-    this.send(blind.device.id, this.blindsApi.move(blind.device.id, command), true);
+    this.commands.send(
+      blind.device.id,
+      this.blindsApi.move(blind.device.id, command),
+      this.readBack,
+    );
   }
 
   protected moveTo(blind: BlindRow, position: number): void {
-    this.send(blind.device.id, this.blindsApi.moveTo(blind.device.id, position), true);
+    this.commands.send(
+      blind.device.id,
+      this.blindsApi.moveTo(blind.device.id, position),
+      this.readBack,
+    );
   }
 
   /**
@@ -143,37 +147,10 @@ export class RoomDetail {
   protected pause(blind: BlindRow): void {
     const paused = blind.state?.schedulePausedSince === undefined;
     const id = blind.device.id;
-    this.send(
+    this.commands.send(
       id,
       paused ? this.blindsApi.pauseSchedules(id) : this.blindsApi.resumeSchedules(id),
-      true,
+      this.readBack,
     );
-  }
-
-  /**
-   * One command per device at a time. The answer is not used: a blind is read again, whatever
-   * came of it - a command that got no answer may have been carried out - and only then is the
-   * device free for the next one. A write on its way is not aborted with the window.
-   */
-  private send(id: number, call: Observable<void>, readBack: boolean): void {
-    if (this.stateOf(id)?.sending) {
-      return;
-    }
-    this.set(id, { sending: true });
-    const done = (state: CommandState) => {
-      if (!readBack) {
-        this.set(id, state);
-        return;
-      }
-      void this.data.refreshBlinds().then(() => this.set(id, state));
-    };
-    call.subscribe({
-      error: (failure: unknown) => done({ sending: false, error: toApiError(failure) }),
-      complete: () => done({ sending: false, sent: true }),
-    });
-  }
-
-  private set(id: number, state: CommandState): void {
-    this.commands.update((all) => new Map(all).set(id, state));
   }
 }

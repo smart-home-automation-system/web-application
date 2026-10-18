@@ -26,6 +26,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/room', label: 'nav.myRoom', icon: 'bed', access: 'member' },
   { path: '/weather', label: 'nav.weather', icon: 'partly_cloudy_day', access: 'admin' },
   { path: '/rooms', label: 'nav.rooms', icon: 'meeting_room', access: 'admin' },
+  { path: '/blinds', label: 'nav.blinds', icon: 'blinds', access: 'admin' },
   { path: '/heating', label: 'nav.heating', icon: 'mode_heat', access: 'admin' },
   { path: '/water', label: 'nav.hotWater', icon: 'water_drop', access: 'admin' },
   { path: '/boiler', label: 'nav.boilerRoom', icon: 'water_heater', access: 'admin' },

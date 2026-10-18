@@ -1,8 +1,10 @@
 import { RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { RegisteredDevice } from '../../data-access/devices/device-registry-api';
 import { toRoomViews } from '../../shared/room-heating/room-views';
-import { blindPositionLabel, shortWindowLabel } from './room-labels';
-import { rowOf, shortName, toRoomOverview } from './room-overview';
+import { blindPositionLabel } from '../../shared/blinds/blind-position';
+import { shortName } from '../../shared/device-names/device-names';
+import { shortWindowLabel } from './room-labels';
+import { rowOf, toRoomOverview } from './room-overview';
 
 const device = (
   id: number,
@@ -57,17 +59,17 @@ describe('toRoomOverview', () => {
     const [row] = toRoomOverview('office', DEVICES, undefined, blinds).blinds;
     expect(row.state?.position).toBe(40);
     expect(row.window).toEqual({ state: 'open', openSince: undefined, hold: undefined });
-    expect(blindPositionLabel(row)).toEqual({ key: 'rooms.blinds.position', position: 40 });
+    expect(blindPositionLabel(row)).toEqual({ key: 'blindControl.position', position: 40 });
 
     const [unknown] = toRoomOverview('office', DEVICES, undefined, null).blinds;
     expect(unknown.state).toBeUndefined();
-    expect(blindPositionLabel(unknown)).toEqual({ key: 'rooms.blinds.state.unknown' });
+    expect(blindPositionLabel(unknown)).toEqual({ key: 'blindControl.state.unknown' });
   });
 
   // a state the service sends without a position: never read as closed
   it('says what a blind does where it reports no position', () => {
     expect(blindPositionLabel({ device: DEVICES[0], state: { id: 1, state: 'closing' } })).toEqual({
-      key: 'rooms.blinds.state.closing',
+      key: 'blindControl.state.closing',
     });
   });
 

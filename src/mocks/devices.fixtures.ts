@@ -492,9 +492,7 @@ function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string 
   }
   if (
     eaton !== undefined &&
-    others.some(
-      (one) => one.eaton?.gateway === eaton.gateway && one.eaton?.point === eaton.point,
-    )
+    others.some((one) => one.eaton?.gateway === eaton.gateway && one.eaton?.point === eaton.point)
   ) {
     return `A device is already registered for the point [${eaton.point}] of the Eaton gateway [${eaton.gateway}]`;
   }

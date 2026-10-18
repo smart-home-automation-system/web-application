@@ -20,7 +20,7 @@ import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { toRoomViews } from '../../shared/room-heating/room-views';
 import { toDeviceView } from '../boiler-room/boiler-device';
-import { FLOORS } from '../heating/floors';
+import { FLOORS } from '../../shared/floors/floors';
 import { summarise, toSensorRows } from '../heating/sensor-rows';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { PERSON_STATE_LABELS, lastCheck, summariseRooms, toPeople } from './overview-views';

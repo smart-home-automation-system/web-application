@@ -58,6 +58,13 @@ const pages: Page[] = [
     loadComponent: () => import('./features/rooms/rooms').then((m) => m.Rooms),
   },
   {
+    // every blind of the house, the schedules of the blinds and the holidays they count (HAS-252)
+    path: 'blinds',
+    title: 'nav.blinds',
+    data: { background: 'blinds' },
+    loadComponent: () => import('./features/blinds/blinds').then((m) => m.Blinds),
+  },
+  {
     path: 'presence',
     title: 'nav.presence',
     data: { background: 'presence' },

@@ -1,37 +1,5 @@
 import { MessageKey } from '../../i18n/messages';
 import { WindowStateView } from '../../shared/room-heating/room-views';
-import { BlindRow } from './room-overview';
-
-/** What a blind is at, in short: the key of the text and, for a position, the number. */
-export interface BlindPosition {
-  readonly key: MessageKey;
-  readonly position?: number;
-}
-
-/**
- * What a blind is at: its position where it reports one, else its state, else "not known" -
- * never "closed" for a blind that said nothing.
- */
-export function blindPositionLabel(row: BlindRow): BlindPosition {
-  const state = row.state;
-  if (typeof state?.position === 'number' && Number.isFinite(state.position)) {
-    return { key: 'rooms.blinds.position', position: state.position };
-  }
-  switch (state?.state) {
-    case 'opened':
-      return { key: 'rooms.blinds.state.opened' };
-    case 'closed':
-      return { key: 'rooms.blinds.state.closed' };
-    case 'stopped':
-      return { key: 'rooms.blinds.state.stopped' };
-    case 'opening':
-      return { key: 'rooms.blinds.state.opening' };
-    case 'closing':
-      return { key: 'rooms.blinds.state.closing' };
-    default:
-      return { key: 'rooms.blinds.state.unknown' };
-  }
-}
 
 /** The windows of a room in one word, for the line of its card; "no sensor" is said by the count. */
 export function shortWindowLabel(state: WindowStateView): MessageKey {

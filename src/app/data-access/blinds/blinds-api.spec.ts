@@ -72,4 +72,77 @@ describe('BlindsApi and LightsApi', () => {
     dimmed.flush({ point: 12, status: 'OK' }, { status: 202, statusText: 'Accepted' });
     await level;
   });
+
+  // HAS-252: the blinds page
+  it('moves a room and answers with the blinds it skipped', async () => {
+    const sent = firstValueFrom(blinds.moveRoom('living room', 'open'));
+
+    const request = http.expectOne((call) => call.url === '/home/blinds/rooms/living%20room');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.params.get('command')).toBe('open');
+    expect(request.request.params.get('source')).toBe('dashboard');
+    request.flush(
+      {
+        room: 'living room',
+        command: 'open',
+        moved: [{ id: 7, name: 'Terrace blinds' }],
+        failed: [{ id: 8, name: 'Side blinds', code: 'DEVICE_FAILED' }],
+      },
+      { status: 202, statusText: 'Accepted' },
+    );
+
+    expect(await sent).toEqual([{ id: 8, name: 'Side blinds', code: 'DEVICE_FAILED' }]);
+  });
+
+  it('switches a schedule on and off', async () => {
+    const on = firstValueFrom(blinds.setScheduleEnabled(3, true), { defaultValue: undefined });
+    const enable = http.expectOne('/home/blinds/schedules/3/enable');
+    expect(enable.request.method).toBe('POST');
+    enable.flush({ id: 3, enabled: true });
+    await on;
+
+    const off = firstValueFrom(blinds.setScheduleEnabled(3, false), { defaultValue: undefined });
+    http.expectOne('/home/blinds/schedules/3/disable').flush({ id: 3, enabled: false });
+    await off;
+  });
+
+  describe('the schedules with their day', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('asks for the day of each schedule one after the other, a failed day kept apart', () => {
+      const schedules = TestBed.runInInjectionContext(() => blinds.watchSchedules());
+      vi.advanceTimersByTime(0);
+
+      http
+        .expectOne('/home/blinds/schedules')
+        .flush([{ id: 1, name: 'Morning' }, { name: 'Without an id' }, { id: 2, name: 'Shade' }]);
+      // one call at a time: the second day is asked for once the first has answered
+      http.expectOne('/home/blinds/schedules/1/today').flush({ scheduleId: 1, decision: 'fires' });
+      http
+        .expectOne('/home/blinds/schedules/2/today')
+        .flush(null, { status: 500, statusText: 'Server Error' });
+
+      const entries = schedules.value();
+      expect(entries).toHaveLength(3);
+      expect(entries?.[0]).toEqual({
+        schedule: { id: 1, name: 'Morning' },
+        today: { scheduleId: 1, decision: 'fires' },
+      });
+      // a schedule without an id cannot be asked about
+      expect(entries?.[1]).toEqual({ schedule: { name: 'Without an id' } });
+      expect(entries?.[2].todayError?.kind).toBe('server');
+      // the failure of one day is not the failure of the list
+      expect(schedules.error()).toBeUndefined();
+    });
+
+    it('answers a list without a body as null, and asks for no day', () => {
+      const schedules = TestBed.runInInjectionContext(() => blinds.watchSchedules());
+      vi.advanceTimersByTime(0);
+
+      http.expectOne('/home/blinds/schedules').flush(null);
+
+      expect(schedules.value()).toBeNull();
+    });
+  });
 });

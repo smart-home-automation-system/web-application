@@ -65,8 +65,11 @@ describe('translations', () => {
       'devices.binding.bthome',
       // a number, and the word of the button of a blind both languages use
       'rooms.pieces',
-      'rooms.blinds.position',
-      'rooms.blinds.stop',
+      'blindControl.position',
+      'blindControl.stop',
+      // a number of minutes and a sign
+      'blinds.schedule.end.after',
+      'blinds.schedule.end.before',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

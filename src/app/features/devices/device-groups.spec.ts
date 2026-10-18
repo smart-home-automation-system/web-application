@@ -29,10 +29,10 @@ describe('the devices by floor and room', () => {
       ['outside', ['garden']],
     ]);
     expect(floors.map((floor) => floor.label)).toEqual([
-      'heating.rooms.floor.ground',
-      'heating.rooms.floor.upper',
-      'heating.rooms.floor.attic',
-      'heating.rooms.floor.outside',
+      'floors.ground',
+      'floors.upper',
+      'floors.attic',
+      'floors.outside',
     ]);
   });
 
@@ -72,7 +72,7 @@ describe('the devices by floor and room', () => {
     expect(floors[2].rooms.map((one) => one.room)).toEqual(['hall down']);
     // what the floors do not list, by name
     expect(floors[3].rooms.map((one) => one.room)).toEqual(['', 'winter garden']);
-    expect(floors[3].label).toBe('heating.rooms.floor.other');
+    expect(floors[3].label).toBe('floors.other');
   });
 
   it('put the devices of a room in the order of the kinds, then by name', () => {

@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { isRecord } from '../../core/util/is-record';
@@ -9,8 +7,7 @@ import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, RegisteredDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi } from '../../data-access/heating/heating-api';
 import { MessageKey } from '../../i18n/messages';
-import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
-import { DataFreshness } from '../../shared/data-freshness/data-freshness';
+import { SourcesStrip } from '../../shared/sources-strip/sources-strip';
 import { toRoomViews } from '../../shared/room-heating/room-views';
 import { groupByFloor } from '../devices/device-groups';
 import { ROOM_DETAIL_SIZE, RoomDetail, RoomDetailData } from './room-detail';
@@ -31,14 +28,7 @@ import { RoomTile } from './room-tile';
  */
 @Component({
   selector: 'app-rooms',
-  imports: [
-    MatCardModule,
-    MatProgressBarModule,
-    TranslocoDirective,
-    ApiErrorStrip,
-    DataFreshness,
-    RoomTile,
-  ],
+  imports: [TranslocoDirective, RoomTile, SourcesStrip],
   templateUrl: './rooms.html',
   styleUrl: './rooms.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -153,6 +153,30 @@ export function pauseBlind(id: string, paused: boolean): MockReply {
   return { status: 204, body: null };
 }
 
+/**
+ * Every blind of a room, one after the other, as the service does it: the answer lists the blinds
+ * moved and those skipped - none here, since a mock blind always takes the command.
+ */
+export function moveRoom(room: string, command: string | null): MockReply {
+  const here = blinds.filter((blind) => blind.room === room);
+  if (here.length === 0) {
+    return notFound;
+  }
+  if (command !== 'open' && command !== 'close' && command !== 'stop') {
+    return { status: 400, body: { errors: [{ message: 'command must be open, close or stop' }] } };
+  }
+  here.forEach((blind) => moveBlind(String(blind.id), command));
+  return {
+    status: 202,
+    body: {
+      room,
+      command,
+      moved: here.map((blind) => ({ id: blind.id, name: blind.name })),
+      failed: [],
+    },
+  };
+}
+
 /** A light switched through amx-service: the frame went out, nothing is kept. */
 export function switchLight(point: string, turn: string | null): MockReply {
   if (turn !== 'on' && turn !== 'off') {

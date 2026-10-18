@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 4096,
+    "height": 2304
+  },
+  "tones": {
+    "black": 0,
+    "white": 255
+  },
+  "files": {
+    "blinds-2560.webp": {
+      "bytes": 389254,
+      "quality": 76
+    },
+    "blinds-1280.webp": {
+      "bytes": 105568,
+      "quality": 82
+    }
+  },
+  "darkest": "#0a0500",
+  "lightest": "#ffd094",
+  "top": {
+    "darkest": "#77503f",
+    "lightest": "#ffc292"
+  }
+}

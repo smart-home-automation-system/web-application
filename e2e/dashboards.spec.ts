@@ -590,6 +590,7 @@ test.describe('the navigation with more destinations than a phone has room for',
       // what did not fit is one tap further
       await bar.getByRole('button', { name: 'More' }).click();
       await expect(page.getByRole('menuitem')).toHaveText([
+        /Blinds/,
         /Heating/,
         /Hot water/,
         /Boiler room/,
@@ -612,6 +613,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /My room/,
         /Weather/,
         /Rooms/,
+        /Blinds/,
         /Heating/,
         /Hot water/,
         /Boiler room/,

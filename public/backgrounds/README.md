@@ -177,3 +177,18 @@ Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt ag
 owner on 2026-10-16 (HAS-241). Tones `0-220`: the sky breaking through on the right is nearly
 white, too bright for the title and for the secondary text on glass of the dark scheme in summer
 and winter; `0-225` still failed by a hair.
+
+### `blinds`
+
+> Photorealistic wide photograph of the back of a modern family house at golden hour, seen from
+> the garden, its blinds in view. The things spread from the left edge to the right: a large
+> terrace sliding door with an external aluminium roller shutter lowered halfway, a row of three
+> tall windows with external venetian blinds at different heights (one open, one half lowered
+> with tilted slats, one closed), a first-floor window with its roller shutter fully down, a
+> wooden terrace with a lounge chair and a potted olive tree, a bed of ornamental grasses, a wall
+> lamp by the door switched on. Even, soft, mid-toned light along the top of the frame: a warm
+> evening sky, no bright sun disc, no black window frames at the top. No large empty wall, sky or
+> lawn; no people, no text, no brand logos. Realistic architectural photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-18 (HAS-252). Full tones: `check:contrast` passes without narrowing them.

@@ -411,6 +411,23 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the blinds (HAS-252): the holidays and the whole house, a card of one size per room, and
+      // the window of the schedules of a room
+      test('blinds', async ({ page }, testInfo) => {
+        await page.clock.setFixedTime(new Date('2026-10-20T10:00:00+02:00'));
+        await page.goto('/blinds');
+        await expect(page.getByTestId('blind-room').first()).toBeVisible();
+        await expect(page.getByTestId('holiday')).toHaveCount(1);
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'blinds') });
+
+        await page.locator('[data-room="office"] [data-testid="room-schedules"]').click();
+        await expect(page.getByTestId('schedule').first()).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'blinds-schedules'),
+        });
+      });
+
       // the administration of the devices (HAS-290): a card per room, floor by floor; the window
       // of a room with a device being changed and a question open; the window opened with "Add"
       test('devices', async ({ page }, testInfo) => {
