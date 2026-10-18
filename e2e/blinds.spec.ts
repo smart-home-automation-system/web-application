@@ -4,68 +4,101 @@ import { expect, test, useScenario } from './support';
 
 /**
  * The blinds page (HAS-252), fed by the mock API: the blinds of the mock house - which can be
- * moved and paused, a room at once too, in the memory of the page - its schedules, which can be
- * switched on and off, and the calendar with the holidays of a fixed date. Nothing here reaches a
- * real device.
+ * moved and paused, a room and the whole house at once too, in the memory of the page - its
+ * schedules, which can be switched on and off, and the calendar with the holidays of a fixed date.
+ * Nothing here reaches a real device.
  */
 const room = (page: Page, name: string): Locator =>
   page.locator(`[data-testid="blind-room"][data-room="${name}"]`);
-const schedule = (page: Page, id: number): Locator =>
-  page.locator(`[data-testid="schedule"][data-schedule="${id}"]`);
 
-test('shows every blind by room, the rooms in the order of the floors', async ({ page }) => {
+async function openSchedules(page: Page, name: string): Promise<Locator> {
+  await room(page, name).getByTestId('room-schedules').click();
+  const window = page.getByRole('dialog');
+  await expect(window).toBeVisible();
+  return window;
+}
+
+test('shows the rooms with blinds floor by floor, in cards of one size', async ({ page }) => {
   await page.goto('/blinds');
 
   await expect(page.getByRole('heading', { level: 1, name: 'Blinds' })).toBeVisible();
+  await expect(page.locator('[data-testid="floor"]')).toHaveCount(2);
   await expect(page.getByTestId('blind-room')).toHaveCount(2);
-  await expect(page.getByTestId('blind-room').first()).toHaveAttribute('data-room', 'living room');
   // the door first, then the windows; each by its short name
-  const office = room(page, 'office');
-  await expect(office.locator('.blind__name')).toHaveText(['Door', 'Window']);
-  await expect(office.locator('[data-blind="1"] [data-testid="blind-position"]')).toHaveText(
-    '40 %',
-  );
-  // an Eaton blind nothing was heard of: no position, no slider, not known - never closed
-  const terrace = room(page, 'living room').locator('[data-blind="7"]');
-  await expect(terrace.getByTestId('blind-position')).toHaveText('not known');
-  await expect(terrace.getByRole('slider')).toHaveCount(0);
+  await expect(room(page, 'office').locator('.blind__text')).toHaveText(['Door', 'Window']);
+  await expect(
+    room(page, 'office').locator('[data-blind="1"] [data-testid="blind-position"]'),
+  ).toContainText('40 %');
+  // an Eaton blind nothing was heard of: no position, not known - never closed
+  await expect(
+    room(page, 'living room').locator('[data-blind="7"] [data-testid="blind-position"]'),
+  ).toHaveText('not known');
+  // a room of one blind and a room of two: one size
+  const office = await room(page, 'office').boundingBox();
+  const living = await room(page, 'living room').boundingBox();
+  expect(living?.height).toBe(office?.height);
+  expect(living?.width).toBe(office?.width);
 });
 
-test('moves a blind and a room, reading the blinds back', async ({ page }) => {
+test('moves a blind, sends one to a position and moves a room, reading the blinds back', async ({
+  page,
+}) => {
   await page.goto('/blinds');
   const office = room(page, 'office');
   const window = office.locator('[data-blind="1"]');
 
   await window.getByRole('button', { name: 'Close Office window blinds' }).click();
-  await expect(window.getByTestId('blind-position')).toHaveText('0 %');
-  await expect(window.getByTestId('blind-moved')).toContainText('from the dashboard');
+  await expect(window.getByTestId('blind-position')).toContainText('0 %');
+
+  await window.getByTestId('blind-position').click();
+  await page.getByRole('menuitem', { name: '75 %' }).click();
+  await expect(window.getByTestId('blind-position')).toContainText('75 %');
 
   await office.getByRole('button', { name: 'Open every blind of office' }).click();
-  await expect(office.getByTestId('blind-position')).toHaveText(['100 %', '100 %']);
-  await expect(office.getByTestId('room-skipped')).toHaveCount(0);
+  await expect(office.getByTestId('blind-position')).toContainText(['100 %', '100 %']);
+  await expect(office.getByTestId('room-status')).toHaveText('');
+});
+
+test('opens and closes every blind of the house', async ({ page }) => {
+  await page.goto('/blinds');
+  const house = page.getByTestId('house');
+
+  await expect(house).toContainText('Blinds: 3 in rooms: 2');
+  await house.getByRole('button', { name: 'Close all' }).click();
+  await expect(
+    room(page, 'office').locator('[data-blind="2"] [data-testid="blind-position"]'),
+  ).toContainText('0 %');
+  await expect(
+    room(page, 'living room').locator('[data-blind="7"] [data-testid="blind-position"]'),
+  ).toHaveText('closed');
+  await expect(house.getByTestId('house-status')).toHaveText('');
 });
 
 // no optimistic state: what the page shows is what the service answers after the command
 test('tells a command that failed and leaves the blind as the service says', async ({ page }) => {
   await useScenario(page, 'writes-fail');
   await page.goto('/blinds');
-  const window = room(page, 'office').locator('[data-blind="1"]');
+  const office = room(page, 'office');
 
-  await window.getByRole('button', { name: 'Close Office window blinds' }).click();
+  await office.getByRole('button', { name: 'Close Office window blinds' }).click();
 
-  await expect(window.getByRole('alert')).toContainText('The command was not confirmed');
-  await expect(window.getByTestId('blind-position')).toHaveText('40 %');
+  await expect(office.getByTestId('room-status')).toContainText('Window:');
+  await expect(office.locator('[data-blind="1"] [data-testid="blind-position"]')).toContainText(
+    '40 %',
+  );
 });
 
-test('lists the schedules with their day, and switches one off', async ({ page }) => {
+test('shows the schedules of a room in a window, and switches one off', async ({ page }) => {
   await page.goto('/blinds');
-  const morning = schedule(page, 1);
+  await expect(room(page, 'office').getByTestId('room-schedules')).toContainText('Schedules: 2');
+  const window = await openSchedules(page, 'office');
+  const morning = window.locator('[data-testid="schedule"][data-schedule="1"]');
 
+  await expect(window.getByTestId('schedule')).toHaveCount(2);
   await expect(morning.getByTestId('schedule-today')).toContainText('06:30–08:12');
   await expect(morning.getByTestId('schedule-decision')).toHaveText('ran today');
   await expect(morning.getByTestId('schedule-condition')).toContainText('Illuminance > 50 lx');
   await expect(morning.getByTestId('schedule-target')).toHaveCount(2);
-  await expect(schedule(page, 3).getByTestId('schedule-today')).toContainText('next day');
 
   const enabled = morning.getByTestId('schedule-enabled').getByRole('switch');
   await expect(enabled).toHaveAttribute('aria-checked', 'true');
@@ -74,18 +107,22 @@ test('lists the schedules with their day, and switches one off', async ({ page }
   await expect(morning.getByTestId('schedule-decision')).toHaveText('switched off');
 });
 
-test('pauses the schedules of a blind from its schedule', async ({ page }) => {
+test('pauses the schedules of a blind from the window of its room', async ({ page }) => {
   await page.goto('/blinds');
-  const target = schedule(page, 2).getByTestId('schedule-target');
-  const pause = target.getByRole('switch');
+  const window = await openSchedules(page, 'office');
+  const pause = window.locator('[data-blind="1"]').getByRole('switch');
 
   await expect(pause).toHaveAttribute('aria-checked', 'false');
   await pause.click();
   await expect(pause).toHaveAttribute('aria-checked', 'true');
-  // the same pause, told at the blind
+  await expect(window.locator('[data-blind="1"]').getByTestId('pause-since')).toContainText(
+    'Paused',
+  );
+  await window.getByRole('button', { name: 'Close' }).click();
+  // the same pause, marked on the card
   await expect(
     room(page, 'office').locator('[data-blind="1"]').getByTestId('blind-paused'),
-  ).toContainText('Paused');
+  ).toBeVisible();
 });
 
 // the holidays of the coming 60 days: a holiday on a Sunday is a weekend anyway and not listed

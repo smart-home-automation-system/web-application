@@ -209,7 +209,7 @@ describe('application routing', () => {
           'Mój pokój',
           'Pogoda',
           'Pokoje',
-          'Żaluzje',
+          'Rolety',
           'Ogrzewanie',
           'Ciepła woda',
           'Kotłownia',

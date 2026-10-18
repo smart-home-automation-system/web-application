@@ -12,6 +12,7 @@ import { ScheduleEntry } from '../../data-access/blinds/blind-schedule';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { DisplayText } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
+import { shortName } from '../../shared/device-names/device-names';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
@@ -54,13 +55,13 @@ interface ConditionRow {
 }
 
 /**
- * One schedule of the blinds (HAS-252): the rule as stored, and what the engine of
- * `blinds-service` makes of it today - its window, the conditions and their values now, the
- * blinds it moves and what came of each - with the switch of the schedule and, per blind, the
- * pause of its schedules (HAS-232: it ends by itself with the next run it prevents).
+ * One schedule of the blinds in the window of a room (HAS-252): the rule as stored, and what the
+ * engine of `blinds-service` makes of it today - its window, the conditions and their values now,
+ * the blinds of that room it moves and what came of each - with the switch of the schedule. The
+ * pause of a blind's schedules is the window's, above the cards.
  *
- * Neither switch flips itself: each shows the service, read again after the change. The schedules
- * are written by the editor of HAS-253; this card only switches one on and off.
+ * The switch does not flip itself: it shows the service, read again after the change. The
+ * schedules are written by the editor of HAS-253; this card only switches one on and off.
  */
 @Component({
   selector: 'app-schedule-card',
@@ -84,19 +85,21 @@ interface ConditionRow {
 })
 export class ScheduleCard {
   readonly entry = input.required<ScheduleEntry>();
-  /** The blinds of the page: their names, and whether their schedules are paused. */
+  /** The room the card is shown for: only the blinds of the schedule in it are listed. */
+  readonly room = input.required<string>();
+  /** The blinds of the room: their names, and whether their schedules are paused. */
   readonly blinds = input.required<readonly AddressedBlind[]>();
   /** Reads the schedules again, resolved when that call has answered. */
   readonly refreshSchedules = input.required<() => Promise<void>>();
-  /** Reads the blinds again, resolved when that call has answered. */
-  readonly refreshBlinds = input.required<() => Promise<void>>();
-  /** The commands to the blinds, the page's: the pause of a blind is also sent from its room card. */
-  readonly commands = input.required<DeviceCommands<number>>();
 
   private readonly api = inject(BlindsApi);
   private readonly switches = new DeviceCommands<'schedule'>();
 
   protected readonly describeError = describeBlindsError;
+
+  protected shortNameOf(name: string | undefined): string | undefined {
+    return shortName(name, this.room(), 'blinds');
+  }
 
   protected readonly schedule = computed(() => this.entry().schedule);
   protected readonly today = computed(() => this.entry().today);
@@ -138,7 +141,12 @@ export class ScheduleCard {
     () => !Array.isArray(this.today()?.conditions) && !Array.isArray(this.schedule().conditions),
   );
 
-  protected readonly targets = computed((): readonly TargetRow[] => {
+  /** The blinds of the schedule in the room the card is shown for. */
+  protected readonly targets = computed(() =>
+    this.allTargets().filter((target) => target.blind !== undefined || target.room === this.room()),
+  );
+
+  private readonly allTargets = computed((): readonly TargetRow[] => {
     const byId = new Map(this.blinds().map((blind) => [blind.id, blind]));
     const today = this.today()?.targets;
     if (Array.isArray(today)) {
@@ -180,10 +188,6 @@ export class ScheduleCard {
     });
   });
 
-  protected pauseState(id: number) {
-    return this.commands().stateOf(id);
-  }
-
   protected setEnabled(): void {
     const id = this.schedule().id;
     if (typeof id !== 'number') {
@@ -196,16 +200,5 @@ export class ScheduleCard {
       this.api.setScheduleEnabled(id, enabled),
       this.refreshSchedules(),
     );
-  }
-
-  /** The pause of every schedule of one blind - the blinds are read again, then the schedules. */
-  protected pause(blind: AddressedBlind): void {
-    const call =
-      blind.schedulePausedSince === undefined
-        ? this.api.pauseSchedules(blind.id)
-        : this.api.resumeSchedules(blind.id);
-    const refreshBlinds = this.refreshBlinds();
-    const refreshSchedules = this.refreshSchedules();
-    this.commands().send(blind.id, call, () => refreshBlinds().then(() => refreshSchedules()));
   }
 }

@@ -1,43 +1,41 @@
+// Every card the same size (owner, 2026-10-18): a fixed width, a line per blind for as many blinds
+// as the room with the most has (`--blind-lines`, set by the page), one line for the state, and
+// the commands of the room at the bottom - the layout of the cards of the devices page
 :host {
   display: block;
-  min-width: 0;
+  width: var(--blind-card-width, 300px);
 }
 
 .room {
   --app-domain: var(--app-domain-blinds);
+  height: 100%;
 }
 
-.room__header {
-  align-items: center;
+// one line, whatever the name: a name of two lines would make its card taller than the others
+mat-card-title,
+mat-card-subtitle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-// the commands of the room sit at the end of the header, on the line of its title
-.room__commands {
-  display: inline-flex;
-  margin-left: auto;
+mat-card-header {
+  display: block;
+  padding: 12px 12px 0;
 }
 
-.room__content {
-  display: grid;
-  gap: 10px;
+mat-card-content {
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
-.room__skipped {
-  padding: 8px 12px;
-  border-radius: var(--mat-sys-corner-small);
-  background: var(--mat-sys-error-container);
-  font: var(--mat-sys-body-medium);
-  color: var(--mat-sys-on-error-container);
-
-  ul {
-    margin: 4px 0 0;
-    padding-left: 18px;
-  }
-}
+$line: 40px;
 
 .blinds {
   display: grid;
-  gap: 8px;
+  grid-auto-rows: $line;
+  align-content: start;
+  min-height: calc(var(--blind-lines, 1) * #{$line});
   margin: 0;
   padding: 0;
   list-style: none;
@@ -45,73 +43,82 @@
 
 .blind {
   display: grid;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
-  border-radius: var(--mat-sys-corner-medium);
-}
-
-.blind__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.blind__name {
-  font: var(--mat-sys-title-small);
-}
-
-.blind__position {
-  font: var(--mat-sys-body-large);
-  font-weight: 600;
-}
-
-.blind__facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.blind__window {
-  display: inline-flex;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 4px;
 }
 
-.blind__window .mat-icon {
+.blind__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font: var(--mat-sys-title-small);
+}
+
+.blind__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mat-icon.blind__mark {
+  flex: none;
   width: 16px;
   height: 16px;
   font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
 }
 
-.blind__warning {
+.mat-icon.blind__mark--warning {
   color: var(--mat-sys-on-error-container);
 }
 
-.blind__controls,
-.blind__slider {
+.blind__position {
+  min-width: 4.5em;
+  font-weight: 600;
+}
+
+.blind__position--text {
+  display: inline-block;
+  text-align: center;
+  font: var(--mat-sys-body-medium);
+  font-weight: 600;
+}
+
+.blind__commands {
+  display: inline-flex;
+}
+
+// a line of its own, there when empty too: what appears in it moves nothing
+.status {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-}
-
-.blind__slider mat-slider {
-  flex: 1 1 140px;
-  max-width: 220px;
-}
-
-.blind__pause {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-}
-
-.blind__note {
+  gap: 4px;
+  height: 20px;
+  margin: 4px 0 0;
   font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--mat-sys-on-error-container);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.status__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.room__actions {
+  justify-content: space-between;
+  padding: 0 4px 4px;
+}
+
+.room__commands {
+  display: inline-flex;
 }

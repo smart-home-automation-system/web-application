@@ -1,0 +1,61 @@
+<ng-container *transloco="let t">
+  <h2 mat-dialog-title class="title">
+    {{ t('blinds.schedules.title') }}
+    <span class="title__room">{{ data.room }}</span>
+  </h2>
+
+  <mat-dialog-content class="content">
+    <!-- the pause of the schedules of each blind of the room -->
+    <section class="pauses" data-testid="pauses">
+      <h3>{{ t('blinds.schedules.pause') }}</h3>
+      <ul>
+        @for (blind of sorted(); track blind.id) {
+          @let state = stateOf(blind.id);
+          <li [attr.data-blind]="blind.id">
+            <mat-slide-toggle
+              data-testid="blind-pause"
+              [checked]="blind.schedulePausedSince !== undefined"
+              [disabled]="state?.sending"
+              (toggleChange)="pause(blind)"
+            >
+              {{ nameOf(blind) ?? t('blinds.unnamed') }}
+              <span class="visually-hidden">{{ blind.name }}</span>
+            </mat-slide-toggle>
+            @if (blind.schedulePausedSince | houseAge; as age) {
+              <span class="note" data-testid="pause-since"
+                >{{ t('blindControl.pausedSince') }} {{ age }}</span
+              >
+            }
+            @if (state?.error) {
+              <span class="failure" role="alert">{{ failureOf(state!) | displayText }}</span>
+            }
+          </li>
+        }
+      </ul>
+      <p class="note">{{ t('blinds.schedules.pauseNote') }}</p>
+    </section>
+
+    <!-- every schedule that moves a blind of the room -->
+    @if (data.entries(); as entries) {
+      @if (entries.length === 0) {
+        <p class="note" data-testid="no-schedules">{{ t('blinds.schedules.none') }}</p>
+      }
+      <div class="schedules">
+        @for (entry of entries; track entry.schedule.id ?? '#' + $index) {
+          <app-schedule-card
+            [entry]="entry"
+            [room]="data.room"
+            [blinds]="data.blinds()"
+            [refreshSchedules]="data.refreshSchedules"
+          />
+        }
+      </div>
+    } @else {
+      <p class="note">{{ t('blinds.schedules.unreadable') }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close>{{ t('blinds.schedules.close') }}</button>
+  </mat-dialog-actions>
+</ng-container>

@@ -129,7 +129,7 @@
         }
       </section>
 
-      <!-- the blinds it moves, what came of each today, and the pause of each blind's schedules -->
+      <!-- the blinds of the room it moves, what came of each today, whether their schedules are paused -->
       <section class="schedule__section">
         <h3>{{ t('blinds.schedule.targets') }}</h3>
         @if (targets().length === 0) {
@@ -142,8 +142,9 @@
                   @if (target.wholeRoom) {
                     {{ t('blinds.schedule.wholeRoom') }} {{ target.room ?? '?' }}
                   } @else {
-                    {{ target.name ?? t('blinds.schedule.unknownBlind') }}
-                    @if (target.room !== undefined) {
+                    <!-- in the window of its room a blind is named without the room, as on the card -->
+                    {{ shortNameOf(target.name) ?? t('blinds.schedule.unknownBlind') }}
+                    @if (target.room !== undefined && target.room !== room()) {
                       <span class="schedule__room">({{ target.room }})</span>
                     }
                   }
@@ -162,31 +163,10 @@
                     }
                   }
                 </span>
-                @if (target.blind; as blind) {
-                  @let pausing = pauseState(blind.id);
-                  <span class="target__pause">
-                    <mat-slide-toggle
-                      data-testid="target-pause"
-                      [checked]="blind.schedulePausedSince !== undefined"
-                      [disabled]="pausing?.sending"
-                      (toggleChange)="pause(blind)"
-                    >
-                      {{ t('blinds.schedule.pause') }}
-                      <span class="visually-hidden">{{ blind.name }}</span>
-                    </mat-slide-toggle>
-                    @if (blind.schedulePausedSince | houseAge; as age) {
-                      <span class="schedule__note"
-                        >{{ t('blindControl.pausedSince') }} {{ age }}</span
-                      >
-                    }
-                  </span>
-                  @if (pausing?.error; as error) {
-                    <app-api-error-strip
-                      [error]="error"
-                      [summary]="t('blindControl.commandFailed')"
-                      [describeWith]="describeError"
-                    />
-                  }
+                @if (target.blind?.schedulePausedSince | houseAge; as age) {
+                  <span class="schedule__note target__paused" data-testid="target-paused"
+                    >{{ t('blindControl.pausedSince') }} {{ age }}</span
+                  >
                 }
               </li>
             }

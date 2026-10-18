@@ -408,39 +408,56 @@ e2e/              # Playwright tests
     registries, and - from this view - the blinds and the Eaton lights. (The blinds page adds the
     switch of a schedule of the blinds.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
-  rooms in the menu, domain colour `blinds`, photo `blinds`) is every blind of `blinds-service`,
-  its schedules - **the one place of the application that shows them** (owner, 2026-10-18) - and
-  the holidays they count. What to keep:
-  - **Three calls, told once** in the strip of sources (the rule of the room view): `GET /blinds`,
-    the schedules and the calendar. **The schedules are one resource**
-    (`BlindsApi.watchSchedules`): the list, then `/schedules/{id}/today` of each, one after the
-    other; the day of one schedule that failed is `todayError` of that entry, told on its card -
-    the card then shows the rule as stored (a room target as "every blind of" the room). A
-    schedule without an id is shown without its day.
-  - **One grid of rooms, in the order of the floors** (`roomsByFloor`), the floor in the subtitle
-    of a card - not a row per floor: the house has five rooms with blinds on the ground floor and
-    one upstairs, and the rows (and before them a column for the schedules) left half of a wide
-    screen empty. The holidays and the schedules are a second grid under it.
+  rooms in the menu, domain colour `blinds`, photo `blinds`; "Rolety" in Polish, as everywhere
+  else in the application) is every blind of `blinds-service`, its schedules - **the one place of
+  the application that shows them** (owner, 2026-10-18) - and the holidays they count. **The
+  layout is the owner's** (2026-10-18, after a first version of cards of every size): at the top
+  the holidays and the whole house side by side; under them the floors as on the devices page,
+  only the rooms that have blinds; the schedules of a room only in a window, from its card. What
+  to keep:
+  - **Three calls, told once** in `SourcesStrip` (`shared/sources-strip`, the strip of the room
+    view, shared since this task): `GET /blinds`, the schedules and the calendar. **The schedules
+    are one resource** (`BlindsApi.watchSchedules`): the list, then `/schedules/{id}/today` of
+    each, one after the other; the day of one schedule that failed is `todayError` of that entry,
+    told on its card - the card then shows the rule as stored (a room target as "every blind of"
+    the room).
+  - **A room card of one size** (`BlindRoomCard`, 300 px): a line per blind (name, position,
+    open / stop / close), for as many lines as the room with the most blinds has (the page sets
+    `--blind-lines`); **one line reserved for what the last command came to** - a failure or what
+    a command skipped, cut with an ellipsis, whole in its tooltip - so nothing makes a card taller;
+    the room commands and the button of its schedules at the bottom. A paused blind and one that is
+    not reachable are an icon with a tooltip; when it moved and who moved it is the tooltip of its
+    position. A blind with `positioning` sends itself to a position from a menu of 0 / 25 / 50 /
+    75 / 100 % - no slider, which would not fit a line.
+  - **The whole house** has no command in the service: the page sends the command of every room
+    with blinds, one after the other (`moveHouse`); a room whose call failed is told by its name,
+    the blinds a room skipped by theirs.
+  - **The window of a room** (`RoomSchedules`, given signals like the window of the room view): the
+    pause of each blind of the room at the top, then a `ScheduleCard` per schedule that moves a
+    blind of the room (`schedulesOf`: what the engine moves today, else the targets as stored),
+    listing only the blinds of that room, named without the room.
   - **Commands go through `DeviceCommands`** (`core/api/device-commands.ts`, shared with the
-    window of a room since this task): one per device at a time, the device read again before the
-    outcome is told, nothing optimistic. A room command (`POST /blinds/rooms/{room}`) answers with
-    the blinds it skipped and why (`failed` with a code) - **that** part of the answer is told, as
-    what the command came to (`answer` of the state), never as a state of a blind.
-  - **No switch flips itself** (`disableToggleValue`): the pause of a blind (on its card and at
-    each target of a schedule - the same pause, read from `schedulePausedSince`) and the switch of
-    a schedule (`/schedules/{id}/enable|disable`) move only when the read-back says so.
+    window of the room view): the page holds one for the blinds, one for the rooms and one for the
+    house, and gives them to every card and window - one command per blind at a time whichever
+    sends it, a room waits for its blinds and they for it, the house for everything (found in
+    review). The device is read again before the outcome is told, nothing optimistic. A room
+    command answers with the blinds it skipped and why (`failed` with a code) - **that** part of
+    the answer is told, as what the command came to (`answer` of the state), never as a state.
+  - **No switch flips itself** (`disableToggleValue`): the pause of a blind and the switch of a
+    schedule (`/schedules/{id}/enable|disable`) move only when the read-back says so.
   - **Every value of the service is its word** (`blind-labels.ts`): a source, a day type, a
     decision, an outcome, a metric this version does not know is printed as it came, never read as
     one it knows. **The times of a window are the service's text**, never a translation parameter
     (`windowEndText` puts them next to the words). The codes of `BlindsError` have texts in
-    `blinds-errors.ts`, whose test lists them - a new code fails it.
+    `blinds-errors.ts`, whose test lists them - a new code fails it. The words of the controls of
+    a blind are the group `blindControl`, read by the room view too.
   - **The holidays are read only** (owner, 2026-10-18: "a day off is only a statutory holiday"): the
     days off of the next 60 days from Monday to Friday (`holidaysOf`, by the date, never by the
     reason); a weekend is not listed. Nothing here adds or removes a day of the household.
   - **Not here until `blinds-service` has them** (owner, 2026-10-18): the protection against wind
     and frost (HAS-249: `watchProtection`, the banner and its clear button) and whether a move was
-    confirmed (HAS-250: `lastCommandConfirmed`). `reachable` is shown - "not heard from since the
-    service started" while it is missing, never "unreachable".
+    confirmed (HAS-250: `lastCommandConfirmed`). `reachable: false` is marked; a missing
+    `reachable` is not, never "unreachable".
 - **A history is a chart of what the service stored** (HAS-201, `shared/history-chart/`,
   used by the hot water and by the open room of the heating page). What to keep:
   - **The page asks with `from` / `to` and never chooses the bucket** - the services do, and say

@@ -460,18 +460,28 @@ export const en = {
       external: 'from outside',
       unknown: 'by whom not known',
     },
+    house: {
+      title: 'Whole house',
+      count: 'Blinds: {{ blinds }} in rooms: {{ rooms }}',
+      commands: 'Every blind of the house',
+      open: 'Open all',
+      stop: 'Stop all',
+      close: 'Close all',
+      skipped: 'Not taken: {{ count }}',
+    },
     room: {
       count: 'Blinds: {{ count }}',
       commands: 'Every blind of the room',
       open: 'Open every blind of',
       stop: 'Stop every blind of',
       close: 'Close every blind of',
-      skipped: 'These blinds did not take the command:',
+      skipped: 'Not taken by: {{ count }}',
+      schedules: 'Schedules: {{ count }}',
+      schedulesUnknown: 'Schedules',
     },
     blind: {
       moved: 'Moved',
       notMoved: 'No movement heard of yet',
-      reachabilityUnknown: 'Not heard from since the service started',
     },
     holidays: {
       title: 'Holidays',
@@ -482,8 +492,11 @@ export const en = {
     },
     schedules: {
       title: 'Schedules',
-      none: 'No schedule yet.',
+      none: 'No schedule moves a blind of this room.',
       unreadable: 'The blinds service did not answer with its schedules.',
+      pause: 'Pause the schedules of a blind',
+      pauseNote: 'A pause ends by itself with the next run it holds back.',
+      close: 'Close',
     },
     schedule: {
       unnamed: 'Without a name',
@@ -506,7 +519,6 @@ export const en = {
       wholeRoom: 'Every blind of',
       unknownBlind: 'A blind the registry no longer knows',
       windowClosed: 'window closed:',
-      pause: 'Pause its schedules until their next run',
       dayType: {
         workday: 'Workdays',
         dayOff: 'Days off',

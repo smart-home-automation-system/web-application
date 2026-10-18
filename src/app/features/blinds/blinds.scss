@@ -1,62 +1,52 @@
-// The sources, then the rooms with blinds and the schedules after the holidays - each a grid of
-// cards across the page, as many side by side as its width allows (the house has a few rooms with
-// blinds on a floor: a row per floor, or a column for the schedules, left half the page empty)
+// The sources; the holidays and the whole house side by side, of one height; then the floors of
+// the house, each a row of room cards of one size standing in the middle of the page - the layout
+// of the devices page (owner, 2026-10-18)
 :host {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.part {
+app-sources-strip {
+  align-self: center;
+  width: min(100%, 960px);
+}
+
+.top {
   display: grid;
-  gap: 16px;
-  min-width: 0;
-}
-
-.note {
-  margin: 0;
-  text-align: center;
-  color: var(--mat-sys-on-background);
-}
-
-.part__name {
-  margin: 0;
-  font: var(--mat-sys-title-medium);
-  letter-spacing: var(--mat-sys-title-medium-tracking);
-  color: var(--mat-sys-on-background);
-}
-
-// the rooms: as many cards side by side as their width allows, each as tall as its blinds - a
-// room of one blind is not stretched to a room of four
-.rooms {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
-  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
   gap: 12px;
+  align-self: center;
+  width: min(100%, 960px);
 }
 
-// the holidays and the schedules: cards side by side, each as tall as what it says
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
-  align-items: start;
-  gap: 12px;
-}
-
-.holidays {
+.top__card {
   --app-domain: var(--app-domain-blinds);
 }
 
-.holidays__list {
+.top__content {
+  display: grid;
+  gap: 8px;
+}
+
+.top__note,
+.holidays__reason {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.holidays {
   display: grid;
   gap: 4px;
-  margin: 0 0 8px;
+  margin: 0;
   padding: 0;
   list-style: none;
 
   li {
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
     gap: 12px;
     font: var(--mat-sys-body-medium);
   }
@@ -66,12 +56,61 @@
   font-weight: 600;
 }
 
-.holidays__reason,
-.holidays__note {
-  color: var(--mat-sys-on-surface-variant);
+.house {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.holidays__note {
+// a line of its own, there when empty too: what appears in it moves nothing
+.status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
   margin: 0;
   font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-error-container);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.status__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.note {
+  margin: 0;
+  text-align: center;
+  color: var(--mat-sys-on-background);
+}
+
+.floor__name {
+  margin: 0 0 10px;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-background);
+}
+
+.floor__rooms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+}
+
+// one column on a phone: the cards take its width
+@media (max-width: 479px) {
+  .floor__rooms app-blind-room-card {
+    --blind-card-width: 100%;
+  }
 }
