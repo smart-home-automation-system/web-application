@@ -200,8 +200,17 @@ e2e/              # Playwright tests
   the code stays a failure; **the choice of a room that is gone is forgotten in an effect**, not
   hidden by a computed (hidden, it pulled the page back by itself when the room returned -
   found in review, the lesson of the heating switch again); and **nothing about a room can be
-  pressed** - `my-room.spec` lists every control there is, and a new one fails that test on
-  purpose. **The switch of the heating of the whole house is on this page only for a member
+  pressed but its blinds** (owner, 2026-10-18, HAS-254) - `my-room.spec` lists every control
+  there is, the blind controls and their pause switch by name, and a new one fails that test on
+  purpose. The cards since HAS-254: heating (with the windows of the room and the hold of its
+  heating, as on the heating page), **blinds** (`RoomBlinds`, `GET /blinds/rooms/{room}`) and
+  **sensors** (`RoomSensors`, the motion and presence sensors of `GET /device/registry?room=`, their
+  state "not known yet"). **A card of a room without such devices is not drawn** - neither while
+  the first answer is on its way; a failure before any answer is drawn, since nobody knows then
+  whether the room has any. The sensors card is **the one read of the device registry outside the
+  administration**: the answer holds the addresses of those devices, the page shows names and
+  kinds only (documented at `DeviceRegistryApi.watchRoom`). No schedules here: they are the
+  administrator's, on the blinds page. **The switch of the heating of the whole house is on this page only for a member
   with the permission `heating_switch`** (owner, 2026-10-09): `HouseHeating` is rendered under
   `hasPermission(profile, 'heating_switch')`, and it is a component of its own so that the
   state of the switch is not even asked for without it. Not the role decides - the
@@ -374,6 +383,9 @@ e2e/              # Playwright tests
     its freshness and failure in the strip at the top, never on a room card.
     `toRoomOverview` puts them together per room; what a service did not answer is "not known".
     A switched-off device is left out (no service uses it).
+  - **The row of a blind is `BlindControl`** (`shared/blinds/blind-control`, since HAS-254 shared
+    with the blinds card of "My room"): its position, window, open / stop / close, the position,
+    the pause - the rules below hold for both places.
   - **Controls for the lights and the blinds only** (owner): the heating is shown, and set on the
     heating page only - nothing in the window leads there (owner, 2026-10-18). **No question before a command** (owner, 2026-10-17 - frequent and
     reversible; the rule of the question stays for the switch of the heating of the whole house).
@@ -564,10 +576,13 @@ e2e/              # Playwright tests
   not away; a last check of the detection older than `PRESENCE_CHECK_IS_LATE_AFTER_MS` is
   flagged, as on the presence page; the coldest and the warmest room are of the house - the
   rooms of the floor "outside" (`FLOORS`) are counted and left out of the two - each with the
-  age of its reading, because the service keeps the last one of a sensor that fell silent. **A new tile is a new resource** - two values of two calls in one tile would tell
+  age of its reading, because the service keeps the last one of a sensor that fell silent. The
+  blinds tile (HAS-254, `summariseBlinds`) counts open, closed, moving and not known - with a
+  position 0 is closed and more is open; `stopped` without a position is not known - and reads
+  `/blinds` once a minute, not at the 10 s of the blinds page. **A new tile is a new resource** - two values of two calls in one tile would tell
   one failure for both. An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
-  the overview through the real routes lets its seven reads through with `isOverviewRead`
+  the overview through the real routes lets its eight reads through with `isOverviewRead`
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
 - **The weather is one resource for the whole application** (HAS-240, `CurrentWeatherStore` in
   `data-access/weather/`, polling `GET /weather/current` every minute, stale after two missed
