@@ -444,6 +444,7 @@ export const pl: Messages = {
     loading: 'Wczytywanie żaluzji',
     unreadable: 'Usługa żaluzji nie odpowiedziała listą żaluzji.',
     none: 'Usługa żaluzji nie zna jeszcze żadnej żaluzji.',
+    unnamed: 'Bez nazwy',
     sources: {
       blinds: 'Żaluzje',
       schedules: 'Harmonogramy',
@@ -575,6 +576,27 @@ export const pl: Messages = {
       scheduleNotFound: 'Usługa żaluzji nie zna tego harmonogramu.',
     },
   },
+  // the controls of a blind, the same words in the window of a room and on the blinds page
+  blindControl: {
+    commandFailed: 'Polecenie nie zostało potwierdzone - mogło jednak zostać wykonane.',
+    position: '{{ position }} %',
+    state: {
+      opened: 'otwarta',
+      closed: 'zamknięta',
+      stopped: 'zatrzymana',
+      opening: 'otwiera się',
+      closing: 'zamyka się',
+      unknown: 'nieznany',
+    },
+    open: 'Otwórz',
+    stop: 'Stop',
+    close: 'Zamknij',
+    positionLabel: 'Pozycja',
+    goTo: 'Ustaw',
+    pause: 'Wstrzymaj harmonogramy do ich najbliższego uruchomienia',
+    pausedSince: 'Wstrzymane',
+    unreachable: 'Brak połączenia',
+  },
   // the floors of the house, shared by every page that lists the rooms by floor
   floors: {
     ground: 'Parter',
@@ -633,25 +655,6 @@ export const pl: Messages = {
       setLevel: 'Ustaw',
       sent: 'Wysłano',
       noControl: 'Jeszcze bez sterowania stąd',
-    },
-    blinds: {
-      position: '{{ position }} %',
-      state: {
-        opened: 'otwarta',
-        closed: 'zamknięta',
-        stopped: 'zatrzymana',
-        opening: 'otwiera się',
-        closing: 'zamyka się',
-        unknown: 'nieznany',
-      },
-      open: 'Otwórz',
-      stop: 'Stop',
-      close: 'Zamknij',
-      positionLabel: 'Pozycja',
-      goTo: 'Ustaw',
-      pause: 'Wstrzymaj harmonogramy do ich najbliższego uruchomienia',
-      pausedSince: 'Wstrzymane',
-      unreachable: 'Brak połączenia',
     },
     presence: {
       count: 'Czujniki obecności: {{ count }}',

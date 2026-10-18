@@ -176,14 +176,14 @@
                     </mat-slide-toggle>
                     @if (blind.schedulePausedSince | houseAge; as age) {
                       <span class="schedule__note"
-                        >{{ t('rooms.blinds.pausedSince') }} {{ age }}</span
+                        >{{ t('blindControl.pausedSince') }} {{ age }}</span
                       >
                     }
                   </span>
                   @if (pausing?.error; as error) {
                     <app-api-error-strip
                       [error]="error"
-                      [summary]="t('rooms.commandFailed')"
+                      [summary]="t('blindControl.commandFailed')"
                       [describeWith]="describeError"
                     />
                   }

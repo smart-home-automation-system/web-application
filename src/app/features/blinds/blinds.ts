@@ -1,15 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { DeviceCommands } from '../../core/api/device-commands';
 import { isRecord } from '../../core/util/is-record';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { CalendarApi, holidaysOf } from '../../data-access/calendar/calendar-api';
 import { MessageKey } from '../../i18n/messages';
-import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
-import { DataFreshness } from '../../shared/data-freshness/data-freshness';
+import { SourcesStrip } from '../../shared/sources-strip/sources-strip';
 import { FLOORS, OTHER_FLOOR } from '../../shared/floors/floors';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { AddressedBlind, BlindRoomCard } from './blind-room-card';
@@ -44,13 +43,11 @@ export interface BlindRoom {
   imports: [
     MatCardModule,
     MatIconModule,
-    MatProgressBarModule,
     TranslocoDirective,
-    ApiErrorStrip,
     BlindRoomCard,
-    DataFreshness,
     HouseDateTimePipe,
     ScheduleCard,
+    SourcesStrip,
   ],
   templateUrl: './blinds.html',
   styleUrl: './blinds.scss',
@@ -75,6 +72,9 @@ export class Blinds {
     day: 'numeric',
     month: 'long',
   };
+
+  /** One command per blind at a time, whichever card sends it - a room card or a schedule. */
+  protected readonly blindCommands = new DeviceCommands<number>();
 
   // the cards are given these: each reads its service again after a command
   protected readonly refreshBlinds = () => this.blinds.refresh();

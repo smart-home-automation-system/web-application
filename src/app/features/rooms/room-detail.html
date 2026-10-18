@@ -164,7 +164,7 @@
                 }
               }
               @if (blind.state?.reachable === false) {
-                <span class="section__warning">{{ t('rooms.blinds.unreachable') }}</span>
+                <span class="section__warning">{{ t('blindControl.unreachable') }}</span>
               }
               <span class="list__controls">
                 <button
@@ -173,7 +173,7 @@
                   [disabled]="command?.sending"
                   (click)="move(blind, 'open')"
                 >
-                  <mat-icon>arrow_upward</mat-icon>{{ t('rooms.blinds.open') }}
+                  <mat-icon>arrow_upward</mat-icon>{{ t('blindControl.open') }}
                   <span class="visually-hidden">{{ blind.device.name }}</span>
                 </button>
                 <button
@@ -182,7 +182,7 @@
                   [disabled]="command?.sending"
                   (click)="move(blind, 'stop')"
                 >
-                  <mat-icon>stop</mat-icon>{{ t('rooms.blinds.stop') }}
+                  <mat-icon>stop</mat-icon>{{ t('blindControl.stop') }}
                   <span class="visually-hidden">{{ blind.device.name }}</span>
                 </button>
                 <button
@@ -191,7 +191,7 @@
                   [disabled]="command?.sending"
                   (click)="move(blind, 'close')"
                 >
-                  <mat-icon>arrow_downward</mat-icon>{{ t('rooms.blinds.close') }}
+                  <mat-icon>arrow_downward</mat-icon>{{ t('blindControl.close') }}
                   <span class="visually-hidden">{{ blind.device.name }}</span>
                 </button>
               </span>
@@ -203,7 +203,7 @@
                       #blindPosition
                       [value]="blind.state?.position ?? 50"
                       [attr.aria-label]="
-                        t('rooms.blinds.positionLabel') + ' ' + (blind.device.name ?? '')
+                        t('blindControl.positionLabel') + ' ' + (blind.device.name ?? '')
                       "
                     />
                   </mat-slider>
@@ -213,7 +213,7 @@
                     [disabled]="command?.sending"
                     (click)="moveTo(blind, blindPosition.valueAsNumber)"
                   >
-                    {{ t('rooms.blinds.goTo') }}
+                    {{ t('blindControl.goTo') }}
                   </button>
                 </span>
               }
@@ -224,15 +224,15 @@
                 [disabled]="command?.sending || blind.state === undefined"
                 (toggleChange)="pause(blind)"
               >
-                {{ t('rooms.blinds.pause') }}
+                {{ t('blindControl.pause') }}
               </mat-slide-toggle>
               @if (blind.state?.schedulePausedSince | houseAge; as age) {
                 <span class="section__note" data-testid="blind-paused"
-                  >{{ t('rooms.blinds.pausedSince') }} {{ age }}</span
+                  >{{ t('blindControl.pausedSince') }} {{ age }}</span
                 >
               }
               @if (command?.error; as error) {
-                <app-api-error-strip [error]="error" [summary]="t('rooms.commandFailed')" />
+                <app-api-error-strip [error]="error" [summary]="t('blindControl.commandFailed')" />
               }
             </li>
           }

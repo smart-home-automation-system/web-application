@@ -164,6 +164,44 @@ describe('Blinds', () => {
     );
   });
 
+  // one command per blind at a time: the room waits for its blinds, and they for the room (found
+  // in review)
+  it('holds the blinds of a room while a command to the room or one of them is on its way', async () => {
+    const office = room('office');
+    const buttons = (selector: string) =>
+      [...office.querySelectorAll<HTMLButtonElement>(selector)].map((button) => button.disabled);
+
+    office.querySelector<HTMLButtonElement>('[data-testid="room-open"]')!.click();
+    await settled();
+    expect(buttons('[data-blind] .blind__controls button').every(Boolean)).toBe(true);
+    http
+      .expectOne((call) => call.url === '/home/blinds/rooms/office')
+      .flush({ moved: [], failed: [] }, { status: 202, statusText: 'Accepted' });
+    await settled();
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/blinds').flush(BLINDS);
+    await settled();
+    expect(buttons('[data-blind] .blind__controls button').some(Boolean)).toBe(false);
+
+    // a pause is a command to its blind as well
+    expect(buttons('[data-testid="room-open"]')).toEqual([false]);
+    page()
+      .querySelector<HTMLButtonElement>(
+        '[data-blind="2"] [data-testid="blind-pause"] [role="switch"]',
+      )!
+      .click();
+    await settled();
+    expect(buttons('[data-testid="room-open"]')).toEqual([true]);
+    http
+      .expectOne('/home/blinds/2/schedule-pause')
+      .flush(null, { status: 204, statusText: 'No Content' });
+    await settled();
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/blinds').flush(BLINDS);
+    await settled();
+    expect(buttons('[data-testid="room-open"]')).toEqual([false]);
+  });
+
   it('lists the holidays on weekdays only', () => {
     const holidays = [...page().querySelectorAll('[data-testid="holiday"]')];
 

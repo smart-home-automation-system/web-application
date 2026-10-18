@@ -3,24 +3,8 @@
     <h1>{{ t('rooms.title') }}</h1>
   </header>
 
-  <!-- the four calls the page is made of, each with its freshness and its failure, told once -->
-  <mat-card appearance="outlined" class="sources card--domain" data-testid="sources">
-    <mat-card-content class="sources__content">
-      @for (source of sources; track source.id) {
-        <div class="source" [attr.data-source]="source.id">
-          <span class="source__name">{{ t(source.label) }}</span>
-          <app-data-freshness
-            [lastUpdated]="source.resource.lastUpdated()"
-            [stale]="source.resource.stale()"
-          />
-          <app-api-error-strip [error]="source.resource.error()" />
-        </div>
-      }
-    </mat-card-content>
-    @if (registry.loading()) {
-      <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('rooms.loading')" />
-    }
-  </mat-card>
+  <!-- the calls the page is made of, each with its freshness and its failure, told once -->
+  <app-sources-strip [sources]="sources" domain="devices" loadingLabel="rooms.loading" />
 
   @if (devices() === undefined && !registry.loading()) {
     <p class="rooms__note">{{ t('rooms.registryUnreadable') }}</p>

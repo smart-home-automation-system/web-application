@@ -23,8 +23,9 @@ import {
   heaterStateLabel,
 } from '../../shared/room-heating/heater-labels';
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
-import { BlindRow, RoomOverview, shortName } from './room-overview';
-import { blindPositionLabel } from './room-labels';
+import { blindPositionLabel } from '../../shared/blinds/blind-position';
+import { shortName } from '../../shared/device-names/device-names';
+import { BlindRow, RoomOverview } from './room-overview';
 
 /** What the window of a room is opened with: signals, so that it follows the services. */
 export interface RoomDetailData {

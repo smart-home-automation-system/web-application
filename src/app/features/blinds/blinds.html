@@ -3,24 +3,8 @@
     <h1>{{ t('blinds.title') }}</h1>
   </header>
 
-  <!-- the three calls the page is made of, each with its freshness and its failure, told once -->
-  <mat-card appearance="outlined" class="sources card--domain" data-testid="sources">
-    <mat-card-content class="sources__content">
-      @for (source of sources; track source.id) {
-        <div class="source" [attr.data-source]="source.id">
-          <span class="source__name">{{ t(source.label) }}</span>
-          <app-data-freshness
-            [lastUpdated]="source.resource.lastUpdated()"
-            [stale]="source.resource.stale()"
-          />
-          <app-api-error-strip [error]="source.resource.error()" />
-        </div>
-      }
-    </mat-card-content>
-    @if (blinds.loading()) {
-      <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('blinds.loading')" />
-    }
-  </mat-card>
+  <!-- the calls the page is made of, each with its freshness and its failure, told once -->
+  <app-sources-strip [sources]="sources" domain="blinds" loadingLabel="blinds.loading" />
 
   <!-- the blinds: the rooms that have some, in the order of the floors, one grid across the page -
        a floor of the house has few rooms with blinds, and a row per floor left half of it empty -->
@@ -40,6 +24,7 @@
           [floor]="group.floor"
           [blinds]="group.blinds"
           [refresh]="refreshBlinds"
+          [commands]="blindCommands"
         />
       }
     </div>
@@ -93,6 +78,7 @@
             [blinds]="all() ?? []"
             [refreshSchedules]="refreshSchedules"
             [refreshBlinds]="refreshBlinds"
+            [commands]="blindCommands"
           />
         }
       } @else if (!schedules.loading()) {

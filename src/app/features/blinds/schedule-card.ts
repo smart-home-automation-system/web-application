@@ -90,10 +90,11 @@ export class ScheduleCard {
   readonly refreshSchedules = input.required<() => Promise<void>>();
   /** Reads the blinds again, resolved when that call has answered. */
   readonly refreshBlinds = input.required<() => Promise<void>>();
+  /** The commands to the blinds, the page's: the pause of a blind is also sent from its room card. */
+  readonly commands = input.required<DeviceCommands<number>>();
 
   private readonly api = inject(BlindsApi);
   private readonly switches = new DeviceCommands<'schedule'>();
-  private readonly pauses = new DeviceCommands<number>();
 
   protected readonly describeError = describeBlindsError;
 
@@ -180,7 +181,7 @@ export class ScheduleCard {
   });
 
   protected pauseState(id: number) {
-    return this.pauses.stateOf(id);
+    return this.commands().stateOf(id);
   }
 
   protected setEnabled(): void {
@@ -205,6 +206,6 @@ export class ScheduleCard {
         : this.api.resumeSchedules(blind.id);
     const refreshBlinds = this.refreshBlinds();
     const refreshSchedules = this.refreshSchedules();
-    this.pauses.send(blind.id, call, () => refreshBlinds().then(() => refreshSchedules()));
+    this.commands().send(blind.id, call, () => refreshBlinds().then(() => refreshSchedules()));
   }
 }

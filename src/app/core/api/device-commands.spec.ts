@@ -12,13 +12,11 @@ describe('DeviceCommands', () => {
 
     commands.send(1, of(undefined), read);
     expect(commands.stateOf(1)).toEqual({ sending: true });
-    expect(commands.sendingAny()).toBe(true);
 
     readBack();
     await Promise.resolve();
     await Promise.resolve();
     expect(commands.stateOf(1)).toEqual({ sending: false, sent: true });
-    expect(commands.sendingAny()).toBe(false);
   });
 
   it('sends nothing to a device whose command is still on its way', () => {

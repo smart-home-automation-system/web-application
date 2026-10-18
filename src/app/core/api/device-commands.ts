@@ -27,11 +27,6 @@ export class DeviceCommands<K, A = void> {
     return this.states().get(key);
   }
 
-  /** True while a command to any of the devices is on its way. */
-  sendingAny(): boolean {
-    return [...this.states().values()].some((state) => state.sending);
-  }
-
   /**
    * Sends `call` unless a command to the same device is still on its way. `readBack` reads the
    * device again and resolves when that call has answered; without it the command is told as

@@ -18,8 +18,8 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { toWindowView } from '../../shared/room-heating/room-views';
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
-import { doorsFirst, shortName } from '../rooms/room-overview';
-import { blindPositionLabel } from '../rooms/room-labels';
+import { blindPositionLabel } from '../../shared/blinds/blind-position';
+import { doorsFirst, shortName } from '../../shared/device-names/device-names';
 import { describeBlindsError, skippedReason } from './blinds-errors';
 import { sourceText } from './blind-labels';
 
@@ -66,9 +66,13 @@ export class BlindRoomCard {
   readonly blinds = input.required<readonly AddressedBlind[]>();
   /** Reads the blinds again, resolved when that call has answered. */
   readonly refresh = input.required<() => Promise<void>>();
+  /**
+   * The commands to the blinds, the page's: a blind's pause is also sent from the card of a
+   * schedule, and one command per blind at a time holds across both.
+   */
+  readonly commands = input.required<DeviceCommands<number>>();
 
   private readonly api = inject(BlindsApi);
-  private readonly commands = new DeviceCommands<number>();
   private readonly roomCommands = new DeviceCommands<'room', readonly BlindOutcome[]>();
 
   protected readonly positionLabel = blindPositionLabel;
@@ -89,19 +93,24 @@ export class BlindRoomCard {
 
   protected readonly roomCommand = computed(() => this.roomCommands.stateOf('room'));
 
+  /** A blind of the room has a command on its way: the room waits for it, and it for the room. */
+  protected readonly blindSending = computed(() =>
+    this.blinds().some((blind) => this.commands().stateOf(blind.id)?.sending),
+  );
+
   /** The blinds a room command skipped, by their names as the answer gave them. */
   protected readonly skipped = computed(() => this.roomCommand()?.answer ?? []);
 
   protected stateOf(id: number) {
-    return this.commands.stateOf(id);
+    return this.commands().stateOf(id);
   }
 
   protected move(blind: AddressedBlind, command: BlindCommand): void {
-    this.commands.send(blind.id, this.api.move(blind.id, command), this.refresh());
+    this.commands().send(blind.id, this.api.move(blind.id, command), this.refresh());
   }
 
   protected moveTo(blind: AddressedBlind, position: number): void {
-    this.commands.send(blind.id, this.api.moveTo(blind.id, position), this.refresh());
+    this.commands().send(blind.id, this.api.moveTo(blind.id, position), this.refresh());
   }
 
   /** A click asks for the other state; the switch moves when the read-back says so. */
@@ -110,7 +119,7 @@ export class BlindRoomCard {
       blind.schedulePausedSince === undefined
         ? this.api.pauseSchedules(blind.id)
         : this.api.resumeSchedules(blind.id);
-    this.commands.send(blind.id, call, this.refresh());
+    this.commands().send(blind.id, call, this.refresh());
   }
 
   protected moveRoom(command: BlindCommand): void {

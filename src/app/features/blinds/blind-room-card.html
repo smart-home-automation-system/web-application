@@ -20,7 +20,7 @@
           matIconButton
           type="button"
           data-testid="room-open"
-          [disabled]="roomState?.sending"
+          [disabled]="roomState?.sending || blindSending()"
           [matTooltip]="t('blinds.room.open')"
           matTooltipTouchGestures="off"
           [attr.aria-label]="t('blinds.room.open') + ' ' + room()"
@@ -32,7 +32,7 @@
           matIconButton
           type="button"
           data-testid="room-stop"
-          [disabled]="roomState?.sending"
+          [disabled]="roomState?.sending || blindSending()"
           [matTooltip]="t('blinds.room.stop')"
           matTooltipTouchGestures="off"
           [attr.aria-label]="t('blinds.room.stop') + ' ' + room()"
@@ -44,7 +44,7 @@
           matIconButton
           type="button"
           data-testid="room-close"
-          [disabled]="roomState?.sending"
+          [disabled]="roomState?.sending || blindSending()"
           [matTooltip]="t('blinds.room.close')"
           matTooltipTouchGestures="off"
           [attr.aria-label]="t('blinds.room.close') + ' ' + room()"
@@ -59,7 +59,7 @@
       @if (roomState?.error; as error) {
         <app-api-error-strip
           [error]="error"
-          [summary]="t('rooms.commandFailed')"
+          [summary]="t('blindControl.commandFailed')"
           [describeWith]="describeError"
         />
       }
@@ -69,7 +69,7 @@
           <ul>
             @for (one of skipped(); track $index) {
               <li>
-                {{ one.name ?? t('rooms.unnamed') }}
+                {{ one.name ?? t('blinds.unnamed') }}
                 @if (one.code !== undefined) {
                   - {{ skippedReasonOf(one.code) | displayText }}
                 }
@@ -86,7 +86,7 @@
           @let at = positionLabel({ state: blind });
           <li class="blind" data-testid="blind" [attr.data-blind]="blind.id">
             <div class="blind__head">
-              <span class="blind__name">{{ row.name ?? t('rooms.unnamed') }}</span>
+              <span class="blind__name">{{ row.name ?? t('blinds.unnamed') }}</span>
               <span class="blind__position" data-testid="blind-position">{{
                 t(at.key, { position: at.position })
               }}</span>
@@ -110,7 +110,7 @@
               }
               @if (blind.reachable === false) {
                 <span class="blind__warning" data-testid="blind-unreachable">{{
-                  t('rooms.blinds.unreachable')
+                  t('blindControl.unreachable')
                 }}</span>
               } @else if (blind.reachable === undefined) {
                 <span>{{ t('blinds.blind.reachabilityUnknown') }}</span>
@@ -121,28 +121,28 @@
               <button
                 matButton="outlined"
                 type="button"
-                [disabled]="command?.sending"
+                [disabled]="command?.sending || roomState?.sending"
                 (click)="move(blind, 'open')"
               >
-                <mat-icon>arrow_upward</mat-icon>{{ t('rooms.blinds.open') }}
+                <mat-icon>arrow_upward</mat-icon>{{ t('blindControl.open') }}
                 <span class="visually-hidden">{{ blind.name }}</span>
               </button>
               <button
                 matButton="outlined"
                 type="button"
-                [disabled]="command?.sending"
+                [disabled]="command?.sending || roomState?.sending"
                 (click)="move(blind, 'stop')"
               >
-                <mat-icon>stop</mat-icon>{{ t('rooms.blinds.stop') }}
+                <mat-icon>stop</mat-icon>{{ t('blindControl.stop') }}
                 <span class="visually-hidden">{{ blind.name }}</span>
               </button>
               <button
                 matButton="outlined"
                 type="button"
-                [disabled]="command?.sending"
+                [disabled]="command?.sending || roomState?.sending"
                 (click)="move(blind, 'close')"
               >
-                <mat-icon>arrow_downward</mat-icon>{{ t('rooms.blinds.close') }}
+                <mat-icon>arrow_downward</mat-icon>{{ t('blindControl.close') }}
                 <span class="visually-hidden">{{ blind.name }}</span>
               </button>
             </span>
@@ -155,16 +155,16 @@
                     matSliderThumb
                     #blindPosition
                     [value]="blind.position ?? 50"
-                    [attr.aria-label]="t('rooms.blinds.positionLabel') + ' ' + (blind.name ?? '')"
+                    [attr.aria-label]="t('blindControl.positionLabel') + ' ' + (blind.name ?? '')"
                   />
                 </mat-slider>
                 <button
                   matButton
                   type="button"
-                  [disabled]="command?.sending"
+                  [disabled]="command?.sending || roomState?.sending"
                   (click)="moveTo(blind, blindPosition.valueAsNumber)"
                 >
-                  {{ t('rooms.blinds.goTo') }}
+                  {{ t('blindControl.goTo') }}
                 </button>
               </span>
             }
@@ -173,14 +173,14 @@
               <mat-slide-toggle
                 data-testid="blind-pause"
                 [checked]="blind.schedulePausedSince !== undefined"
-                [disabled]="command?.sending"
+                [disabled]="command?.sending || roomState?.sending"
                 (toggleChange)="pause(blind)"
               >
-                {{ t('rooms.blinds.pause') }}
+                {{ t('blindControl.pause') }}
               </mat-slide-toggle>
               @if (blind.schedulePausedSince | houseAge; as age) {
                 <span class="blind__note" data-testid="blind-paused"
-                  >{{ t('rooms.blinds.pausedSince') }} {{ age }}</span
+                  >{{ t('blindControl.pausedSince') }} {{ age }}</span
                 >
               }
             </div>
@@ -188,7 +188,7 @@
             @if (command?.error; as error) {
               <app-api-error-strip
                 [error]="error"
-                [summary]="t('rooms.commandFailed')"
+                [summary]="t('blindControl.commandFailed')"
                 [describeWith]="describeError"
               />
             }

@@ -7,7 +7,8 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { heaterState } from '../../shared/room-heating/heater-labels';
 import { RoomOverview } from './room-overview';
-import { blindPositionLabel, shortWindowLabel } from './room-labels';
+import { blindPositionLabel } from '../../shared/blinds/blind-position';
+import { shortWindowLabel } from './room-labels';
 
 /**
  * One room of the room view (HAS-232): a card of one size, like the cards of the devices page,

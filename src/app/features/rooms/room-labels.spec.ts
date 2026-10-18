@@ -1,5 +1,6 @@
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
-import { blindPositionLabel, shortWindowLabel } from './room-labels';
+import { blindPositionLabel } from '../../shared/blinds/blind-position';
+import { shortWindowLabel } from './room-labels';
 
 // the words of the room view for what the services send (HAS-232): what a service did not say is
 // "not known", never closed
@@ -9,14 +10,14 @@ describe('room labels', () => {
   it('says what a blind does without a position, and "not known" without a state', () => {
     for (const state of ['opened', 'closed', 'stopped', 'opening', 'closing']) {
       expect(blindPositionLabel({ ...blind, state: { state } }).key).toBe(
-        `rooms.blinds.state.${state}`,
+        `blindControl.state.${state}`,
       );
     }
     expect(blindPositionLabel({ ...blind, state: { state: 'jammed' } }).key).toBe(
-      'rooms.blinds.state.unknown',
+      'blindControl.state.unknown',
     );
     expect(blindPositionLabel({ ...blind, state: { position: Number.NaN } }).key).toBe(
-      'rooms.blinds.state.unknown',
+      'blindControl.state.unknown',
     );
   });
 

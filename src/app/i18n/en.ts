@@ -447,6 +447,7 @@ export const en = {
     loading: 'Loading the blinds',
     unreadable: 'The blinds service did not answer with its blinds.',
     none: 'The blinds service knows no blind yet.',
+    unnamed: 'Without a name',
     sources: {
       blinds: 'Blinds',
       schedules: 'Schedules',
@@ -579,6 +580,27 @@ export const en = {
       scheduleNotFound: 'The blinds service does not know this schedule.',
     },
   },
+  // the controls of a blind, the same words in the window of a room and on the blinds page
+  blindControl: {
+    commandFailed: 'The command was not confirmed - it may have been carried out all the same.',
+    position: '{{ position }} %',
+    state: {
+      opened: 'open',
+      closed: 'closed',
+      stopped: 'stopped',
+      opening: 'opening',
+      closing: 'closing',
+      unknown: 'not known',
+    },
+    open: 'Open',
+    stop: 'Stop',
+    close: 'Close',
+    positionLabel: 'Position',
+    goTo: 'Go',
+    pause: 'Pause the schedules until their next run',
+    pausedSince: 'Paused',
+    unreachable: 'Not reachable',
+  },
   // the floors of the house, shared by every page that lists the rooms by floor
   floors: {
     ground: 'Ground floor',
@@ -637,25 +659,6 @@ export const en = {
       setLevel: 'Set',
       sent: 'Sent',
       noControl: 'Not controlled from here yet',
-    },
-    blinds: {
-      position: '{{ position }} %',
-      state: {
-        opened: 'open',
-        closed: 'closed',
-        stopped: 'stopped',
-        opening: 'opening',
-        closing: 'closing',
-        unknown: 'not known',
-      },
-      open: 'Open',
-      stop: 'Stop',
-      close: 'Close',
-      positionLabel: 'Position',
-      goTo: 'Go',
-      pause: 'Pause the schedules until their next run',
-      pausedSince: 'Paused',
-      unreachable: 'Not reachable',
     },
     presence: {
       count: 'Presence sensors: {{ count }}',
