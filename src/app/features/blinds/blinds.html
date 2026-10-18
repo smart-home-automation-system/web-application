@@ -1,6 +1,9 @@
 <ng-container *transloco="let t">
   <header class="page-header">
     <h1>{{ t('blinds.title') }}</h1>
+    <a matButton="filled" routerLink="/blinds/schedules/new" data-testid="new-schedule"
+      ><mat-icon>add</mat-icon>{{ t('blinds.newSchedule') }}</a
+    >
   </header>
 
   <!-- the calls the page is made of, each with its freshness and its failure, told once -->

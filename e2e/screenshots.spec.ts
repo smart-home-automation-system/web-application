@@ -428,6 +428,18 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the editor of a schedule (HAS-253): a stored one with its line of today, the whole form
+      test('blinds schedule editor', async ({ page }, testInfo) => {
+        await page.clock.setFixedTime(new Date('2026-10-20T10:00:00+02:00'));
+        await page.goto('/blinds/schedules/2');
+        await expect(page.getByTestId('today-decision')).toBeVisible();
+        await expect(page.getByTestId('condition-row')).toHaveCount(2);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'blinds-schedule-editor'),
+          fullPage: true,
+        });
+      });
+
       // the administration of the devices (HAS-290): a card per room, floor by floor; the window
       // of a room with a device being changed and a question open; the window opened with "Add"
       test('devices', async ({ page }, testInfo) => {

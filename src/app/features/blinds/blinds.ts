@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { Observable, catchError, concatMap, from, map, of, toArray } from 'rxjs';
 
@@ -57,6 +58,7 @@ export interface BlindFloor {
     MatCardModule,
     MatIconModule,
     MatTooltipModule,
+    RouterLink,
     TranslocoDirective,
     BlindRoomCard,
     DisplayTextPipe,
@@ -106,24 +108,7 @@ export class Blinds {
    * runtime: an entry that is not a blind with an id is passed over - a control needs the id.
    * `undefined` while the blinds have not answered with a list.
    */
-  protected readonly all = computed((): readonly AddressedBlind[] | undefined => {
-    const answer: unknown = this.blinds.value();
-    if (!Array.isArray(answer)) {
-      return undefined;
-    }
-    return (answer as unknown[]).filter(isRecord).flatMap((group) => {
-      const list = group['blinds'];
-      const room = typeof group['room'] === 'string' ? group['room'] : undefined;
-      return (Array.isArray(list) ? (list as unknown[]) : [])
-        .filter(
-          (blind): blind is AddressedBlind =>
-            isRecord(blind) && typeof blind['id'] === 'number' && Number.isFinite(blind['id']),
-        )
-        .map((blind) =>
-          blind.room === undefined && room !== undefined ? { ...blind, room } : blind,
-        );
-    });
-  });
+  protected readonly all = computed(() => blindsOf(this.blinds.value()));
 
   /** The rooms with blinds by floor - a room without one is not shown (owner, 2026-10-18). */
   protected readonly floors = computed(() => floorsOf(this.all() ?? []));
@@ -218,6 +203,29 @@ export class Blinds {
     };
     this.dialog.open(RoomSchedules, { ...ROOM_SCHEDULES_SIZE, data, autoFocus: 'dialog' });
   }
+}
+
+/**
+ * Every blind of an answer of `GET /blinds` that can be addressed, in its order. Nothing checks an
+ * answer at runtime: an entry that is not a blind with an id is passed over - a control needs the
+ * id. `undefined` for an answer that is not a list.
+ */
+export function blindsOf(answer: unknown): readonly AddressedBlind[] | undefined {
+  if (!Array.isArray(answer)) {
+    return undefined;
+  }
+  return (answer as unknown[]).filter(isRecord).flatMap((group) => {
+    const list = group['blinds'];
+    const room = typeof group['room'] === 'string' ? group['room'] : undefined;
+    return (Array.isArray(list) ? (list as unknown[]) : [])
+      .filter(
+        (blind): blind is AddressedBlind =>
+          isRecord(blind) && typeof blind['id'] === 'number' && Number.isFinite(blind['id']),
+      )
+      .map((blind) =>
+        blind.room === undefined && room !== undefined ? { ...blind, room } : blind,
+      );
+  });
 }
 
 /** The rooms with blinds by floor, in the order of `FLOORS`; a room it does not know goes last. */

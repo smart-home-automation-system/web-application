@@ -46,7 +46,15 @@ import {
   presenceNow,
   presenceReport,
 } from './presence.fixtures';
-import { allSchedules, enableSchedule, scheduleToday } from './schedules.fixtures';
+import {
+  allSchedules,
+  createSchedule,
+  enableSchedule,
+  oneSchedule,
+  removeSchedule,
+  replaceSchedule,
+  scheduleToday,
+} from './schedules.fixtures';
 import { WATER_HEATING_DEMAND, waterTemperatures } from './water.fixtures';
 import {
   STATION_STATUS_BEFORE_FIRST_READING,
@@ -262,6 +270,27 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/blinds/schedules',
     reply: () => ({ status: 200, body: allSchedules() }),
+  },
+  // the editor of a schedule (HAS-253)
+  {
+    method: 'POST',
+    path: '/home/blinds/schedules',
+    reply: (request) => createSchedule(request.body),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/blinds\/schedules\/(\d+)$/,
+    reply: (_request, _fresh, [id]) => oneSchedule(id),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/blinds\/schedules\/(\d+)$/,
+    reply: (request, _fresh, [id]) => replaceSchedule(id, request.body),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/blinds\/schedules\/(\d+)$/,
+    reply: (_request, _fresh, [id]) => removeSchedule(id),
   },
   {
     method: 'GET',

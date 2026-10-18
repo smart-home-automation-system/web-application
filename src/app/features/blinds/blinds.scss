@@ -7,6 +7,15 @@
   gap: 20px;
 }
 
+// the title, and the way to a new schedule next to it
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 app-sources-strip {
   align-self: center;
   width: min(100%, 960px);
