@@ -1,7 +1,7 @@
 <ng-container *transloco="let t">
   @let sending = command()?.sending === true;
   <div class="blind__head">
-    <span class="blind__name">{{ shortName() ?? t('blindControl.unnamed') }}</span>
+    <span class="blind__name">{{ shortName() ?? t('blinds.unnamed') }}</span>
     <span class="blind__state" data-testid="blind-position">{{
       t(shown().key, { position: shown().position })
     }}</span>

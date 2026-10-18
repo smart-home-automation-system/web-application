@@ -74,10 +74,13 @@ const SCHEDULES_EVERY_MS = 60_000;
 export class BlindsApi {
   private readonly api = inject(ApiClient);
 
-  /** Every blind, by room. Call in an injection context: the polling lives as long as the caller. */
-  watchBlinds(): PollingResource<readonly RoomBlinds[] | null> {
+  /**
+   * Every blind, by room. Call in an injection context: the polling lives as long as the caller.
+   * A page that only counts them asks less often (the overview: once a minute).
+   */
+  watchBlinds(intervalMs = POLL_EVERY_MS): PollingResource<readonly RoomBlinds[] | null> {
     return pollingResource(() => this.api.get<readonly RoomBlinds[] | null>('/blinds'), {
-      intervalMs: POLL_EVERY_MS,
+      intervalMs,
     });
   }
 

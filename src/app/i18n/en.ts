@@ -711,7 +711,6 @@ export const en = {
     goTo: 'Go',
     pause: 'Pause the schedules until their next run',
     pausedSince: 'Paused',
-    unnamed: 'Without a name',
     unreachable: 'Not reachable',
   },
   // the floors of the house, shared by every page that lists the rooms by floor

@@ -706,7 +706,6 @@ export const pl: Messages = {
     goTo: 'Ustaw',
     pause: 'Wstrzymaj harmonogramy do ich najbliższego uruchomienia',
     pausedSince: 'Wstrzymane',
-    unnamed: 'Bez nazwy',
     unreachable: 'Brak połączenia',
   },
   // the floors of the house, shared by every page that lists the rooms by floor

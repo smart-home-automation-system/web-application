@@ -444,6 +444,12 @@ describe('MyRoom', () => {
     it('is nothing at all for a member with one room', async () => {
       await page();
       answer(lastAsked().resource, BEDROOM);
+      // a room without blinds and with a sensor: the sensors are listed, nothing more to press
+      answer(blindsAsked.at(-1)!.resource, { room: 'bedroom', blinds: [] });
+      answer(sensorsAsked.at(-1)!.resource, [
+        { id: 1, name: 'Bedroom motion', room: 'bedroom', kind: 'motion sensor' },
+      ]);
+      expect((await page()).querySelector('[data-testid="room-sensors"]')).not.toBeNull();
 
       expect(await controls()).toEqual({ inTheRoom: [], elsewhere: [] });
     });

@@ -83,7 +83,8 @@ export class Overview {
   protected readonly presence = inject(PresenceApi).watchNow();
   // the resource of the strip in the panel: one poller, so the two never tell different answers
   protected readonly weather = inject(CurrentWeatherStore).current;
-  protected readonly blinds = inject(BlindsApi).watchBlinds();
+  // counts only: once a minute, not at the pace of the blinds page
+  protected readonly blinds = inject(BlindsApi).watchBlinds(60_000);
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,

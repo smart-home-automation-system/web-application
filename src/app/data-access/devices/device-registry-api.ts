@@ -151,8 +151,11 @@ export class DeviceRegistryApi {
    * out".
    */
   /**
-   * The switched-on devices of one room, read only (HAS-254, "My room": its sensors). The page
-   * shows their names and kinds; what else the registry holds of them is not put on screen. The
+   * The switched-on devices of one room, read only (HAS-254, "My room": its sensors), **read for
+   * every member** - the one read of the device registry outside the administration. The answer
+   * holds what the registry holds of those devices, their addresses included; the page shows their
+   * names and kinds only (accepted with the task: the separation is UI-only while nothing behind the
+   * gateway is authenticated). The
    * name is read when a call is made; the caller is made anew for another room. Call in an
    * injection context.
    */

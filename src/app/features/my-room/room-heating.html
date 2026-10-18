@@ -30,7 +30,8 @@
 
           <!-- HAS-254, as on the heating page (HAS-232): the windows and doors of the room and
                the hold of its heating; a room without a sensor says nothing about them -->
-          @if (shown.window; as window) {
+          @let window = shown.window;
+          @if (window && (window.state !== 'no sensor' || window.hold === true)) {
             <p class="room__detail room__openings">
               @if (window.state !== 'no sensor') {
                 <span
