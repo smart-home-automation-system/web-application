@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import {
   MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS,
   MatSlideToggleModule,
 } from '@angular/material/slide-toggle';
+import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { DeviceCommands } from '../../core/api/device-commands';
@@ -61,14 +63,17 @@ interface ConditionRow {
  * pause of a blind's schedules is the window's, above the cards.
  *
  * The switch does not flip itself: it shows the service, read again after the change. The
- * schedules are written by the editor of HAS-253; this card only switches one on and off.
+ * schedules are written by the editor of HAS-253, which the link of the card opens; this card
+ * only switches one on and off.
  */
 @Component({
   selector: 'app-schedule-card',
   imports: [
+    MatButtonModule,
     MatCardModule,
     MatIconModule,
     MatSlideToggleModule,
+    RouterLink,
     TranslocoDirective,
     ApiErrorStrip,
     DisplayTextPipe,

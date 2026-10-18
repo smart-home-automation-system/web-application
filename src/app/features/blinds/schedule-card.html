@@ -30,6 +30,17 @@
         }}
       </mat-slide-toggle>
     </mat-card-header>
+    @if (stored.id !== undefined) {
+      <!-- the editor of the schedule (HAS-253); the window of the room closes on the way -->
+      <a
+        matButton
+        class="schedule__edit"
+        data-testid="schedule-edit"
+        [routerLink]="['/blinds/schedules', stored.id]"
+        ><mat-icon>edit</mat-icon>{{ t('blinds.schedule.edit') }}
+        <span class="visually-hidden">{{ stored.name }}</span></a
+      >
+    }
 
     <mat-card-content class="schedule__content">
       @if (switching?.error; as error) {

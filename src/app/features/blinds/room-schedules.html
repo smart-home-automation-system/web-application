@@ -56,6 +56,13 @@
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
+    <a
+      matButton
+      routerLink="/blinds/schedules/new"
+      data-testid="room-new-schedule"
+      [queryParams]="{ room: data.room }"
+      ><mat-icon>add</mat-icon>{{ t('blinds.schedules.new') }}</a
+    >
     <button matButton type="button" mat-dialog-close>{{ t('blinds.schedules.close') }}</button>
   </mat-dialog-actions>
 </ng-container>

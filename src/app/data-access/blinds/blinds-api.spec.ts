@@ -145,4 +145,18 @@ describe('BlindsApi and LightsApi', () => {
       expect(schedules.value()).toBeNull();
     });
   });
+
+  // HAS-253: of the answer of a new schedule only its id is used - the schedule is read again
+  it('answers the id of a new schedule, and nothing for an answer without one', async () => {
+    const created = firstValueFrom(blinds.createSchedule({ name: 'Night' }));
+    const request = http.expectOne('/home/blinds/schedules');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ name: 'Night' });
+    request.flush({ id: 4, name: 'Night' }, { status: 201, statusText: 'Created' });
+    expect(await created).toBe(4);
+
+    const without = firstValueFrom(blinds.createSchedule({ name: 'Night' }));
+    http.expectOne('/home/blinds/schedules').flush(null, { status: 201, statusText: 'Created' });
+    expect(await without).toBeUndefined();
+  });
 });

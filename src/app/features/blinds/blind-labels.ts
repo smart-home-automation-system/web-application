@@ -35,14 +35,14 @@ export function sourceText(source: string | undefined): DisplayText {
   return textOf(SOURCES, source, 'blinds.source.unknown');
 }
 
-const DAY_TYPES: Readonly<Record<string, MessageKey>> = {
+export const DAY_TYPE_LABELS: Readonly<Record<string, MessageKey>> = {
   workday: 'blinds.schedule.dayType.workday',
   'day off': 'blinds.schedule.dayType.dayOff',
   any: 'blinds.schedule.dayType.any',
 };
 
 export function dayTypeText(dayType: string | undefined): DisplayText {
-  return textOf(DAY_TYPES, dayType, 'blinds.schedule.dayType.unknown');
+  return textOf(DAY_TYPE_LABELS, dayType, 'blinds.schedule.dayType.unknown');
 }
 
 /** What a schedule does to its blinds; a position with its number. */
@@ -103,14 +103,14 @@ export function conditionStateText(state: string | undefined): DisplayText {
 }
 
 /** A metric of a condition: its name and the unit of its numbers (none for a truth). */
-interface Metric {
+export interface Metric {
   readonly name: MessageKey;
   readonly unit?: string;
   /** For a truth: what `is true` and `is false` read as. */
   readonly truth?: { readonly yes: MessageKey; readonly no: MessageKey };
 }
 
-const METRICS: Readonly<Record<string, Metric>> = {
+export const METRIC_LABELS: Readonly<Record<string, Metric>> = {
   illuminance: { name: 'blinds.schedule.metric.illuminance', unit: 'lx' },
   'outside temperature': { name: 'blinds.schedule.metric.outsideTemperature', unit: '°C' },
   'wind gust': { name: 'blinds.schedule.metric.windGust', unit: 'm/s' },
@@ -148,8 +148,8 @@ export function conditionView(
   condition: ScheduleCondition & { readonly current?: number | boolean },
 ): ConditionView {
   const metric =
-    condition.metric !== undefined && Object.hasOwn(METRICS, condition.metric)
-      ? METRICS[condition.metric]
+    condition.metric !== undefined && Object.hasOwn(METRIC_LABELS, condition.metric)
+      ? METRIC_LABELS[condition.metric]
       : undefined;
   const hold =
     typeof condition.holdMinutes === 'number' && condition.holdMinutes > 0

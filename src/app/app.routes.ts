@@ -65,6 +65,21 @@ const pages: Page[] = [
     loadComponent: () => import('./features/blinds/blinds').then((m) => m.Blinds),
   },
   {
+    // the editor of a schedule of the blinds (HAS-253): a new one, `?room=` to start with a room
+    path: 'blinds/schedules/new',
+    title: 'blinds.editor.titleNew',
+    data: { background: 'blinds' },
+    loadComponent: () =>
+      import('./features/blinds/schedule-editor/schedule-editor').then((m) => m.ScheduleEditor),
+  },
+  {
+    path: 'blinds/schedules/:id',
+    title: 'blinds.editor.title',
+    data: { background: 'blinds' },
+    loadComponent: () =>
+      import('./features/blinds/schedule-editor/schedule-editor').then((m) => m.ScheduleEditor),
+  },
+  {
     path: 'presence',
     title: 'nav.presence',
     data: { background: 'presence' },

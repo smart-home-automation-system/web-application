@@ -15,6 +15,12 @@
   margin-left: auto;
 }
 
+// the way to the editor, under the switch
+.schedule__edit {
+  align-self: flex-end;
+  margin: 0 8px;
+}
+
 .schedule__content {
   display: grid;
   gap: 10px;

@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, Signal, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import {
   MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS,
   MatSlideToggleModule,
 } from '@angular/material/slide-toggle';
+import { NavigationStart, Router, RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { filter } from 'rxjs';
 
 import { DeviceCommands } from '../../core/api/device-commands';
 import { ScheduleEntry } from '../../data-access/blinds/blind-schedule';
@@ -53,6 +56,7 @@ export const ROOM_SCHEDULES_SIZE = {
     MatDialogModule,
     MatIconModule,
     MatSlideToggleModule,
+    RouterLink,
     TranslocoDirective,
     DisplayTextPipe,
     HouseAgePipe,
@@ -69,6 +73,18 @@ export const ROOM_SCHEDULES_SIZE = {
 export class RoomSchedules {
   protected readonly data = inject<RoomSchedulesData>(MAT_DIALOG_DATA);
   private readonly api = inject(BlindsApi);
+
+  constructor() {
+    // a link of the window leads to the editor of a schedule (HAS-253): the window goes with it -
+    // a dialog stays over whatever page comes next otherwise
+    const window = inject(MatDialogRef);
+    inject(Router)
+      .events.pipe(
+        filter((event) => event instanceof NavigationStart),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => window.close());
+  }
 
   protected readonly failureOf = failureOf;
 

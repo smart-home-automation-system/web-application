@@ -356,8 +356,8 @@ e2e/              # Playwright tests
     not sent back - and in `sameDevice`. A sensor that blinds still name is not offered for
     removal (`blindsUsing`): the registry refuses it with `DEVICE_CONFLICT`, whose text names
     both causes. The schedules are shown on the blinds page (HAS-252: `per blind`, `window`,
-    `windowClosed`, `nextDay`); the empty-window text of `INVALID_SCHEDULE` belongs to the
-    editor of HAS-253.
+    `windowClosed`, `nextDay`) and written by the editor of HAS-253, which has the empty-window
+    text of `INVALID_SCHEDULE`.
   - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
     Polish a comma and no dot.
   - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,
@@ -406,7 +406,8 @@ e2e/              # Playwright tests
     closed. The values are those of the window of a blind, the same words in both places.
   - **The dashboard writes to the house in five places now**: the heating switch, the two
     registries, and - from this view - the blinds and the Eaton lights. (The blinds page adds the
-    switch of a schedule of the blinds.)
+    switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
+    the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
   rooms in the menu, domain colour `blinds`, photo `blinds`; "Rolety" in Polish, as everywhere
   else in the application) is every blind of `blinds-service`, its schedules - **the one place of
@@ -462,6 +463,33 @@ e2e/              # Playwright tests
     and frost (HAS-249: `watchProtection`, the banner and its clear button) and whether a move was
     confirmed (HAS-250: `lastCommandConfirmed`). `reachable: false` is marked; a missing
     `reachable` is not, never "unreachable".
+- **The editor of a schedule of the blinds** (HAS-253, `features/blinds/schedule-editor/`, the
+  administrator's): a page, `/blinds/schedules/new` (`?room=` starts with every blind of that
+  room) and `/blinds/schedules/{id}` - two routes, so the router never reuses the page for another
+  id and the id is read once. Ways in: "New schedule" of the blinds page, "New schedule for this
+  room" and "Change" in the window of a room, which **closes itself on `NavigationStart`** (a
+  dialog stays over the next page otherwise). What to keep:
+  - **`schedule-rules.ts` is a copy of `ScheduleRules` of `blinds-service`** - the numbers
+    (3-60 characters, offset +-180, hold 0-120, 30 targets, 10 conditions) and the ranges of the
+    metrics are pinned by its test; **a rule changed there is changed here**. Every rule is checked
+    field by field before anything is sent; `scheduleProblem` checks a whole body for the mock
+    API, which refuses what the service refuses. A threshold takes a comma, an offset a plus.
+  - **A save sends the schedule whole and reads it back** (`PUT` replaces it, `enabled`
+    included); the form is filled from what the service stored. Of the answer of a `POST` only
+    the id is used - the page moves to the new address and reads it there. A failed save keeps
+    the form as entered; one without an answer says it may have been carried out; an empty read
+    after a save is a failed read-back, never "not known". Removing asks in place, Cancel focused;
+    `NOT_FOUND_SCHEDULE` on a removal counts as removed.
+  - **Nothing is sent back unseen**: a target the blinds do not know stays chosen as an option of
+    its own ("Blind 99"; before the blinds answered, "not named yet", never "unknown"), and a day
+    type, kind of an end, metric or action this version does not offer is named on the page and
+    stops the save until chosen anew.
+  - **The blinds to choose from are read once** (`BlindsApi.readBlinds`) - names, not state; only
+    the line of today is polled (`watchToday`, every minute, with its freshness).
+  - The form does not use `preserveWhitespaces`: it breaks the projection of `mat-error` (NG8011).
+    "Saved" goes with the first click or key in the form after it.
+  - In a browser test the mock house starts anew with every load of a page: after a write, leave
+    the page by its links, not `page.goto`. The toggles of one choice are `radio`s.
 - **A history is a chart of what the service stored** (HAS-201, `shared/history-chart/`,
   used by the hot water and by the open room of the heating page). What to keep:
   - **The page asks with `from` / `to` and never chooses the bucket** - the services do, and say

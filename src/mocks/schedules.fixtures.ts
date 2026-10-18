@@ -1,9 +1,13 @@
-import { BlindSchedule, ScheduleToday } from '../app/data-access/blinds/blind-schedule';
+import { isRecord } from '../app/core/util/is-record';
+import { BlindSchedule, ScheduleToday, WindowEnd } from '../app/data-access/blinds/blind-schedule';
+import { scheduleProblem } from '../app/features/blinds/schedule-editor/schedule-rules';
+import { blindsByRoom } from './blinds.fixtures';
 import type { MockReply } from './handlers';
 import { houseTime } from './house-time';
 
 /**
- * The schedules of the mock blinds (`blinds-service`), which can be switched on and off: a switch
+ * The schedules of the mock blinds (`blinds-service`), which can be switched on and off, made,
+ * changed and removed (HAS-253, refused as the service refuses them - `schedule-rules.ts`): a write
  * changes what the next read answers, in the memory of the page. The targets are the blinds of
  * `blinds.fixtures.ts` - a room, and one blind by its id. What the engine makes of each today is
  * a fixed picture: one fired this morning, one waiting for the weather, one switched off.
@@ -162,7 +166,7 @@ export function scheduleToday(id: string, now: Date = new Date()): MockReply {
         ],
         decision: disabled?.decision ?? 'waiting for the conditions',
       });
-    default:
+    case 3:
       return today({
         dayType: 'workday',
         dayTypeFromCalendar: true,
@@ -179,5 +183,105 @@ export function scheduleToday(id: string, now: Date = new Date()): MockReply {
         ],
         decision: disabled?.decision ?? 'not today',
       });
+    default: {
+      // a schedule made in the editor: its window as written, the sun at fixed times
+      const timeOf = (end: WindowEnd | undefined, sun: string) =>
+        end?.kind === 'clock' ? end.time : sun;
+      const from = timeOf(schedule.window?.from, '07:12');
+      const to = timeOf(schedule.window?.to, '16:43');
+      return today({
+        dayType: 'workday',
+        dayTypeFromCalendar: true,
+        runsToday: schedule.dayType !== 'day off',
+        window: {
+          from,
+          to,
+          ...(from !== undefined && to !== undefined && to < from ? { nextDay: true } : {}),
+        },
+        conditions: (schedule.conditions ?? []).map((condition) => ({
+          ...condition,
+          state: 'unknown',
+        })),
+        // the engine lists the blinds it moves: a room is every blind of it
+        targets: (schedule.targets ?? []).flatMap((target) =>
+          blindsByRoom()
+            .flatMap((group) => group.blinds ?? [])
+            .filter((blind) =>
+              target.deviceId === undefined
+                ? blind.room === target.room
+                : blind.id === target.deviceId,
+            )
+            .map((blind) => ({ deviceId: blind.id, name: blind.name, room: blind.room })),
+        ),
+        decision: disabled?.decision ?? 'before the window',
+      });
+    }
   }
+}
+
+/** One schedule as stored. */
+export function oneSchedule(id: string): MockReply {
+  const schedule = schedules.find((one) => String(one.id) === id);
+  return schedule ? { status: 200, body: structuredClone(schedule) } : notFound;
+}
+
+/** A new schedule, refused as `blinds-service` refuses one; the answer is the schedule as stored. */
+export function createSchedule(body: unknown): MockReply {
+  const draft = draftOf(body);
+  const refused = refusalOf(draft);
+  if (refused) {
+    return refused;
+  }
+  const id = Math.max(0, ...schedules.map((one) => one.id ?? 0)) + 1;
+  const stored = { ...draft, id };
+  schedules.push(stored);
+  return { status: 201, body: stored };
+}
+
+/** Replaces a schedule whole, `enabled` included; the id is the address's, never the body's. */
+export function replaceSchedule(id: string, body: unknown): MockReply {
+  const index = schedules.findIndex((schedule) => String(schedule.id) === id);
+  if (index < 0) {
+    return notFound;
+  }
+  const draft = draftOf(body);
+  const refused = refusalOf(draft);
+  if (refused) {
+    return refused;
+  }
+  schedules[index] = { ...draft, id: schedules[index].id };
+  return { status: 200, body: schedules[index] };
+}
+
+export function removeSchedule(id: string): MockReply {
+  const index = schedules.findIndex((schedule) => String(schedule.id) === id);
+  if (index < 0) {
+    return notFound;
+  }
+  schedules.splice(index, 1);
+  return { status: 204, body: null };
+}
+
+// the service does not read the id from a body
+function draftOf(body: unknown): BlindSchedule {
+  if (!isRecord(body)) {
+    return {};
+  }
+  const draft: Record<string, unknown> = { ...body };
+  for (const field of ['id', 'createdAt', 'updatedAt']) {
+    delete draft[field];
+  }
+  return draft as BlindSchedule;
+}
+
+function refusalOf(draft: BlindSchedule): MockReply | undefined {
+  const broken = scheduleProblem(draft);
+  return broken === undefined
+    ? undefined
+    : {
+        status: 400,
+        body: {
+          errors: [{ code: 'INVALID_SCHEDULE', message: 'Invalid schedule', details: broken }],
+        },
+      };
 }

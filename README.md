@@ -73,8 +73,16 @@ dashboards:
   of the room. The **schedules** of a room open in a window from its card - the pause of each
   blind of the room, then every schedule that moves one of them: the rule, today's window, the
   conditions with their values now, what came of each blind today, and the switch of the
-  schedule. Creating and editing schedules is HAS-253; the protection against wind and frost
-  comes with HAS-249.
+  schedule, and a link to change it. The protection against wind and frost comes with HAS-249.
+- **Schedule editor** (HAS-253): `/blinds/schedules/new` - from "New schedule" on the blinds page,
+  or "New schedule for this room" in the window of a room, which starts with that room - and
+  `/blinds/schedules/{id}`. Name, on / off, the days (workdays, days off, every day), the window
+  from / to - each a clock time, or the sunrise / sunset moved by minutes and held between an
+  optional earliest and latest - the rooms or single blinds it moves, the conditions (illuminance,
+  outside temperature, wind gust below / above a threshold, raining, window closed; each held for
+  minutes) and what it does (open, close, or a position). Every rule of `blinds-service` is
+  checked before saving; a save is read back from the service, a failed one keeps the form; the
+  line of today is what the engine makes of the saved schedule. Removing asks first.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the
   temperature of each with the age of its reading, the temperature its schedule asks for right

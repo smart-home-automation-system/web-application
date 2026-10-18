@@ -1,0 +1,519 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ id === undefined ? t('blinds.editor.titleNew') : t('blinds.editor.title') }}</h1>
+  </header>
+
+  <mat-card appearance="outlined" class="editor card--domain" data-testid="schedule-editor">
+    <mat-card-content>
+      @switch (load().state) {
+        @case ('loading') {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('blinds.editor.loading')" />
+        }
+        @case ('missing') {
+          <p class="note" data-testid="schedule-missing">
+            {{ t('blinds.error.scheduleNotFound') }}
+          </p>
+        }
+        @case ('failed') {
+          @let failed = load();
+          @if (failed.state === 'failed') {
+            <app-api-error-strip
+              [error]="failed.error"
+              [summary]="t('blinds.editor.loadFailed')"
+              [describeWith]="describeError"
+            />
+          }
+        }
+        @case ('ready') {
+          @if (today; as resource) {
+            <!-- what the engine makes of the saved schedule today, never worked out from the form -->
+            <section class="today" data-testid="schedule-today-line">
+              <h2 class="today__title">{{ t('blinds.schedule.today') }}</h2>
+              <p class="today__line">
+                @if (todayLine(); as line) {
+                  @if (line.window; as window) {
+                    <strong>{{ window.from ?? '?' }}–{{ window.to ?? '?' }}</strong>
+                    @if (window.nextDay === true) {
+                      {{ t('blinds.schedule.nextDay') }}
+                    }
+                  } @else {
+                    {{ t('blinds.schedule.noWindow') }}
+                  }
+                  · <span data-testid="today-decision">{{ line.decision | displayText }}</span>
+                } @else if (!resource.loading()) {
+                  {{ t('blinds.schedule.todayUnknown') }}
+                }
+              </p>
+              <app-data-freshness
+                [lastUpdated]="resource.lastUpdated()"
+                [stale]="resource.stale()"
+              />
+              <app-api-error-strip
+                [error]="resource.error()"
+                [summary]="t('blinds.schedule.todayFailed')"
+                [describeWith]="describeError"
+              />
+              <p class="note">{{ t('blinds.editor.todayNote') }}</p>
+            </section>
+          }
+
+          <form
+            class="form"
+            novalidate
+            (submit)="$event.preventDefault(); save()"
+            (input)="saved.set(false)"
+            (click)="saved.set(false)"
+            (keyup)="saved.set(false)"
+          >
+            <!-- what it is called, whether it runs, on which days -->
+            <section class="section">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ t('blinds.editor.name') }}</mat-label>
+                <input
+                  matInput
+                  autocomplete="off"
+                  data-testid="schedule-name"
+                  [formControl]="name"
+                />
+                @if (problemOf(name); as problem) {
+                  <mat-error>{{ t(problem) }}</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-slide-toggle
+                data-testid="schedule-enabled-field"
+                [checked]="enabled()"
+                (change)="enabled.set($event.checked)"
+                >{{ t('blinds.editor.enabled') }}</mat-slide-toggle
+              >
+
+              <div class="group" role="group" aria-labelledby="schedule-day-type">
+                <h2 class="label" id="schedule-day-type">{{ t('blinds.editor.dayType') }}</h2>
+                <mat-button-toggle-group
+                  hideSingleSelectionIndicator
+                  data-testid="schedule-day-type"
+                  aria-labelledby="schedule-day-type"
+                  [value]="dayType()"
+                  (change)="dayType.set($event.value)"
+                >
+                  @for (one of DAY_TYPES; track one) {
+                    <mat-button-toggle [value]="one">{{
+                      t(DAY_TYPE_LABELS[one])
+                    }}</mat-button-toggle>
+                  }
+                </mat-button-toggle-group>
+                @if (attempted() && dayType() === undefined) {
+                  <p class="problem" role="alert">
+                    {{ t('blinds.editor.problem.dayTypeMissing') }}
+                  </p>
+                }
+                <p class="note">{{ t('blinds.editor.dayTypeNote') }}</p>
+              </div>
+            </section>
+
+            <!-- the window: from one end to the other, local time of the house -->
+            <section class="section" data-testid="schedule-window">
+              <h2 class="section__title">{{ t('blinds.schedule.window') }}</h2>
+              <div class="ends">
+                @for (end of [from, to]; track $index) {
+                  @let endId = $index === 0 ? 'schedule-from' : 'schedule-to';
+                  <div
+                    class="end"
+                    role="group"
+                    [attr.aria-labelledby]="endId"
+                    [attr.data-testid]="endId"
+                  >
+                    <h3 class="label" [id]="endId">
+                      {{ $index === 0 ? t('blinds.editor.from') : t('blinds.editor.to') }}
+                    </h3>
+                    <mat-button-toggle-group
+                      hideSingleSelectionIndicator
+                      [attr.aria-labelledby]="endId"
+                      [value]="end.kind()"
+                      (change)="setKind(end, $event.value)"
+                    >
+                      @for (kind of WINDOW_KINDS; track kind) {
+                        <mat-button-toggle [value]="kind">{{
+                          t(kindLabels[kind])
+                        }}</mat-button-toggle>
+                      }
+                    </mat-button-toggle-group>
+                    @if (end.kind() === 'clock') {
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>{{ t('blinds.editor.time') }}</mat-label>
+                        <input
+                          matInput
+                          type="time"
+                          step="60"
+                          data-testid="end-time"
+                          [formControl]="end.time"
+                        />
+                        @if (problemOf(end.time); as problem) {
+                          <mat-error>{{ t(problem) }}</mat-error>
+                        }
+                      </mat-form-field>
+                    } @else {
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>{{ t('blinds.editor.offset') }}</mat-label>
+                        <input
+                          matInput
+                          inputmode="numeric"
+                          autocomplete="off"
+                          data-testid="end-offset"
+                          [formControl]="end.offset"
+                        />
+                        <span matTextSuffix>min</span>
+                        <mat-hint>{{
+                          t('blinds.editor.offsetHint', { max: MAX_OFFSET_MINUTES })
+                        }}</mat-hint>
+                        @if (problemOf(end.offset); as problem) {
+                          <mat-error>{{ t(problem) }}</mat-error>
+                        }
+                      </mat-form-field>
+                      <div class="bounds">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>{{ t('blinds.editor.earliest') }}</mat-label>
+                          <input
+                            matInput
+                            type="time"
+                            step="60"
+                            data-testid="end-earliest"
+                            [formControl]="end.earliest"
+                          />
+                          @if (problemOf(end.earliest); as problem) {
+                            <mat-error>{{ t(problem) }}</mat-error>
+                          }
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>{{ t('blinds.editor.latest') }}</mat-label>
+                          <input
+                            matInput
+                            type="time"
+                            step="60"
+                            data-testid="end-latest"
+                            [formControl]="end.latest"
+                          />
+                          @if (problemOf(end.latest); as problem) {
+                            <mat-error>{{ t(problem) }}</mat-error>
+                          }
+                        </mat-form-field>
+                      </div>
+                      <p class="note">{{ t('blinds.editor.boundsNote') }}</p>
+                    }
+                  </div>
+                }
+              </div>
+              @if (windowEmpty(); as problem) {
+                <p class="problem" role="alert" data-testid="window-problem">{{ t(problem) }}</p>
+              }
+              <p class="note">{{ t('blinds.editor.windowNote') }}</p>
+            </section>
+
+            <!-- the blinds it moves: whole rooms, or single blinds -->
+            <section class="section">
+              <h2 class="section__title">{{ t('blinds.schedule.targets') }}</h2>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ t('blinds.editor.targets') }}</mat-label>
+                <mat-select multiple data-testid="schedule-targets" [formControl]="targets">
+                  <mat-select-trigger>
+                    @for (chosen of chosenTargets(); track chosen.key) {
+                      <span
+                        >{{ $first ? '' : ', '
+                        }}{{
+                          chosen.option?.wholeRoom
+                            ? t('blinds.schedule.wholeRoom') + ' ' + chosen.option?.chosen
+                            : (chosen.option?.chosen ??
+                              t('blinds.editor.blindId', { id: chosen.option?.blindId ?? '?' }))
+                        }}</span
+                      >
+                    }
+                  </mat-select-trigger>
+                  @for (group of targetGroups(); track group.room ?? '') {
+                    <mat-optgroup
+                      [label]="
+                        group.room ??
+                        (group.answered
+                          ? t('blinds.editor.unknownTargets')
+                          : t('blinds.editor.unreadTargets'))
+                      "
+                    >
+                      @for (option of group.options; track option.key) {
+                        <mat-option [value]="option.key">
+                          @if (option.wholeRoom) {
+                            {{ t('blinds.schedule.wholeRoom') }} {{ option.chosen }}
+                          } @else {
+                            {{
+                              option.label ??
+                                t('blinds.editor.blindId', { id: option.blindId ?? '?' })
+                            }}
+                          }
+                        </mat-option>
+                      }
+                    </mat-optgroup>
+                  }
+                </mat-select>
+                @if (problemOf(targets); as problem) {
+                  <mat-error>{{ t(problem) }}</mat-error>
+                }
+              </mat-form-field>
+              <app-api-error-strip
+                [error]="blindsError()"
+                [summary]="t('blinds.editor.blindsFailed')"
+                [describeWith]="describeError"
+              />
+              <p class="note">{{ t('blinds.editor.targetsNote') }}</p>
+            </section>
+
+            <!-- what has to hold, each for a number of minutes -->
+            <section class="section" data-testid="schedule-conditions">
+              <h2 class="section__title">{{ t('blinds.schedule.conditions') }}</h2>
+              @if (conditions().length === 0) {
+                <p class="note">{{ t('blinds.schedule.noConditions') }}</p>
+              }
+              @for (row of conditions(); track row.key) {
+                @let metric = row.metric();
+                <div
+                  class="condition"
+                  role="group"
+                  data-testid="condition-row"
+                  [attr.aria-label]="t('blinds.editor.condition', { number: $index + 1 })"
+                >
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="condition__metric"
+                  >
+                    <mat-label>{{ t('blinds.editor.metric') }}</mat-label>
+                    <mat-select
+                      hideSingleSelectionIndicator
+                      data-testid="condition-metric"
+                      [value]="metric"
+                      (selectionChange)="row.setMetric($event.value); saved.set(false)"
+                    >
+                      @for (one of METRICS; track one) {
+                        <mat-option [value]="one">{{ t(METRIC_LABELS[one].name) }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+
+                  @if (isTruth(metric)) {
+                    <mat-button-toggle-group
+                      hideSingleSelectionIndicator
+                      data-testid="condition-truth"
+                      [attr.aria-label]="t(METRIC_LABELS[metric].name)"
+                      [value]="row.truth()"
+                      (change)="row.truth.set($event.value)"
+                    >
+                      <mat-button-toggle [value]="true">{{
+                        t(METRIC_LABELS[metric].truth!.yes)
+                      }}</mat-button-toggle>
+                      <mat-button-toggle [value]="false">{{
+                        t(METRIC_LABELS[metric].truth!.no)
+                      }}</mat-button-toggle>
+                    </mat-button-toggle-group>
+                  } @else {
+                    @let range = rangeOf(metric);
+                    <mat-button-toggle-group
+                      hideSingleSelectionIndicator
+                      data-testid="condition-operator"
+                      [attr.aria-label]="t('blinds.editor.operator')"
+                      [value]="row.operator()"
+                      (change)="row.operator.set($event.value)"
+                    >
+                      <mat-button-toggle value="lt">{{
+                        t('blinds.editor.below')
+                      }}</mat-button-toggle>
+                      <mat-button-toggle value="gt">{{
+                        t('blinds.editor.above')
+                      }}</mat-button-toggle>
+                    </mat-button-toggle-group>
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                      class="condition__number"
+                    >
+                      <mat-label>{{ t('blinds.editor.threshold') }}</mat-label>
+                      <input
+                        matInput
+                        inputmode="decimal"
+                        autocomplete="off"
+                        data-testid="condition-threshold"
+                        [formControl]="row.threshold"
+                      />
+                      <span matTextSuffix>{{ range?.unit }}</span>
+                      @if (range) {
+                        <mat-hint
+                          >{{ range.min | localNumber }} … {{ range.max | localNumber }}
+                          {{ range.unit }}</mat-hint
+                        >
+                      }
+                      @if (problemOf(row.threshold); as problem) {
+                        <mat-error>{{ t(problem) }}</mat-error>
+                      }
+                    </mat-form-field>
+                  }
+
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                    class="condition__number"
+                  >
+                    <mat-label>{{ t('blinds.editor.hold') }}</mat-label>
+                    <input
+                      matInput
+                      inputmode="numeric"
+                      autocomplete="off"
+                      data-testid="condition-hold"
+                      [formControl]="row.hold"
+                    />
+                    <span matTextSuffix>min</span>
+                    <mat-hint>0 … {{ MAX_HOLD_MINUTES }}</mat-hint>
+                    @if (problemOf(row.hold); as problem) {
+                      <mat-error>{{ t(problem) }}</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <button
+                    matIconButton
+                    type="button"
+                    data-testid="condition-remove"
+                    [attr.aria-label]="t('blinds.editor.removeCondition', { number: $index + 1 })"
+                    (click)="removeCondition(row)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              }
+              <button
+                matButton="outlined"
+                type="button"
+                data-testid="condition-add"
+                [disabled]="conditions().length >= MAX_CONDITIONS"
+                (click)="addCondition()"
+              >
+                <mat-icon>add</mat-icon>{{ t('blinds.editor.addCondition') }}
+              </button>
+              <p class="note">{{ t('blinds.editor.conditionsNote') }}</p>
+            </section>
+
+            <!-- what it does to its blinds -->
+            <section class="section">
+              <div class="group" role="group" aria-labelledby="schedule-action">
+                <h2 class="section__title" id="schedule-action">
+                  {{ t('blinds.editor.action.title') }}
+                </h2>
+                <mat-button-toggle-group
+                  hideSingleSelectionIndicator
+                  data-testid="schedule-action"
+                  aria-labelledby="schedule-action"
+                  [value]="action()"
+                  (change)="action.set($event.value)"
+                >
+                  @for (one of ACTIONS; track one) {
+                    <mat-button-toggle [value]="one">{{ t(actionLabels[one]) }}</mat-button-toggle>
+                  }
+                </mat-button-toggle-group>
+                @if (attempted() && action() === undefined) {
+                  <p class="problem" role="alert">{{ t('blinds.editor.problem.actionMissing') }}</p>
+                }
+              </div>
+              @if (action() === 'position') {
+                <div class="position">
+                  <mat-slider min="0" max="100" step="1" discrete>
+                    <input
+                      matSliderThumb
+                      data-testid="schedule-position"
+                      [value]="position()"
+                      [attr.aria-label]="t('blinds.editor.position')"
+                      (valueChange)="setPosition($event)"
+                    />
+                  </mat-slider>
+                  <span class="position__value" data-testid="schedule-position-value"
+                    >{{ position() | localNumber }} %</span
+                  >
+                </div>
+                <p class="note">{{ t('blinds.editor.positionNote') }}</p>
+              }
+            </section>
+
+            @if (unknownValues().length > 0) {
+              <!-- the values as the service gave them, never a parameter of a translation -->
+              <p class="problem" role="alert" data-testid="unknown-values">
+                {{ t('blinds.editor.problem.unknownValues') }} {{ unknownValues().join(', ') }}
+              </p>
+            }
+            @if (saveError(); as failure) {
+              <app-api-error-strip
+                [error]="failure.error"
+                [summary]="t(failure.summary)"
+                [describeWith]="describeError"
+              />
+            }
+            <p class="saved" role="status" data-testid="schedule-saved">
+              @if (saved()) {
+                <mat-icon aria-hidden="true">check_circle</mat-icon>{{ t('blinds.editor.saved') }}
+              }
+            </p>
+
+            <div class="actions">
+              <button
+                matButton="filled"
+                type="submit"
+                data-testid="schedule-save"
+                [disabled]="saving() || removing()"
+              >
+                {{ t('blinds.editor.save') }}
+              </button>
+              <a matButton routerLink="/blinds" data-testid="schedule-back">{{
+                t('blinds.editor.back')
+              }}</a>
+              <span class="actions__space"></span>
+              @if (id !== undefined) {
+                @if (askRemove()) {
+                  <span class="question" role="alert" data-testid="remove-question">
+                    {{ t('blinds.editor.removeQuestion') }}
+                    <button
+                      matButton
+                      type="button"
+                      data-testid="schedule-remove-cancel"
+                      #keep
+                      (click)="askRemove.set(false)"
+                    >
+                      {{ t('blinds.editor.cancel') }}
+                    </button>
+                    <button
+                      matButton="outlined"
+                      type="button"
+                      data-testid="schedule-remove-confirm"
+                      [disabled]="removing()"
+                      (click)="remove()"
+                    >
+                      {{ t('blinds.editor.remove') }}
+                    </button>
+                  </span>
+                } @else {
+                  <button
+                    matButton
+                    type="button"
+                    data-testid="schedule-remove"
+                    [disabled]="saving() || removing()"
+                    (click)="askRemove.set(true)"
+                  >
+                    <mat-icon>delete</mat-icon>{{ t('blinds.editor.remove') }}
+                  </button>
+                }
+              }
+            </div>
+            @if (removeError(); as failure) {
+              <app-api-error-strip
+                [error]="failure.error"
+                [summary]="t(failure.summary)"
+                [describeWith]="describeError"
+              />
+            }
+          </form>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</ng-container>

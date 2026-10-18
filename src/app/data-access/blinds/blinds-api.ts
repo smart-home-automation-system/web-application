@@ -81,6 +81,11 @@ export class BlindsApi {
     });
   }
 
+  /** Every blind, by room, read once - what a form chooses from (the editor of a schedule). */
+  readBlinds(): Observable<readonly RoomBlinds[] | null> {
+    return this.api.get<readonly RoomBlinds[] | null>('/blinds');
+  }
+
   /**
    * Every schedule with what the engine makes of it today (HAS-252): the list, then the day of
    * each, one call after the other. One resource, so the page tells one freshness and one failure
@@ -99,6 +104,41 @@ export class BlindsApi {
           ),
       { intervalMs: SCHEDULES_EVERY_MS },
     );
+  }
+
+  /**
+   * One schedule as stored (HAS-253, the editor) - read once, not polled: a form starts from it.
+   * `null` is an answer without a body.
+   */
+  getSchedule(id: number): Observable<BlindSchedule | null> {
+    return this.api.get<BlindSchedule | null>(`/blinds/schedules/${id}`);
+  }
+
+  /** What the engine makes of one schedule today - the preview line of the editor. */
+  watchToday(id: number): PollingResource<ScheduleToday | null> {
+    return pollingResource(
+      () => this.api.get<ScheduleToday | null>(`/blinds/schedules/${id}/today`),
+      { intervalMs: SCHEDULES_EVERY_MS },
+    );
+  }
+
+  /**
+   * Stores a new schedule and answers its id - the one thing of the answer used: the schedule
+   * itself is read again by that id. `undefined` when the answer does not carry one.
+   */
+  createSchedule(schedule: BlindSchedule): Observable<number | undefined> {
+    return this.api
+      .post<BlindSchedule | null>('/blinds/schedules', schedule)
+      .pipe(map((stored) => (typeof stored?.id === 'number' ? stored.id : undefined)));
+  }
+
+  /** Replaces a schedule whole, `enabled` included; it is read again afterwards. */
+  replaceSchedule(id: number, schedule: BlindSchedule): Observable<void> {
+    return this.api.put<unknown>(`/blinds/schedules/${id}`, schedule).pipe(map(() => undefined));
+  }
+
+  deleteSchedule(id: number): Observable<void> {
+    return this.api.delete<unknown>(`/blinds/schedules/${id}`).pipe(map(() => undefined));
   }
 
   /** Switches a schedule on or off; the rest of it stays as stored. */
