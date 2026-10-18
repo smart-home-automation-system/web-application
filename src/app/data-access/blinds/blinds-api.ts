@@ -81,6 +81,18 @@ export class BlindsApi {
     });
   }
 
+  /**
+   * The blinds of one room (HAS-254, "My room"): `blinds` empty for a room without one. The name
+   * is read when a call is made; the caller is made anew for another room. Call in an injection
+   * context.
+   */
+  watchRoom(room: () => string): PollingResource<RoomBlinds | null> {
+    return pollingResource(
+      () => this.api.get<RoomBlinds | null>(`/blinds/rooms/${encodeURIComponent(room())}`),
+      { intervalMs: POLL_EVERY_MS },
+    );
+  }
+
   /** Every blind, by room, read once - what a form chooses from (the editor of a schedule). */
   readBlinds(): Observable<readonly RoomBlinds[] | null> {
     return this.api.get<readonly RoomBlinds[] | null>('/blinds');

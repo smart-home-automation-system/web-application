@@ -125,3 +125,33 @@ mat-card-content {
   text-transform: uppercase;
   color: var(--mat-sys-on-surface-variant);
 }
+
+// the windows of the room and the hold of its heating, as on the heating page (HAS-254)
+.room__openings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.room__window {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.room__window[data-state='open'] {
+  color: var(--mat-sys-error);
+}
+
+.mat-icon.room__window-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.badge--held {
+  border-color: var(--mat-sys-error);
+  color: var(--mat-sys-error);
+  white-space: normal;
+}

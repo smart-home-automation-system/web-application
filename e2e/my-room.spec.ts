@@ -141,10 +141,14 @@ test.describe('a resident with two rooms', () => {
 
     await page.goto('/room');
 
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(2);
-    await expect(page.getByTestId('room-heating').getByRole('alert')).toContainText(
-      'The service is not available right now (error 502).',
-    );
+    // the switch of the house and the three cards of the room (HAS-254): each tells its call; the
+    // blinds and the sensors are shown for the failure - nobody knows then if the room has any
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(4);
+    for (const card of ['room-heating', 'room-blinds', 'room-sensors']) {
+      await expect(page.getByTestId(card).getByRole('alert')).toContainText(
+        'The service is not available right now (error 502).',
+      );
+    }
     await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
   });
 
@@ -206,5 +210,73 @@ test.describe('the administrator', () => {
     await expect(page.getByTestId('room-temperature')).toBeVisible();
 
     await expect(page.getByTestId('heating-switch')).toHaveCount(0);
+  });
+});
+
+// HAS-254: the blinds of the room are the one thing on this page that can be pressed - for a
+// member whose profile has the room, no permission needed - and the sensors are listed
+test.describe('the blinds and the sensors of the room', () => {
+  test.describe('for a resident with blinds in the room', () => {
+    test.use({ profile: 'resident-two-rooms' });
+
+    test('moves a blind of the room and pauses its schedules, reading the blinds back', async ({
+      page,
+    }) => {
+      await page.goto('/room');
+      const blinds = page.getByTestId('room-blinds');
+      const blind = blinds.locator('[data-blind="14"]');
+
+      // named without the room and the kind: the one window of the bedroom
+      await expect(blind.locator('.blind__name')).toHaveText('Window');
+      await expect(blind.getByTestId('blind-position')).toHaveText('0 %');
+
+      await blind.getByRole('button', { name: 'Open Bedroom window blinds' }).click();
+      await expect(blind.getByTestId('blind-position')).toHaveText('100 %');
+
+      const pause = blind.getByRole('switch');
+      await expect(pause).toHaveAttribute('aria-checked', 'false');
+      await pause.click();
+      await expect(pause).toHaveAttribute('aria-checked', 'true');
+      await expect(blind.getByTestId('blind-paused')).toContainText('Paused');
+      // no schedules here: they are the administrator's, on the blinds page
+      await expect(page.getByTestId('schedule')).toHaveCount(0);
+    });
+
+    test('shows no card of blinds for a room that has none', async ({ page }) => {
+      await page.goto('/room');
+      await expect(page.getByTestId('room-blinds')).toBeVisible();
+
+      await page.getByTestId('room-switcher').getByRole('radio', { name: 'wardrobe' }).click();
+      await expect(page.getByTestId('room-temperature')).toBeVisible();
+      await expect(page.getByTestId('room-blinds')).toHaveCount(0);
+    });
+
+    test('tells a command that was not carried out and leaves the blind as it is', async ({
+      page,
+    }) => {
+      await useScenario(page, 'writes-fail');
+      await page.goto('/room');
+      const blind = page.getByTestId('room-blinds').locator('[data-blind="14"]');
+
+      await blind.getByRole('button', { name: 'Open Bedroom window blinds' }).click();
+      await expect(blind.getByRole('alert')).toContainText('The command was not confirmed');
+      await expect(blind.getByTestId('blind-position')).toHaveText('0 %');
+    });
+  });
+
+  test.describe('for a resident with a sensor and no blinds', () => {
+    test.use({ profile: 'resident' });
+
+    test('lists the sensor with its state not known, and shows no blinds', async ({ page }) => {
+      await page.goto('/room');
+      await expect(page.getByTestId('room-temperature')).toBeVisible();
+
+      const sensors = page.getByTestId('room-sensors');
+      await expect(sensors).toContainText('Presence');
+      await expect(sensors.locator('.sensors__row')).toHaveCount(1);
+      await expect(sensors.locator('.sensors__state')).toHaveText('state not known yet');
+      await expect(page.getByTestId('room-blinds')).toHaveCount(0);
+      await expect(sensors.locator('button, [tabindex]')).toHaveCount(0);
+    });
   });
 });

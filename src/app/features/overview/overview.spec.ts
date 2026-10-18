@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
+import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { BoilerApi, BoilerStatus } from '../../data-access/boiler/boiler-api';
 import {
   HeatingApi,
@@ -63,7 +64,7 @@ const WEATHER: CurrentWeather = {
   humidity: { value: 58, measuredAt: '2026-10-10T18:29:10', stale: false },
 };
 
-type Tile = 'rooms' | 'sensors' | 'water' | 'boiler' | 'presence' | 'weather';
+type Tile = 'rooms' | 'sensors' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -73,6 +74,7 @@ describe('Overview', () => {
   let boiler: FakeResource<BoilerStatus>;
   let presence: FakeResource<readonly ResidentPresence[] | null>;
   let weather: FakeResource<CurrentWeather | null>;
+  let blinds: FakeResource<readonly RoomBlinds[] | null>;
   let turned: boolean[];
   let fixture: ComponentFixture<Overview>;
 
@@ -85,6 +87,7 @@ describe('Overview', () => {
     boiler = fakeResource();
     presence = fakeResource();
     weather = fakeResource();
+    blinds = fakeResource();
     turned = [];
     TestBed.configureTestingModule({
       providers: [
@@ -107,6 +110,7 @@ describe('Overview', () => {
         { provide: BoilerApi, useValue: { watchStatus: () => boiler } },
         { provide: PresenceApi, useValue: { watchNow: () => presence } },
         { provide: WeatherApi, useValue: { watchCurrent: () => weather } },
+        { provide: BlindsApi, useValue: { watchBlinds: () => blinds } },
       ],
     });
     fixture = TestBed.createComponent(Overview);
@@ -135,10 +139,19 @@ describe('Overview', () => {
     answer(boiler, BOILER);
     answer(presence, PEOPLE);
     answer(weather, WEATHER);
+    answer(blinds, []);
   }
 
   it('shows a progress bar in every tile until its call has answered', async () => {
-    for (const name of ['rooms', 'sensors', 'water', 'boiler', 'presence', 'weather'] as const) {
+    for (const name of [
+      'rooms',
+      'sensors',
+      'water',
+      'boiler',
+      'presence',
+      'weather',
+      'blinds',
+    ] as const) {
       expect((await tile(name)).querySelector('mat-progress-bar'), name).toBeTruthy();
     }
 
@@ -158,6 +171,7 @@ describe('Overview', () => {
     expect(await link('boiler')).toBe('/boiler');
     expect(await link('presence')).toBe('/presence');
     expect(await link('weather')).toBe('/weather');
+    expect(await link('blinds')).toBe('/blinds');
   });
 
   describe('the heating of the house', () => {
@@ -338,6 +352,41 @@ describe('Overview', () => {
       answer(presence, []);
 
       expect(words(await tile('presence'))).toContain('No active member');
+    });
+  });
+
+  // HAS-254: the blinds counted by what they report
+  describe('the blinds', () => {
+    const rows = async () =>
+      [...(await tile('blinds')).querySelectorAll('.tile__row')].map((row) => words(row));
+
+    it('counts the open, the closed, the moving and the not known', async () => {
+      answer(blinds, [
+        {
+          room: 'office',
+          blinds: [
+            { id: 1, position: 40 },
+            { id: 2, position: 0 },
+            { id: 3, state: 'opening', position: 20 },
+          ],
+        },
+        // an Eaton blind without a position: its state, and one nothing was heard of
+        { room: 'living room', blinds: [{ id: 7, state: 'closed' }, { id: 8 }] },
+      ]);
+
+      expect(await rows()).toEqual(['Open 1', 'Closed 2', 'Moving 1', 'Not known 1']);
+    });
+
+    it('leaves out the moving and the not known when there are none', async () => {
+      answer(blinds, [{ room: 'office', blinds: [{ id: 1, state: 'open' }] }]);
+
+      expect(await rows()).toEqual(['Open 1', 'Closed 0']);
+    });
+
+    it('says when the service knows no blind', async () => {
+      answer(blinds, []);
+
+      expect(words(await tile('blinds'))).toContain('The blinds service knows no blind yet.');
     });
   });
 

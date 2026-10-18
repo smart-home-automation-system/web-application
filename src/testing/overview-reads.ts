@@ -19,6 +19,7 @@ export const OVERVIEW_READS: readonly string[] = [
   '/home/boiler/status',
   '/home/presence/residents/presence',
   '/home/weather/current',
+  '/home/blinds',
 ];
 
 export function isShellRead(request: HttpRequest<unknown>): boolean {

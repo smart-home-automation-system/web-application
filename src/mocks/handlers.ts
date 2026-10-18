@@ -239,6 +239,16 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
   },
   // the blinds (HAS-232): their state, the commands and the pause of their schedules
   { method: 'GET', path: '/home/blinds', reply: () => ({ status: 200, body: blindsByRoom() }) },
+  // the blinds of one room, for "My room" (HAS-254): a room without blinds has an empty list
+  {
+    method: 'GET',
+    path: /^\/home\/blinds\/rooms\/([^/]+)$/,
+    reply: (_request, _fresh, [room]) => {
+      const name = decodeURIComponent(room);
+      const here = blindsByRoom().find((group) => group.room === name);
+      return { status: 200, body: { room: name, blinds: here?.blinds ?? [] } };
+    },
+  },
   {
     method: 'POST',
     path: /^\/home\/blinds\/(\d+)$/,
@@ -326,7 +336,17 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     // every device of the house: asked for by the administration page of the devices
     method: 'GET',
     path: '/home/device/registry',
-    reply: () => ({ status: 200, body: deviceRegistry() }),
+    // filtered as database-service filters it: the sensors of a room on "My room" (HAS-254)
+    reply: (request) => ({
+      status: 200,
+      body: deviceRegistry().filter(
+        (device) =>
+          (!request.params.has('room') || device.room === request.params.get('room')) &&
+          (!request.params.has('kind') || device.kind === request.params.get('kind')) &&
+          (!request.params.has('enabled') ||
+            String(device.enabled !== false) === request.params.get('enabled')),
+      ),
+    }),
   },
   {
     method: 'POST',

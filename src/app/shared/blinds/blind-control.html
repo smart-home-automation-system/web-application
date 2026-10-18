@@ -1,0 +1,68 @@
+<ng-container *transloco="let t">
+  @let sending = command()?.sending === true;
+  <div class="blind__head">
+    <span class="blind__name">{{ shortName() ?? t('blindControl.unnamed') }}</span>
+    <span class="blind__state" data-testid="blind-position">{{
+      t(shown().key, { position: shown().position })
+    }}</span>
+  </div>
+  @if (window(); as window) {
+    @if (window.state !== 'no sensor') {
+      <span class="blind__note" [attr.data-state]="window.state">
+        <mat-icon class="blind__icon" aria-hidden="true">{{ windowIcon(window.state) }}</mat-icon>
+        {{ t(windowLabel(window.state)) }}
+      </span>
+    }
+  }
+  @if (state()?.reachable === false) {
+    <span class="blind__warning">{{ t('blindControl.unreachable') }}</span>
+  }
+  <span class="blind__controls">
+    <button matButton="outlined" type="button" [disabled]="sending" (click)="move('open')">
+      <mat-icon>arrow_upward</mat-icon>{{ t('blindControl.open') }}
+      <span class="visually-hidden">{{ name() }}</span>
+    </button>
+    <button matButton="outlined" type="button" [disabled]="sending" (click)="move('stop')">
+      <mat-icon>stop</mat-icon>{{ t('blindControl.stop') }}
+      <span class="visually-hidden">{{ name() }}</span>
+    </button>
+    <button matButton="outlined" type="button" [disabled]="sending" (click)="move('close')">
+      <mat-icon>arrow_downward</mat-icon>{{ t('blindControl.close') }}
+      <span class="visually-hidden">{{ name() }}</span>
+    </button>
+  </span>
+  @if (positioning() === true) {
+    <span class="blind__slider">
+      <mat-slider min="0" max="100" step="10" discrete>
+        <input
+          matSliderThumb
+          #position
+          [value]="state()?.position ?? 50"
+          [attr.aria-label]="t('blindControl.positionLabel') + ' ' + (name() ?? '')"
+        />
+      </mat-slider>
+      <button matButton type="button" [disabled]="sending" (click)="moveTo(position.valueAsNumber)">
+        {{ t('blindControl.goTo') }}
+        <span class="visually-hidden">{{ name() }}</span>
+      </button>
+    </span>
+  }
+  <mat-slide-toggle
+    class="blind__pause"
+    data-testid="blind-pause"
+    [checked]="state()?.schedulePausedSince !== undefined"
+    [disabled]="sending || state() === undefined"
+    (toggleChange)="pause()"
+  >
+    {{ t('blindControl.pause') }}
+    <span class="visually-hidden">{{ name() }}</span>
+  </mat-slide-toggle>
+  @if (state()?.schedulePausedSince | houseAge; as age) {
+    <span class="blind__note" data-testid="blind-paused"
+      >{{ t('blindControl.pausedSince') }} {{ age }}</span
+    >
+  }
+  @if (command()?.error; as error) {
+    <app-api-error-strip [error]="error" [summary]="t('blindControl.commandFailed')" />
+  }
+</ng-container>

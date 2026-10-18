@@ -115,21 +115,3 @@
   font-size: 18px;
   opacity: 0.55;
 }
-
-.blind {
-  display: grid;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
-  border-radius: var(--mat-sys-corner-medium);
-}
-
-.blind__head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.blind__pause {
-  justify-self: start;
-}

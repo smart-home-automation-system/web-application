@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every tile has told its failure before the picture is taken
-        await expect(page.getByRole('alert')).toHaveCount(7, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(8, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -333,8 +333,13 @@ for (const language of ['en', 'pl'] as const) {
           await page.goto('/');
           await expect(page.getByRole('heading', { name: TEXTS[language].myRoom })).toBeVisible();
           await expect(page.getByTestId('room-temperature')).toBeVisible();
+          await expect(page.getByTestId('room-blinds')).toBeVisible();
           await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
           await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'my-room') });
+          // the blinds of the room (HAS-254), below the heating on a phone: the card by itself
+          await page.getByTestId('room-blinds').screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'my-room-blinds'),
+          });
 
           await page.getByTestId('room-switcher').getByRole('radio').last().click();
           await expect(page.getByTestId('room-heating')).toContainText('wardrobe');

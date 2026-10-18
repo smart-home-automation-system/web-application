@@ -1,0 +1,34 @@
+<ng-container *transloco="let t">
+  @if (shown()) {
+    <mat-card appearance="outlined" class="sensors card--domain" data-testid="room-sensors">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>sensors</mat-icon></div>
+        <mat-card-title>{{ t('myRoom.sensors.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="answer.lastUpdated()" [stale]="answer.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="sensors__content">
+        <app-api-error-strip [error]="answer.error()" />
+        @for (group of groups() ?? []; track group.kind) {
+          <section class="sensors__group" [attr.data-kind]="group.kind">
+            <h3 class="sensors__title">
+              <mat-icon aria-hidden="true">{{ group.icon }}</mat-icon
+              >&ngsp;{{ t(group.title) }}
+            </h3>
+            <ul class="sensors__list">
+              @for (sensor of group.sensors; track sensor.id ?? $index) {
+                <li class="sensors__row">
+                  <span>{{ sensor.name ?? t('rooms.unnamed') }}</span
+                  >&ngsp;
+                  <span class="sensors__state">{{ t('rooms.stateUnknown') }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+        <p class="sensors__note">{{ t('myRoom.sensors.note') }}</p>
+      </mat-card-content>
+    </mat-card>
+  }
+</ng-container>

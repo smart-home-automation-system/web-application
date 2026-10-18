@@ -92,7 +92,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(7);
+    await expect(alerts).toHaveCount(8);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -102,6 +102,7 @@ test.describe('overview', () => {
       'tile-water',
       'tile-boiler',
       'tile-weather',
+      'tile-blinds',
     ]) {
       await expect(page.getByTestId(tile).getByRole('alert')).toHaveCount(1);
     }
@@ -134,14 +135,14 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(7);
+    expect(tops).toHaveLength(8);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(7);
+      expect(new Set(tops).size).toBe(8);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(7);
+      expect(heights).toHaveLength(8);
       expect(new Set(heights).size).toBe(1);
     }
   });
@@ -180,7 +181,8 @@ test.describe('overview', () => {
 
       expect(rows.length).toBeGreaterThan(1);
       const last = rows[rows.length - 1];
-      expect(last.length).toBeLessThan(rows[0].length);
+      // eight tiles fill two rows of four; a wider screen leaves the last row short
+      expect(last.length).toBeLessThanOrEqual(rows[0].length);
       // the middle of every row is the middle of the page
       for (const row of rows) {
         expect(Math.abs(middle(row) - (main.left + main.right) / 2)).toBeLessThan(2);

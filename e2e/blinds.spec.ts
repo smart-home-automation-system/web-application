@@ -23,7 +23,8 @@ test('shows the rooms with blinds floor by floor, in cards of one size', async (
 
   await expect(page.getByRole('heading', { level: 1, name: 'Blinds' })).toBeVisible();
   await expect(page.locator('[data-testid="floor"]')).toHaveCount(2);
-  await expect(page.getByTestId('blind-room')).toHaveCount(2);
+  // the office and the living room downstairs, the bedroom of a resident upstairs (HAS-254)
+  await expect(page.getByTestId('blind-room')).toHaveCount(3);
   // the door first, then the windows; each by its short name
   await expect(room(page, 'office').locator('.blind__text')).toHaveText(['Door', 'Window']);
   await expect(
@@ -63,7 +64,7 @@ test('opens and closes every blind of the house', async ({ page }) => {
   await page.goto('/blinds');
   const house = page.getByTestId('house');
 
-  await expect(house).toContainText('Blinds: 3 in rooms: 2');
+  await expect(house).toContainText('Blinds: 4 in rooms: 3');
   await house.getByRole('button', { name: 'Close every blind of the house' }).click();
   await expect(
     room(page, 'office').locator('[data-blind="2"] [data-testid="blind-position"]'),

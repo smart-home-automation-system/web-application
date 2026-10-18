@@ -15,12 +15,14 @@ import {
   heaterState,
   heaterStateLabel,
 } from '../../shared/room-heating/heater-labels';
+import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
 import { HeaterWeek } from '../../shared/room-heating/heater-week';
 import { toRoomViews } from '../../shared/room-heating/room-views';
 
 /**
  * The temperature and the heating of one room, strictly read-only: the temperature with the age
- * of its reading, the humidity when the service reports one, the temperature the schedule asks
+ * of its reading, the windows of the room and the hold of its heating (HAS-254), the humidity
+ * when the service reports one, the temperature the schedule asks
  * for right now, each heater with what its relay last reported, and today's schedule. Nothing
  * here can be pressed - setting a temperature or a schedule is the administrator's alone.
  *
@@ -80,4 +82,6 @@ export class RoomHeating {
   protected readonly kindIcon = heaterKindIcon;
   protected readonly stateLabel = heaterStateLabel;
   protected readonly state = heaterState;
+  protected readonly windowLabel = windowStateLabel;
+  protected readonly windowIcon = windowStateIcon;
 }

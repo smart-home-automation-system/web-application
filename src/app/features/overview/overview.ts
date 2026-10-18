@@ -4,6 +4,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
 import { Ticker } from '../../core/time/ticker';
+import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
 import { HeatingApi } from '../../data-access/heating/heating-api';
 import {
@@ -23,7 +24,14 @@ import { toDeviceView } from '../boiler-room/boiler-device';
 import { FLOORS } from '../../shared/floors/floors';
 import { summarise, toSensorRows } from '../heating/sensor-rows';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
-import { PERSON_STATE_LABELS, lastCheck, summariseRooms, toPeople } from './overview-views';
+import { blindsOf } from '../../shared/blinds/addressed-blind';
+import {
+  PERSON_STATE_LABELS,
+  lastCheck,
+  summariseBlinds,
+  summariseRooms,
+  toPeople,
+} from './overview-views';
 
 /** The rooms that are no part of the house: a garden and a sauna are not its coldest and warmest. */
 const OUTSIDE_ROOMS = FLOORS.find((floor) => floor.id === 'outside')?.rooms ?? [];
@@ -41,7 +49,7 @@ interface DeviceLine {
  * dashboard with the few facts somebody looks for first, each leading to the page that has the
  * rest.
  *
- * Seven calls feed the page and each has one tile, with its own freshness and its own failure:
+ * Eight calls feed the page and each has one tile, with its own freshness and its own failure:
  * the page is whole when one service is down, and says which. The tiles claim what their
  * dashboards claim and nothing more - what an answer leaves out is "not known" here too.
  */
@@ -75,6 +83,7 @@ export class Overview {
   protected readonly presence = inject(PresenceApi).watchNow();
   // the resource of the strip in the panel: one poller, so the two never tell different answers
   protected readonly weather = inject(CurrentWeatherStore).current;
+  protected readonly blinds = inject(BlindsApi).watchBlinds();
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
@@ -132,6 +141,10 @@ export class Overview {
       ),
     ];
   });
+
+  // ---- blinds (HAS-254) ----
+
+  protected readonly blindsSummary = computed(() => summariseBlinds(blindsOf(this.blinds.value())));
 
   // ---- presence ----
 

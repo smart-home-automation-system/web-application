@@ -37,8 +37,8 @@ import { DisplayTextPipe } from '../../../shared/display-text/display-text.pipe'
 import { problemOf, validator } from '../../../shared/form-rules/form-rules';
 import { LocalNumberPipe } from '../../../shared/local-number/local-number.pipe';
 import { DAY_TYPE_LABELS, METRIC_LABELS, decisionText } from '../blind-labels';
-import { AddressedBlind } from '../blind-room-card';
-import { blindsOf, floorsOf } from '../blinds';
+import { AddressedBlind, blindsOf } from '../../../shared/blinds/addressed-blind';
+import { floorsOf } from '../blinds';
 import { describeBlindsError } from '../blinds-errors';
 import { ConditionForm, WindowEndForm, targetKey, targetOf } from './schedule-form';
 import {

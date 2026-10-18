@@ -58,6 +58,13 @@ export const en = {
       muted: 'muted',
       unknown: 'The service does not say which sensors are reporting.',
     },
+    blinds: {
+      title: 'Blinds',
+      open: 'Open',
+      closed: 'Closed',
+      moving: 'Moving',
+      unknown: 'Not known',
+    },
     weather: {
       title: 'Weather',
       loading: 'Loading the weather',
@@ -704,6 +711,7 @@ export const en = {
     goTo: 'Go',
     pause: 'Pause the schedules until their next run',
     pausedSince: 'Paused',
+    unnamed: 'Without a name',
     unreachable: 'Not reachable',
   },
   // the floors of the house, shared by every page that lists the rooms by floor
@@ -776,6 +784,14 @@ export const en = {
     noRoomsTitle: 'No room yet',
     noRooms:
       'No room is assigned to your profile yet. Rooms are assigned by the administrator of the household.',
+    blinds: {
+      title: 'Blinds',
+      note: 'The schedules of the blinds are set by the administrator; a pause holds them back until their next run.',
+    },
+    sensors: {
+      title: 'Sensors',
+      note: 'What the sensors sense is not kept by any service yet.',
+    },
     heating: {
       loading: 'Loading the room',
       humidity: 'Humidity',

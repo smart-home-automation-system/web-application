@@ -315,5 +315,55 @@
         <p class="tile__detail">{{ t('weather.noReading') }}</p>
       }
     </app-domain-tile>
+
+    <!-- HAS-254: the blinds of the house counted by what they report -->
+    <app-domain-tile
+      heading="overview.blinds.title"
+      icon="blinds"
+      domain="blinds"
+      link="/blinds"
+      waitingLabel="blinds.loading"
+      [resource]="blinds"
+      data-testid="tile-blinds"
+    >
+      @if (blindsSummary(); as count) {
+        @if (count.total === 0) {
+          <p class="tile__detail">{{ t('blinds.none') }}</p>
+        } @else {
+          <dl class="tile__rows">
+            <div class="tile__row" data-state="open">
+              <dt>{{ t('overview.blinds.open') }}</dt>
+              <dd>
+                <strong>{{ count.open }}</strong>
+              </dd>
+            </div>
+            <div class="tile__row" data-state="closed">
+              <dt>{{ t('overview.blinds.closed') }}</dt>
+              <dd>
+                <strong>{{ count.closed }}</strong>
+              </dd>
+            </div>
+            @if (count.moving > 0) {
+              <div class="tile__row" data-state="moving">
+                <dt>{{ t('overview.blinds.moving') }}</dt>
+                <dd>
+                  <strong>{{ count.moving }}</strong>
+                </dd>
+              </div>
+            }
+            @if (count.unknown > 0) {
+              <div class="tile__row" data-state="unknown">
+                <dt>{{ t('overview.blinds.unknown') }}</dt>
+                <dd>
+                  <strong class="tile__quiet">{{ count.unknown }}</strong>
+                </dd>
+              </div>
+            }
+          </dl>
+        }
+      } @else if (!blinds.error()) {
+        <p class="tile__detail">{{ t('blinds.unreadable') }}</p>
+      }
+    </app-domain-tile>
   </section>
 </ng-container>

@@ -1,6 +1,8 @@
 import { Type } from '@angular/core';
 
+import { RoomBlinds } from './room-blinds';
 import { RoomHeating } from './room-heating';
+import { RoomSensors } from './room-sensors';
 
 /**
  * Something a room can show or do, as a card of the "My room" page. The page knows none of them
@@ -22,4 +24,7 @@ export interface RoomCapability {
 
 export const ROOM_CAPABILITIES: readonly RoomCapability[] = [
   { id: 'heating', component: RoomHeating },
+  // HAS-254: the one card of the page with controls, and the sensors the registry places there
+  { id: 'blinds', component: RoomBlinds },
+  { id: 'sensors', component: RoomSensors },
 ];
