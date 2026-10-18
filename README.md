@@ -64,6 +64,17 @@ dashboards:
   on) and the **blinds** (open, stop, close, a position, and the pause of their schedules until
   their next run). The heating of a room is shown there and set on the heating page only. Nothing asks before a command; nothing is
   shown before the services say so - a blind is read again after every command.
+- **Blinds** (HAS-252): at the top the **holidays** of the next 60 days (weekdays only - what the
+  schedules count as days off besides the weekends; read only) and **the whole house** - open,
+  stop or close every blind, the rooms one after the other. Under them the floors, a card of one
+  size for every room that has blinds: a line per blind (its position, open / stop / close, a
+  position from a menu for a blind that can go to one, an icon for a blind whose schedules are
+  paused or that does not answer), one line for what the last command came to, and the commands
+  of the room. The **schedules** of a room open in a window from its card - the pause of each
+  blind of the room, then every schedule that moves one of them: the rule, today's window, the
+  conditions with their values now, what came of each blind today, and the switch of the
+  schedule. Creating and editing schedules is HAS-253; the protection against wind and frost
+  comes with HAS-249.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the
   temperature of each with the age of its reading, the temperature its schedule asks for right
@@ -334,9 +345,13 @@ Endpoints used today:
 | `POST` | `/home/household/member/{name}/device` | Adds a device to a member (household) |
 | `PATCH` | `/home/household/member/{name}/device?mac=` | Changes the device a member has under that MAC address (household) |
 | `DELETE` | `/home/household/member/{name}/device?mac=` | Removes that device (household), after a confirmation |
-| `GET` | `/home/blinds` | Every blind by room with its state, position, window and `schedulePausedSince` (rooms), polled every 10 s and right after every command. Needs `blinds-service` 0.8.0 for the pause |
+| `GET` | `/home/blinds` | Every blind by room with its state, position, window and `schedulePausedSince` (rooms, blinds), polled every 10 s and right after every command. Needs `blinds-service` 0.8.0 for the pause |
 | `POST` | `/home/blinds/{id}?command=open\|close\|stop&source=dashboard`, `/home/blinds/{id}/position?value=` | Moves a blind (rooms). No question first; its answer is not used: the blinds are read again |
-| `PUT` / `DELETE` | `/home/blinds/{id}/schedule-pause` | Pauses the schedules of a blind until their next run, or ends the pause (rooms) |
+| `PUT` / `DELETE` | `/home/blinds/{id}/schedule-pause` | Pauses the schedules of a blind until their next run, or ends the pause (rooms, blinds) |
+| `POST` | `/home/blinds/rooms/{room}?command=open|close|stop&source=dashboard` | Moves every blind of a room (blinds); the whole house is every room with blinds, one after the other. The blinds it skipped are told |
+| `GET` | `/home/blinds/schedules`, `/home/blinds/schedules/{id}/today` | The schedules of the blinds and what the engine makes of each today (blinds), the list and then each day one after the other, every 60 s |
+| `POST` | `/home/blinds/schedules/{id}/enable`, `/disable` | Switches a schedule on or off (blinds); the schedules are read again |
+| `GET` | `/home/calendar/days?from=&to=` | The days of the next 60 days of the house (blinds: the holidays on weekdays), every 15 min. Needs `database-service` 0.14.0 or later |
 | `POST` | `/home/amx/lights/{point}?turn=on\|off`, `/home/amx/lights/{point}/level?value=` | Switches an Eaton light, sets a dimmer (rooms). The frame is sent; nothing reads the light back |
 | `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
