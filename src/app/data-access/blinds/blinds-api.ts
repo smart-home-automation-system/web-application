@@ -20,7 +20,7 @@ export interface Blind {
   readonly placement?: string;
   /** Whether it can be sent to a position. */
   readonly positioning?: boolean;
-  /** `opened`, `closed`, `stopped`, `opening`, `closing`. */
+  /** `open`, `closed`, `stopped`, `opening`, `closing` (`BlindState` of the service). */
   readonly state?: string;
   /** 0 closed ... 100 open; only for a blind that reports it. */
   readonly position?: number;

@@ -593,7 +593,7 @@ export const pl: Messages = {
     commandFailed: 'Polecenie nie zostało potwierdzone - mogło jednak zostać wykonane.',
     position: '{{ position }} %',
     state: {
-      opened: 'otwarta',
+      open: 'otwarta',
       closed: 'zamknięta',
       stopped: 'zatrzymana',
       opening: 'otwiera się',

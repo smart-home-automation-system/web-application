@@ -40,7 +40,7 @@ const AT_THE_START: readonly StoredBlind[] = [
     vendor: 'shelly',
     positioning: true,
     position: 100,
-    state: 'opened',
+    state: 'open',
     movedSecondsAgo: 5 * 3600 + 5,
     window: 'no sensor',
     pausedSecondsAgo: 25 * 60 + 5,
@@ -106,7 +106,7 @@ export function moveBlind(id: string, command: string | null): MockReply {
     return notFound;
   }
   if (command === 'open' || command === 'close') {
-    blind.state = command === 'open' ? 'opened' : 'closed';
+    blind.state = command === 'open' ? 'open' : 'closed';
     blind.position = blind.positioning ? (command === 'open' ? 100 : 0) : undefined;
   } else if (command === 'stop') {
     blind.state = 'stopped';
