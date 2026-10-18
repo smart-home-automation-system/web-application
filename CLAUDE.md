@@ -451,6 +451,10 @@ e2e/              # Playwright tests
     (`windowEndText` puts them next to the words). The codes of `BlindsError` have texts in
     `blinds-errors.ts`, whose test lists them - a new code fails it. The words of the controls of
     a blind are the group `blindControl`, read by the room view too.
+  - **The state of a blind is the word of `BlindState`** - `open`, `closed`, `opening`, `closing`,
+    `stopped` (`BLIND_STATES` in `shared/blinds/blind-position.ts`, pinned by a test). 0.21.0 read
+    `opened`, which the service never sends, and an open Eaton blind - no position - showed "not
+    known" (found on the live page after the Shelly rollers were registered).
   - **The holidays are read only** (owner, 2026-10-18: "a day off is only a statutory holiday"): the
     days off of the next 60 days from Monday to Friday (`holidaysOf`, by the date, never by the
     reason); a weekend is not listed. Nothing here adds or removes a day of the household.

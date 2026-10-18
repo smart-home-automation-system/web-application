@@ -597,7 +597,7 @@ export const en = {
     commandFailed: 'The command was not confirmed - it may have been carried out all the same.',
     position: '{{ position }} %',
     state: {
-      opened: 'open',
+      open: 'open',
       closed: 'closed',
       stopped: 'stopped',
       opening: 'opening',
