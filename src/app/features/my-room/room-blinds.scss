@@ -1,0 +1,35 @@
+// the blinds of the room one under the other, each in its own frame (`app-blind-control`)
+:host {
+  display: contents;
+}
+
+.blinds {
+  --app-domain: var(--app-domain-blinds);
+}
+
+.blinds__content {
+  display: grid;
+  gap: 10px;
+}
+
+.blinds__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.blinds__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}

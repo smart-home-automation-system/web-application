@@ -126,7 +126,7 @@ describe('Rooms', () => {
     expect(window.querySelector('[data-testid="detail-held"]')).not.toBeNull();
     // the heating is set on its own page only: nothing here leads there
     expect(window.querySelector('[data-section="heating"] a')).toBeNull();
-    expect(text(window.querySelector('[data-blind="1"] .list__name'))).toBe('Window');
+    expect(text(window.querySelector('[data-blind="1"] .blind__name'))).toBe('Window');
     // the schedules have a page of their own
     expect(window.querySelector('[data-testid="blind-schedules"]')).toBeNull();
     // a Shelly light has no control here; an Eaton one has

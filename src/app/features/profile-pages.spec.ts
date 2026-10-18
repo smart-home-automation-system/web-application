@@ -96,11 +96,16 @@ describe('profiles in the application', () => {
   beforeEach(() => localStorage.removeItem(STORAGE_KEY));
 
   afterEach(() => {
-    // the page of a member reads its room; what that read shows is the business of the page
-    // (my-room.spec), not of the profiles. Nobody here has the permission for the switch of the
-    // house, so neither its state nor a change of it is let through
+    // the page of a member reads its room - the heating, the blinds and the sensors of the
+    // registry (HAS-254); what those reads show is the business of the page (my-room.spec), not
+    // of the profiles. Nobody here has the permission for the switch of the house, so neither its
+    // state nor a change of it is let through - nor a command to a blind
     http.match(
-      (request) => request.method === 'GET' && request.url.startsWith('/home/heating/rooms/'),
+      (request) =>
+        request.method === 'GET' &&
+        (request.url.startsWith('/home/heating/rooms/') ||
+          request.url.startsWith('/home/blinds/rooms/') ||
+          (request.url === '/home/device/registry' && request.params.has('room'))),
     );
     // the overview of the administrator reads one call per tile - the state of the switch among
     // them, which is the administrator's to see; a change of it is still not let through

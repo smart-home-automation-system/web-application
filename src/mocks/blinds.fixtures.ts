@@ -5,8 +5,9 @@ import { houseTime } from './house-time';
 /**
  * The blinds of the mock house (`blinds-service`), which can be moved: a command changes what the
  * next read answers, in the memory of the page - a reload is the house as it started. The ids are
- * those of the mock device registry (`devices.fixtures.ts`): the two office blinds and the
- * terrace blinds of the living room. A blind moves at once here; a real one takes up to a minute.
+ * those of the mock device registry (`devices.fixtures.ts`) - the two office blinds and the
+ * terrace blinds of the living room - and one of the bedroom the registry does not list (HAS-254). A
+ * blind moves at once here; a real one takes up to a minute.
  */
 interface StoredBlind {
   readonly id: number;
@@ -53,6 +54,18 @@ const AT_THE_START: readonly StoredBlind[] = [
     vendor: 'eaton',
     positioning: false,
     window: 'no sensor',
+  },
+  // the blinds of the room of a resident (HAS-254, "My room"): closed for the night
+  {
+    id: 14,
+    name: 'Bedroom window blinds',
+    room: 'bedroom',
+    vendor: 'shelly',
+    positioning: true,
+    position: 0,
+    state: 'closed',
+    movedSecondsAgo: 9 * 3600 + 5,
+    window: 'closed',
   },
 ];
 

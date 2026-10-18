@@ -65,3 +65,7 @@ mat-card-content {
   height: 20px;
   font-size: 20px;
 }
+
+.tile[data-domain='blinds'] {
+  --app-domain: var(--app-domain-blinds);
+}

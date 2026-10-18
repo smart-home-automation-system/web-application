@@ -11,7 +11,7 @@ import { ApiErrorStrip } from '../api-error/api-error-strip';
 import { DataFreshness } from '../data-freshness/data-freshness';
 
 /** A domain of the house: the colour of its cards (`--app-domain-…` in `_seasons.scss`). */
-export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather';
+export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather' | 'blinds';
 
 /**
  * A card about one call of one domain of the house - a tile of the overview, whose title leads to

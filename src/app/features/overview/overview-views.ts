@@ -1,6 +1,7 @@
 import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { isRecord } from '../../core/util/is-record';
 import { MessageKey } from '../../i18n/messages';
+import { Blind } from '../../data-access/blinds/blinds-api';
 import { RoomView } from '../../shared/room-heating/room-views';
 
 /** A room named with its temperature and the time of that reading. */
@@ -128,4 +129,41 @@ export function lastCheck(
         : latest,
     undefined,
   );
+}
+
+/** What the tile of the blinds says: how many are open, closed, on their way, and not known. */
+export interface BlindsSummary {
+  readonly total: number;
+  readonly open: number;
+  readonly closed: number;
+  readonly moving: number;
+  readonly unknown: number;
+}
+
+/**
+ * The blinds of `GET /blinds` counted by what they report (HAS-254). A blind on its way is moving;
+ * one with a position is closed at 0 and open above it - partly open is open; one without a
+ * position is what its state says, and `stopped` without a position says nothing of where it
+ * stopped: not known, like a blind nothing was heard of. `undefined` for an answer that is not a
+ * list.
+ */
+export function summariseBlinds(blinds: readonly Blind[] | undefined): BlindsSummary | undefined {
+  if (blinds === undefined) {
+    return undefined;
+  }
+  const count = { total: blinds.length, open: 0, closed: 0, moving: 0, unknown: 0 };
+  for (const blind of blinds) {
+    count[whereIs(blind)]++;
+  }
+  return count;
+}
+
+function whereIs(blind: Blind): 'open' | 'closed' | 'moving' | 'unknown' {
+  if (blind.state === 'opening' || blind.state === 'closing') {
+    return 'moving';
+  }
+  if (typeof blind.position === 'number' && Number.isFinite(blind.position)) {
+    return blind.position <= 0 ? 'closed' : 'open';
+  }
+  return blind.state === 'open' || blind.state === 'closed' ? blind.state : 'unknown';
 }

@@ -142,98 +142,16 @@
       } @else {
         <ul class="list list--blinds">
           @for (blind of room.blinds; track blind.device.id) {
-            @let command = stateOf(blind.device.id);
-            @let shown = positionLabel(blind);
-            <li class="blind" [attr.data-blind]="blind.device.id">
-              <div class="blind__head">
-                <span class="list__name">{{
-                  shortName(blind.device.name, room.room, 'blinds') ?? t('rooms.unnamed')
-                }}</span>
-                <span class="list__state" data-testid="blind-position">{{
-                  t(shown.key, { position: shown.position })
-                }}</span>
-              </div>
-              @if (blind.window; as window) {
-                @if (window.state !== 'no sensor') {
-                  <span class="section__note" [attr.data-state]="window.state">
-                    <mat-icon class="list__bulb" aria-hidden="true">{{
-                      windowIcon(window.state)
-                    }}</mat-icon>
-                    {{ t(windowLabel(window.state)) }}
-                  </span>
-                }
-              }
-              @if (blind.state?.reachable === false) {
-                <span class="section__warning">{{ t('blindControl.unreachable') }}</span>
-              }
-              <span class="list__controls">
-                <button
-                  matButton="outlined"
-                  type="button"
-                  [disabled]="command?.sending"
-                  (click)="move(blind, 'open')"
-                >
-                  <mat-icon>arrow_upward</mat-icon>{{ t('blindControl.open') }}
-                  <span class="visually-hidden">{{ blind.device.name }}</span>
-                </button>
-                <button
-                  matButton="outlined"
-                  type="button"
-                  [disabled]="command?.sending"
-                  (click)="move(blind, 'stop')"
-                >
-                  <mat-icon>stop</mat-icon>{{ t('blindControl.stop') }}
-                  <span class="visually-hidden">{{ blind.device.name }}</span>
-                </button>
-                <button
-                  matButton="outlined"
-                  type="button"
-                  [disabled]="command?.sending"
-                  (click)="move(blind, 'close')"
-                >
-                  <mat-icon>arrow_downward</mat-icon>{{ t('blindControl.close') }}
-                  <span class="visually-hidden">{{ blind.device.name }}</span>
-                </button>
-              </span>
-              @if (blind.device.positioning === true) {
-                <span class="list__slider">
-                  <mat-slider min="0" max="100" step="10" discrete>
-                    <input
-                      matSliderThumb
-                      #blindPosition
-                      [value]="blind.state?.position ?? 50"
-                      [attr.aria-label]="
-                        t('blindControl.positionLabel') + ' ' + (blind.device.name ?? '')
-                      "
-                    />
-                  </mat-slider>
-                  <button
-                    matButton
-                    type="button"
-                    [disabled]="command?.sending"
-                    (click)="moveTo(blind, blindPosition.valueAsNumber)"
-                  >
-                    {{ t('blindControl.goTo') }}
-                  </button>
-                </span>
-              }
-              <mat-slide-toggle
-                class="blind__pause"
-                data-testid="blind-pause"
-                [checked]="blind.state?.schedulePausedSince !== undefined"
-                [disabled]="command?.sending || blind.state === undefined"
-                (toggleChange)="pause(blind)"
-              >
-                {{ t('blindControl.pause') }}
-              </mat-slide-toggle>
-              @if (blind.state?.schedulePausedSince | houseAge; as age) {
-                <span class="section__note" data-testid="blind-paused"
-                  >{{ t('blindControl.pausedSince') }} {{ age }}</span
-                >
-              }
-              @if (command?.error; as error) {
-                <app-api-error-strip [error]="error" [summary]="t('blindControl.commandFailed')" />
-              }
+            <li [attr.data-blind]="blind.device.id">
+              <app-blind-control
+                [id]="blind.device.id"
+                [name]="blind.device.name"
+                [room]="room.room"
+                [positioning]="blind.device.positioning"
+                [state]="blind.state"
+                [commands]="commands"
+                [refresh]="readBack"
+              />
             </li>
           }
         </ul>

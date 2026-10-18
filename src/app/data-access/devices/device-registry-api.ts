@@ -150,6 +150,26 @@ export class DeviceRegistryApi {
    * `ApiClient`: such a change fails as `network`, which says "no answer", not "not carried
    * out".
    */
+  /**
+   * The switched-on devices of one room, read only (HAS-254, "My room": its sensors), **read for
+   * every member** - the one read of the device registry outside the administration. The answer
+   * holds what the registry holds of those devices, their addresses included; the page shows their
+   * names and kinds only (accepted with the task: the separation is UI-only while nothing behind the
+   * gateway is authenticated). The
+   * name is read when a call is made; the caller is made anew for another room. Call in an
+   * injection context.
+   */
+  watchRoom(room: () => string): PollingResource<readonly SmartDevice[] | null> {
+    return pollingResource(
+      () =>
+        this.api.get<readonly SmartDevice[] | null>('/device/registry', {
+          room: room(),
+          enabled: 'true',
+        }),
+      { intervalMs: POLL_REGISTRY_EVERY_MS },
+    );
+  }
+
   watchDevices(afterChange?: () => void): DeviceRegistry {
     const registry = pollingResource(
       () => this.api.get<readonly SmartDevice[] | null>('/device/registry'),

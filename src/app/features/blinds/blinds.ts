@@ -9,7 +9,6 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { Observable, catchError, concatMap, from, map, of, toArray } from 'rxjs';
 
 import { DeviceCommands } from '../../core/api/device-commands';
-import { isRecord } from '../../core/util/is-record';
 import { ScheduleEntry } from '../../data-access/blinds/blind-schedule';
 import { BlindCommand, BlindOutcome, BlindsApi } from '../../data-access/blinds/blinds-api';
 import { CalendarApi, holidaysOf } from '../../data-access/calendar/calendar-api';
@@ -18,7 +17,8 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { FLOORS, OTHER_FLOOR } from '../../shared/floors/floors';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { SourcesStrip } from '../../shared/sources-strip/sources-strip';
-import { AddressedBlind, BlindRoomCard, CardStatus, failureOf } from './blind-room-card';
+import { AddressedBlind, blindsOf } from '../../shared/blinds/addressed-blind';
+import { BlindRoomCard, CardStatus, failureOf } from './blind-room-card';
 import { ROOM_SCHEDULES_SIZE, RoomSchedules, RoomSchedulesData } from './room-schedules';
 
 /** How far ahead the holidays are listed. */
@@ -203,29 +203,6 @@ export class Blinds {
     };
     this.dialog.open(RoomSchedules, { ...ROOM_SCHEDULES_SIZE, data, autoFocus: 'dialog' });
   }
-}
-
-/**
- * Every blind of an answer of `GET /blinds` that can be addressed, in its order. Nothing checks an
- * answer at runtime: an entry that is not a blind with an id is passed over - a control needs the
- * id. `undefined` for an answer that is not a list.
- */
-export function blindsOf(answer: unknown): readonly AddressedBlind[] | undefined {
-  if (!Array.isArray(answer)) {
-    return undefined;
-  }
-  return (answer as unknown[]).filter(isRecord).flatMap((group) => {
-    const list = group['blinds'];
-    const room = typeof group['room'] === 'string' ? group['room'] : undefined;
-    return (Array.isArray(list) ? (list as unknown[]) : [])
-      .filter(
-        (blind): blind is AddressedBlind =>
-          isRecord(blind) && typeof blind['id'] === 'number' && Number.isFinite(blind['id']),
-      )
-      .map((blind) =>
-        blind.room === undefined && room !== undefined ? { ...blind, room } : blind,
-      );
-  });
 }
 
 /** The rooms with blinds by floor, in the order of `FLOORS`; a room it does not know goes last. */

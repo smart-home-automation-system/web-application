@@ -6,6 +6,10 @@ import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { Profile } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
+import { of } from 'rxjs';
+
+import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
+import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi, HeatingStatus, Room } from '../../data-access/heating/heating-api';
 import { MyRoom } from './my-room';
 
@@ -72,6 +76,11 @@ describe('MyRoom', () => {
   /** How many times the page asked for the switch of the house. */
   let switchesWatched: number;
   let fixture: ComponentFixture<MyRoom> | undefined;
+  /** The blinds (HAS-254) and the sensors of the registry asked for, per room, in order. */
+  let blindsAsked: { name: () => string; resource: FakeResource<RoomBlinds | null> }[];
+  let sensorsAsked: { name: () => string; resource: FakeResource<readonly SmartDevice[] | null> }[];
+  /** The commands sent to the blinds, in words. */
+  let sent: string[];
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
@@ -81,6 +90,9 @@ describe('MyRoom', () => {
     turned = [];
     switchesWatched = 0;
     fixture = undefined;
+    blindsAsked = [];
+    sensorsAsked = [];
+    sent = [];
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -100,6 +112,42 @@ describe('MyRoom', () => {
             watchRoom: (name: () => string) => {
               const resource = fakeResource<Room | null>();
               asked.push({ name, resource });
+              return resource;
+            },
+          },
+        },
+        {
+          provide: BlindsApi,
+          useValue: {
+            watchRoom: (name: () => string) => {
+              const resource = fakeResource<RoomBlinds | null>();
+              blindsAsked.push({ name, resource });
+              return resource;
+            },
+            move: (id: number, command: string) => {
+              sent.push(`${command} ${id}`);
+              return of(undefined);
+            },
+            moveTo: (id: number, position: number) => {
+              sent.push(`to ${position} ${id}`);
+              return of(undefined);
+            },
+            pauseSchedules: (id: number) => {
+              sent.push(`pause ${id}`);
+              return of(undefined);
+            },
+            resumeSchedules: (id: number) => {
+              sent.push(`resume ${id}`);
+              return of(undefined);
+            },
+          },
+        },
+        {
+          provide: DeviceRegistryApi,
+          useValue: {
+            watchRoom: (name: () => string) => {
+              const resource = fakeResource<readonly SmartDevice[] | null>();
+              sensorsAsked.push({ name, resource });
               return resource;
             },
           },
@@ -396,6 +444,12 @@ describe('MyRoom', () => {
     it('is nothing at all for a member with one room', async () => {
       await page();
       answer(lastAsked().resource, BEDROOM);
+      // a room without blinds and with a sensor: the sensors are listed, nothing more to press
+      answer(blindsAsked.at(-1)!.resource, { room: 'bedroom', blinds: [] });
+      answer(sensorsAsked.at(-1)!.resource, [
+        { id: 1, name: 'Bedroom motion', room: 'bedroom', kind: 'motion sensor' },
+      ]);
+      expect((await page()).querySelector('[data-testid="room-sensors"]')).not.toBeNull();
 
       expect(await controls()).toEqual({ inTheRoom: [], elsewhere: [] });
     });
@@ -489,5 +543,134 @@ describe('MyRoom', () => {
     expect(shown).toContain('Grzejnik: grzeje Wymaga grzania');
     expect(shown).toContain('Harmonogram na dziś');
     expect(shown).toContain('czw. (dzisiaj) 05:30–07:00 · 19 °C');
+  });
+
+  // HAS-254: the blinds of the room - the one card of the page with controls - its sensors, and
+  // the windows on the heating card
+  describe('the blinds of the room', () => {
+    const BLINDS: RoomBlinds = {
+      room: 'bedroom',
+      blinds: [
+        { id: 4, name: 'Bedroom window blinds', positioning: true, position: 40 },
+        { id: 3, name: 'Bedroom door blinds', positioning: false, state: 'closed' },
+      ],
+    };
+
+    const card = async () => (await page()).querySelector('[data-testid="room-blinds"]');
+    const lastBlinds = () => blindsAsked.at(-1)!;
+
+    it('lists them for the room on screen, the door first, each without the room', async () => {
+      await page();
+      expect(lastBlinds().name()).toBe('bedroom');
+      answer(lastBlinds().resource, BLINDS);
+
+      const names = [...(await card())!.querySelectorAll('.blind__name')].map(words);
+      expect(names).toEqual(['Door', 'Window']);
+      expect(
+        words((await card())!.querySelector('[data-blind="4"] [data-testid="blind-position"]')),
+      ).toBe('40 %');
+    });
+
+    it('names exactly the controls of the blinds and their pause as what can be pressed', async () => {
+      await page();
+      answer(lastAsked().resource, BEDROOM);
+      answer(lastBlinds().resource, BLINDS);
+
+      const inCard = [...(await card())!.querySelectorAll('button, a, input, [tabindex]')].map(
+        // a switch is named by its label
+        (control) =>
+          control.getAttribute('role') === 'switch'
+            ? 'switch: ' + words(control.closest('mat-slide-toggle'))
+            : words(control),
+      );
+      expect(inCard).toEqual([
+        'arrow_upward Open Bedroom door blinds',
+        'stop Stop Bedroom door blinds',
+        'arrow_downward Close Bedroom door blinds',
+        'switch: Pause the schedules until their next run Bedroom door blinds',
+        'arrow_upward Open Bedroom window blinds',
+        'stop Stop Bedroom window blinds',
+        'arrow_downward Close Bedroom window blinds',
+        '',
+        'Go Bedroom window blinds',
+        'switch: Pause the schedules until their next run Bedroom window blinds',
+      ]);
+      // nothing in the card of the heating
+      expect((await controls()).inTheRoom).toEqual([]);
+    });
+
+    it('sends a command and reads the room again - nothing optimistic', async () => {
+      await page();
+      answer(lastBlinds().resource, BLINDS);
+      const refreshed = vi.spyOn(lastBlinds().resource, 'refresh');
+
+      const close = [...(await card())!.querySelectorAll('button')].find(
+        (button) => words(button) === 'arrow_downward Close Bedroom window blinds',
+      )!;
+      close.click();
+      await page();
+
+      expect(sent).toEqual(['close 4']);
+      expect(refreshed).toHaveBeenCalled();
+    });
+
+    it('shows no card for a room without blinds, nor while the first answer is on its way', async () => {
+      await page();
+      expect(await card()).toBeNull();
+
+      answer(lastBlinds().resource, { room: 'bedroom', blinds: [] });
+      expect(await card()).toBeNull();
+    });
+
+    it('tells a failure before any answer: nobody knows then whether the room has blinds', async () => {
+      await page();
+      fail(lastBlinds().resource, new ApiError('server', 503));
+
+      expect(words(await card())).toContain('The service is not available right now');
+    });
+  });
+
+  describe('the sensors of the room', () => {
+    const sensors = async () => (await page()).querySelector('[data-testid="room-sensors"]');
+    const lastSensors = () => sensorsAsked.at(-1)!;
+
+    it('lists the motion and presence sensors the registry places there, their state not known', async () => {
+      await page();
+      expect(lastSensors().name()).toBe('bedroom');
+      answer(lastSensors().resource, [
+        { id: 1, name: 'Bedroom motion', room: 'bedroom', kind: 'motion sensor' },
+        { id: 2, name: 'Bedroom radar', room: 'bedroom', kind: 'presence sensor' },
+        // not a sensor of the card, and a sensor of another room the answer should not hold
+        { id: 3, name: 'Bedroom lamp', room: 'bedroom', kind: 'light' },
+        { id: 4, name: 'Hall motion', room: 'hall up', kind: 'motion sensor' },
+      ]);
+
+      const shown = words(await sensors());
+      expect(shown).toContain('Motion Bedroom motion state not known yet');
+      expect(shown).toContain('Presence Bedroom radar state not known yet');
+      expect(shown).not.toContain('Bedroom lamp');
+      expect(shown).not.toContain('Hall motion');
+    });
+
+    it('shows no card for a room without such a sensor', async () => {
+      await page();
+      answer(lastSensors().resource, [
+        { id: 3, name: 'Bedroom lamp', room: 'bedroom', kind: 'light' },
+      ]);
+
+      expect(await sensors()).toBeNull();
+    });
+  });
+
+  it('shows the windows of the room and the hold of its heating on the heating card', async () => {
+    await page();
+    answer(lastAsked().resource, {
+      ...BEDROOM,
+      window: { state: 'open', openSince: '2026-10-08T14:20:00', hold: true },
+    } as Room);
+
+    const heating = (await page()).querySelector('[data-testid="room-heating"]');
+    expect(words(heating?.querySelector('[data-testid="room-window"]'))).toContain('open');
+    expect(heating?.querySelector('[data-testid="room-held"]')).not.toBeNull();
   });
 });

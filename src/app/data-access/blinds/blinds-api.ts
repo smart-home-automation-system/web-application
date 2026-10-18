@@ -74,11 +74,26 @@ const SCHEDULES_EVERY_MS = 60_000;
 export class BlindsApi {
   private readonly api = inject(ApiClient);
 
-  /** Every blind, by room. Call in an injection context: the polling lives as long as the caller. */
-  watchBlinds(): PollingResource<readonly RoomBlinds[] | null> {
+  /**
+   * Every blind, by room. Call in an injection context: the polling lives as long as the caller.
+   * A page that only counts them asks less often (the overview: once a minute).
+   */
+  watchBlinds(intervalMs = POLL_EVERY_MS): PollingResource<readonly RoomBlinds[] | null> {
     return pollingResource(() => this.api.get<readonly RoomBlinds[] | null>('/blinds'), {
-      intervalMs: POLL_EVERY_MS,
+      intervalMs,
     });
+  }
+
+  /**
+   * The blinds of one room (HAS-254, "My room"): `blinds` empty for a room without one. The name
+   * is read when a call is made; the caller is made anew for another room. Call in an injection
+   * context.
+   */
+  watchRoom(room: () => string): PollingResource<RoomBlinds | null> {
+    return pollingResource(
+      () => this.api.get<RoomBlinds | null>(`/blinds/rooms/${encodeURIComponent(room())}`),
+      { intervalMs: POLL_EVERY_MS },
+    );
   }
 
   /** Every blind, by room, read once - what a form chooses from (the editor of a schedule). */

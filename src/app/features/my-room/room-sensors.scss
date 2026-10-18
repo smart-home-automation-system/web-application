@@ -1,0 +1,55 @@
+// the sensors of the room by kind, a line each with its state - not known until a service keeps it
+:host {
+  display: contents;
+}
+
+.sensors__content {
+  display: grid;
+  gap: 10px;
+}
+
+.sensors__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font: var(--mat-sys-title-small);
+}
+
+.sensors__list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sensors__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font: var(--mat-sys-body-medium);
+}
+
+.sensors__state,
+.sensors__note {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.sensors__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.sensors {
+  --app-domain: var(--app-domain-devices);
+}

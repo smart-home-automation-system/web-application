@@ -1,0 +1,61 @@
+// One blind in a frame of its own: its name and position, then the controls, which wrap on a phone
+:host {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
+  border-radius: var(--mat-sys-corner-medium);
+  font: var(--mat-sys-body-medium);
+}
+
+.blind__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.blind__name {
+  font-weight: 600;
+}
+
+.blind__state {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.blind__note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.blind__warning {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-error-container);
+}
+
+.blind__controls,
+.blind__slider {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.blind__slider mat-slider {
+  width: 160px;
+}
+
+.mat-icon.blind__icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  opacity: 0.55;
+}
+
+.blind__pause {
+  justify-self: start;
+}

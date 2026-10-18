@@ -42,7 +42,8 @@ dashboards:
   are being heated, the coldest and the warmest of the house with the age of each reading), the
   temperature sensors that fell silent, the hot water, the boiler room, who is at home - with
   a warning when the detection has not checked for more than five minutes - and the weather
-  (temperature, dew point, wind and gusts, rain, daylight). Each tile is fed by one call, so it has its own
+  (temperature, dew point, wind and gusts, rain, daylight) - and the blinds (HAS-254: how many are
+  open, closed, moving and not known, read once a minute). Each tile is fed by one call, so it has its own
   freshness and its own failure and the page stays whole while one service is down; its title
   leads to the dashboard that has the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
@@ -111,10 +112,14 @@ dashboards:
   application. It shows the rooms the registry gives the profile, one at a time - a member with
   several chooses among them, a member with none is told so. Per room: the temperature with
   the age of its reading, the humidity when the heating service reports one, the temperature
-  the schedule asks for right now, each heater with what its relay last reported, and the
-  schedule of today. All of it is read-only; setting a temperature or a schedule is not part of
-  this application for anybody yet, and will be the administrator's alone. The page has no
-  control - except for a member the household registry grants the permission
+  the schedule asks for right now, each heater with what its relay last reported, the schedule
+  of today, and the windows of the room with the hold of its heating. Since HAS-254 also **the
+  blinds of the room** - each with its position, open / stop / close, a position for one that can
+  go to one, and the pause of its schedules until their next run (no card for a room without
+  blinds; the schedules themselves stay the administrator's) - and **the motion and presence
+  sensors** the registry places in the room, their state not known yet. The heating is read-only; setting a temperature or a schedule is not part of
+  this application for anybody yet, and will be the administrator's alone. The blinds are the
+  only controls of a room - and for a member the household registry grants the permission
   `heating_switch`: that member also gets the switch of the heating of the whole house here,
   the same card as on the heating dashboard.
 - **Household**: the administration of the household registry, the administrator's. Everybody
@@ -205,7 +210,7 @@ that - the administrator has six - it shows the first four and **More**, which l
 | Role | What the interface offers |
 |---|---|
 | `admin` | Every page. The name in the panel leads to the picker, to look at the application as somebody else; the own link leads back. |
-| `resident` | The "My room" page only - their rooms, read-only. Every other address - typed by hand included - leads there, and other profiles are not offered. |
+| `resident` | The "My room" page only - their rooms, read-only but for their blinds (HAS-254). Every other address - typed by hand included - leads there, and other profiles are not offered. |
 
 Next to the role the registry can grant a member a **permission** - one thing beyond what the
 role gives. There is one so far, `heating_switch`: the switch of the heating of the whole house
@@ -353,7 +358,9 @@ Endpoints used today:
 | `POST` | `/home/household/member/{name}/device` | Adds a device to a member (household) |
 | `PATCH` | `/home/household/member/{name}/device?mac=` | Changes the device a member has under that MAC address (household) |
 | `DELETE` | `/home/household/member/{name}/device?mac=` | Removes that device (household), after a confirmation |
-| `GET` | `/home/blinds` | Every blind by room with its state, position, window and `schedulePausedSince` (rooms, blinds), polled every 10 s and right after every command. Needs `blinds-service` 0.8.0 for the pause |
+| `GET` | `/home/blinds` | Every blind by room with its state, position, window and `schedulePausedSince` (rooms, blinds), polled every 10 s and right after every command; once a minute by the tile of the overview. Needs `blinds-service` 0.8.0 for the pause |
+| `GET` | `/home/blinds/rooms/{room}` | The blinds of one room (my room), polled every 10 s and right after every command; an empty list for a room without blinds - then no card |
+| `GET` | `/home/device/registry?room={room}&enabled=true` | The switched-on devices of one room (my room: its motion and presence sensors), every 60 s - the one read of the device registry outside the administration; only names and kinds are shown |
 | `POST` | `/home/blinds/{id}?command=open\|close\|stop&source=dashboard`, `/home/blinds/{id}/position?value=` | Moves a blind (rooms). No question first; its answer is not used: the blinds are read again |
 | `PUT` / `DELETE` | `/home/blinds/{id}/schedule-pause` | Pauses the schedules of a blind until their next run, or ends the pause (rooms, blinds) |
 | `POST` | `/home/blinds/rooms/{room}?command=open|close|stop&source=dashboard` | Moves every blind of a room (blinds); the whole house is every room with blinds, one after the other. The blinds it skipped are told |

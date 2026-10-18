@@ -1,0 +1,32 @@
+<ng-container *transloco="let t">
+  @if (shown()) {
+    <mat-card appearance="outlined" class="blinds card--domain" data-testid="room-blinds">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>blinds</mat-icon></div>
+        <mat-card-title>{{ t('myRoom.blinds.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="answer.lastUpdated()" [stale]="answer.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="blinds__content">
+        <app-api-error-strip [error]="answer.error()" [describeWith]="describeError" />
+        <ul class="blinds__list">
+          @for (blind of blinds() ?? []; track blind.id) {
+            <li [attr.data-blind]="blind.id">
+              <app-blind-control
+                [id]="blind.id"
+                [name]="blind.name"
+                [room]="room()"
+                [positioning]="blind.positioning"
+                [state]="blind"
+                [commands]="commands"
+                [refresh]="refresh"
+              />
+            </li>
+          }
+        </ul>
+        <p class="blinds__note">{{ t('myRoom.blinds.note') }}</p>
+      </mat-card-content>
+    </mat-card>
+  }
+</ng-container>

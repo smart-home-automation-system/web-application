@@ -7,7 +7,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { CommandState, DeviceCommands } from '../../core/api/device-commands';
-import { Blind, BlindCommand, BlindOutcome, BlindsApi } from '../../data-access/blinds/blinds-api';
+import { BlindCommand, BlindOutcome, BlindsApi } from '../../data-access/blinds/blinds-api';
 import { DisplayText } from '../../i18n/messages';
 import { blindPositionLabel } from '../../shared/blinds/blind-position';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
@@ -17,7 +17,9 @@ import { describeBlindsError } from './blinds-errors';
 import { sourceText } from './blind-labels';
 
 /** A blind the page can address: one with an id. */
-export type AddressedBlind = Blind & { readonly id: number };
+import { AddressedBlind } from '../../shared/blinds/addressed-blind';
+
+export type { AddressedBlind };
 
 /** The positions a blind with `positioning` is offered, 0 closed ... 100 open. */
 export const POSITIONS = [0, 25, 50, 75, 100] as const;

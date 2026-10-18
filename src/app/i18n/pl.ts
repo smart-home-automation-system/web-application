@@ -57,6 +57,13 @@ export const pl: Messages = {
       muted: 'wyciszony',
       unknown: 'Serwis nie podaje, które czujniki raportują.',
     },
+    blinds: {
+      title: 'Rolety',
+      open: 'Otwarte',
+      closed: 'Zamknięte',
+      moving: 'W ruchu',
+      unknown: 'Nieznany stan',
+    },
     weather: {
       title: 'Pogoda',
       loading: 'Wczytywanie pogody',
@@ -771,6 +778,14 @@ export const pl: Messages = {
     noRoomsTitle: 'Brak pokoju',
     noRooms:
       'Do twojego profilu nie przypisano jeszcze żadnego pokoju. Pokoje przypisuje administrator domu.',
+    blinds: {
+      title: 'Rolety',
+      note: 'Harmonogramy rolet ustawia administrator; pauza wstrzymuje je do następnego uruchomienia.',
+    },
+    sensors: {
+      title: 'Czujniki',
+      note: 'Tego, co wyczuwają czujniki, nie przechowuje jeszcze żadna usługa.',
+    },
     heating: {
       loading: 'Wczytywanie pokoju',
       humidity: 'Wilgotność',
