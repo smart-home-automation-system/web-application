@@ -7,6 +7,9 @@ export interface BlindPosition {
   readonly position?: number;
 }
 
+/** The states `blinds-service` sends (`BlindState`), in its words. */
+export const BLIND_STATES = ['open', 'closed', 'opening', 'closing', 'stopped'] as const;
+
 /**
  * What a blind is at: its position where it reports one, else its state, else "not known" -
  * never "closed" for a blind that said nothing. The window of a room and the blinds page.
@@ -15,9 +18,6 @@ export interface BlindPosition {
  * `opened`, a word the service never sends, so an open Eaton blind, which has no position, was
  * "not known"). `BLIND_STATES` is that list, pinned by a test.
  */
-/** The states `blinds-service` sends (`BlindState`), in its words. */
-export const BLIND_STATES = ['open', 'closed', 'opening', 'closing', 'stopped'] as const;
-
 export function blindPositionLabel<T extends { readonly state?: Blind }>(row: T): BlindPosition {
   const state = row.state;
   if (typeof state?.position === 'number' && Number.isFinite(state.position)) {
