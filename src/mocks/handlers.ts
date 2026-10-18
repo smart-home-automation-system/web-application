@@ -239,14 +239,22 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
   },
   // the blinds (HAS-232): their state, the commands and the pause of their schedules
   { method: 'GET', path: '/home/blinds', reply: () => ({ status: 200, body: blindsByRoom() }) },
-  // the blinds of one room, for "My room" (HAS-254): a room without blinds has an empty list
+  // the blinds of one room, for "My room" (HAS-254): a room without blinds is a 404 with its code,
+  // as blinds-service answers it
   {
     method: 'GET',
     path: /^\/home\/blinds\/rooms\/([^/]+)$/,
     reply: (_request, _fresh, [room]) => {
       const name = decodeURIComponent(room);
       const here = blindsByRoom().find((group) => group.room === name);
-      return { status: 200, body: { room: name, blinds: here?.blinds ?? [] } };
+      return here
+        ? { status: 200, body: here }
+        : {
+            status: 404,
+            body: {
+              errors: [{ message: 'Blinds not found', code: 'NOT_FOUND_BLINDS' }],
+            },
+          };
     },
   },
   {

@@ -622,6 +622,26 @@ describe('MyRoom', () => {
       expect(await card()).toBeNull();
     });
 
+    // what blinds-service answers for a room without blinds (found on the live page, 2026-10-18)
+    it('shows no card for the 404 of a room without blinds, also after an answer with some', async () => {
+      await page();
+      answer(lastBlinds().resource, BLINDS);
+      expect(await card()).not.toBeNull();
+
+      fail(
+        lastBlinds().resource,
+        new ApiError('client', 404, [{ message: 'Blinds not found', code: 'NOT_FOUND_BLINDS' }]),
+      );
+      expect(await card()).toBeNull();
+    });
+
+    it('still tells a 404 without the code of the service', async () => {
+      await page();
+      fail(lastBlinds().resource, new ApiError('client', 404, [{ message: 'Not Found' }]));
+
+      expect(await card()).not.toBeNull();
+    });
+
     it('tells a failure before any answer: nobody knows then whether the room has blinds', async () => {
       await page();
       fail(lastBlinds().resource, new ApiError('server', 503));
