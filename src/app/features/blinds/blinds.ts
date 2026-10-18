@@ -7,7 +7,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { Observable, catchError, concatMap, from, map, of, toArray } from 'rxjs';
 
-import { toApiError } from '../../core/api/api-error';
 import { DeviceCommands } from '../../core/api/device-commands';
 import { isRecord } from '../../core/util/is-record';
 import { ScheduleEntry } from '../../data-access/blinds/blind-schedule';
@@ -171,10 +170,13 @@ export class Blinds {
         };
   });
 
-  protected schedulesCount(room: BlindRoom): number | undefined {
+  /** How many schedules move a blind of each room - once per answer, not per check of the view. */
+  protected readonly schedulesCount = computed((): ReadonlyMap<string, number> | undefined => {
     const entries = this.entries();
-    return entries === undefined ? undefined : schedulesOf(room, entries).length;
-  }
+    return entries === undefined
+      ? undefined
+      : new Map(this.rooms().map((room) => [room.room, schedulesOf(room, entries).length]));
+  });
 
   /**
    * Every room with blinds, one after the other - the service has no command for the house. The
@@ -186,10 +188,8 @@ export class Blinds {
     const call: Observable<readonly BlindOutcome[]> = from(rooms).pipe(
       concatMap((room) =>
         this.api.moveRoom(room, command).pipe(
-          catchError((failure: unknown) => {
-            const code = toApiError(failure).messages.find((entry) => entry.code)?.code;
-            return of([{ name: room, ...(code ? { code } : {}) }]);
-          }),
+          // the house names the room; its own command, from its card, tells why
+          catchError(() => of([{ name: room }])),
         ),
       ),
       toArray(),

@@ -11,12 +11,12 @@ describe('DeviceCommands', () => {
     const read = () => new Promise<void>((resolve) => (readBack = resolve));
 
     commands.send(1, of(undefined), read);
-    expect(commands.stateOf(1)).toEqual({ sending: true });
+    expect(commands.stateOf(1)).toMatchObject({ sending: true });
 
     readBack();
     await Promise.resolve();
     await Promise.resolve();
-    expect(commands.stateOf(1)).toEqual({ sending: false, sent: true });
+    expect(commands.stateOf(1)).toMatchObject({ sending: false, sent: true });
   });
 
   it('sends nothing to a device whose command is still on its way', () => {
@@ -56,6 +56,21 @@ describe('DeviceCommands', () => {
 
     commands.send('room', of(['Door']));
 
-    expect(commands.stateOf('room')).toEqual({ sending: false, sent: true, answer: ['Door'] });
+    expect(commands.stateOf('room')).toMatchObject({
+      sending: false,
+      sent: true,
+      answer: ['Door'],
+    });
+  });
+
+  // the line of a card tells the newest outcome: the order is shared by every tracker
+  it('numbers the commands in the order they were sent, across trackers', () => {
+    const blinds = new DeviceCommands<number>();
+    const rooms = new DeviceCommands<string>();
+
+    blinds.send(1, of(undefined));
+    rooms.send('office', of(undefined));
+
+    expect(rooms.stateOf('office')!.order!).toBeGreaterThan(blinds.stateOf(1)!.order!);
   });
 });

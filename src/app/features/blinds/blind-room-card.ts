@@ -22,6 +22,15 @@ export type AddressedBlind = Blind & { readonly id: number };
 /** The positions a blind with `positioning` is offered, 0 closed ... 100 open. */
 export const POSITIONS = [0, 25, 50, 75, 100] as const;
 
+/** A command of the card that has come to an end, for the line of the state. */
+interface Outcome {
+  readonly order: number;
+  readonly state: CommandState<unknown>;
+  /** The blind it was for, by its name on the card; none for the room. */
+  readonly about?: string;
+  readonly skipped: readonly BlindOutcome[];
+}
+
 /** What the line of the state of a card says: the last failure, or what a command skipped. */
 export interface CardStatus {
   readonly text: DisplayText;
@@ -98,26 +107,37 @@ export class BlindRoomCard {
     () => this.roomState()?.sending === true || this.houseBusy(),
   );
 
-  /** The line of the state: a room command first, then the failure of a blind. */
+  /**
+   * The line of the state: what the newest command of the card came to - the room's or a blind's,
+   * whichever was sent last. A failure a later command has made old is not told any more (found
+   * in review); a command still on its way says nothing yet.
+   */
   protected readonly status = computed((): CardStatus | undefined => {
     const room = this.roomState();
-    if (room?.error) {
-      return { text: failureOf(room) };
+    const outcomes: Outcome[] = [
+      ...(room && !room.sending
+        ? [{ order: room.order ?? 0, state: room, skipped: room.answer ?? [] }]
+        : []),
+      ...this.shown().flatMap(({ blind, name }) => {
+        const state = this.commands().stateOf(blind.id);
+        return state && !state.sending
+          ? [{ order: state.order ?? 0, state, about: name ?? blind.name, skipped: [] }]
+          : [];
+      }),
+    ];
+    const newest = outcomes.reduce<Outcome | undefined>(
+      (best, one) => (best === undefined || one.order > best.order ? one : best),
+      undefined,
+    );
+    if (newest?.state.error) {
+      return { text: failureOf(newest.state), ...(newest.about ? { about: newest.about } : {}) };
     }
-    const skipped = room?.answer ?? [];
-    if (skipped.length > 0) {
-      return {
-        text: { key: 'blinds.room.skipped', params: { count: skipped.length } },
-        about: skipped.map((one) => one.name ?? '?').join(', '),
-      };
-    }
-    for (const { blind, name } of this.shown()) {
-      const state = this.commands().stateOf(blind.id);
-      if (state?.error) {
-        return { text: failureOf(state), about: name ?? blind.name };
-      }
-    }
-    return undefined;
+    return newest === undefined || newest.skipped.length === 0
+      ? undefined
+      : {
+          text: { key: 'blinds.room.skipped', params: { count: newest.skipped.length } },
+          about: newest.skipped.map((one) => one.name ?? '?').join(', '),
+        };
   });
 
   protected stateOf(id: number) {

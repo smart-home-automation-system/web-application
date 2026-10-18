@@ -115,7 +115,7 @@
           <app-blind-room-card
             [room]="group.room"
             [blinds]="group.blinds"
-            [schedules]="schedulesCount(group)"
+            [schedules]="schedulesCount()?.get(group.room)"
             [refresh]="refreshBlinds"
             [commands]="blindCommands"
             [roomCommands]="roomCommands"

@@ -11,7 +11,16 @@ export interface CommandState<A = void> {
   readonly sent?: boolean;
   /** What the answer said of the command itself (a room: the blinds it skipped); never a state. */
   readonly answer?: A;
+  /**
+   * When the command was sent, in the order of every command of the application: what to tell
+   * when two devices have something to say - the newest outcome, not a failure a later command
+   * has since made old (HAS-252, found in review).
+   */
+  readonly order?: number;
 }
+
+// shared by every tracker, so that a room command and a command to one of its blinds compare
+let sentSoFar = 0;
 
 /**
  * The commands of a page to the devices of the house (HAS-232, HAS-252), by device: one at a time
@@ -36,7 +45,8 @@ export class DeviceCommands<K, A = void> {
     if (this.stateOf(key)?.sending) {
       return;
     }
-    this.set(key, { sending: true });
+    const order = ++sentSoFar;
+    this.set(key, { sending: true, order });
     let answer: A | undefined;
     const done = (state: CommandState<A>) => {
       if (readBack === undefined) {
@@ -47,9 +57,9 @@ export class DeviceCommands<K, A = void> {
     };
     call.subscribe({
       next: (value) => (answer = value),
-      error: (failure: unknown) => done({ sending: false, error: toApiError(failure) }),
+      error: (failure: unknown) => done({ sending: false, error: toApiError(failure), order }),
       complete: () =>
-        done({ sending: false, sent: true, ...(answer === undefined ? {} : { answer }) }),
+        done({ sending: false, sent: true, order, ...(answer === undefined ? {} : { answer }) }),
     });
   }
 

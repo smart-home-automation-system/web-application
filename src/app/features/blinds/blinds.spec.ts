@@ -146,6 +146,35 @@ describe('Blinds', () => {
     );
   });
 
+  // found in review: a failure a later command has made old is not told any more
+  it('tells the newest outcome of a card, not a failure a later command made old', async () => {
+    const office = room('office');
+    const status = () => text(office.querySelector('[data-testid="room-status"]'));
+
+    office.querySelector<HTMLButtonElement>('.blind__commands button')!.click();
+    await settled();
+    http
+      .expectOne((call) => call.url === '/home/blinds/2')
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await settled();
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/blinds').flush(BLINDS);
+    await settled();
+    expect(status()).toContain('Door:');
+
+    office.querySelector<HTMLButtonElement>('[data-testid="room-open"]')!.click();
+    await settled();
+    http
+      .expectOne((call) => call.url === '/home/blinds/rooms/office')
+      .flush({ moved: [], failed: [] }, { status: 202, statusText: 'Accepted' });
+    await settled();
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/blinds').flush(BLINDS);
+    await settled();
+
+    expect(status()).toBe('');
+  });
+
   it('moves the whole house room by room, a room that failed told by its name', async () => {
     page().querySelector<HTMLButtonElement>('[data-testid="house-close"]')!.click();
     await settled();

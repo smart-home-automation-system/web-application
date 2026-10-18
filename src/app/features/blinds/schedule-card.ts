@@ -34,7 +34,7 @@ import { describeBlindsError } from './blinds-errors';
 /** A blind a schedule moves, as the card lists it. */
 interface TargetRow {
   readonly key: string;
-  /** The blind, when the target is one the page knows - which is what its pause needs. */
+  /** The blind, when it is one of the room the card is shown for - which keeps the target listed. */
   readonly blind?: AddressedBlind;
   /** Its name, or the room for a target that is a whole room. */
   readonly name?: string;
