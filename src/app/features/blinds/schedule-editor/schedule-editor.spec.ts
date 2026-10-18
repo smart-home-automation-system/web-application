@@ -199,8 +199,24 @@ describe('ScheduleEditor', () => {
       expect(byTestId('today-decision')?.textContent).toContain('waiting for the conditions');
       expect((byTestId('schedule-name') as HTMLInputElement).value).toBe('Summer shade');
       expect(byTestId('schedule-targets')?.textContent).toContain('Office window blinds');
+      // a blind the blinds service does not know: kept, by its id of the registry
+      expect(byTestId('schedule-targets')?.textContent).toContain('Blind 99');
       expect(element().querySelectorAll('[data-testid="condition-row"]')).toHaveLength(2);
       expect(byTestId('schedule-position-value')?.textContent).toContain('30');
+    });
+
+    it('tells an empty read after a save as a failed read, and keeps the form', async () => {
+      byTestId('schedule-save')!.click();
+      await settle();
+      http.expectOne('/home/blinds/schedules/2').flush(STORED);
+      await settle();
+      http.expectOne('/home/blinds/schedules/2').flush(null);
+      await settle();
+      http.expectOne('/home/blinds/schedules/2/today').flush({ scheduleId: 2 });
+      await settle();
+
+      expect(element().querySelector('form')).not.toBeNull();
+      expect(said()).toContain('The schedule was saved, but could not be read back.');
     });
 
     it('sends it back whole and unchanged, then reads it again', async () => {
@@ -290,6 +306,26 @@ describe('ScheduleEditor', () => {
       'The blinds service does not know this schedule.',
     );
     expect(element().querySelector('form')).toBeNull();
+  });
+
+  it('refuses to send back a value this version does not offer', async () => {
+    open('5');
+    await settle();
+    http.expectOne('/home/blinds/schedules/5').flush({
+      ...STORED,
+      id: 5,
+      window: { from: { kind: 'noon', offsetMinutes: 0 }, to: STORED.window?.to },
+      conditions: [{ metric: 'humidity', operator: 'gt', threshold: 80, holdMinutes: 0 }],
+    });
+    http.expectOne('/home/blinds').flush(BLINDS);
+    http.expectOne('/home/blinds/schedules/5/today').flush({ scheduleId: 5 });
+    await settle();
+
+    byTestId('schedule-save')!.click();
+    await settle();
+
+    expect(byTestId('unknown-values')?.textContent).toContain('noon, humidity');
+    // nothing was sent: verify() finds no request
   });
 
   it('takes an address that is no id for a schedule nobody knows', async () => {

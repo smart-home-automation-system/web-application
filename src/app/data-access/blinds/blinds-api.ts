@@ -81,6 +81,11 @@ export class BlindsApi {
     });
   }
 
+  /** Every blind, by room, read once - what a form chooses from (the editor of a schedule). */
+  readBlinds(): Observable<readonly RoomBlinds[] | null> {
+    return this.api.get<readonly RoomBlinds[] | null>('/blinds');
+  }
+
   /**
    * Every schedule with what the engine makes of it today (HAS-252): the list, then the day of
    * each, one call after the other. One resource, so the page tells one freshness and one failure

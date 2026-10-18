@@ -36,7 +36,8 @@ import { shortName } from '../../../shared/device-names/device-names';
 import { DisplayTextPipe } from '../../../shared/display-text/display-text.pipe';
 import { problemOf, validator } from '../../../shared/form-rules/form-rules';
 import { LocalNumberPipe } from '../../../shared/local-number/local-number.pipe';
-import { decisionText } from '../blind-labels';
+import { DAY_TYPE_LABELS, METRIC_LABELS, decisionText } from '../blind-labels';
+import { AddressedBlind } from '../blind-room-card';
 import { blindsOf, floorsOf } from '../blinds';
 import { describeBlindsError } from '../blinds-errors';
 import { ConditionForm, WindowEndForm, targetKey, targetOf } from './schedule-form';
@@ -45,7 +46,6 @@ import {
   DAY_TYPES,
   MAX_CONDITIONS,
   MAX_HOLD_MINUTES,
-  MAX_NAME_CHARACTERS,
   MAX_OFFSET_MINUTES,
   METRICS,
   WINDOW_KINDS,
@@ -65,11 +65,15 @@ interface TargetOption {
   /** What the field shows once it is chosen: the room or the whole name of the blind. */
   readonly chosen?: string;
   readonly wholeRoom?: boolean;
+  /** A blind the select has no name for: told by its id of the registry. */
+  readonly blindId?: number;
 }
 
 /** The options of one room, or of what the blinds no longer know (`room` left out). */
 interface TargetGroup {
   readonly room?: string;
+  /** For the group without a room: whether the blinds answered, so that they are known not to have it. */
+  readonly answered?: boolean;
   readonly options: readonly TargetOption[];
 }
 
@@ -79,22 +83,6 @@ type Load =
   | { readonly state: 'failed'; readonly error: ApiError }
   | { readonly state: 'missing' }
   | { readonly state: 'ready' };
-
-const METRIC_NAMES: Readonly<Record<string, MessageKey>> = {
-  illuminance: 'blinds.schedule.metric.illuminance',
-  'outside temperature': 'blinds.schedule.metric.outsideTemperature',
-  'wind gust': 'blinds.schedule.metric.windGust',
-  raining: 'blinds.schedule.metric.raining',
-  'window closed': 'blinds.schedule.metric.windowClosed',
-};
-
-const TRUTHS: Readonly<Record<string, { yes: MessageKey; no: MessageKey }>> = {
-  raining: { yes: 'blinds.schedule.metric.raining', no: 'blinds.schedule.metric.notRaining' },
-  'window closed': {
-    yes: 'blinds.schedule.metric.windowClosed',
-    no: 'blinds.schedule.metric.windowOpen',
-  },
-};
 
 /**
  * The editor of a schedule of the blinds (HAS-253, the administrator's): `/blinds/schedules/new`
@@ -148,7 +136,12 @@ export class ScheduleEditor {
   /** The schedule to change; `undefined` for a new one. */
   protected readonly id = idOf(this.param);
 
-  protected readonly blinds = this.api.watchBlinds();
+  /**
+   * The blinds to choose from, read once - the select needs their names, not their state, so
+   * nothing is polled. `undefined` until they answered with a list.
+   */
+  protected readonly blinds = signal<readonly AddressedBlind[] | undefined>(undefined);
+  protected readonly blindsError = signal<ApiError | undefined>(undefined);
   protected readonly today: PollingResource<ScheduleToday | null> | undefined =
     this.id === undefined ? undefined : this.api.watchToday(this.id);
 
@@ -203,21 +196,15 @@ export class ScheduleEditor {
   protected readonly ACTIONS = ACTIONS;
   protected readonly METRICS = METRICS;
   protected readonly MAX_CONDITIONS = MAX_CONDITIONS;
-  protected readonly MAX_NAME_CHARACTERS = MAX_NAME_CHARACTERS;
   protected readonly MAX_OFFSET_MINUTES = MAX_OFFSET_MINUTES;
   protected readonly MAX_HOLD_MINUTES = MAX_HOLD_MINUTES;
-  protected readonly METRIC_NAMES = METRIC_NAMES;
-  protected readonly TRUTHS = TRUTHS;
+  protected readonly METRIC_LABELS = METRIC_LABELS;
+  protected readonly DAY_TYPE_LABELS = DAY_TYPE_LABELS;
   protected readonly problemOf = problemOf;
   protected readonly isTruth = isTruth;
   protected readonly rangeOf = rangeOf;
   protected readonly describeError = describeBlindsError;
 
-  protected readonly dayTypeLabels: Readonly<Record<string, MessageKey>> = {
-    workday: 'blinds.schedule.dayType.workday',
-    'day off': 'blinds.schedule.dayType.dayOff',
-    any: 'blinds.schedule.dayType.any',
-  };
   protected readonly kindLabels: Readonly<Record<string, MessageKey>> = {
     clock: 'blinds.editor.end.clock',
     sunrise: 'blinds.editor.end.sunrise',
@@ -238,7 +225,7 @@ export class ScheduleEditor {
    * not drop it unseen.
    */
   protected readonly targetGroups = computed((): readonly TargetGroup[] => {
-    const rooms = floorsOf(blindsOf(this.blinds.value()) ?? []).flatMap((floor) => floor.rooms);
+    const rooms = floorsOf(this.blinds() ?? []).flatMap((floor) => floor.rooms);
     const groups: TargetGroup[] = rooms.map(({ room, blinds }) => ({
       room,
       options: [
@@ -260,10 +247,12 @@ export class ScheduleEditor {
       : [
           ...groups,
           {
+            // until the blinds answered, nobody has said they are unknown
+            answered: this.blinds() !== undefined,
             options: held.map((key) =>
               key.startsWith('room:')
                 ? { key, chosen: key.slice('room:'.length), wholeRoom: true }
-                : { key },
+                : { key, blindId: Number(key.slice('blind:'.length)) },
             ),
           },
         ];
@@ -312,7 +301,29 @@ export class ScheduleEditor {
     } else if (this.id !== undefined) {
       void this.read(this.id, true);
     }
+    firstValueFrom(this.api.readBlinds()).then(
+      (answer) => this.blinds.set(blindsOf(answer)),
+      (failure: unknown) => this.blindsError.set(toApiError(failure)),
+    );
   }
+
+  /**
+   * The values of the stored schedule this version does not offer - a kind of an end, a metric, a
+   * day type, an action - as they came. Sent back unchanged they would be read as something else
+   * by nobody, or mixed with fields of another kind: the form refuses to save until each is chosen
+   * anew.
+   */
+  protected readonly unknownValues = computed((): readonly string[] => {
+    const known = (offered: readonly string[], value: string | undefined) =>
+      value === undefined || offered.includes(value) ? [] : [value];
+    return [
+      ...known(DAY_TYPES, this.dayType()),
+      ...known(WINDOW_KINDS, this.from.kind()),
+      ...known(WINDOW_KINDS, this.to.kind()),
+      ...this.conditions().flatMap((row) => known(METRICS, row.metric())),
+      ...known(ACTIONS, this.action()),
+    ];
+  });
 
   protected setKind(end: WindowEndForm, kind: string): void {
     end.setKind(kind);
@@ -355,7 +366,8 @@ export class ScheduleEditor {
       controls.some((control) => control.invalid) ||
       this.dayType() === undefined ||
       this.action() === undefined ||
-      this.windowEmpty() !== undefined
+      this.windowEmpty() !== undefined ||
+      this.unknownValues().length > 0
     ) {
       return;
     }
@@ -421,7 +433,15 @@ export class ScheduleEditor {
         return false;
       }
       if (!isRecord(schedule)) {
-        this.load.set({ state: 'missing' });
+        // after a save the schedule exists: an empty answer is a read that failed, not a schedule gone
+        if (this.load().state === 'ready') {
+          this.saveError.set({
+            error: new ApiError('invalid-response', 200),
+            summary: 'blinds.editor.readBackFailed',
+          });
+        } else {
+          this.load.set({ state: 'missing' });
+        }
         return false;
       }
       this.stored.set(schedule);

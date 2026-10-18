@@ -73,7 +73,6 @@
                   matInput
                   autocomplete="off"
                   data-testid="schedule-name"
-                  [maxlength]="MAX_NAME_CHARACTERS"
                   [formControl]="name"
                 />
                 @if (problemOf(name); as problem) {
@@ -98,7 +97,9 @@
                   (change)="dayType.set($event.value)"
                 >
                   @for (one of DAY_TYPES; track one) {
-                    <mat-button-toggle [value]="one">{{ t(dayTypeLabels[one]) }}</mat-button-toggle>
+                    <mat-button-toggle [value]="one">{{
+                      t(DAY_TYPE_LABELS[one])
+                    }}</mat-button-toggle>
                   }
                 </mat-button-toggle-group>
                 @if (attempted() && dayType() === undefined) {
@@ -221,19 +222,30 @@
                         }}{{
                           chosen.option?.wholeRoom
                             ? t('blinds.schedule.wholeRoom') + ' ' + chosen.option?.chosen
-                            : (chosen.option?.chosen ?? t('blinds.schedule.unknownBlind'))
+                            : (chosen.option?.chosen ??
+                              t('blinds.editor.blindId', { id: chosen.option?.blindId ?? '?' }))
                         }}</span
                       >
                     }
                   </mat-select-trigger>
                   @for (group of targetGroups(); track group.room ?? '') {
-                    <mat-optgroup [label]="group.room ?? t('blinds.editor.unknownTargets')">
+                    <mat-optgroup
+                      [label]="
+                        group.room ??
+                        (group.answered
+                          ? t('blinds.editor.unknownTargets')
+                          : t('blinds.editor.unreadTargets'))
+                      "
+                    >
                       @for (option of group.options; track option.key) {
                         <mat-option [value]="option.key">
                           @if (option.wholeRoom) {
                             {{ t('blinds.schedule.wholeRoom') }} {{ option.chosen }}
                           } @else {
-                            {{ option.label ?? t('blinds.schedule.unknownBlind') }}
+                            {{
+                              option.label ??
+                                t('blinds.editor.blindId', { id: option.blindId ?? '?' })
+                            }}
                           }
                         </mat-option>
                       }
@@ -245,7 +257,7 @@
                 }
               </mat-form-field>
               <app-api-error-strip
-                [error]="blinds.error()"
+                [error]="blindsError()"
                 [summary]="t('blinds.editor.blindsFailed')"
                 [describeWith]="describeError"
               />
@@ -279,7 +291,7 @@
                       (selectionChange)="row.setMetric($event.value); saved.set(false)"
                     >
                       @for (one of METRICS; track one) {
-                        <mat-option [value]="one">{{ t(METRIC_NAMES[one]) }}</mat-option>
+                        <mat-option [value]="one">{{ t(METRIC_LABELS[one].name) }}</mat-option>
                       }
                     </mat-select>
                   </mat-form-field>
@@ -288,15 +300,15 @@
                     <mat-button-toggle-group
                       hideSingleSelectionIndicator
                       data-testid="condition-truth"
-                      [attr.aria-label]="t(METRIC_NAMES[metric])"
+                      [attr.aria-label]="t(METRIC_LABELS[metric].name)"
                       [value]="row.truth()"
                       (change)="row.truth.set($event.value)"
                     >
                       <mat-button-toggle [value]="true">{{
-                        t(TRUTHS[metric].yes)
+                        t(METRIC_LABELS[metric].truth!.yes)
                       }}</mat-button-toggle>
                       <mat-button-toggle [value]="false">{{
-                        t(TRUTHS[metric].no)
+                        t(METRIC_LABELS[metric].truth!.no)
                       }}</mat-button-toggle>
                     </mat-button-toggle-group>
                   } @else {
@@ -424,6 +436,12 @@
               }
             </section>
 
+            @if (unknownValues().length > 0) {
+              <!-- the values as the service gave them, never a parameter of a translation -->
+              <p class="problem" role="alert" data-testid="unknown-values">
+                {{ t('blinds.editor.problem.unknownValues') }} {{ unknownValues().join(', ') }}
+              </p>
+            }
             @if (saveError(); as failure) {
               <app-api-error-strip
                 [error]="failure.error"

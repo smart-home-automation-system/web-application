@@ -74,6 +74,8 @@ describe('schedule rules', () => {
     expect(offsetProblem('-180')).toBeUndefined();
     expect(offsetProblem('181')).toBe('blinds.editor.problem.offsetRange');
     expect(offsetProblem('1.5')).toBe('blinds.editor.problem.wholeMinutes');
+    // the field says plus is after
+    expect(offsetProblem('+30')).toBeUndefined();
   });
 
   it('holds a condition 0 to 120 whole minutes', () => {

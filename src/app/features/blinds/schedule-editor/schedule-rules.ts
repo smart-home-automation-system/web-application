@@ -53,7 +53,8 @@ export function rangeOf(metric: string): MetricRange | undefined {
 }
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
-const INTEGER = /^-?\d+$/;
+// "+30" is thirty minutes after: the field says plus is after
+const INTEGER = /^[+-]?\d+$/;
 const DECIMAL = /^-?\d+([.,]\d+)?$/;
 
 /** The name as it is sent: the service refuses a space at either end, so none is kept. */

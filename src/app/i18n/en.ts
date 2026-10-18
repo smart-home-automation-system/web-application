@@ -610,6 +610,8 @@ export const en = {
       targetsNote:
         'A whole room moves every blind it has when the schedule runs, also one added to it later.',
       unknownTargets: 'Not known to the blinds service',
+      unreadTargets: 'Chosen - the blinds service has not named them yet',
+      blindId: 'Blind {{ id }}',
       blindsFailed: 'The blinds to choose from could not be read.',
       condition: 'Condition {{ number }}',
       metric: 'Measurement',
@@ -670,6 +672,7 @@ export const en = {
         holdRange: 'From 0 to 120 minutes.',
         actionMissing: 'Choose what the schedule does.',
         invalid: 'The schedule breaks a rule of the blinds service.',
+        unknownValues: 'Saved with values this version does not offer - choose anew:',
       },
     },
     error: {

@@ -605,6 +605,8 @@ export const pl: Messages = {
       targetsNote:
         'Cały pokój to każda jego roleta w chwili uruchomienia, także dodana do niego później.',
       unknownTargets: 'Nieznane usłudze rolet',
+      unreadTargets: 'Wybrane - usługa rolet jeszcze ich nie nazwała',
+      blindId: 'Roleta {{ id }}',
       blindsFailed: 'Nie udało się odczytać rolet do wyboru.',
       condition: 'Warunek {{ number }}',
       metric: 'Pomiar',
@@ -665,6 +667,7 @@ export const pl: Messages = {
         holdRange: 'Od 0 do 120 minut.',
         actionMissing: 'Wybierz, co robi harmonogram.',
         invalid: 'Harmonogram łamie regułę usługi rolet.',
+        unknownValues: 'Zapisany z wartościami, których ta wersja nie oferuje - wybierz ponownie:',
       },
     },
     error: {
