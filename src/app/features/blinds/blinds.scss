@@ -56,10 +56,17 @@ app-sources-strip {
   font-weight: 600;
 }
 
+// the three commands of the house on one line, of one width, at every width of the window (owner,
+// 2026-10-18): short words - the title of the card says it is the whole house
 .house {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+
+  button {
+    min-width: 0;
+    padding-inline: 8px;
+  }
 }
 
 // a line of its own, there when empty too: what appears in it moves nothing

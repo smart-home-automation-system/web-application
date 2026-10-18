@@ -59,6 +59,7 @@
             (click)="moveHouse('open')"
           >
             <mat-icon>keyboard_double_arrow_up</mat-icon>{{ t('blinds.house.open') }}
+            <span class="visually-hidden">&ngsp;{{ t('blinds.house.commands') }}</span>
           </button>
           <button
             matButton="outlined"
@@ -68,6 +69,7 @@
             (click)="moveHouse('stop')"
           >
             <mat-icon>stop_circle</mat-icon>{{ t('blinds.house.stop') }}
+            <span class="visually-hidden">&ngsp;{{ t('blinds.house.commands') }}</span>
           </button>
           <button
             matButton="outlined"
@@ -77,6 +79,7 @@
             (click)="moveHouse('close')"
           >
             <mat-icon>keyboard_double_arrow_down</mat-icon>{{ t('blinds.house.close') }}
+            <span class="visually-hidden">&ngsp;{{ t('blinds.house.commands') }}</span>
           </button>
         </div>
         <p class="status" role="status" data-testid="house-status">

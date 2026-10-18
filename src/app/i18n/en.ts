@@ -463,10 +463,10 @@ export const en = {
     house: {
       title: 'Whole house',
       count: 'Blinds: {{ blinds }} in rooms: {{ rooms }}',
-      commands: 'Every blind of the house',
-      open: 'Open all',
-      stop: 'Stop all',
-      close: 'Close all',
+      commands: 'every blind of the house',
+      open: 'Open',
+      stop: 'Stop',
+      close: 'Close',
       skipped: 'Not taken: {{ count }}',
     },
     room: {

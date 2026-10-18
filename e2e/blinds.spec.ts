@@ -64,7 +64,7 @@ test('opens and closes every blind of the house', async ({ page }) => {
   const house = page.getByTestId('house');
 
   await expect(house).toContainText('Blinds: 3 in rooms: 2');
-  await house.getByRole('button', { name: 'Close all' }).click();
+  await house.getByRole('button', { name: 'Close every blind of the house' }).click();
   await expect(
     room(page, 'office').locator('[data-blind="2"] [data-testid="blind-position"]'),
   ).toContainText('0 %');

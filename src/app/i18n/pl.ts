@@ -460,10 +460,10 @@ export const pl: Messages = {
     house: {
       title: 'Cały dom',
       count: 'Rolety: {{ blinds }}, pokoje: {{ rooms }}',
-      commands: 'Wszystkie rolety domu',
-      open: 'Otwórz wszystkie',
-      stop: 'Zatrzymaj wszystkie',
-      close: 'Zamknij wszystkie',
+      commands: 'wszystkie rolety domu',
+      open: 'Otwórz',
+      stop: 'Zatrzymaj',
+      close: 'Zamknij',
       skipped: 'Nie przyjęto: {{ count }}',
     },
     room: {
