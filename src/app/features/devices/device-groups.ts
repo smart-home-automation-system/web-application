@@ -1,7 +1,7 @@
 import { RegisteredDevice } from '../../data-access/devices/device-registry-api';
 import { DEVICE_KINDS, ROOM_NAMES } from '../../data-access/household/registry-values';
 import { MessageKey } from '../../i18n/messages';
-import { FLOORS } from '../heating/floors';
+import { FLOORS, OTHER_FLOOR } from '../../shared/floors/floors';
 
 /** The devices of one room, in the order of the page. */
 export interface RoomDevices {
@@ -57,7 +57,7 @@ export function groupByFloor(
       label,
       rooms: names.flatMap(roomOf),
     })),
-    { id: 'other', label: 'heating.rooms.floor.other' as const, rooms: elsewhere.flatMap(roomOf) },
+    { ...OTHER_FLOOR, rooms: elsewhere.flatMap(roomOf) },
   ].filter((floor) => floor.rooms.length > 0);
 }
 

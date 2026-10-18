@@ -1,0 +1,100 @@
+// The sources, then the rooms with blinds and the schedules after the holidays - each a grid of
+// cards across the page, as many side by side as its width allows (the house has a few rooms with
+// blinds on a floor: a row per floor, or a column for the schedules, left half the page empty)
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sources {
+  --app-domain: var(--app-domain-blinds);
+  align-self: center;
+  width: min(100%, 960px);
+}
+
+.sources__content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 6px 16px;
+  padding: 12px 16px;
+}
+
+.source {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.source__name {
+  font: var(--mat-sys-label-large);
+}
+
+.part {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  text-align: center;
+  color: var(--mat-sys-on-background);
+}
+
+.part__name {
+  margin: 0;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-background);
+}
+
+// the rooms: as many cards side by side as their width allows, each as tall as its blinds - a
+// room of one blind is not stretched to a room of four
+.rooms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+// the holidays and the schedules: cards side by side, each as tall as what it says
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.holidays {
+  --app-domain: var(--app-domain-blinds);
+}
+
+.holidays__list {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+.holidays__date {
+  font-weight: 600;
+}
+
+.holidays__reason,
+.holidays__note {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.holidays__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+}

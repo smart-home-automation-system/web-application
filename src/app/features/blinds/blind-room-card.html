@@ -1,0 +1,200 @@
+<ng-container *transloco="let t">
+  @let roomState = roomCommand();
+  <mat-card
+    appearance="outlined"
+    class="room card--domain"
+    data-testid="blind-room"
+    [attr.data-room]="room()"
+  >
+    <mat-card-header class="room__header">
+      <div mat-card-avatar class="domain-badge"><mat-icon>blinds</mat-icon></div>
+      <!-- a room is shown by its identifier, as everywhere in the application -->
+      <mat-card-title>{{ room() }}</mat-card-title>
+      <mat-card-subtitle
+        >{{ t(floor()) }} ·
+        {{ t('blinds.room.count', { count: blinds().length }) }}</mat-card-subtitle
+      >
+      <!-- the room at once: every blind of it, one after the other in the service -->
+      <span class="room__commands" role="group" [attr.aria-label]="t('blinds.room.commands')">
+        <button
+          matIconButton
+          type="button"
+          data-testid="room-open"
+          [disabled]="roomState?.sending"
+          [matTooltip]="t('blinds.room.open')"
+          matTooltipTouchGestures="off"
+          [attr.aria-label]="t('blinds.room.open') + ' ' + room()"
+          (click)="moveRoom('open')"
+        >
+          <mat-icon>keyboard_double_arrow_up</mat-icon>
+        </button>
+        <button
+          matIconButton
+          type="button"
+          data-testid="room-stop"
+          [disabled]="roomState?.sending"
+          [matTooltip]="t('blinds.room.stop')"
+          matTooltipTouchGestures="off"
+          [attr.aria-label]="t('blinds.room.stop') + ' ' + room()"
+          (click)="moveRoom('stop')"
+        >
+          <mat-icon>stop</mat-icon>
+        </button>
+        <button
+          matIconButton
+          type="button"
+          data-testid="room-close"
+          [disabled]="roomState?.sending"
+          [matTooltip]="t('blinds.room.close')"
+          matTooltipTouchGestures="off"
+          [attr.aria-label]="t('blinds.room.close') + ' ' + room()"
+          (click)="moveRoom('close')"
+        >
+          <mat-icon>keyboard_double_arrow_down</mat-icon>
+        </button>
+      </span>
+    </mat-card-header>
+
+    <mat-card-content class="room__content">
+      @if (roomState?.error; as error) {
+        <app-api-error-strip
+          [error]="error"
+          [summary]="t('rooms.commandFailed')"
+          [describeWith]="describeError"
+        />
+      }
+      @if (skipped().length > 0) {
+        <div class="room__skipped" data-testid="room-skipped">
+          <span>{{ t('blinds.room.skipped') }}</span>
+          <ul>
+            @for (one of skipped(); track $index) {
+              <li>
+                {{ one.name ?? t('rooms.unnamed') }}
+                @if (one.code !== undefined) {
+                  - {{ skippedReasonOf(one.code) | displayText }}
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <ul class="blinds">
+        @for (row of shown(); track row.blind.id) {
+          @let blind = row.blind;
+          @let command = stateOf(blind.id);
+          @let at = positionLabel({ state: blind });
+          <li class="blind" data-testid="blind" [attr.data-blind]="blind.id">
+            <div class="blind__head">
+              <span class="blind__name">{{ row.name ?? t('rooms.unnamed') }}</span>
+              <span class="blind__position" data-testid="blind-position">{{
+                t(at.key, { position: at.position })
+              }}</span>
+            </div>
+
+            <!-- what is known of it: who moved it last and when, its window, whether it answers -->
+            <div class="blind__facts">
+              @if (blind.movedAt | houseAge; as age) {
+                <span data-testid="blind-moved"
+                  >{{ t('blinds.blind.moved') }} {{ age }} ·
+                  {{ sourceText(blind.source) | displayText }}</span
+                >
+              } @else {
+                <span>{{ t('blinds.blind.notMoved') }}</span>
+              }
+              @if (row.window !== undefined && row.window !== 'no sensor') {
+                <span class="blind__window" [attr.data-state]="row.window">
+                  <mat-icon aria-hidden="true">{{ windowIcon(row.window) }}</mat-icon>
+                  {{ t(windowLabel(row.window)) }}
+                </span>
+              }
+              @if (blind.reachable === false) {
+                <span class="blind__warning" data-testid="blind-unreachable">{{
+                  t('rooms.blinds.unreachable')
+                }}</span>
+              } @else if (blind.reachable === undefined) {
+                <span>{{ t('blinds.blind.reachabilityUnknown') }}</span>
+              }
+            </div>
+
+            <span class="blind__controls">
+              <button
+                matButton="outlined"
+                type="button"
+                [disabled]="command?.sending"
+                (click)="move(blind, 'open')"
+              >
+                <mat-icon>arrow_upward</mat-icon>{{ t('rooms.blinds.open') }}
+                <span class="visually-hidden">{{ blind.name }}</span>
+              </button>
+              <button
+                matButton="outlined"
+                type="button"
+                [disabled]="command?.sending"
+                (click)="move(blind, 'stop')"
+              >
+                <mat-icon>stop</mat-icon>{{ t('rooms.blinds.stop') }}
+                <span class="visually-hidden">{{ blind.name }}</span>
+              </button>
+              <button
+                matButton="outlined"
+                type="button"
+                [disabled]="command?.sending"
+                (click)="move(blind, 'close')"
+              >
+                <mat-icon>arrow_downward</mat-icon>{{ t('rooms.blinds.close') }}
+                <span class="visually-hidden">{{ blind.name }}</span>
+              </button>
+            </span>
+
+            <!-- a slider only for a blind that can be sent to a position -->
+            @if (blind.positioning === true) {
+              <span class="blind__slider">
+                <mat-slider min="0" max="100" step="10" discrete>
+                  <input
+                    matSliderThumb
+                    #blindPosition
+                    [value]="blind.position ?? 50"
+                    [attr.aria-label]="t('rooms.blinds.positionLabel') + ' ' + (blind.name ?? '')"
+                  />
+                </mat-slider>
+                <button
+                  matButton
+                  type="button"
+                  [disabled]="command?.sending"
+                  (click)="moveTo(blind, blindPosition.valueAsNumber)"
+                >
+                  {{ t('rooms.blinds.goTo') }}
+                </button>
+              </span>
+            }
+
+            <div class="blind__pause">
+              <mat-slide-toggle
+                data-testid="blind-pause"
+                [checked]="blind.schedulePausedSince !== undefined"
+                [disabled]="command?.sending"
+                (toggleChange)="pause(blind)"
+              >
+                {{ t('rooms.blinds.pause') }}
+              </mat-slide-toggle>
+              @if (blind.schedulePausedSince | houseAge; as age) {
+                <span class="blind__note" data-testid="blind-paused"
+                  >{{ t('rooms.blinds.pausedSince') }} {{ age }}</span
+                >
+              }
+            </div>
+
+            @if (command?.error; as error) {
+              <app-api-error-strip
+                [error]="error"
+                [summary]="t('rooms.commandFailed')"
+                [describeWith]="describeError"
+              />
+            }
+          </li>
+        }
+      </ul>
+    </mat-card-content>
+  </mat-card>
+</ng-container>

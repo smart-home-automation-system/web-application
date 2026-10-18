@@ -1,0 +1,103 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('blinds.title') }}</h1>
+  </header>
+
+  <!-- the three calls the page is made of, each with its freshness and its failure, told once -->
+  <mat-card appearance="outlined" class="sources card--domain" data-testid="sources">
+    <mat-card-content class="sources__content">
+      @for (source of sources; track source.id) {
+        <div class="source" [attr.data-source]="source.id">
+          <span class="source__name">{{ t(source.label) }}</span>
+          <app-data-freshness
+            [lastUpdated]="source.resource.lastUpdated()"
+            [stale]="source.resource.stale()"
+          />
+          <app-api-error-strip [error]="source.resource.error()" />
+        </div>
+      }
+    </mat-card-content>
+    @if (blinds.loading()) {
+      <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('blinds.loading')" />
+    }
+  </mat-card>
+
+  <!-- the blinds: the rooms that have some, in the order of the floors, one grid across the page -
+       a floor of the house has few rooms with blinds, and a row per floor left half of it empty -->
+  <section class="part" [attr.aria-label]="t('blinds.sources.blinds')">
+    <h2 class="part__name">{{ t('blinds.sources.blinds') }}</h2>
+    @if (all() === undefined) {
+      @if (!blinds.loading()) {
+        <p class="note">{{ t('blinds.unreadable') }}</p>
+      }
+    } @else if (rooms().length === 0) {
+      <p class="note" data-testid="no-blinds">{{ t('blinds.none') }}</p>
+    }
+    <div class="rooms">
+      @for (group of rooms(); track group.room) {
+        <app-blind-room-card
+          [room]="group.room"
+          [floor]="group.floor"
+          [blinds]="group.blinds"
+          [refresh]="refreshBlinds"
+        />
+      }
+    </div>
+  </section>
+
+  <!-- the schedules - the one place of the application that shows them - after the holidays
+       they count as days off, in one row of cards across the page -->
+  <section class="part" data-testid="schedules">
+    <h2 class="part__name">{{ t('blinds.schedules.title') }}</h2>
+    <div class="cards">
+      <!-- the holidays: what the schedules count as days off besides the weekends -->
+      <mat-card appearance="outlined" class="holidays card--domain" data-testid="holidays">
+        <mat-card-header>
+          <div mat-card-avatar class="domain-badge"><mat-icon>event</mat-icon></div>
+          <mat-card-title>{{ t('blinds.holidays.title') }}</mat-card-title>
+          <mat-card-subtitle>{{
+            t('blinds.holidays.ahead', { days: HOLIDAYS_AHEAD_DAYS })
+          }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (holidays(); as list) {
+            @if (list.length === 0) {
+              <p class="holidays__note">{{ t('blinds.holidays.none') }}</p>
+            } @else {
+              <ul class="holidays__list">
+                @for (day of list; track day.date) {
+                  <li data-testid="holiday" [attr.data-date]="day.date">
+                    <span class="holidays__date">{{
+                      day.date + 'T00:00:00' | houseDateTime: DAY_FORMAT
+                    }}</span>
+                    <!-- the name the calendar gives, as it gives it -->
+                    <span class="holidays__reason">{{ day.reason ?? '' }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          } @else if (!days.loading()) {
+            <p class="holidays__note">{{ t('blinds.holidays.unknown') }}</p>
+          }
+          <p class="holidays__note">{{ t('blinds.holidays.note') }}</p>
+        </mat-card-content>
+      </mat-card>
+
+      @if (entries(); as list) {
+        @if (list.length === 0) {
+          <p class="note">{{ t('blinds.schedules.none') }}</p>
+        }
+        @for (entry of list; track entry.schedule.id ?? '#' + $index) {
+          <app-schedule-card
+            [entry]="entry"
+            [blinds]="all() ?? []"
+            [refreshSchedules]="refreshSchedules"
+            [refreshBlinds]="refreshBlinds"
+          />
+        }
+      } @else if (!schedules.loading()) {
+        <p class="note">{{ t('blinds.schedules.unreadable') }}</p>
+      }
+    </div>
+  </section>
+</ng-container>

@@ -17,7 +17,12 @@ const LIGHT: RegisteredDevice = {
   kind: 'light',
   enabled: true,
   vendor: 'shelly',
-  shelly: { address: '192.0.2.23', generation: 3, deviceId: 'shelly1pmg3-0a0b0c0d0e02', channel: 0 },
+  shelly: {
+    address: '192.0.2.23',
+    generation: 3,
+    deviceId: 'shelly1pmg3-0a0b0c0d0e02',
+    channel: 0,
+  },
   lightKind: 'relay',
 };
 
@@ -27,7 +32,12 @@ const DETAILS: DeviceDetails = {
   kind: 'light',
   enabled: true,
   vendor: 'shelly',
-  shelly: { address: '192.0.2.23', generation: 3, deviceId: 'shelly1pmg3-0a0b0c0d0e02', channel: 0 },
+  shelly: {
+    address: '192.0.2.23',
+    generation: 3,
+    deviceId: 'shelly1pmg3-0a0b0c0d0e02',
+    channel: 0,
+  },
   lightKind: 'relay',
 };
 
@@ -170,7 +180,12 @@ describe('DeviceRegistryApi', () => {
 
     // HAS-290: the opening sensors are the form's - cleared in it, they are not sent back
     it('sends the opening sensors of the form and not the ones the blinds had', async () => {
-      const blinds = { ...LIGHT, kind: 'blinds', lightKind: undefined, openingSensors: [9, 14] } as RegisteredDevice;
+      const blinds = {
+        ...LIGHT,
+        kind: 'blinds',
+        lightKind: undefined,
+        openingSensors: [9, 14],
+      } as RegisteredDevice;
       const rest = { ...DETAILS, lightKind: undefined };
 
       const cleared = await carriedOut(registry.replace(blinds, { ...rest, kind: 'blinds' }), {

@@ -67,6 +67,9 @@ describe('translations', () => {
       'rooms.pieces',
       'rooms.blinds.position',
       'rooms.blinds.stop',
+      // a number of minutes and a sign
+      'blinds.schedule.end.after',
+      'blinds.schedule.end.before',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

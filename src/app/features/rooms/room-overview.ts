@@ -105,10 +105,14 @@ export function toRoomOverview(
 
 /**
  * The blinds of a room as the owner reads them (2026-10-18): the door first, then the windows -
- * by name, so "window main" comes before "window second".
+ * by name, so "window main" comes before "window second". The blinds page orders them the same.
  */
-function doorsFirst(left: RegisteredDevice, right: RegisteredDevice): number {
-  const door = (device: RegisteredDevice) => (/\bdoor\b/i.test(device.name ?? '') ? 0 : 1);
+export function doorsFirst(
+  left: { readonly name?: string },
+  right: { readonly name?: string },
+): number {
+  const door = (device: { readonly name?: string }) =>
+    /\bdoor\b/i.test(device.name ?? '') ? 0 : 1;
   return door(left) - door(right) || (left.name ?? '').localeCompare(right.name ?? '');
 }
 

@@ -163,7 +163,8 @@ export class DeviceRegistryApi {
       ...registry,
       changing,
       add: (details) => change([this.api.post('/device/registry', sent(details))]),
-      replace: (before, details) => change([this.api.put(device(before.id), replaced(before, details))]),
+      replace: (before, details) =>
+        change([this.api.put(device(before.id), replaced(before, details))]),
       setEnabled: (id, enabled) =>
         change([this.api.post(`${device(id)}/${enabled ? 'enable' : 'disable'}`)]),
       remove: (id) => change([this.api.delete(device(id))]),
@@ -178,7 +179,12 @@ function sent(details: DeviceDetails): Record<string, unknown> {
 
 /** The fields of each binding this version sets itself. */
 const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  shelly: ['address', 'generation', 'deviceId', 'channel'] satisfies readonly (keyof ShellyBinding)[],
+  shelly: [
+    'address',
+    'generation',
+    'deviceId',
+    'channel',
+  ] satisfies readonly (keyof ShellyBinding)[],
   eaton: ['gateway', 'point'] satisfies readonly (keyof EatonBinding)[],
   bthome: ['address'] satisfies readonly (keyof BthomeBinding)[],
 };
@@ -189,7 +195,10 @@ const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
  * longer has is not sent, with whatever it held.
  */
 function replaced(before: SmartDevice, details: DeviceDetails): Record<string, unknown> {
-  const body: Record<string, unknown> = { ...unknownFieldsOf(before, KNOWN_FIELDS), ...sent(details) };
+  const body: Record<string, unknown> = {
+    ...unknownFieldsOf(before, KNOWN_FIELDS),
+    ...sent(details),
+  };
   for (const [binding, known] of Object.entries(KNOWN_BINDING_FIELDS)) {
     const held: unknown = (before as Record<string, unknown>)[binding];
     const kept: unknown = body[binding];

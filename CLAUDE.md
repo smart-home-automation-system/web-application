@@ -311,7 +311,8 @@ e2e/              # Playwright tests
     (154 px each, checked in both languages), a row that does not fill the page in its middle.
   - **The floors of `FLOORS` are the floors of the house plus `circulation`** (owner, 2026-10-17):
     the kitchen and the boiler room on the ground floor; the halls and the stairs a group of their
-    own, "Circulation" / "Komunikacja". The heating page shares the list. **Every room of the house has a card**, an
+    own, "Circulation" / "Komunikacja". The list is `shared/floors/floors.ts` (labels `floors.*`),
+    read by the heating, the devices, the rooms and the blinds. **Every room of the house has a card**, an
     empty one too (`groupByFloor` takes `ROOM_NAMES`): there is no global "add a device" any
     more - "Add" of a card is where a device is added to that room.
   - **The window of a room** (`RoomDialog`, the dialog of Material - themed in `_zorza.scss`,
@@ -354,9 +355,9 @@ e2e/              # Playwright tests
     never drops it unseen. `openingSensors` is in `KNOWN_FIELDS` - cleared in the form, it is
     not sent back - and in `sameDevice`. A sensor that blinds still name is not offered for
     removal (`blindsUsing`): the registry refuses it with `DEVICE_CONFLICT`, whose text names
-    both causes. The schedules of `blinds-service` have no page yet: when they get one it copies
-    `per blind`, `window`, `windowClosed`, `nextDay` and the empty-window text of
-    `INVALID_SCHEDULE` (HAS-290).
+    both causes. The schedules are shown on the blinds page (HAS-252: `per blind`, `window`,
+    `windowClosed`, `nextDay`); the empty-window text of `INVALID_SCHEDULE` belongs to the
+    editor of HAS-253.
   - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
     Polish a comma and no dot.
   - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,
@@ -404,7 +405,42 @@ e2e/              # Playwright tests
     without a sensor says nothing; a state this version does not know is "not heard of", never
     closed. The values are those of the window of a blind, the same words in both places.
   - **The dashboard writes to the house in five places now**: the heating switch, the two
-    registries, and - from this view - the blinds and the Eaton lights.
+    registries, and - from this view - the blinds and the Eaton lights. (The blinds page adds the
+    switch of a schedule of the blinds.)
+- **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
+  rooms in the menu, domain colour `blinds`, photo `blinds`) is every blind of `blinds-service`,
+  its schedules - **the one place of the application that shows them** (owner, 2026-10-18) - and
+  the holidays they count. What to keep:
+  - **Three calls, told once** in the strip of sources (the rule of the room view): `GET /blinds`,
+    the schedules and the calendar. **The schedules are one resource**
+    (`BlindsApi.watchSchedules`): the list, then `/schedules/{id}/today` of each, one after the
+    other; the day of one schedule that failed is `todayError` of that entry, told on its card -
+    the card then shows the rule as stored (a room target as "every blind of" the room). A
+    schedule without an id is shown without its day.
+  - **One grid of rooms, in the order of the floors** (`roomsByFloor`), the floor in the subtitle
+    of a card - not a row per floor: the house has five rooms with blinds on the ground floor and
+    one upstairs, and the rows (and before them a column for the schedules) left half of a wide
+    screen empty. The holidays and the schedules are a second grid under it.
+  - **Commands go through `DeviceCommands`** (`core/api/device-commands.ts`, shared with the
+    window of a room since this task): one per device at a time, the device read again before the
+    outcome is told, nothing optimistic. A room command (`POST /blinds/rooms/{room}`) answers with
+    the blinds it skipped and why (`failed` with a code) - **that** part of the answer is told, as
+    what the command came to (`answer` of the state), never as a state of a blind.
+  - **No switch flips itself** (`disableToggleValue`): the pause of a blind (on its card and at
+    each target of a schedule - the same pause, read from `schedulePausedSince`) and the switch of
+    a schedule (`/schedules/{id}/enable|disable`) move only when the read-back says so.
+  - **Every value of the service is its word** (`blind-labels.ts`): a source, a day type, a
+    decision, an outcome, a metric this version does not know is printed as it came, never read as
+    one it knows. **The times of a window are the service's text**, never a translation parameter
+    (`windowEndText` puts them next to the words). The codes of `BlindsError` have texts in
+    `blinds-errors.ts`, whose test lists them - a new code fails it.
+  - **The holidays are read only** (owner, 2026-10-18: "a day off is only a statutory holiday"): the
+    days off of the next 60 days from Monday to Friday (`holidaysOf`, by the date, never by the
+    reason); a weekend is not listed. Nothing here adds or removes a day of the household.
+  - **Not here until `blinds-service` has them** (owner, 2026-10-18): the protection against wind
+    and frost (HAS-249: `watchProtection`, the banner and its clear button) and whether a move was
+    confirmed (HAS-250: `lastCommandConfirmed`). `reachable` is shown - "not heard from since the
+    service started" while it is missing, never "unreachable".
 - **A history is a chart of what the service stored** (HAS-201, `shared/history-chart/`,
   used by the hot water and by the open room of the heating page). What to keep:
   - **The page asks with `from` / `to` and never chooses the bucket** - the services do, and say
@@ -718,7 +754,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
@@ -953,6 +989,12 @@ up in a production build.
   administration page changes what the registry and the profiles answer next, and it refuses
   what `database-service` refuses, with the same status and `code`. A unit test that changed
   it calls `resetHousehold()`.
+- **And so can the mock blinds and their schedules** (`blinds.fixtures.ts`, `schedules.fixtures.ts`):
+  a command, a room command, a pause and the switch of a schedule change what the next read
+  answers; what the engine makes of a schedule today is a fixed picture (one ran this morning,
+  one waits for the weather, one is switched off). The calendar (`calendar.fixtures.ts`) has the
+  weekends and the holidays of a fixed date - no Easter. A browser test of the holidays pins the
+  clock. `resetBlinds()` / `resetSchedules()` for a unit test that changed them.
 - **And so can the mock device registry** (`devices.fixtures.ts`): thirteen invented devices -
   addresses of the documentation range, made-up ids - whose writes change what the registry
   answers next and are refused as `database-service` refuses them (`INVALID_DEVICE` in the

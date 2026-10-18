@@ -1,0 +1,117 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.room {
+  --app-domain: var(--app-domain-blinds);
+}
+
+.room__header {
+  align-items: center;
+}
+
+// the commands of the room sit at the end of the header, on the line of its title
+.room__commands {
+  display: inline-flex;
+  margin-left: auto;
+}
+
+.room__content {
+  display: grid;
+  gap: 10px;
+}
+
+.room__skipped {
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-error-container);
+
+  ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+  }
+}
+
+.blinds {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.blind {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+.blind__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.blind__name {
+  font: var(--mat-sys-title-small);
+}
+
+.blind__position {
+  font: var(--mat-sys-body-large);
+  font-weight: 600;
+}
+
+.blind__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.blind__window {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.blind__window .mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.blind__warning {
+  color: var(--mat-sys-on-error-container);
+}
+
+.blind__controls,
+.blind__slider {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.blind__slider mat-slider {
+  flex: 1 1 140px;
+  max-width: 220px;
+}
+
+.blind__pause {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.blind__note {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

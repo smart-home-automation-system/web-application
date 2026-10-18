@@ -1,0 +1,198 @@
+<ng-container *transloco="let t">
+  @let stored = schedule();
+  @let day = today();
+  @let switching = switchState();
+  <mat-card
+    appearance="outlined"
+    class="schedule card--domain"
+    data-testid="schedule"
+    [attr.data-schedule]="stored.id"
+  >
+    <mat-card-header class="schedule__header">
+      <div mat-card-avatar class="domain-badge"><mat-icon>schedule</mat-icon></div>
+      <mat-card-title>{{ stored.name ?? t('blinds.schedule.unnamed') }}</mat-card-title>
+      <mat-card-subtitle
+        >{{ dayType() | displayText }} · {{ action() | displayText }}</mat-card-subtitle
+      >
+      <!-- the switch shows the service: it does not flip itself, and moves with the read-back -->
+      <mat-slide-toggle
+        class="schedule__switch"
+        data-testid="schedule-enabled"
+        [checked]="stored.enabled === true"
+        [disabled]="switching?.sending || stored.id === undefined || stored.enabled === undefined"
+        (toggleChange)="setEnabled()"
+      >
+        <span class="visually-hidden">{{ stored.name }}</span>
+        {{
+          stored.enabled === undefined
+            ? t('blinds.schedule.enabledUnknown')
+            : t('blinds.schedule.enabled')
+        }}
+      </mat-slide-toggle>
+    </mat-card-header>
+
+    <mat-card-content class="schedule__content">
+      @if (switching?.error; as error) {
+        <app-api-error-strip
+          [error]="error"
+          [summary]="t('blinds.schedule.switchFailed')"
+          [describeWith]="describeError"
+        />
+      }
+
+      <!-- the window: as written, and as it falls today -->
+      <dl class="schedule__facts">
+        <dt>{{ t('blinds.schedule.window') }}</dt>
+        <dd data-testid="schedule-rule">
+          @for (part of rule().from; track $index) {
+            {{ part | displayText }}
+          }
+          –
+          @for (part of rule().to; track $index) {
+            {{ part | displayText }}
+          }
+        </dd>
+        <dt>{{ t('blinds.schedule.today') }}</dt>
+        <dd data-testid="schedule-today">
+          @if (day === undefined) {
+            {{ t('blinds.schedule.todayUnknown') }}
+          } @else if (day?.window; as window) {
+            <strong>{{ window.from ?? '?' }}–{{ window.to ?? '?' }}</strong>
+            @if (window.nextDay === true) {
+              {{ t('blinds.schedule.nextDay') }}
+            }
+          } @else {
+            {{ t('blinds.schedule.noWindow') }}
+          }
+          @if (decision(); as said) {
+            <span class="schedule__decision" data-testid="schedule-decision">{{
+              said | displayText
+            }}</span>
+          }
+        </dd>
+      </dl>
+      @if (day?.dayTypeFromCalendar === false) {
+        <p class="schedule__note">{{ t('blinds.schedule.calendarMissed') }}</p>
+      }
+      @if (entry().todayError; as error) {
+        <app-api-error-strip
+          [error]="error"
+          [summary]="t('blinds.schedule.todayFailed')"
+          [describeWith]="describeError"
+        />
+      }
+
+      <!-- what has to hold, and what it says now -->
+      <section class="schedule__section">
+        <h3>{{ t('blinds.schedule.conditions') }}</h3>
+        @if (conditionsUnknown()) {
+          <p class="schedule__note">{{ t('blinds.schedule.conditionsUnknown') }}</p>
+        } @else if (conditions().length === 0) {
+          <p class="schedule__note">{{ t('blinds.schedule.noConditions') }}</p>
+        } @else {
+          <ul class="schedule__list">
+            @for (condition of conditions(); track $index) {
+              @let view = condition.view;
+              <li data-testid="schedule-condition">
+                <span class="schedule__what"
+                  >{{ view.subject | displayText }}
+                  @if (view.operator !== undefined) {
+                    {{ view.operator }}
+                    @if (view.threshold !== undefined) {
+                      {{ view.threshold | localNumber }} {{ view.unit ?? '' }}
+                    }
+                  }
+                  @if (view.holdMinutes !== undefined) {
+                    {{ t('blinds.schedule.condition.hold', { minutes: view.holdMinutes }) }}
+                  }
+                </span>
+                <span class="schedule__now">
+                  @if (view.current; as current) {
+                    {{ t('blinds.schedule.condition.now') }}
+                    @if (current.value !== undefined) {
+                      {{ current.value | localNumber }} {{ current.unit ?? '' }}
+                    } @else if (current.text; as text) {
+                      {{ text | displayText }}
+                    }
+                    ·
+                  }
+                  @if (condition.state; as state) {
+                    {{ state | displayText }}
+                  }
+                  @if (condition.trueSince | houseAge; as age) {
+                    ({{ t('blinds.schedule.condition.since') }} {{ age }})
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <!-- the blinds it moves, what came of each today, and the pause of each blind's schedules -->
+      <section class="schedule__section">
+        <h3>{{ t('blinds.schedule.targets') }}</h3>
+        @if (targets().length === 0) {
+          <p class="schedule__note">{{ t('blinds.schedule.noTargets') }}</p>
+        } @else {
+          <ul class="schedule__list">
+            @for (target of targets(); track target.key) {
+              <li class="target" data-testid="schedule-target">
+                <span class="schedule__what">
+                  @if (target.wholeRoom) {
+                    {{ t('blinds.schedule.wholeRoom') }} {{ target.room ?? '?' }}
+                  } @else {
+                    {{ target.name ?? t('blinds.schedule.unknownBlind') }}
+                    @if (target.room !== undefined) {
+                      <span class="schedule__room">({{ target.room }})</span>
+                    }
+                  }
+                </span>
+                <span class="schedule__now">
+                  @if (target.window; as window) {
+                    {{ window | displayText }}
+                  }
+                  @if (target.windowClosed; as closed) {
+                    · {{ t('blinds.schedule.windowClosed') }} {{ closed | displayText }}
+                  }
+                  @if (target.outcome; as outcome) {
+                    · {{ outcome | displayText }}
+                    @if (target.firedAt | houseAge; as age) {
+                      {{ age }}
+                    }
+                  }
+                </span>
+                @if (target.blind; as blind) {
+                  @let pausing = pauseState(blind.id);
+                  <span class="target__pause">
+                    <mat-slide-toggle
+                      data-testid="target-pause"
+                      [checked]="blind.schedulePausedSince !== undefined"
+                      [disabled]="pausing?.sending"
+                      (toggleChange)="pause(blind)"
+                    >
+                      {{ t('blinds.schedule.pause') }}
+                      <span class="visually-hidden">{{ blind.name }}</span>
+                    </mat-slide-toggle>
+                    @if (blind.schedulePausedSince | houseAge; as age) {
+                      <span class="schedule__note"
+                        >{{ t('rooms.blinds.pausedSince') }} {{ age }}</span
+                      >
+                    }
+                  </span>
+                  @if (pausing?.error; as error) {
+                    <app-api-error-strip
+                      [error]="error"
+                      [summary]="t('rooms.commandFailed')"
+                      [describeWith]="describeError"
+                    />
+                  }
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </mat-card-content>
+  </mat-card>
+</ng-container>

@@ -1,6 +1,14 @@
 import { HttpRequest } from '@angular/common/http';
 
-import { blindsByRoom, moveBlind, moveBlindTo, pauseBlind, switchLight } from './blinds.fixtures';
+import {
+  blindsByRoom,
+  moveBlind,
+  moveBlindTo,
+  moveRoom,
+  pauseBlind,
+  switchLight,
+} from './blinds.fixtures';
+import { calendarDays } from './calendar.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import {
   addDevice as addRegisteredDevice,
@@ -38,6 +46,7 @@ import {
   presenceNow,
   presenceReport,
 } from './presence.fixtures';
+import { allSchedules, enableSchedule, scheduleToday } from './schedules.fixtures';
 import { WATER_HEATING_DEMAND, waterTemperatures } from './water.fixtures';
 import {
   STATION_STATUS_BEFORE_FIRST_READING,
@@ -241,6 +250,34 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'DELETE',
     path: /^\/home\/blinds\/(\d+)\/schedule-pause$/,
     reply: (_request, _fresh, [id]) => pauseBlind(id, false),
+  },
+  // the blinds page (HAS-252): a room at once, the schedules and what they do today
+  {
+    method: 'POST',
+    path: /^\/home\/blinds\/rooms\/([^/]+)$/,
+    reply: (request, _fresh, [room]) =>
+      moveRoom(decodeURIComponent(room), request.params.get('command')),
+  },
+  {
+    method: 'GET',
+    path: '/home/blinds/schedules',
+    reply: () => ({ status: 200, body: allSchedules() }),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/blinds\/schedules\/(\d+)\/today$/,
+    reply: (_request, _fresh, [id]) => scheduleToday(id),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/blinds\/schedules\/(\d+)\/(enable|disable)$/,
+    reply: (_request, _fresh, [id, change]) => enableSchedule(id, change === 'enable'),
+  },
+  // the calendar of the house: the holidays the schedules read
+  {
+    method: 'GET',
+    path: '/home/calendar/days',
+    reply: (request) => calendarDays(from(request), to(request)),
   },
   // the Eaton lights through amx-service: the frame goes out, nothing is kept
   {

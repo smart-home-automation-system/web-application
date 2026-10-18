@@ -1,6 +1,6 @@
 import { MessageKey } from '../../i18n/messages';
 import { WindowStateView } from '../../shared/room-heating/room-views';
-import { BlindRow } from './room-overview';
+import { Blind } from '../../data-access/blinds/blinds-api';
 
 /** What a blind is at, in short: the key of the text and, for a position, the number. */
 export interface BlindPosition {
@@ -10,9 +10,9 @@ export interface BlindPosition {
 
 /**
  * What a blind is at: its position where it reports one, else its state, else "not known" -
- * never "closed" for a blind that said nothing.
+ * never "closed" for a blind that said nothing. The blinds page shares it (HAS-252).
  */
-export function blindPositionLabel(row: BlindRow): BlindPosition {
+export function blindPositionLabel<T extends { readonly state?: Blind }>(row: T): BlindPosition {
   const state = row.state;
   if (typeof state?.position === 'number' && Number.isFinite(state.position)) {
     return { key: 'rooms.blinds.position', position: state.position };
