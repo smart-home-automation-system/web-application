@@ -379,7 +379,7 @@ e2e/              # Playwright tests
   line for each of the owner's rows - temperature first, heating, lights, blinds, motion,
   presence, openings, other (`rowOf`: a kind of no row of its own, and one this version does not
   know, is `other`) - and a window with the devices of the room (`RoomDetail`). What to keep:
-  - **Three calls, told once**: the registry, the rooms of the heating and the blinds - each with
+  - **Four calls, told once**: the registry, the rooms of the heating, the blinds and the lights - each with
     its freshness and failure in the strip at the top, never on a room card.
     `toRoomOverview` puts them together per room; what a service did not answer is "not known".
     A switched-off device is left out (no service uses it).
@@ -394,10 +394,21 @@ e2e/              # Playwright tests
     **The pause switch does not flip itself** (`disableToggleValue` of the slide toggle,
     `toggleChange`): it shows `schedulePausedSince` of the service - found in review, a failed
     pause left the toggle of Material on.
-  - **A light has no state anywhere yet** (light-service does not exist): a bulb is drawn faint,
-    never on or off, and a command is told as *sent*. Only an Eaton light has controls
-    (`POST /home/amx/lights/{point}`, a dimmer `/level` - `LightsApi`); a Shelly light says
-    it is not controlled from here yet. When light-service comes, its state replaces the faint bulb.
+  - **The lights are `light-service`'s** (HAS-292, `LightApi` in `data-access/light/`, >= 0.6.0):
+    every light, Eaton and Shelly alike, is switched by its registry id - `POST /light/{id}?turn=`,
+    a dimmer or an rgbw light `/brightness?value=1..100` - always with `source=dashboard`, which the
+    rules engine of the service reads as a change by hand and answers with a manual hold. The
+    dashboard never calls `amx-service` for a light: its old `/amx/lights/{point}` path is gone
+    (it answered 404 from 2.0.0 on - the bug of HAS-292). The state is `GET /light`, a fourth
+    source of the page: a bulb is lit when `on` is `true`, plain when `false`, faint when the
+    service says nothing; the window adds the brightness while on, `reachable: false`, and
+    `heldUntil` ("the rules of the room leave it alone until"). A command is followed by a read of
+    the lights (`refreshLights`), as for a blind - no optimistic state, no "Sent". A registry light
+    the service answered without (it skips one without `lightKind`) has no controls and says why
+    (`unknownToService`); while the service has not answered, the controls stay. The codes of the
+    commands have texts in `shared/lights/light-errors.ts` (test lists them); the rules' codes
+    (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes rules (HAS-266/267). The
+    colour of an rgbw light is not set here (HAS-266).
   - **The pause of the schedules of a blind** (`blinds-service`, `PUT` / `DELETE
     /blinds/{id}/schedule-pause`) ends by itself with the next run it prevents. **The schedules
     themselves are not shown here** (owner, 2026-10-18): they, and the lights, get pages of their
@@ -417,7 +428,7 @@ e2e/              # Playwright tests
     without a sensor says nothing; a state this version does not know is "not heard of", never
     closed. The values are those of the window of a blind, the same words in both places.
   - **The dashboard writes to the house in five places now**: the heating switch, the two
-    registries, and - from this view - the blinds and the Eaton lights. (The blinds page adds the
+    registries, and - from this view - the blinds and the lights (through `light-service` since HAS-292). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
@@ -1059,6 +1070,11 @@ up in a production build.
   one waits for the weather, one is switched off). The calendar (`calendar.fixtures.ts`) has the
   weekends and the holidays of a fixed date - no Easter. A browser test of the holidays pins the
   clock. `resetBlinds()` / `resetSchedules()` for a unit test that changed them.
+- **And so can the mock lights** (`lights.fixtures.ts`, HAS-292): the three lights of the mock
+  registry - the office relay off, the living room dimmer on and held by hand, the bedroom strip
+  not heard of; a command with `source=dashboard` switches it and holds it for 30 minutes, and
+  `NOT_FOUND_LIGHT` / `UNSUPPORTED_CAPABILITY` are refused as `light-service` refuses them.
+  `no-readings` answers every light without a state. `resetLights()` for a unit test that changed them.
 - **And so can the mock device registry** (`devices.fixtures.ts`): thirteen invented devices -
   addresses of the documentation range, made-up ids - whose writes change what the registry
   answers next and are refused as `database-service` refuses them (`INVALID_DEVICE` in the

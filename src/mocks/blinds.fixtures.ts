@@ -189,11 +189,3 @@ export function moveRoom(room: string, command: string | null): MockReply {
     },
   };
 }
-
-/** A light switched through amx-service: the frame went out, nothing is kept. */
-export function switchLight(point: string, turn: string | null): MockReply {
-  if (turn !== 'on' && turn !== 'off') {
-    return { status: 400, body: { errors: [{ message: 'turn must be on or off' }] } };
-  }
-  return { status: 202, body: { point: Number(point), status: 'OK' } };
-}

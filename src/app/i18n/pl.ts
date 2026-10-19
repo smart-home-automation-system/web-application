@@ -735,6 +735,7 @@ export const pl: Messages = {
       registry: 'Urządzenia',
       heating: 'Ogrzewanie',
       blinds: 'Rolety',
+      lights: 'Światło',
     },
     row: {
       temperature: 'Temperatura',
@@ -758,17 +759,28 @@ export const pl: Messages = {
     },
     lights: {
       count: 'Światła: {{ count }}',
-      stateUnknown:
-        'Żadna usługa nie przechowuje jeszcze stanu świateł - polecenie jest wysyłane, stan nie jest odczytywany.',
       on: 'Włącz',
       off: 'Wyłącz',
       level: 'Jasność',
       setLevel: 'Ustaw',
-      sent: 'Wysłano',
-      noControl: 'Jeszcze bez sterowania stąd',
+      stateOn: 'włączone',
+      stateOff: 'wyłączone',
+      stateUnknown: 'stan jeszcze nieznany',
+      brightness: '{{ value }} %',
+      unreachable: 'nieosiągalne',
+      held: 'Reguły pokoju nie zmieniają go do {{ time }}',
+      notInService: 'Usługa świateł nie zna tego światła, więc nie da się go stąd przełączyć.',
     },
     presence: {
       count: 'Czujniki obecności: {{ count }}',
+    },
+  },
+  lights: {
+    error: {
+      notFound: 'Usługa świateł nie zna tego światła.',
+      unsupportedCapability: 'To światło tego nie potrafi.',
+      deviceFailed: 'Światło nie przyjęło polecenia.',
+      registryUnavailable: 'Usługa świateł nie mogła odczytać rejestru urządzeń.',
     },
   },
   myRoom: {

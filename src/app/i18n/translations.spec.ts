@@ -66,6 +66,7 @@ describe('translations', () => {
       // a number, and the word of the button of a blind both languages use
       'rooms.pieces',
       'blindControl.position',
+      'rooms.lights.brightness',
       'blindControl.stop',
       // a number of minutes and a sign
       'blinds.schedule.end.after',

@@ -6,6 +6,7 @@ import { isRecord } from '../../core/util/is-record';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, RegisteredDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi } from '../../data-access/heating/heating-api';
+import { LightApi } from '../../data-access/light/light-api';
 import { MessageKey } from '../../i18n/messages';
 import { SourcesStrip } from '../../shared/sources-strip/sources-strip';
 import { toRoomViews } from '../../shared/room-heating/room-views';
@@ -21,8 +22,8 @@ import { RoomTile } from './room-tile';
  * the room and the controls of its lights and blinds. "My room" stays the resident's page of
  * their own rooms.
  *
- * Three services feed it: the device registry (what is where), the heating (temperatures, heaters,
- * windows) and the blinds. Each is one call with its own freshness and failure, told
+ * Four services feed it: the device registry (what is where), the heating (temperatures, heaters,
+ * windows), the blinds and the lights (HAS-292, `light-service` - the real state of every light). Each is one call with its own freshness and failure, told
  * once in the strip of sources at the top; a room card says what is known and "not known" where
  * a service did not answer - never off, closed or away.
  */
@@ -37,12 +38,14 @@ export class Rooms {
   protected readonly registry = inject(DeviceRegistryApi).watchDevices();
   protected readonly heating = inject(HeatingApi).watchRooms();
   protected readonly blinds = inject(BlindsApi).watchBlinds();
+  protected readonly lights = inject(LightApi).watchLights();
   private readonly dialog = inject(MatDialog);
 
   protected readonly sources = [
     { id: 'registry', label: 'rooms.source.registry' as MessageKey, resource: this.registry },
     { id: 'heating', label: 'rooms.source.heating' as MessageKey, resource: this.heating },
     { id: 'blinds', label: 'rooms.source.blinds' as MessageKey, resource: this.blinds },
+    { id: 'lights', label: 'rooms.source.lights' as MessageKey, resource: this.lights },
   ];
 
   /** The devices that can be shown: an entry without an id cannot be addressed by a control. */
@@ -76,11 +79,18 @@ export class Rooms {
       overview: computed(() => this.overviewOf(room)),
       floor,
       refreshBlinds: () => this.blinds.refresh(),
+      refreshLights: () => this.lights.refresh(),
     };
     this.dialog.open(RoomDetail, { ...ROOM_DETAIL_SIZE, data, autoFocus: 'dialog' });
   }
 
   private overviewOf(room: string): RoomOverview {
-    return toRoomOverview(room, this.devices() ?? [], this.heatingRooms(), this.blinds.value());
+    return toRoomOverview(
+      room,
+      this.devices() ?? [],
+      this.heatingRooms(),
+      this.blinds.value(),
+      this.lights.value(),
+    );
   }
 }

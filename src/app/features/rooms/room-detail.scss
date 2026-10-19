@@ -96,22 +96,27 @@
   width: 160px;
 }
 
-// a place of its own, as wide as its word in either language: the word appearing moves nothing
-.list__sent {
-  min-width: 6em;
-  font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-primary-container);
+.list__warning {
+  color: var(--mat-sys-on-error-container);
 }
 
-// a failure takes a line of its own under the controls
-.list__failure {
+// a failure, a hold and a light the service does not know take a line of their own
+.list__failure,
+.list__wide {
   flex-basis: 100%;
 }
 
-// no service keeps the state of a light: the bulb is drawn faint, never lit
+// the state light-service reports: lit when on, faint while not known
 .mat-icon.list__bulb {
   width: 18px;
   height: 18px;
   font-size: 18px;
+}
+
+.mat-icon.list__bulb[data-state='on'] {
+  color: var(--mat-sys-primary);
+}
+
+.mat-icon.list__bulb[data-state='unknown'] {
   opacity: 0.55;
 }

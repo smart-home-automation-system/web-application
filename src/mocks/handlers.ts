@@ -1,13 +1,6 @@
 import { HttpRequest } from '@angular/common/http';
 
-import {
-  blindsByRoom,
-  moveBlind,
-  moveBlindTo,
-  moveRoom,
-  pauseBlind,
-  switchLight,
-} from './blinds.fixtures';
+import { blindsByRoom, moveBlind, moveBlindTo, moveRoom, pauseBlind } from './blinds.fixtures';
 import { calendarDays } from './calendar.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import {
@@ -25,6 +18,7 @@ import {
   temperatureSensors,
   turnHeating,
 } from './heating.fixtures';
+import { lightsByRoom, setBrightness, turnLight } from './lights.fixtures';
 import { isHistoryRefusal, roomHistory, waterHistory, weatherHistory } from './history.fixtures';
 import {
   addDevice,
@@ -326,19 +320,23 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: '/home/calendar/days',
     reply: (request) => calendarDays(from(request), to(request)),
   },
-  // the Eaton lights through amx-service: the frame goes out, nothing is kept
+  // the lights of light-service (HAS-292): their real state and the commands, by registry id
   {
-    method: 'POST',
-    path: /^\/home\/amx\/lights\/(\d+)$/,
-    reply: (request, _fresh, [point]) => switchLight(point, request.params.get('turn')),
+    method: 'GET',
+    path: '/home/light',
+    reply: (_request, fresh) => ({ status: 200, body: lightsByRoom(fresh) }),
   },
   {
     method: 'POST',
-    path: /^\/home\/amx\/lights\/(\d+)\/level$/,
-    reply: (_request, _fresh, [point]) => ({
-      status: 202,
-      body: { point: Number(point), status: 'OK' },
-    }),
+    path: /^\/home\/light\/(\d+)$/,
+    reply: (request, _fresh, [id]) =>
+      turnLight(id, request.params.get('turn'), request.params.get('source')),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/light\/(\d+)\/brightness$/,
+    reply: (request, _fresh, [id]) =>
+      setBrightness(id, request.params.get('value'), request.params.get('source')),
   },
   {
     // every device of the house: asked for by the administration page of the devices

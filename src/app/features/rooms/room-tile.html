@@ -67,11 +67,13 @@
             @if (room.lights.length === 0) {
               <span class="rows__none">{{ t('rooms.none') }}</span>
             } @else {
-              <!-- no service keeps the state of a light yet: every bulb is drawn as not known -->
-              @for (light of room.lights; track light.id) {
-                <mat-icon class="rows__icon" data-state="unknown" aria-hidden="true"
+              <!-- the state light-service reports; a light it says nothing of is drawn as not known -->
+              @for (light of room.lights; track light.device.id) {
+                @let state = lightState(light);
+                <mat-icon class="rows__icon" [attr.data-state]="state" aria-hidden="true"
                   >lightbulb</mat-icon
                 >
+                <span class="visually-hidden">{{ t(lightStateLabel(state)) }}</span>
               }
               <span class="visually-hidden">{{
                 t('rooms.lights.count', { count: room.lights.length })

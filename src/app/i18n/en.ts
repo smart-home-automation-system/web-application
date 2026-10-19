@@ -740,6 +740,7 @@ export const en = {
       registry: 'Devices',
       heating: 'Heating',
       blinds: 'Blinds',
+      lights: 'Lights',
     },
     row: {
       temperature: 'Temperature',
@@ -763,17 +764,29 @@ export const en = {
     },
     lights: {
       count: 'Lights: {{ count }}',
-      stateUnknown:
-        'No service keeps the state of the lights yet - a command is sent, the light is not read back.',
       on: 'On',
       off: 'Off',
       level: 'Brightness',
       setLevel: 'Set',
-      sent: 'Sent',
-      noControl: 'Not controlled from here yet',
+      stateOn: 'on',
+      stateOff: 'off',
+      stateUnknown: 'not known yet',
+      brightness: '{{ value }} %',
+      unreachable: 'not reachable',
+      held: 'The rules of the room leave it alone until {{ time }}',
+      notInService:
+        'The light service does not know this light, so it cannot be switched from here.',
     },
     presence: {
       count: 'Presence sensors: {{ count }}',
+    },
+  },
+  lights: {
+    error: {
+      notFound: 'The light service does not know this light.',
+      unsupportedCapability: 'This light cannot do that.',
+      deviceFailed: 'The light did not take the command.',
+      registryUnavailable: 'The light service could not read the device registry.',
     },
   },
   myRoom: {
