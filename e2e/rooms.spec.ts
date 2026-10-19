@@ -60,7 +60,9 @@ test('leaves the pause switch as it was when the pause failed', async ({ page })
   await expect(blind.getByTestId('blind-paused')).toHaveCount(0);
 });
 
-// HAS-292: a light is switched through light-service and shown as the service reads it back
+// HAS-292: a light is switched through light-service and shown as the service reads it back.
+// The dimmer is an Eaton light, which reports a second late (HAS-293): it is seen within the
+// expectation timeout only thanks to the second read - the poll alone would take 10 s
 test('switches a light and shows the state the light service reads back', async ({ page }) => {
   await page.goto('/rooms');
   const window = await openRoom(page, 'living room');

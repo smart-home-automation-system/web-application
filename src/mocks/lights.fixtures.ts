@@ -8,7 +8,9 @@ import { houseTime } from './house-time';
  * started. The ids are those of the lights of the mock device registry (`devices.fixtures.ts`):
  * the office relay (off), the living room dimmer (on, held by hand) and the bedroom strip, which
  * nothing has been heard of since the start. A command with `source=dashboard` holds the light
- * for the 30 minutes of the mock rules, as the engine of the service does.
+ * for the 30 minutes of the mock rules, as the engine of the service does. An Eaton light reports
+ * a change a second after the command was taken, as it does through `amx-service` (HAS-293): a read
+ * right after the command still answers the state before it.
  */
 interface StoredLight {
   readonly id: number;
@@ -26,6 +28,7 @@ interface StoredLight {
 }
 
 const HOLD_SECONDS = 30 * 60;
+const EATON_REPORTS_AFTER_MS = 1_000;
 
 const AT_THE_START: readonly StoredLight[] = [
   {
@@ -56,10 +59,19 @@ const AT_THE_START: readonly StoredLight[] = [
 ];
 
 let lights: StoredLight[] = AT_THE_START.map((one) => ({ ...one }));
+// the changes an Eaton light has not reported yet, by when it reports them
+let unreported: { readonly at: number; readonly report: () => void }[] = [];
 
 /** For a unit test that switched a light. */
 export function resetLights(): void {
   lights = AT_THE_START.map((one) => ({ ...one }));
+  unreported = [];
+}
+
+function reportDue(now: Date): void {
+  const due = unreported.filter((change) => change.at <= now.getTime());
+  unreported = unreported.filter((change) => change.at > now.getTime());
+  due.forEach((change) => change.report());
 }
 
 function view(light: StoredLight, now: Date): Light {
@@ -84,6 +96,7 @@ function view(light: StoredLight, now: Date): Light {
 
 /** `GET /home/light`: every light by room; `fresh` - just after a start, nothing heard of any. */
 export function lightsByRoom(fresh = false, now: Date = new Date()): RoomLights[] {
+  reportDue(now);
   const rooms = [...new Set(lights.map((light) => light.room))];
   return rooms.map((room) => {
     const here = lights
@@ -114,8 +127,26 @@ function find(id: string): StoredLight | undefined {
   return lights.find((light) => String(light.id) === id);
 }
 
-function changed(light: StoredLight, on: boolean, source: string): void {
-  light.on = on;
+function changed(
+  light: StoredLight,
+  change: { on: boolean; brightness?: number },
+  source: string,
+): void {
+  const report = () => {
+    light.on = change.on;
+    if (change.brightness !== undefined) {
+      light.brightness = change.brightness;
+    }
+    noteChange(light, source);
+  };
+  if (light.vendor === 'eaton') {
+    unreported.push({ at: Date.now() + EATON_REPORTS_AFTER_MS, report });
+  } else {
+    report();
+  }
+}
+
+function noteChange(light: StoredLight, source: string): void {
   light.changedSecondsAgo = 0;
   light.source = source;
   light.reachable = true;
@@ -132,7 +163,7 @@ export function turnLight(id: string, turn: string | null, source: string | null
   if (light === undefined) {
     return refused(404, `Light [${id}] not found`, 'NOT_FOUND_LIGHT');
   }
-  changed(light, turn === 'on', source ?? 'dashboard');
+  changed(light, { on: turn === 'on' }, source ?? 'dashboard');
   return { status: 202, body: null };
 }
 
@@ -149,7 +180,6 @@ export function setBrightness(id: string, value: string | null, source: string |
   if (light.kind === 'relay') {
     return refused(400, `Light [${id}] does not dim`, 'UNSUPPORTED_CAPABILITY');
   }
-  light.brightness = brightness;
-  changed(light, true, source ?? 'dashboard');
+  changed(light, { on: true, brightness }, source ?? 'dashboard');
   return { status: 202, body: null };
 }

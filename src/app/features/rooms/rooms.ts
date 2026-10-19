@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslocoDirective } from '@jsverse/transloco';
 
@@ -14,6 +14,13 @@ import { groupByFloor } from '../devices/device-groups';
 import { ROOM_DETAIL_SIZE, RoomDetail, RoomDetailData } from './room-detail';
 import { RoomOverview, toRoomOverview } from './room-overview';
 import { RoomTile } from './room-tile';
+
+/**
+ * When the lights are read once more after a command (HAS-293): an Eaton light reports its new
+ * state through `amx-service` about a second after `light-service` took the command, so the read
+ * right after it still answers the state before. A Shelly light has reported by then.
+ */
+export const LIGHTS_READ_AGAIN_AFTER_MS = 2_500;
 
 /**
  * Every room of the house (HAS-232, the administrator's): a card of one size per room, floor by
@@ -40,6 +47,8 @@ export class Rooms {
   protected readonly blinds = inject(BlindsApi).watchBlinds();
   protected readonly lights = inject(LightApi).watchLights();
   private readonly dialog = inject(MatDialog);
+  // the second reads of the lights still to come; a page that is gone makes none
+  private readonly readsToCome = new Set<ReturnType<typeof setTimeout>>();
 
   protected readonly sources = [
     { id: 'registry', label: 'rooms.source.registry' as MessageKey, resource: this.registry },
@@ -73,15 +82,33 @@ export class Rooms {
     })),
   );
 
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.readsToCome.forEach((read) => clearTimeout(read)));
+  }
+
   protected openRoom(room: string, floor: MessageKey): void {
     const data: RoomDetailData = {
       // a signal: the window follows the services while it is open
       overview: computed(() => this.overviewOf(room)),
       floor,
       refreshBlinds: () => this.blinds.refresh(),
-      refreshLights: () => this.lights.refresh(),
+      refreshLights: () => this.readLightsAfterCommand(),
     };
     this.dialog.open(RoomDetail, { ...ROOM_DETAIL_SIZE, data, autoFocus: 'dialog' });
+  }
+
+  /**
+   * Reads the lights at once - the command of the light is over with that answer, and its buttons
+   * free - and once more a moment later, for an Eaton light that reports late. Neither moves
+   * anything on screen by itself: only what `light-service` answers does.
+   */
+  private readLightsAfterCommand(): Promise<void> {
+    const read = setTimeout(() => {
+      this.readsToCome.delete(read);
+      void this.lights.refresh();
+    }, LIGHTS_READ_AGAIN_AFTER_MS);
+    this.readsToCome.add(read);
+    return this.lights.refresh();
   }
 
   private overviewOf(room: string): RoomOverview {
