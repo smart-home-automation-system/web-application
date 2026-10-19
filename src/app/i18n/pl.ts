@@ -828,6 +828,7 @@ export const pl: Messages = {
       useUnknown: 'Nie podano, czy używane przez serwisy',
       generation: 'Gen {{ generation }}',
       channel: 'kanał {{ channel }}',
+      zone: 'strefa {{ zone }}',
       gateway: 'bramka',
       point: 'punkt {{ point }}',
       bluetooth: 'Bluetooth',
@@ -857,8 +858,9 @@ export const pl: Messages = {
       deviceIdHint: 'Tak, jak urządzenie samo się nazywa, na przykład shellyplus2pm-a1b2c3d4e5f6',
       channel: 'Kanał',
       noChannel: 'Brak',
+      zone: 'Strefa {{ zone }}',
       channelHint:
-        'Przekaźnik z kilkoma wyjściami to jedno urządzenie rejestru na każde wyjście. Brak dla urządzenia bez kanałów.',
+        'Przekaźnik z kilkoma wyjściami to jedno urządzenie rejestru na każde wyjście. Brak dla urządzenia bez kanałów. Czujnik obecności to jedna strefa urządzenia - 200 to jego strefa główna.',
       gateway: 'Bramka',
       point: 'Punkt',
       pointHint: 'Punkt danych na bramce, od 1 do 99',

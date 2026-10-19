@@ -834,6 +834,7 @@ export const en = {
       useUnknown: 'Use by the services not given',
       generation: 'Gen {{ generation }}',
       channel: 'channel {{ channel }}',
+      zone: 'zone {{ zone }}',
       gateway: 'gateway',
       point: 'point {{ point }}',
       bluetooth: 'Bluetooth',
@@ -863,8 +864,9 @@ export const en = {
       deviceIdHint: 'As the device calls itself, for example shellyplus2pm-a1b2c3d4e5f6',
       channel: 'Channel',
       noChannel: 'None',
+      zone: 'Zone {{ zone }}',
       channelHint:
-        'A relay with several outputs is one device of the registry per output. None for a device without channels.',
+        'A relay with several outputs is one device of the registry per output. None for a device without channels. A presence sensor stands for one zone of the device - 200 is its main zone.',
       gateway: 'Gateway',
       point: 'Point',
       pointHint: 'The data point on the gateway, 1 to 99',

@@ -148,7 +148,12 @@ const AT_THE_START: readonly StoredDevice[] = [
     kind: 'presence sensor',
     enabled: true,
     vendor: 'shelly',
-    shelly: { address: '192.0.2.41', generation: 4, deviceId: 'shellypresence-0a0b0c0d0e04' },
+    shelly: {
+      address: '192.0.2.41',
+      generation: 4,
+      deviceId: 'shellypresence-0a0b0c0d0e04',
+      channel: 200,
+    },
   },
   {
     id: 13,
@@ -349,7 +354,8 @@ function shellyOf(value: unknown): SmartDevice['shelly'] | null {
   if (deviceId !== undefined && (typeof deviceId !== 'string' || !DEVICE_ID.test(deviceId))) {
     return null;
   }
-  if (channel !== undefined && !whole(channel, 0, 3)) {
+  // smart-home-sdk 1.12.0: 0 to 299 - which of them a kind may have is a rule of the registry
+  if (channel !== undefined && !whole(channel, 0, 299)) {
     return null;
   }
   return {
@@ -426,6 +432,13 @@ function brokenRuleOf(device: Draft): string | undefined {
     device.shelly.deviceId === undefined
   ) {
     return `A Shelly of generation ${device.shelly.generation} needs its deviceId - the id it reports under over MQTT`;
+  }
+  const channel = device.shelly?.channel;
+  if (channel !== undefined && channel > 3 && channel < 200) {
+    return `The channel of a Shelly is an output (0 to 3) or the zone of a presence sensor (200 to 299), not ${channel}`;
+  }
+  if (channel !== undefined && channel >= 200 && device.kind !== 'presence sensor') {
+    return `The channel ${channel} is a zone, which only a device of the kind [presence sensor] has, not one of the kind [${device.kind}]`;
   }
   if (device.lightKind !== undefined && device.kind !== 'light') {
     return `lightKind describes a light, not a device of the kind [${device.kind}]`;
