@@ -229,6 +229,18 @@ describe('mock API', () => {
   describe('the presence', () => {
     const range = { params: { from: '2026-10-07T00:00:00', to: '2026-10-08T00:00:00' } };
 
+    // the mock history begins twelve days before the call: the clock is pinned to a day the
+    // period above lies inside, or the tests fail from twelve days after it on (they did on
+    // 2026-10-20, HAS-293). Only the date is faked - the latency of the mock still runs.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-09T12:00:00+02:00'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('answers who is at home, one entry per member of the household', async () => {
       const now = (await firstValueFrom(http.get('/home/presence/residents/presence'))) as {
         name: string;
