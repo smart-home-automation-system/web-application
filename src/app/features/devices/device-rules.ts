@@ -67,9 +67,12 @@ export function channelsOf(kind: string, held?: number): readonly number[] {
   return held === undefined || offered.includes(held) ? offered : [...offered, held];
 }
 
-/** Whether a channel is a zone of the device rather than one of its outputs. */
-export function isZone(channel: number): boolean {
-  return channel >= FIRST_ZONE;
+/**
+ * Whether a channel is a zone of the device rather than one of its outputs. Nothing checks an
+ * answer: only a number is a zone, so that text from outside never becomes a translation parameter.
+ */
+export function isZone(channel: unknown): channel is number {
+  return typeof channel === 'number' && channel >= FIRST_ZONE;
 }
 
 /** The binding a device of the registry has - or `undefined` for none, or more than one. */

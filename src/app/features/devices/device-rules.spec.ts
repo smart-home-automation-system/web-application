@@ -96,6 +96,8 @@ describe('the rules of a device', () => {
     expect(isZone(3)).toBe(false);
     expect(isZone(200)).toBe(true);
     expect(isZone(299)).toBe(true);
+    expect(isZone('250')).toBe(false);
+    expect(isZone('{{ zone }}')).toBe(false);
   });
 
   it('read the one binding a device has', () => {
