@@ -21,7 +21,7 @@ import {
 import { windowStateLabel } from '../../shared/room-heating/window-labels';
 import { BlindControl } from '../../shared/blinds/blind-control';
 import { shortName } from '../../shared/device-names/device-names';
-import { LightRow, RoomOverview, dims, lightState } from './room-overview';
+import { LightRow, RoomOverview, dims, lightState, lightStateLabel } from './room-overview';
 
 /** What the window of a room is opened with: signals, so that it follows the services. */
 export interface RoomDetailData {
@@ -88,6 +88,7 @@ export class RoomDetail {
   protected readonly windowLabel = windowStateLabel;
   protected readonly shortName = shortName;
   protected readonly lightState = lightState;
+  protected readonly lightStateLabel = lightStateLabel;
   protected readonly dims = dims;
   protected readonly describeLightError = describeLightError;
   protected readonly TIME: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };

@@ -77,16 +77,9 @@
                 >
                 {{ shortName(name, room.room, 'light') ?? t('rooms.unnamed') }}
               </span>
-              <span class="list__state" data-testid="light-state">
-                {{
-                  t(
-                    state === 'on'
-                      ? 'rooms.lights.stateOn'
-                      : state === 'off'
-                        ? 'rooms.lights.stateOff'
-                        : 'rooms.lights.stateUnknown'
-                  )
-                }}
+              <!-- a status: what the read-back after a command brings is announced -->
+              <span class="list__state" data-testid="light-state" role="status">
+                {{ t(lightStateLabel(state)) }}
                 <!-- a dimmer keeps its level while off: it is the level it comes back at -->
                 @let brightness = light.state?.brightness;
                 @if (state === 'on' && brightness !== undefined) {
@@ -121,7 +114,8 @@
                 </span>
                 @if (dims(light)) {
                   <span class="list__slider">
-                    <mat-slider min="10" max="100" step="10" discrete>
+                    <!-- step 1: the level a light reports is shown as it is, and sent as it is -->
+                    <mat-slider min="1" max="100" step="1" discrete>
                       <input
                         matSliderThumb
                         #lightLevel

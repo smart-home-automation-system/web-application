@@ -779,7 +779,7 @@ export const pl: Messages = {
     error: {
       notFound: 'Usługa świateł nie zna tego światła.',
       unsupportedCapability: 'To światło tego nie potrafi.',
-      deviceFailed: 'Światło nie przyjęło polecenia - mogło jednak zostać wykonane.',
+      deviceFailed: 'Światło nie przyjęło polecenia.',
       registryUnavailable: 'Usługa świateł nie mogła odczytać rejestru urządzeń.',
     },
   },

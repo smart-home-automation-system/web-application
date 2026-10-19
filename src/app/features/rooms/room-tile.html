@@ -73,15 +73,7 @@
                 <mat-icon class="rows__icon" [attr.data-state]="state" aria-hidden="true"
                   >lightbulb</mat-icon
                 >
-                <span class="visually-hidden">{{
-                  t(
-                    state === 'on'
-                      ? 'rooms.lights.stateOn'
-                      : state === 'off'
-                        ? 'rooms.lights.stateOff'
-                        : 'rooms.unknown'
-                  )
-                }}</span>
+                <span class="visually-hidden">{{ t(lightStateLabel(state)) }}</span>
               }
               <span class="visually-hidden">{{
                 t('rooms.lights.count', { count: room.lights.length })

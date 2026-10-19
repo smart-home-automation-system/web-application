@@ -88,19 +88,9 @@ export function lightsByRoom(fresh = false, now: Date = new Date()): RoomLights[
   return rooms.map((room) => {
     const here = lights
       .filter((light) => light.room === room)
-      .map((light) =>
-        fresh
-          ? view(
-              {
-                id: light.id,
-                name: light.name,
-                room: light.room,
-                vendor: light.vendor,
-                kind: light.kind,
-              },
-              now,
-            )
-          : view(light, now),
+      // just after a start the service knows the registry's lights and nothing of their state
+      .map(({ id, name, room, vendor, kind, ...state }) =>
+        view({ id, name, room, vendor, kind, ...(fresh ? {} : state) }, now),
       );
     const states = here.map((light) => light.on);
     return {

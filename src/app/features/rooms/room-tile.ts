@@ -6,7 +6,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { heaterState } from '../../shared/room-heating/heater-labels';
-import { RoomOverview, lightState } from './room-overview';
+import { RoomOverview, lightState, lightStateLabel } from './room-overview';
 import { blindPositionLabel } from '../../shared/blinds/blind-position';
 import { shortWindowLabel } from './room-labels';
 
@@ -37,4 +37,5 @@ export class RoomTile {
   protected readonly windowLabel = shortWindowLabel;
   protected readonly positionLabel = blindPositionLabel;
   protected readonly lightState = lightState;
+  protected readonly lightStateLabel = lightStateLabel;
 }

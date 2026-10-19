@@ -137,6 +137,17 @@ export function lightState(row: LightRow): 'on' | 'off' | 'unknown' {
   return on === true ? 'on' : on === false ? 'off' : 'unknown';
 }
 
+/** The words of the state of a light. */
+export function lightStateLabel(
+  state: 'on' | 'off' | 'unknown',
+): 'rooms.lights.stateOn' | 'rooms.lights.stateOff' | 'rooms.lights.stateUnknown' {
+  return state === 'on'
+    ? 'rooms.lights.stateOn'
+    : state === 'off'
+      ? 'rooms.lights.stateOff'
+      : 'rooms.lights.stateUnknown';
+}
+
 /** Whether a light can be given a brightness: a dimmer or an rgbw light, by the service or else the registry. */
 export function dims(row: LightRow): boolean {
   const kind = row.state?.kind ?? row.device.lightKind;

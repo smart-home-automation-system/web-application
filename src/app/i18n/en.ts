@@ -785,8 +785,7 @@ export const en = {
     error: {
       notFound: 'The light service does not know this light.',
       unsupportedCapability: 'This light cannot do that.',
-      deviceFailed:
-        'The light did not take the command - it may have been carried out all the same.',
+      deviceFailed: 'The light did not take the command.',
       registryUnavailable: 'The light service could not read the device registry.',
     },
   },
