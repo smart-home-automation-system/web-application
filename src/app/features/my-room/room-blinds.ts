@@ -19,8 +19,9 @@ import { describeBlindsError } from '../blinds/blinds-errors';
  *
  * The control of the blinds is what lifts the rule that nothing on "My room" can be pressed
  * (owner, 2026-10-18): a member whose profile has the room controls its blinds, no permission
- * needed. **No card for a room without blinds** - also while the first answer is on its way; a
- * failure before any answer is told, since nobody knows then whether the room has blinds.
+ * needed. **No card for a room without blinds** (the service's 404 `NOT_FOUND_BLINDS`, or an empty
+ * list) - also while the first answer is on its way; any other failure before an answer is told,
+ * since nobody knows then whether the room has blinds.
  *
  * Nothing optimistic: a command is followed by a read of the room, and only that answer moves the
  * screen (the shared `BlindControl`).
@@ -49,8 +50,19 @@ export class RoomBlinds {
   protected readonly refresh = () => this.answer.refresh();
   protected readonly describeError = describeBlindsError;
 
+  /**
+   * `blinds-service` answers a room without blinds with a 404 and the code `NOT_FOUND_BLINDS` -
+   * an answer, not an outage (found on the live page, 2026-10-18: the room of a member without
+   * blinds showed the failure). It wins over the last answer the resource still holds: the blinds
+   * of a room that has none now are not shown as they were.
+   */
+  private readonly none = computed(() => this.answer.error()?.hasCode('NOT_FOUND_BLINDS') === true);
+
   /** The blinds of the room, the door first; `undefined` while the service has not answered with them. */
   protected readonly blinds = computed(() => {
+    if (this.none()) {
+      return [];
+    }
     const answer = this.answer.value();
     const blinds = blindsOf(answer === undefined || answer === null ? undefined : [answer]);
     return blinds === undefined ? undefined : [...blinds].sort(doorsFirst);
