@@ -17,6 +17,10 @@ export const NAME_MAX_LENGTH = 50;
 export const FIRST_GENERATION_ON_MQTT = 2;
 export const GENERATIONS = [1, 2, 3, 4] as const;
 export const CHANNELS = [0, 1, 2, 3] as const;
+/** The main zone of a Shelly Presence Gen4 (`presencezone:200`) - the same on every one of the house. */
+export const MAIN_ZONE = 200;
+/** A channel from here on is a zone - a dynamic component of the device, not an output. */
+export const FIRST_ZONE = 200;
 export const POINT_MIN = 1;
 export const POINT_MAX = 99;
 
@@ -49,6 +53,26 @@ export function bindingsOf(kind: string): readonly Binding[] {
     default:
       return BINDINGS;
   }
+}
+
+/**
+ * The channels a Shelly of a kind can be given: an output, 0 to 3, of any kind; and for a presence
+ * sensor its zone - `database-service` takes 200 to 299 as the channel of a presence sensor alone
+ * (HAS-260), and the form offers the main zone. The channel the device holds stays on offer,
+ * whatever it is, so that saving does not drop it unseen.
+ */
+export function channelsOf(kind: string, held?: number): readonly number[] {
+  const offered: readonly number[] =
+    kind === 'presence sensor' ? [...CHANNELS, MAIN_ZONE] : CHANNELS;
+  return held === undefined || offered.includes(held) ? offered : [...offered, held];
+}
+
+/**
+ * Whether a channel is a zone of the device rather than one of its outputs. Nothing checks an
+ * answer: only a number is a zone, so that text from outside never becomes a translation parameter.
+ */
+export function isZone(channel: unknown): channel is number {
+  return typeof channel === 'number' && channel >= FIRST_ZONE;
 }
 
 /** The binding a device of the registry has - or `undefined` for none, or more than one. */

@@ -139,11 +139,16 @@
               <mat-button-toggle [value]="notSet">{{
                 t('devices.form.noChannel')
               }}</mat-button-toggle>
-              @for (one of channels; track one) {
-                <mat-button-toggle [value]="'' + one">{{ one }}</mat-button-toggle>
+              @for (one of channels(); track one) {
+                <mat-button-toggle [value]="'' + one">{{
+                  isZone(one) ? t('devices.form.zone', { zone: one }) : one
+                }}</mat-button-toggle>
               }
             </mat-button-toggle-group>
             <p class="form__note">{{ t('devices.form.channelHint') }}</p>
+            @if (chosenKind() === 'presence sensor') {
+              <p class="form__note" data-testid="zone-hint">{{ t('devices.form.zoneHint') }}</p>
+            }
           </div>
         }
         @case ('eaton') {

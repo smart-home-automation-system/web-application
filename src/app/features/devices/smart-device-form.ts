@@ -45,7 +45,8 @@ import {
 } from './device-labels';
 import {
   Binding,
-  CHANNELS,
+  channelsOf,
+  isZone,
   FIRST_GENERATION_ON_MQTT,
   GENERATIONS,
   addressProblem,
@@ -117,7 +118,7 @@ export class SmartDeviceForm implements OnInit {
 
   protected readonly notSet = NOT_SET;
   protected readonly generations = GENERATIONS;
-  protected readonly channels = CHANNELS;
+  protected readonly isZone = isZone;
   protected readonly gateways = EATON_GATEWAYS;
   protected readonly lightKinds = LIGHT_KINDS;
   protected readonly lightKindLabels = LIGHT_KIND_LABELS;
@@ -190,6 +191,10 @@ export class SmartDeviceForm implements OnInit {
     withHeld(withHeld(ROOM_NAMES, this.device()?.room), this.room()),
   );
   protected readonly kinds = computed(() => withHeld(DEVICE_KINDS, this.device()?.kind));
+  /** The channels on offer for the chosen kind - with the one the device has, whatever it is. */
+  protected readonly channels = computed(() =>
+    channelsOf(this.chosenKind(), this.device()?.shelly?.channel),
+  );
 
   /**
    * The opening sensors of the registry a window can be given, by room and name - and an id the
@@ -253,6 +258,16 @@ export class SmartDeviceForm implements OnInit {
       const possible = this.vendors();
       if (!possible.includes(untracked(this.vendor))) {
         this.vendor.set(possible[0]);
+      }
+    });
+    // a zone is the channel of a presence sensor alone: another kind drops it
+    // (the channels are read first: read after a check that can stop short, they would never be
+    // tracked by an effect that first ran without a channel)
+    effect(() => {
+      const possible = this.channels();
+      const channel = untracked(this.channel);
+      if (channel !== undefined && !possible.includes(channel)) {
+        this.channel.set(undefined);
       }
     });
     // what was found taken was found for the binding as it was then

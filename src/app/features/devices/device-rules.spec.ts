@@ -7,8 +7,10 @@ import {
   bindingTaken,
   blindsUsing,
   bluetoothAddressProblem,
+  channelsOf,
   chosenProblem,
   deviceIdProblem,
+  isZone,
   nameProblem,
   openingSensorsOf,
   pointOf,
@@ -74,6 +76,28 @@ describe('the rules of a device', () => {
     expect(vendorsOf('eaton')).toEqual(['eaton']);
     // a Bluetooth sensor is of any vendor but Eaton
     expect(vendorsOf('bthome')).toEqual(['shelly', 'other']);
+  });
+
+  // HAS-260: the registry takes a zone (200 to 299) as the channel of a presence sensor alone
+  it('offer the main zone to a presence sensor and the outputs to every kind', () => {
+    expect(channelsOf('presence sensor')).toEqual([0, 1, 2, 3, 200]);
+    expect(channelsOf('light')).toEqual([0, 1, 2, 3]);
+    expect(channelsOf('wind sensor')).toEqual([0, 1, 2, 3]);
+  });
+
+  // a channel the registry holds is never dropped by a form that does not offer it
+  it('keep the channel a device holds on offer', () => {
+    expect(channelsOf('presence sensor', 201)).toEqual([0, 1, 2, 3, 200, 201]);
+    expect(channelsOf('presence sensor', 200)).toEqual([0, 1, 2, 3, 200]);
+    expect(channelsOf('light', 2)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('tell a zone from an output', () => {
+    expect(isZone(3)).toBe(false);
+    expect(isZone(200)).toBe(true);
+    expect(isZone(299)).toBe(true);
+    expect(isZone('250')).toBe(false);
+    expect(isZone('{{ zone }}')).toBe(false);
   });
 
   it('read the one binding a device has', () => {

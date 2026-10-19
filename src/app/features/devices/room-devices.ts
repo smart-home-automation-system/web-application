@@ -30,7 +30,7 @@ import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { RoomDevices as RoomGroup } from './device-groups';
 import { changeSummary, describeDeviceError } from './device-errors';
 import { kindIcon, kindLabel, lightKindLabel, placementLabel, vendorLabel } from './device-labels';
-import { bindingOf, blindsUsing, openingSensorsOf, sameDevice } from './device-rules';
+import { bindingOf, blindsUsing, isZone, openingSensorsOf, sameDevice } from './device-rules';
 import { SmartDeviceForm } from './smart-device-form';
 
 /** What the card shows besides its devices: nothing more, a form, or a question. */
@@ -104,6 +104,7 @@ export class RoomDevices implements OnInit {
   protected readonly placementLabel = placementLabel;
   protected readonly vendorLabel = vendorLabel;
   protected readonly bindingOf = bindingOf;
+  protected readonly isZone = isZone;
 
   /**
    * A value of the answer as a number - or `undefined` for anything else. Nothing checks an

@@ -102,7 +102,9 @@
                         <span>{{
                           channel === undefined
                             ? device.shelly?.channel
-                            : t('devices.device.channel', { channel })
+                            : isZone(channel)
+                              ? t('devices.device.zone', { zone: channel })
+                              : t('devices.device.channel', { channel })
                         }}</span>
                       }
                       @if (device.shelly?.deviceId; as deviceId) {

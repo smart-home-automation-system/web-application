@@ -403,6 +403,60 @@ describe('Devices', () => {
     expect(page().querySelector('[data-room-card]')).toBeNull();
   });
 
+  // HAS-260: the main zone of a Presence Gen4 is the channel of its presence sensor
+  it('names the zone of a presence sensor, not a channel', async () => {
+    answerTheRegistryWith([
+      {
+        id: 40,
+        name: 'Presence',
+        room: 'office',
+        kind: 'presence sensor',
+        enabled: true,
+        vendor: 'shelly',
+        shelly: {
+          address: '192.0.2.41',
+          generation: 4,
+          deviceId: 'shellypresence-0a0b0c0d0e04',
+          channel: 200,
+        },
+      },
+    ]);
+    await openRoom('office');
+
+    expect(text(row(40).querySelector('[data-testid="binding"]'))).toBe(
+      '192.0.2.41 zone 200 shellypresence-0a0b0c0d0e04',
+    );
+  });
+
+  // the registry takes a zone as the channel of a presence sensor alone
+  it('offers the main zone to a presence sensor only, and drops it for another kind', async () => {
+    answerTheRegistryWith([LIGHT]);
+    const office = await openRoom('office', 'Add');
+    const form = office.querySelector<HTMLElement>('app-smart-device-form')!;
+    const channels = (): string[] =>
+      [...form.querySelectorAll('[data-testid="channel"] mat-button-toggle')].map((one) =>
+        text(one),
+      );
+    const chosen = (): string =>
+      text(form.querySelector('[data-testid="channel"] .mat-button-toggle-checked'));
+
+    choose(form, 'kind', 'light');
+    expect(channels()).toEqual(['None', '0', '1', '2', '3']);
+    expect(form.querySelector('[data-testid="zone-hint"]')).toBeNull();
+
+    choose(form, 'kind', 'presence sensor');
+    expect(channels()).toEqual(['None', '0', '1', '2', '3', 'Zone 200']);
+    expect(form.querySelector('[data-testid="zone-hint"]')).not.toBeNull();
+    form.querySelectorAll<HTMLElement>('[data-testid="channel"] button')[5].click();
+    fixture.detectChanges();
+    expect(chosen()).toBe('Zone 200');
+
+    choose(form, 'kind', 'light');
+    await settled();
+    expect(channels()).toEqual(['None', '0', '1', '2', '3']);
+    expect(chosen()).toBe('None');
+  });
+
   it('registers a device: one call with the whole of it, then the registry read again', async () => {
     answerTheRegistryWith([LIGHT]);
     const office = await openRoom('office', 'Add');
