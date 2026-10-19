@@ -50,10 +50,6 @@ export class Rooms {
   // the second reads of the lights still to come; a page that is gone makes none
   private readonly readsToCome = new Set<ReturnType<typeof setTimeout>>();
 
-  constructor() {
-    inject(DestroyRef).onDestroy(() => this.readsToCome.forEach((read) => clearTimeout(read)));
-  }
-
   protected readonly sources = [
     { id: 'registry', label: 'rooms.source.registry' as MessageKey, resource: this.registry },
     { id: 'heating', label: 'rooms.source.heating' as MessageKey, resource: this.heating },
@@ -85,6 +81,10 @@ export class Rooms {
       rooms: floor.rooms.map((group) => this.overviewOf(group.room)),
     })),
   );
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.readsToCome.forEach((read) => clearTimeout(read)));
+  }
 
   protected openRoom(room: string, floor: MessageKey): void {
     const data: RoomDetailData = {
