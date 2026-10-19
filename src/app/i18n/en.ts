@@ -866,7 +866,8 @@ export const en = {
       noChannel: 'None',
       zone: 'Zone {{ zone }}',
       channelHint:
-        'A relay with several outputs is one device of the registry per output. None for a device without channels. A presence sensor stands for one zone of the device - 200 is its main zone.',
+        'A relay with several outputs is one device of the registry per output. None for a device without channels.',
+      zoneHint: 'A presence sensor stands for one zone of the device - 200 is its main zone.',
       gateway: 'Gateway',
       point: 'Point',
       pointHint: 'The data point on the gateway, 1 to 99',

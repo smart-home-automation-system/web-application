@@ -860,7 +860,8 @@ export const pl: Messages = {
       noChannel: 'Brak',
       zone: 'Strefa {{ zone }}',
       channelHint:
-        'Przekaźnik z kilkoma wyjściami to jedno urządzenie rejestru na każde wyjście. Brak dla urządzenia bez kanałów. Czujnik obecności to jedna strefa urządzenia - 200 to jego strefa główna.',
+        'Przekaźnik z kilkoma wyjściami to jedno urządzenie rejestru na każde wyjście. Brak dla urządzenia bez kanałów.',
+      zoneHint: 'Czujnik obecności to jedna strefa urządzenia - 200 to jego strefa główna.',
       gateway: 'Bramka',
       point: 'Punkt',
       pointHint: 'Punkt danych na bramce, od 1 do 99',

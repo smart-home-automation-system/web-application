@@ -261,9 +261,12 @@ export class SmartDeviceForm implements OnInit {
       }
     });
     // a zone is the channel of a presence sensor alone: another kind drops it
+    // (the channels are read first: read after a check that can stop short, they would never be
+    // tracked by an effect that first ran without a channel)
     effect(() => {
+      const possible = this.channels();
       const channel = untracked(this.channel);
-      if (channel !== undefined && !this.channels().includes(channel)) {
+      if (channel !== undefined && !possible.includes(channel)) {
         this.channel.set(undefined);
       }
     });
