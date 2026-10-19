@@ -5,8 +5,8 @@ import { expect, test, useScenario } from './support';
 /**
  * The room view (HAS-232), fed by the mock API: the device registry of the mock house, its
  * heating with the windows of its rooms, its blinds - which can be moved and paused, in the memory
- * of the page - and its lights, which take a command and keep nothing. Nothing here reaches a real
- * device.
+ * of the page - and its lights (light-service, HAS-292), which are switched the same way. Nothing
+ * here reaches a real device.
  */
 const tile = (page: Page, room: string): Locator => page.locator(`[data-room-tile="${room}"]`);
 const dialog = (page: Page): Locator => page.getByRole('dialog');
@@ -60,31 +60,55 @@ test('leaves the pause switch as it was when the pause failed', async ({ page })
   await expect(blind.getByTestId('blind-paused')).toHaveCount(0);
 });
 
-// owner, 2026-10-18: the word appearing next to the buttons moves none of them
-test('keeps the buttons of a light in place when the command is told as sent', async ({ page }) => {
+// HAS-292: a light is switched through light-service and shown as the service reads it back
+test('switches a light and shows the state the light service reads back', async ({ page }) => {
   await page.goto('/rooms');
   const window = await openRoom(page, 'living room');
   const light = window.locator('[data-light="5"]');
-  const off = light.getByRole('button', { name: 'Off Living room dimmer' });
-  // the window grows in: measured once nothing moves any more
-  await page.waitForFunction(() => document.getAnimations().length === 0);
-  const before = await off.boundingBox();
+  const state = light.getByTestId('light-state');
 
-  await light.getByRole('button', { name: 'On Living room dimmer' }).click();
-  await expect(light.getByRole('status')).toHaveText('Sent');
+  await expect(state).toHaveText('on · 60 %');
+  await expect(light.getByTestId('light-held')).toContainText('leave it alone until');
+  await light.getByRole('button', { name: 'Off Living room dimmer' }).click();
+  await expect(state).toHaveText('off');
+  await expect(
+    tile(page, 'living room').locator('[data-row="lights"] [data-state="off"]'),
+  ).toHaveCount(1);
 
-  expect(await off.boundingBox()).toEqual(before);
+  await light.getByRole('button', { name: 'Set Living room dimmer' }).click();
+  await expect(state).toHaveText('on · 60 %');
 });
 
-test('switches a light and says it was sent, never that it is on', async ({ page }) => {
+test('switches a Shelly light too, and tells a light not heard of as not known', async ({
+  page,
+}) => {
+  await page.goto('/rooms');
+  const office = await openRoom(page, 'office');
+  const relay = office.locator('[data-light="3"]');
+
+  await expect(relay.getByTestId('light-state')).toHaveText('off');
+  await relay.getByRole('button', { name: 'On Office main light' }).click();
+  await expect(relay.getByTestId('light-state')).toHaveText('on');
+  // a relay does not dim
+  await expect(relay.getByRole('slider')).toHaveCount(0);
+  await office.getByRole('button', { name: 'Close', exact: true }).click();
+
+  const bedroom = await openRoom(page, 'bedroom');
+  await expect(bedroom.locator('[data-light="13"]').getByTestId('light-state')).toHaveText(
+    'not known yet',
+  );
+});
+
+test('tells a light that did not take the command, and leaves it as it was', async ({ page }) => {
+  await useScenario(page, 'writes-fail');
   await page.goto('/rooms');
   const window = await openRoom(page, 'living room');
   const light = window.locator('[data-light="5"]');
 
-  await light.getByRole('button', { name: 'On Living room dimmer' }).click();
-  await expect(light.getByRole('status')).toHaveText('Sent');
-  // no service keeps the state of a light: there is nothing to read back
-  await expect(window).toContainText('No service keeps the state of the lights yet');
+  await light.getByRole('button', { name: 'Off Living room dimmer' }).click();
+
+  await expect(light.getByRole('alert')).toBeVisible();
+  await expect(light.getByTestId('light-state')).toHaveText('on · 60 %');
 });
 
 test('tells the open window that holds the heating on the heating page', async ({ page }) => {

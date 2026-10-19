@@ -3,14 +3,12 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
-import { LightsApi } from '../lights/lights-api';
 import { BlindsApi } from './blinds-api';
 
 // the calls of the room view (HAS-232): the paths of the gateway and what each sends
-describe('BlindsApi and LightsApi', () => {
+describe('BlindsApi', () => {
   let http: HttpTestingController;
   let blinds: BlindsApi;
-  let lights: LightsApi;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -18,7 +16,6 @@ describe('BlindsApi and LightsApi', () => {
     });
     http = TestBed.inject(HttpTestingController);
     blinds = TestBed.inject(BlindsApi);
-    lights = TestBed.inject(LightsApi);
   });
 
   afterEach(() => http.verify());
@@ -56,21 +53,6 @@ describe('BlindsApi and LightsApi', () => {
     expect(resume.request.method).toBe('DELETE');
     resume.flush(null, { status: 204, statusText: 'No Content' });
     await resumed;
-  });
-
-  it('switches an Eaton light and sets a dimmer by its point', async () => {
-    const on = firstValueFrom(lights.switch(12, true), { defaultValue: undefined });
-    const switched = http.expectOne((call) => call.url === '/home/amx/lights/12');
-    expect(switched.request.method).toBe('POST');
-    expect(switched.request.params.get('turn')).toBe('on');
-    switched.flush({ point: 12, status: 'OK' }, { status: 202, statusText: 'Accepted' });
-    await on;
-
-    const level = firstValueFrom(lights.setLevel(12, 60), { defaultValue: undefined });
-    const dimmed = http.expectOne((call) => call.url === '/home/amx/lights/12/level');
-    expect(dimmed.request.params.get('value')).toBe('60');
-    dimmed.flush({ point: 12, status: 'OK' }, { status: 202, statusText: 'Accepted' });
-    await level;
   });
 
   // HAS-252: the blinds page

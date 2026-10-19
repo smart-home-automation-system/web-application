@@ -9,6 +9,7 @@ import { provideI18nTesting } from '../../../testing/i18n';
 import { RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { SmartDevice } from '../../data-access/devices/device-registry-api';
 import { Room } from '../../data-access/heating/heating-api';
+import { RoomLights } from '../../data-access/light/light-api';
 import { Rooms } from './rooms';
 
 const DEVICES: readonly SmartDevice[] = [
@@ -52,8 +53,29 @@ const BLINDS: readonly RoomBlinds[] = [
   { room: 'office', blinds: [{ id: 1, position: 40, state: 'stopped', window: 'closed' }] },
 ];
 
-// HAS-232: the room view - four calls put together per room, and the controls of the window of
-// a room: a blind read again after every command, a light only sent to
+// the lights of light-service (HAS-292): the dimmer on and held by hand; the Shelly lamp is a
+// light the service skips (no lightKind), so it is not in the answer
+const LIGHTS: readonly RoomLights[] = [
+  {
+    room: 'office',
+    anyOn: true,
+    lights: [
+      {
+        id: 5,
+        name: 'Office dimmer',
+        kind: 'dimmer',
+        on: true,
+        brightness: 40,
+        source: 'external',
+        reachable: true,
+        heldUntil: '2026-10-17T20:30:00',
+      },
+    ],
+  },
+];
+
+// HAS-232: the room view - five calls put together per room, and the controls of the window of
+// a room: a blind and a light read again after every command
 describe('Rooms', () => {
   let http: HttpTestingController;
   let fixture: ComponentFixture<Rooms>;
@@ -76,6 +98,7 @@ describe('Rooms', () => {
     http.expectOne('/home/device/registry').flush(DEVICES);
     http.expectOne('/home/heating/rooms').flush(HEATING);
     http.expectOne('/home/blinds').flush(BLINDS);
+    http.expectOne('/home/light').flush(LIGHTS);
     fixture.detectChanges();
   });
 
@@ -99,6 +122,9 @@ describe('Rooms', () => {
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const button = (within: HTMLElement, label: string) =>
     [...within.querySelectorAll('button')].find((one) => text(one).includes(label))!;
+  // a button of a light by its first word: its hidden name ("Office dimmer") holds "Off" too
+  const command = (within: HTMLElement, label: string) =>
+    [...within.querySelectorAll('button')].find((one) => text(one).split(' ')[0] === label)!;
 
   async function openOffice(): Promise<HTMLElement> {
     button(tile('office'), 'Details').click();
@@ -116,6 +142,9 @@ describe('Rooms', () => {
     expect(text(office.querySelector('[data-row="blinds"] dd'))).toBe('40 %');
     expect(text(office.querySelector('[data-row="openingSensors"] dd'))).toBe('open');
     expect(text(office.querySelector('[data-row="other"] dd'))).toBe('1');
+    // the dimmer is on; the lamp the light service does not know is not known, never off
+    const bulbs = [...office.querySelectorAll('[data-row="lights"] mat-icon')].slice(1);
+    expect(bulbs.map((bulb) => bulb.getAttribute('data-state'))).toEqual(['on', 'unknown']);
     expect(text(tile('kitchen').querySelector('[data-row="temperature"] dd'))).toBe('none');
   });
 
@@ -129,10 +158,16 @@ describe('Rooms', () => {
     expect(text(window.querySelector('[data-blind="1"] .blind__name'))).toBe('Window');
     // the schedules have a page of their own
     expect(window.querySelector('[data-testid="blind-schedules"]')).toBeNull();
-    // a Shelly light has no control here; an Eaton one has
-    expect(text(window.querySelector('[data-light="6"]'))).toContain(
-      'Not controlled from here yet',
+    // the state the light service reports, the hold of the rules with it
+    const dimmer = window.querySelector('[data-light="5"]');
+    expect(text(dimmer?.querySelector('[data-testid="light-state"]'))).toBe('on · 40 %');
+    expect(text(dimmer?.querySelector('[data-testid="light-held"]'))).toBe(
+      'The rules of the room leave it alone until 20:30',
     );
+    // a light the service does not know: no control, and said why
+    const lamp = window.querySelector('[data-light="6"]');
+    expect(text(lamp)).toContain('The light service does not know this light');
+    expect(lamp?.querySelector('button')).toBeNull();
   });
 
   it('moves a blind and reads the blinds again', async () => {
@@ -177,28 +212,65 @@ describe('Rooms', () => {
     );
   });
 
-  it('sends a light and a level, and says only that they were sent', async () => {
+  it('switches a light and shows it only when the lights are read back', async () => {
+    const window = await openOffice();
+    const light = () => window.querySelector<HTMLElement>('[data-light="5"]')!;
+
+    command(light(), 'Off').click();
+    const off = http.expectOne((call) => call.url === '/home/light/5');
+    expect(off.request.method).toBe('POST');
+    expect(off.request.params.get('turn')).toBe('off');
+    expect(off.request.params.get('source')).toBe('dashboard');
+    off.flush(null, { status: 202, statusText: 'Accepted' });
+    await settled();
+    // no optimistic state: still on until the service says otherwise
+    expect(text(light().querySelector('[data-testid="light-state"]'))).toBe('on · 40 %');
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/light').flush([
+      {
+        room: 'office',
+        anyOn: false,
+        lights: [{ id: 5, kind: 'dimmer', on: false, brightness: 40 }],
+      },
+    ]);
+    await settled();
+
+    expect(text(light().querySelector('[data-testid="light-state"]'))).toBe('off');
+  });
+
+  it('sets the brightness of a dimmer from the level it has', async () => {
     const window = await openOffice();
     const light = window.querySelector<HTMLElement>('[data-light="5"]')!;
 
-    button(light, 'On').click();
-    const on = http.expectOne((call) => call.url === '/home/amx/lights/12');
-    expect(on.request.params.get('turn')).toBe('on');
-    on.flush({ point: 12, status: 'OK' }, { status: 202, statusText: 'Accepted' });
+    command(light, 'Set').click();
+    const level = http.expectOne((call) => call.url === '/home/light/5/brightness');
+    expect(level.request.params.get('value')).toBe('40');
+    expect(level.request.params.get('source')).toBe('dashboard');
+    level.flush(null, { status: 202, statusText: 'Accepted' });
     await settled();
-    expect(text(light.querySelector('[role="status"]'))).toBe('Sent');
-
-    button(light, 'Set').click();
-    const level = http.expectOne((call) => call.url === '/home/amx/lights/12/level');
-    expect(level.request.params.get('value')).toBe('50');
-    level.flush({ point: 12, status: 'OK' }, { status: 202, statusText: 'Accepted' });
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/light').flush(LIGHTS);
     await settled();
+  });
 
-    button(light, 'Off').click();
+  it('words a light that did not take the command in the words of the light service', async () => {
+    const window = await openOffice();
+    const light = () => window.querySelector<HTMLElement>('[data-light="5"]')!;
+
+    command(light(), 'On').click();
     http
-      .expectOne((call) => call.url === '/home/amx/lights/12')
-      .flush(null, { status: 502, statusText: 'Bad Gateway' });
+      .expectOne((call) => call.url === '/home/light/5')
+      .flush(
+        { errors: [{ message: 'Device failed', code: 'DEVICE_FAILED' }] },
+        { status: 502, statusText: 'Bad Gateway' },
+      );
     await settled();
-    expect(light.querySelector('app-api-error-strip')).not.toBeNull();
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/light').flush(LIGHTS);
+    await settled();
+
+    expect(text(light().querySelector('app-api-error-strip'))).toContain(
+      'The light did not take the command',
+    );
   });
 });

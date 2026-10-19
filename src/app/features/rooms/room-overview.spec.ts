@@ -4,7 +4,7 @@ import { toRoomViews } from '../../shared/room-heating/room-views';
 import { blindPositionLabel } from '../../shared/blinds/blind-position';
 import { shortName } from '../../shared/device-names/device-names';
 import { shortWindowLabel } from './room-labels';
-import { rowOf, toRoomOverview } from './room-overview';
+import { dims, lightState, rowOf, toRoomOverview } from './room-overview';
 
 const device = (
   id: number,
@@ -38,12 +38,34 @@ describe('toRoomOverview', () => {
     const office = toRoomOverview('office', DEVICES, undefined, undefined);
 
     expect(office.blinds.map((row) => row.device.id)).toEqual([1]);
-    expect(office.lights.map((one) => one.id)).toEqual([2]);
+    expect(office.lights.map((one) => one.device.id)).toEqual([2]);
     expect(office.motion.map((one) => one.id)).toEqual([3]);
     expect(office.openingSensors.map((one) => one.id)).toEqual([4]);
     expect(office.temperatureSensors.map((one) => one.id)).toEqual([5]);
     expect(office.other.map((one) => one.id)).toEqual([6, 7]);
     expect(rowOf(device(10, 'weather station'))).toBe('other');
+  });
+
+  // HAS-292: the state of a light is light-service's; what it does not say is not known, never off
+  it('joins a light with what the light service says of it - or with nothing', () => {
+    const answered = toRoomOverview('office', DEVICES, undefined, undefined, [
+      { room: 'office', lights: [{ id: 2, kind: 'dimmer', on: false, brightness: 30 }] },
+    ]);
+    const [light] = answered.lights;
+    expect(lightState(light)).toBe('off');
+    expect(light.unknownToService).toBe(false);
+    expect(dims(light)).toBe(true);
+
+    // the service answered without it: it skips a light it cannot drive
+    const [skipped] = toRoomOverview('office', DEVICES, undefined, undefined, []).lights;
+    expect(skipped.unknownToService).toBe(true);
+    expect(lightState(skipped)).toBe('unknown');
+
+    // no answer at all: nothing is known, and nothing is said against it
+    const [silent] = toRoomOverview('office', DEVICES, undefined, undefined, undefined).lights;
+    expect(silent.unknownToService).toBe(false);
+    expect(lightState(silent)).toBe('unknown');
+    expect(dims(silent)).toBe(false);
   });
 
   it('joins a blind with what the blinds service says of it - or with nothing', () => {

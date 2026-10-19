@@ -53,7 +53,7 @@
       }
     </section>
 
-    <!-- lights: switched through amx-service; no service keeps their state yet -->
+    <!-- lights: switched through light-service, which keeps their real state (HAS-292) -->
     <section class="section" data-section="lights">
       <h3 class="section__title">
         <mat-icon aria-hidden="true">lightbulb</mat-icon>{{ t('rooms.row.lights') }}
@@ -61,17 +61,44 @@
       @if (room.lights.length === 0) {
         <p class="section__note">{{ t('rooms.noDevice') }}</p>
       } @else {
-        <p class="section__note">{{ t('rooms.lights.stateUnknown') }}</p>
         <ul class="list">
-          @for (light of room.lights; track light.id) {
-            @let command = stateOf(light.id);
-            @let point = eatonPoint(light);
-            <li class="list__row list__row--control" [attr.data-light]="light.id">
+          @for (light of room.lights; track light.device.id) {
+            @let command = stateOf(light.device.id);
+            @let state = lightState(light);
+            @let name = light.device.name;
+            <li
+              class="list__row list__row--control"
+              [attr.data-light]="light.device.id"
+              [attr.data-state]="state"
+            >
               <span class="list__name">
-                <mat-icon class="list__bulb" aria-hidden="true">lightbulb</mat-icon>
-                {{ shortName(light.name, room.room, 'light') ?? t('rooms.unnamed') }}
+                <mat-icon class="list__bulb" [attr.data-state]="state" aria-hidden="true"
+                  >lightbulb</mat-icon
+                >
+                {{ shortName(name, room.room, 'light') ?? t('rooms.unnamed') }}
               </span>
-              @if (point !== undefined) {
+              <span class="list__state" data-testid="light-state">
+                {{
+                  t(
+                    state === 'on'
+                      ? 'rooms.lights.stateOn'
+                      : state === 'off'
+                        ? 'rooms.lights.stateOff'
+                        : 'rooms.lights.stateUnknown'
+                  )
+                }}
+                <!-- a dimmer keeps its level while off: it is the level it comes back at -->
+                @let brightness = light.state?.brightness;
+                @if (state === 'on' && brightness !== undefined) {
+                  · {{ t('rooms.lights.brightness', { value: brightness }) }}
+                }
+                @if (light.state?.reachable === false) {
+                  · <span class="list__warning">{{ t('rooms.lights.unreachable') }}</span>
+                }
+              </span>
+              @if (light.unknownToService) {
+                <span class="section__note list__wide">{{ t('rooms.lights.notInService') }}</span>
+              } @else {
                 <span class="list__controls">
                   <button
                     matButton="outlined"
@@ -80,7 +107,7 @@
                     (click)="switchLight(light, true)"
                   >
                     {{ t('rooms.lights.on') }}
-                    <span class="visually-hidden">{{ light.name }}</span>
+                    <span class="visually-hidden">{{ name }}</span>
                   </button>
                   <button
                     matButton="outlined"
@@ -89,42 +116,43 @@
                     (click)="switchLight(light, false)"
                   >
                     {{ t('rooms.lights.off') }}
-                    <span class="visually-hidden">{{ light.name }}</span>
+                    <span class="visually-hidden">{{ name }}</span>
                   </button>
                 </span>
-                @if (light.lightKind === 'dimmer') {
+                @if (dims(light)) {
                   <span class="list__slider">
-                    <mat-slider min="0" max="100" step="10" discrete>
+                    <mat-slider min="10" max="100" step="10" discrete>
                       <input
                         matSliderThumb
                         #lightLevel
-                        value="50"
-                        [attr.aria-label]="t('rooms.lights.level') + ' ' + (light.name ?? '')"
+                        [value]="light.state?.brightness ?? 50"
+                        [attr.aria-label]="t('rooms.lights.level') + ' ' + (name ?? '')"
                       />
                     </mat-slider>
                     <button
                       matButton
                       type="button"
                       [disabled]="command?.sending"
-                      (click)="setLevel(light, lightLevel.valueAsNumber)"
+                      (click)="setBrightness(light, lightLevel.valueAsNumber)"
                     >
                       {{ t('rooms.lights.setLevel') }}
+                      <span class="visually-hidden">{{ name }}</span>
                     </button>
                   </span>
                 }
-                <!-- always there, so that the word appearing does not move the buttons -->
-                <span class="list__sent" role="status">{{
-                  command?.sent ? t('rooms.lights.sent') : ''
+              }
+              @if (light.state?.heldUntil; as heldUntil) {
+                <span class="section__note list__wide" data-testid="light-held">{{
+                  t('rooms.lights.held', { time: heldUntil | houseDateTime: TIME })
                 }}</span>
-                @if (command?.error; as error) {
-                  <app-api-error-strip
-                    class="list__failure"
-                    [error]="error"
-                    [summary]="t('rooms.commandFailed')"
-                  />
-                }
-              } @else {
-                <span class="section__note">{{ t('rooms.lights.noControl') }}</span>
+              }
+              @if (command?.error; as error) {
+                <app-api-error-strip
+                  class="list__failure"
+                  [error]="error"
+                  [summary]="t('rooms.commandFailed')"
+                  [describeWith]="describeLightError"
+                />
               }
             </li>
           }

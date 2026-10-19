@@ -6,11 +6,12 @@ import { MatSliderModule } from '@angular/material/slider';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { CommandState, DeviceCommands } from '../../core/api/device-commands';
-import { RegisteredDevice } from '../../data-access/devices/device-registry-api';
-import { LightsApi } from '../../data-access/lights/lights-api';
+import { LightApi } from '../../data-access/light/light-api';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
+import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
+import { describeLightError } from '../../shared/lights/light-errors';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import {
   heaterKindLabel,
@@ -20,7 +21,7 @@ import {
 import { windowStateLabel } from '../../shared/room-heating/window-labels';
 import { BlindControl } from '../../shared/blinds/blind-control';
 import { shortName } from '../../shared/device-names/device-names';
-import { RoomOverview } from './room-overview';
+import { LightRow, RoomOverview, dims, lightState } from './room-overview';
 
 /** What the window of a room is opened with: signals, so that it follows the services. */
 export interface RoomDetailData {
@@ -29,6 +30,8 @@ export interface RoomDetailData {
   readonly floor: MessageKey;
   /** Reads the blinds again, resolved when that call has answered. */
   readonly refreshBlinds: () => Promise<void>;
+  /** Reads the lights again, resolved when that call has answered. */
+  readonly refreshLights: () => Promise<void>;
 }
 
 /** The size of the window, the same for every room - the devices page's. */
@@ -46,7 +49,8 @@ export const ROOM_DETAIL_SIZE = {
  * A command is sent at once, without a question (owner, 2026-10-17: frequent and reversible -
  * the question stays for the switch of the heating of the whole house). There is no optimistic
  * state: after a command to a blind the blinds are read again and only their answer moves what
- * is on screen; a light has no state any service keeps yet, so it is told as sent, never as on.
+ * is on screen - the blinds after a command to a blind, the lights (`light-service`, HAS-292)
+ * after a command to a light.
  */
 @Component({
   selector: 'app-room-detail',
@@ -59,6 +63,7 @@ export const ROOM_DETAIL_SIZE = {
     ApiErrorStrip,
     BlindControl,
     HouseAgePipe,
+    HouseDateTimePipe,
     LocalNumberPipe,
   ],
   templateUrl: './room-detail.html',
@@ -68,9 +73,9 @@ export const ROOM_DETAIL_SIZE = {
 })
 export class RoomDetail {
   protected readonly data = inject<RoomDetailData>(MAT_DIALOG_DATA);
-  private readonly lightsApi = inject(LightsApi);
+  private readonly lightApi = inject(LightApi);
 
-  /** One command per device at a time; a light is told as sent - its state is still not known. */
+  /** One command per device at a time, the device read again before the next one. */
   protected readonly commands = new DeviceCommands<number>();
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
@@ -82,33 +87,32 @@ export class RoomDetail {
   protected readonly heaterState = heaterState;
   protected readonly windowLabel = windowStateLabel;
   protected readonly shortName = shortName;
+  protected readonly lightState = lightState;
+  protected readonly dims = dims;
+  protected readonly describeLightError = describeLightError;
+  protected readonly TIME: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
 
   // a blind is read again after every command; only that answer moves what is on screen
   protected readonly readBack = () => this.data.refreshBlinds();
-
-  /** The point of an Eaton light, which is what `amx-service` switches; `undefined` for any other light. */
-  protected eatonPoint(light: RegisteredDevice): number | undefined {
-    const point = light.eaton?.point;
-    return light.vendor === 'eaton' && typeof point === 'number' && Number.isFinite(point)
-      ? point
-      : undefined;
-  }
 
   protected stateOf(id: number): CommandState | undefined {
     return this.commands.stateOf(id);
   }
 
-  protected switchLight(light: RegisteredDevice, on: boolean): void {
-    const point = this.eatonPoint(light);
-    if (point !== undefined) {
-      this.commands.send(light.id, this.lightsApi.switch(point, on));
-    }
+  // a light is read again after every command; only that answer moves what is on screen
+  private readonly readLights = () => this.data.refreshLights();
+
+  protected switchLight(light: LightRow, on: boolean): void {
+    this.commands.send(light.device.id, this.lightApi.turn(light.device.id, on), this.readLights);
   }
 
-  protected setLevel(light: RegisteredDevice, level: number): void {
-    const point = this.eatonPoint(light);
-    if (point !== undefined) {
-      this.commands.send(light.id, this.lightsApi.setLevel(point, level));
-    }
+  /** 1 ... 100: the service refuses 0 - "off" is the way to switch a light off. */
+  protected setBrightness(light: LightRow, value: number): void {
+    const brightness = Math.min(100, Math.max(1, Math.round(value)));
+    this.commands.send(
+      light.device.id,
+      this.lightApi.brightness(light.device.id, brightness),
+      this.readLights,
+    );
   }
 }
