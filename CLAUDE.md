@@ -403,7 +403,12 @@ e2e/              # Playwright tests
     source of the page: a bulb is lit when `on` is `true`, plain when `false`, faint when the
     service says nothing; the window adds the brightness while on, `reachable: false`, and
     `heldUntil` ("the rules of the room leave it alone until"). A command is followed by a read of
-    the lights (`refreshLights`), as for a blind - no optimistic state, no "Sent". A registry light
+    the lights (`refreshLights`), as for a blind - no optimistic state, no "Sent". **And once more
+    `LIGHTS_READ_AGAIN_AFTER_MS` (2.5 s) later** (HAS-293): an Eaton light reports its new state
+    through `amx-service` about a second after the 202, so the first read still answers the state
+    before (found live on 0.24.0). The command - and its buttons - is over with the first read;
+    the second is a timer the page clears when it is gone. The mock Eaton light reports a second
+    late too, so the browser test of the dimmer passes only with the second read. A registry light
     the service answered without (it skips one without `lightKind`) has no controls and says why
     (`unknownToService`); while the service has not answered, the controls stay. The codes of the
     commands have texts in `shared/lights/light-errors.ts` (test lists them); the rules' codes

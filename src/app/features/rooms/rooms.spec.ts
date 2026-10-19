@@ -10,7 +10,7 @@ import { RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { SmartDevice } from '../../data-access/devices/device-registry-api';
 import { Room } from '../../data-access/heating/heating-api';
 import { RoomLights } from '../../data-access/light/light-api';
-import { Rooms } from './rooms';
+import { LIGHTS_READ_AGAIN_AFTER_MS, Rooms } from './rooms';
 
 const DEVICES: readonly SmartDevice[] = [
   {
@@ -236,6 +236,51 @@ describe('Rooms', () => {
     await settled();
 
     expect(text(light().querySelector('[data-testid="light-state"]'))).toBe('off');
+  });
+
+  // HAS-293: an Eaton light reports a second after the command was taken
+  it('reads the lights once more a moment after a command, for a light that reports late', async () => {
+    const window = await openOffice();
+    const light = () => window.querySelector<HTMLElement>('[data-light="5"]')!;
+
+    command(light(), 'Off').click();
+    http
+      .expectOne((call) => call.url === '/home/light/5')
+      .flush(null, { status: 202, statusText: 'Accepted' });
+    await settled();
+    vi.advanceTimersByTime(1);
+    // the read right after the command: the light has not reported yet
+    http.expectOne('/home/light').flush(LIGHTS);
+    await settled();
+    expect(text(light().querySelector('[data-testid="light-state"]'))).toBe('on · 40 %');
+    // the command is over: the buttons are free while the second read is still to come
+    expect(command(light(), 'Off').disabled).toBe(false);
+
+    vi.advanceTimersByTime(LIGHTS_READ_AGAIN_AFTER_MS);
+    http
+      .expectOne('/home/light')
+      .flush([{ room: 'office', lights: [{ id: 5, kind: 'dimmer', on: false, brightness: 40 }] }]);
+    await settled();
+
+    expect(text(light().querySelector('[data-testid="light-state"]'))).toBe('off');
+  });
+
+  it('makes no second read of the lights once the page is gone', async () => {
+    const window = await openOffice();
+
+    command(window.querySelector<HTMLElement>('[data-light="5"]')!, 'On').click();
+    http
+      .expectOne((call) => call.url === '/home/light/5')
+      .flush(null, { status: 202, statusText: 'Accepted' });
+    await settled();
+    vi.advanceTimersByTime(1);
+    http.expectOne('/home/light').flush(LIGHTS);
+    await settled();
+    TestBed.inject(MatDialog).closeAll();
+    fixture.destroy();
+
+    vi.advanceTimersByTime(LIGHTS_READ_AGAIN_AFTER_MS);
+    http.expectNone('/home/light');
   });
 
   it('sets the brightness of a dimmer from the level it has', async () => {
