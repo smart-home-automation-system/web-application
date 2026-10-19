@@ -60,11 +60,12 @@ dashboards:
 - **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
   each kind of thing in it - temperature, heating, lights (a bulb each), blinds (a position each,
   the door first), motion, presence sensors, openings (windows and doors), the rest - and a window
-  with its devices: the **lights** (an Eaton light switched on or off, a dimmer set; no service
-  keeps the state of a light yet, so the window says a command was sent, never that a light is
-  on) and the **blinds** (open, stop, close, a position, and the pause of their schedules until
+  with its devices: the **lights** (HAS-292: every light, Eaton and Shelly, switched on or off
+  and a dimmer set through `light-service`, with its real state - on, off or not known yet, the
+  brightness, unreachable, and until when the rules of the room leave it alone after a change by
+  hand) and the **blinds** (open, stop, close, a position, and the pause of their schedules until
   their next run). The heating of a room is shown there and set on the heating page only. Nothing asks before a command; nothing is
-  shown before the services say so - a blind is read again after every command.
+  shown before the services say so - a blind or a light is read again after every command.
 - **Blinds** (HAS-252): at the top the **holidays** of the next 60 days (weekdays only - what the
   schedules count as days off besides the weekends; read only) and **the whole house** - open,
   stop or close every blind, the rooms one after the other. Under them the floors, a card of one
@@ -367,7 +368,8 @@ Endpoints used today:
 | `GET` | `/home/blinds/schedules`, `/home/blinds/schedules/{id}/today` | The schedules of the blinds and what the engine makes of each today (blinds), the list and then each day one after the other, every 60 s |
 | `POST` | `/home/blinds/schedules/{id}/enable`, `/disable` | Switches a schedule on or off (blinds); the schedules are read again |
 | `GET` | `/home/calendar/days?from=&to=` | The days of the next 60 days of the house (blinds: the holidays on weekdays), every 15 min. Needs `database-service` 0.14.0 or later |
-| `POST` | `/home/amx/lights/{point}?turn=on\|off`, `/home/amx/lights/{point}/level?value=` | Switches an Eaton light, sets a dimmer (rooms). The frame is sent; nothing reads the light back |
+| `GET` | `/home/light` | Every light by room with its state, brightness, reachability and `heldUntil` (rooms), polled every 10 s and right after every command. Needs `light-service` 0.6.0 and `api-gateway-service` 0.8.0 or later |
+| `POST` | `/home/light/{id}?turn=on\|off&source=dashboard`, `/home/light/{id}/brightness?value=1..100&source=dashboard` | Switches a light by its registry id, sets the brightness of a dimmer or an rgbw light (rooms). The rules engine holds a light changed from here; the lights are read again |
 | `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |
