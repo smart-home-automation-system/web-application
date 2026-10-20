@@ -313,12 +313,13 @@
                     </mat-button-toggle-group>
                   } @else {
                     @let range = rangeOf(metric);
+                    @let reach = reachableRange(metric, row.operator());
                     <mat-button-toggle-group
                       hideSingleSelectionIndicator
                       data-testid="condition-operator"
                       [attr.aria-label]="t('blinds.editor.operator')"
                       [value]="row.operator()"
-                      (change)="row.operator.set($event.value)"
+                      (change)="row.setOperator($event.value)"
                     >
                       <mat-button-toggle value="lt">{{
                         t('blinds.editor.below')
@@ -341,14 +342,23 @@
                         [formControl]="row.threshold"
                       />
                       <span matTextSuffix>{{ range?.unit }}</span>
-                      @if (range) {
-                        <mat-hint
-                          >{{ range.min | localNumber }} … {{ range.max | localNumber }}
-                          {{ range.unit }}</mat-hint
+                      @if (reach) {
+                        <!-- what can be met by the operator chosen: lt 1 lx is the darkest dusk -->
+                        <mat-hint data-testid="condition-threshold-hint"
+                          >{{ reach.min | localNumber }} … {{ reach.max | localNumber }}
+                          {{ range?.unit }}</mat-hint
                         >
                       }
                       @if (problemOf(row.threshold); as problem) {
-                        <mat-error>{{ t(problem) }}</mat-error>
+                        <mat-error>{{
+                          t(problem, {
+                            min: (range?.min | localNumber),
+                            max: (range?.max | localNumber),
+                            unit: range?.unit ?? '',
+                            reachable:
+                              ((row.operator() === 'lt' ? reach?.min : reach?.max) | localNumber),
+                          })
+                        }}</mat-error>
                       }
                     </mat-form-field>
                   }

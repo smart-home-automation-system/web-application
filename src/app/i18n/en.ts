@@ -675,6 +675,10 @@ export const en = {
         thresholdNumber: 'A threshold is a number.',
         thresholdDecimal: 'At most one decimal.',
         thresholdRange: 'Outside what the weather station can report.',
+        thresholdNeverBelow:
+          'Never true - the station reports {{ min }} {{ unit }} at the least. The lowest that can be met: below {{ reachable }} {{ unit }}.',
+        thresholdNeverAbove:
+          'Never true - the station reports {{ max }} {{ unit }} at the most. The highest that can be met: above {{ reachable }} {{ unit }}.',
         holdMissing: 'Give the minutes - 0 for at once.',
         holdRange: 'From 0 to 120 minutes.',
         actionMissing: 'Choose what the schedule does.',

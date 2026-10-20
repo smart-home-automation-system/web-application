@@ -83,7 +83,8 @@ dashboards:
   optional earliest and latest - the rooms or single blinds it moves, the conditions (illuminance,
   outside temperature, wind gust below / above a threshold, raining, window closed; each held for
   minutes) and what it does (open, close, or a position). Every rule of `blinds-service` is
-  checked before saving; a save is read back from the service, a failed one keeps the form; the
+  checked before saving - a threshold that can never be crossed too (`below 0 lx`; the hint shows
+  what the operator chosen can meet, `1 … 200 000 lx` below); a save is read back from the service, a failed one keeps the form; the
   line of today is what the engine makes of the saved schedule. Removing asks first.
 - **Heating**: the switch of the whole heating system, whether any room is being heated right
   now, the pump of the floor heating, **the rooms of the house** floor by floor - the

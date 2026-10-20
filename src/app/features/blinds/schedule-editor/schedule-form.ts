@@ -108,7 +108,7 @@ export class ConditionForm {
   readonly threshold = new FormControl('', {
     nonNullable: true,
     validators: validator((text) =>
-      isTruth(this.metric()) ? undefined : thresholdProblem(text, this.metric()),
+      isTruth(this.metric()) ? undefined : thresholdProblem(text, this.metric(), this.operator()),
     ),
   });
   readonly hold = new FormControl('0', {
@@ -134,6 +134,12 @@ export class ConditionForm {
   setMetric(metric: string): void {
     this.metric.set(metric);
     // the range of the threshold is the metric's
+    this.threshold.updateValueAndValidity();
+  }
+
+  setOperator(operator: string): void {
+    this.operator.set(operator);
+    // lt and gt can be met at different edges of the range
     this.threshold.updateValueAndValidity();
   }
 
