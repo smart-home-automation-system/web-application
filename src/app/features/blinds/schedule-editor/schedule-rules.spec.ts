@@ -13,6 +13,7 @@ import {
   holdProblem,
   nameProblem,
   offsetProblem,
+  reachableRange,
   scheduleProblem,
   targetsProblem,
   thresholdProblem,
@@ -30,7 +31,7 @@ const VALID: BlindSchedule = {
   action: 'close',
 };
 
-// a copy of ScheduleRules of blinds-service 0.8.x: a number changed there is changed here
+// a copy of ScheduleRules of blinds-service 0.9.x: a number changed there is changed here
 describe('schedule rules', () => {
   it('pins the numbers of the service', () => {
     expect([
@@ -42,9 +43,9 @@ describe('schedule rules', () => {
       MAX_CONDITIONS,
     ]).toEqual([3, 60, 180, 120, 30, 10]);
     expect(METRIC_RANGES).toEqual({
-      illuminance: { min: 0, max: 200_000, unit: 'lx' },
-      'outside temperature': { min: -50, max: 60, unit: '°C' },
-      'wind gust': { min: 0, max: 100, unit: 'm/s' },
+      illuminance: { min: 0, max: 200_000, unit: 'lx', step: 1 },
+      'outside temperature': { min: -50, max: 60, unit: '°C', step: 0.1 },
+      'wind gust': { min: 0, max: 100, unit: 'm/s', step: 0.1 },
       raining: null,
       'window closed': null,
     });
@@ -90,18 +91,63 @@ describe('schedule rules', () => {
   it('reads a threshold with a dot or a comma, one decimal, inside the range of its metric', () => {
     expect(decimalOf('21,5')).toBe(21.5);
     expect(decimalOf('abc')).toBeUndefined();
-    expect(thresholdProblem('', 'illuminance')).toBe('blinds.editor.problem.thresholdMissing');
-    expect(thresholdProblem('lots', 'illuminance')).toBe('blinds.editor.problem.thresholdNumber');
-    expect(thresholdProblem('21.55', 'outside temperature')).toBe(
+    expect(thresholdProblem('', 'illuminance', 'gt')).toBe(
+      'blinds.editor.problem.thresholdMissing',
+    );
+    expect(thresholdProblem('lots', 'illuminance', 'gt')).toBe(
+      'blinds.editor.problem.thresholdNumber',
+    );
+    expect(thresholdProblem('21.55', 'outside temperature', 'gt')).toBe(
       'blinds.editor.problem.thresholdDecimal',
     );
     // trailing zeros are no decimals, as for the service's BigDecimal
-    expect(thresholdProblem('21.50', 'outside temperature')).toBeUndefined();
-    expect(thresholdProblem('-50', 'outside temperature')).toBeUndefined();
-    expect(thresholdProblem('-50.1', 'outside temperature')).toBe(
+    expect(thresholdProblem('21.50', 'outside temperature', 'gt')).toBeUndefined();
+    expect(thresholdProblem('-50', 'outside temperature', 'gt')).toBeUndefined();
+    expect(thresholdProblem('-50.1', 'outside temperature', 'gt')).toBe(
       'blinds.editor.problem.thresholdRange',
     );
-    expect(thresholdProblem('200001', 'illuminance')).toBe('blinds.editor.problem.thresholdRange');
+    expect(thresholdProblem('200001', 'illuminance', 'lt')).toBe(
+      'blinds.editor.problem.thresholdRange',
+    );
+  });
+
+  // HAS-294: the service compares strictly - illuminance lt 0 kept a door open all night
+  it('refuses a threshold its operator can never cross', () => {
+    expect(thresholdProblem('0', 'illuminance', 'lt')).toBe(
+      'blinds.editor.problem.thresholdNeverBelow',
+    );
+    expect(thresholdProblem('0,0', 'illuminance', 'lt')).toBe(
+      'blinds.editor.problem.thresholdNeverBelow',
+    );
+    expect(thresholdProblem('0', 'wind gust', 'lt')).toBe(
+      'blinds.editor.problem.thresholdNeverBelow',
+    );
+    expect(thresholdProblem('-50', 'outside temperature', 'lt')).toBe(
+      'blinds.editor.problem.thresholdNeverBelow',
+    );
+    expect(thresholdProblem('200000', 'illuminance', 'gt')).toBe(
+      'blinds.editor.problem.thresholdNeverAbove',
+    );
+    expect(thresholdProblem('60', 'outside temperature', 'gt')).toBe(
+      'blinds.editor.problem.thresholdNeverAbove',
+    );
+    expect(thresholdProblem('100.0', 'wind gust', 'gt')).toBe(
+      'blinds.editor.problem.thresholdNeverAbove',
+    );
+    // the other edge of each can be met
+    expect(thresholdProblem('1', 'illuminance', 'lt')).toBeUndefined();
+    expect(thresholdProblem('0.1', 'wind gust', 'lt')).toBeUndefined();
+    expect(thresholdProblem('0', 'illuminance', 'gt')).toBeUndefined();
+    expect(thresholdProblem('200000', 'illuminance', 'lt')).toBeUndefined();
+    expect(thresholdProblem('59.9', 'outside temperature', 'gt')).toBeUndefined();
+  });
+
+  it('hints the thresholds an operator can meet - the darkest dusk is lt 1 lx', () => {
+    expect(reachableRange('illuminance', 'lt')).toEqual({ min: 1, max: 200_000 });
+    expect(reachableRange('illuminance', 'gt')).toEqual({ min: 0, max: 199_999 });
+    expect(reachableRange('outside temperature', 'lt')).toEqual({ min: -49.9, max: 60 });
+    expect(reachableRange('wind gust', 'gt')).toEqual({ min: 0, max: 99.9 });
+    expect(reachableRange('raining', 'is')).toBeUndefined();
   });
 
   it('wants the latest after the earliest', () => {
@@ -174,6 +220,13 @@ describe('schedule rules', () => {
         {
           ...VALID,
           conditions: [{ metric: 'illuminance', operator: 'is', value: true, holdMinutes: 0 }],
+        },
+      ],
+      [
+        'illuminance lt 0, never true',
+        {
+          ...VALID,
+          conditions: [{ metric: 'illuminance', operator: 'lt', threshold: 0, holdMinutes: 0 }],
         },
       ],
       ['a position for open', { ...VALID, action: 'open', position: 50 }],

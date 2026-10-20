@@ -670,6 +670,10 @@ export const pl: Messages = {
         thresholdNumber: 'Próg to liczba.',
         thresholdDecimal: 'Najwyżej jedno miejsce po przecinku.',
         thresholdRange: 'Poza tym, co może podać stacja pogodowa.',
+        thresholdNeverBelow:
+          'Nigdy nie spełnione - stacja podaje co najmniej {{ min }} {{ unit }}. Najniższy próg do spełnienia: poniżej {{ reachable }} {{ unit }}.',
+        thresholdNeverAbove:
+          'Nigdy nie spełnione - stacja podaje najwyżej {{ max }} {{ unit }}. Najwyższy próg do spełnienia: powyżej {{ reachable }} {{ unit }}.',
         holdMissing: 'Podaj minuty - 0 dla od razu.',
         holdRange: 'Od 0 do 120 minut.',
         actionMissing: 'Wybierz, co robi harmonogram.',

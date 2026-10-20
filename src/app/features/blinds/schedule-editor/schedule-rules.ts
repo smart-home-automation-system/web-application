@@ -2,7 +2,7 @@ import { BlindSchedule, WindowEnd } from '../../../data-access/blinds/blind-sche
 import { MessageKey } from '../../../i18n/messages';
 
 /**
- * The rules of a schedule of the blinds - a copy of `ScheduleRules` of `blinds-service` 0.8.x,
+ * The rules of a schedule of the blinds - a copy of `ScheduleRules` of `blinds-service` 0.9.x,
  * which answers `INVALID_SCHEDULE` with the first rule a body breaks. The editor checks every one
  * of them before it sends, field by field, so that a refusal says which field it is about; the
  * service checks them again. **A rule changed there is changed here** (the test of this file
@@ -22,11 +22,15 @@ export const DAY_TYPES = ['workday', 'day off', 'any'] as const;
 export const WINDOW_KINDS = ['clock', 'sunrise', 'sunset'] as const;
 export const ACTIONS = ['open', 'close', 'position'] as const;
 
-/** A metric compared with a threshold: what the weather station can report, with room to spare. */
+/**
+ * A metric compared with a threshold: what the weather station can report, with room to spare,
+ * and `step`, the finest it reports by - for the hint of the thresholds that can be met.
+ */
 export interface MetricRange {
   readonly min: number;
   readonly max: number;
   readonly unit: string;
+  readonly step: number;
 }
 
 /**
@@ -34,9 +38,9 @@ export interface MetricRange {
  * compared `lt` / `gt` with a threshold, the two without one `is` a truth.
  */
 export const METRIC_RANGES: Readonly<Record<string, MetricRange | null>> = {
-  illuminance: { min: 0, max: 200_000, unit: 'lx' },
-  'outside temperature': { min: -50, max: 60, unit: '°C' },
-  'wind gust': { min: 0, max: 100, unit: 'm/s' },
+  illuminance: { min: 0, max: 200_000, unit: 'lx', step: 1 },
+  'outside temperature': { min: -50, max: 60, unit: '°C', step: 0.1 },
+  'wind gust': { min: 0, max: 100, unit: 'm/s', step: 0.1 },
   raining: null,
   'window closed': null,
 };
@@ -50,6 +54,26 @@ export function isTruth(metric: string): boolean {
 
 export function rangeOf(metric: string): MetricRange | undefined {
   return Object.hasOwn(METRIC_RANGES, metric) ? (METRIC_RANGES[metric] ?? undefined) : undefined;
+}
+
+/**
+ * The thresholds of a metric that can be met by its operator: the service compares strictly, so
+ * `lt` at the least of a range and `gt` at the most are never true (HAS-294 - illuminance lt 0
+ * kept a door open all night). For the hint: the darkest dusk that can be met is lt 1 lx.
+ */
+export function reachableRange(
+  metric: string,
+  operator: string,
+): { readonly min: number; readonly max: number } | undefined {
+  const range = rangeOf(metric);
+  if (range === undefined) {
+    return undefined;
+  }
+  // rounded: -50 + 0.1 is -49.9, not -49.900000000000006
+  const shift = (value: number) => Math.round(value * 10) / 10;
+  return operator === 'lt'
+    ? { min: shift(range.min + range.step), max: range.max }
+    : { min: range.min, max: shift(range.max - range.step) };
 }
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -118,8 +142,16 @@ export function decimalOf(text: string): number | undefined {
   return DECIMAL.test(value) ? Number(value.replace(',', '.')) : undefined;
 }
 
-/** The threshold of a metric with a range: a number with at most one decimal, inside the range. */
-export function thresholdProblem(text: string, metric: string): MessageKey | undefined {
+/**
+ * The threshold of a metric with a range: a number with at most one decimal, inside the range,
+ * and one its operator can cross - `lt` above the least, `gt` below the most, as the service
+ * wants it (`illuminance lt 0 is never true`).
+ */
+export function thresholdProblem(
+  text: string,
+  metric: string,
+  operator: string,
+): MessageKey | undefined {
   if (text.trim() === '') {
     return 'blinds.editor.problem.thresholdMissing';
   }
@@ -132,8 +164,17 @@ export function thresholdProblem(text: string, metric: string): MessageKey | und
     return 'blinds.editor.problem.thresholdDecimal';
   }
   const range = rangeOf(metric);
-  return range && (value < range.min || value > range.max)
-    ? 'blinds.editor.problem.thresholdRange'
+  if (range === undefined) {
+    return undefined;
+  }
+  if (value < range.min || value > range.max) {
+    return 'blinds.editor.problem.thresholdRange';
+  }
+  if (operator === 'lt' && value <= range.min) {
+    return 'blinds.editor.problem.thresholdNeverBelow';
+  }
+  return operator === 'gt' && value >= range.max
+    ? 'blinds.editor.problem.thresholdNeverAbove'
     : undefined;
 }
 
@@ -214,7 +255,7 @@ export function scheduleProblem(schedule: BlindSchedule): MessageKey | undefined
             }
             return condition.operator !== 'lt' && condition.operator !== 'gt'
               ? 'blinds.editor.problem.invalid'
-              : thresholdProblem(String(condition.threshold ?? ''), metric);
+              : thresholdProblem(String(condition.threshold ?? ''), metric, condition.operator);
           })
           .find((problem) => problem !== undefined)) ??
     actionProblem(schedule.action, schedule.position)

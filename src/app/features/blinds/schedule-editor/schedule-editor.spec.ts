@@ -147,6 +147,31 @@ describe('ScheduleEditor', () => {
       // nothing was sent: verify() finds no request
     });
 
+    // HAS-294: the dusk close of a door was saved as illuminance lt 0 and never ran
+    it('refuses a threshold that can never be met and hints the one that can', async () => {
+      byTestId('condition-add')!.click();
+      fixture.detectChanges();
+      choose('condition-operator', 'below');
+      fixture.detectChanges();
+      // what lt can meet: the darkest dusk is below 1 lx
+      expect(byTestId('condition-threshold-hint')?.textContent?.replace(/s+/g, ' ').trim()).toBe(
+        '1 … 200,000 lx',
+      );
+
+      type(byTestId('condition-threshold') as HTMLInputElement, '0');
+      // Material shows an error, in place of the hint, once the field is left
+      byTestId('condition-threshold')!.dispatchEvent(new Event('blur'));
+      fixture.detectChanges();
+
+      expect(said()).toContain(
+        'Never true - the station reports 0 lx at the least. The lowest that can be met: below 1 lx.',
+      );
+
+      type(byTestId('condition-threshold') as HTMLInputElement, '1');
+      fixture.detectChanges();
+      expect(said()).not.toContain('Never true');
+    });
+
     it('stores the schedule as entered and opens it at its own address', async () => {
       type(byTestId('schedule-name') as HTMLInputElement, '  Night close ');
       const [from, to] = element().querySelectorAll<HTMLInputElement>('[data-testid="end-time"]');

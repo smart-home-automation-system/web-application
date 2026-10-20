@@ -70,6 +70,18 @@ describe('schedule form', () => {
     expect(row.threshold.errors).toEqual({ problem: 'blinds.editor.problem.thresholdRange' });
   });
 
+  it('checks a threshold again when the operator changes - lt 0 lx is never true', () => {
+    const row = new ConditionForm();
+    row.threshold.setValue('0');
+    expect(row.threshold.valid).toBe(true);
+
+    row.setOperator('lt');
+    expect(row.threshold.errors).toEqual({ problem: 'blinds.editor.problem.thresholdNeverBelow' });
+
+    row.threshold.setValue('1');
+    expect(row.threshold.valid).toBe(true);
+  });
+
   it('keeps a target as one key of the select', () => {
     expect(targetKey({ room: 'living room' })).toBe('room:living room');
     expect(targetKey({ deviceId: 7 })).toBe('blind:7');

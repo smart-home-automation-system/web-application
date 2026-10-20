@@ -53,6 +53,7 @@ import {
   nameProblem,
   normaliseName,
   rangeOf,
+  reachableRange,
   targetsProblem,
   windowProblem,
 } from './schedule-rules';
@@ -203,6 +204,7 @@ export class ScheduleEditor {
   protected readonly problemOf = problemOf;
   protected readonly isTruth = isTruth;
   protected readonly rangeOf = rangeOf;
+  protected readonly reachableRange = reachableRange;
   protected readonly describeError = describeBlindsError;
 
   protected readonly kindLabels: Readonly<Record<string, MessageKey>> = {
