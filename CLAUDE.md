@@ -502,6 +502,12 @@ e2e/              # Playwright tests
     metrics are pinned by its test; **a rule changed there is changed here**. Every rule is checked
     field by field before anything is sent; `scheduleProblem` checks a whole body for the mock
     API, which refuses what the service refuses. A threshold takes a comma, an offset a plus.
+    **A threshold must be crossable** (HAS-294): the service compares strictly, so `lt` at the
+    least of a range and `gt` at the most are refused (`thresholdNeverBelow` / `-Above`, with
+    the threshold that can be met); a change of the operator checks the threshold again
+    (`ConditionForm.setOperator`). The hint is `reachableRange` - the range moved in by the
+    `step` the station reports by (`1 … 200 000 lx` for `lt`); Material shows the error in its
+    place.
   - **A save sends the schedule whole and reads it back** (`PUT` replaces it, `enabled`
     included); the form is filled from what the service stored. Of the answer of a `POST` only
     the id is used - the page moves to the new address and reads it there. A failed save keeps
