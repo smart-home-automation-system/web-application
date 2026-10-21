@@ -225,6 +225,16 @@ describe('Overview', () => {
       ).toBe('Milczące czujniki: 2 z 3.');
     });
 
+    // the failures of the other calls are not held back by the call of the state (review of HAS-266)
+    it('tells a failure of the rooms while the state of the system still loads', async () => {
+      fail(rooms, new ApiError('server', 502));
+
+      const heatingTile = await tile('heating');
+
+      expect(heatingTile.querySelector('mat-progress-bar')).toBeTruthy();
+      expect(words(heatingTile.querySelector('[role="alert"]'))).toContain('(error 502)');
+    });
+
     it('tells a failure of the rooms or the sensors in the tile, apart from the state', async () => {
       answerAll();
       fail(sensors, new ApiError('server', 502));

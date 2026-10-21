@@ -124,6 +124,16 @@ describe('ViewBackground', () => {
     expect(second.classList.contains(SHOWN)).toBe(true);
   });
 
+  // a photo not on screen yet has no fade to end: it must not stay in the page (HAS-266)
+  it('drops at once a photo still loading when it is no longer wanted', async () => {
+    await harness.navigateByUrl('/overview');
+    expect(names()).toEqual(['home']);
+
+    await harness.navigateByUrl('/about');
+
+    expect(names()).toEqual([]);
+  });
+
   it('follows the switch of the settings', async () => {
     await harness.navigateByUrl('/overview');
     arrives(photos()[0]);

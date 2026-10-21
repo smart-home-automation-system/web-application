@@ -180,7 +180,7 @@ describe('Rooms', () => {
   it('says that the service lists no heaters when the answer carries no list', async () => {
     answer(rooms, [{ name: 'office' }]);
 
-    expect(words(await room('office'))).toContain('The service does not list the heaters.');
+    expect(words(await room('office'))).toContain('Heaters not listed');
   });
 
   it('groups the rooms by floor, each floor under its name', async () => {
@@ -213,6 +213,28 @@ describe('Rooms', () => {
         await lines('kitchen'),
       ]).size,
     ).toBe(1);
+  });
+
+  // the words of My room and the rooms view (review of HAS-266)
+  it('says since when a window is open, and that it holds the heating', async () => {
+    answer(rooms, [
+      { ...OFFICE, window: { state: 'open', openSince: '2026-10-08T14:18:00', hold: true } },
+    ]);
+
+    const line = (await room('office')).querySelector('.room__window-line');
+
+    expect(words(line?.querySelector('[data-testid="room-window"]'))).toContain(
+      'opened 12 min ago',
+    );
+    expect(line?.querySelector('[data-testid="room-held"]')).toBeTruthy();
+  });
+
+  // as many lines for heaters in every tile as the room with the most has (review of HAS-266)
+  it('keeps room in every tile for the heaters of the room with the most', async () => {
+    const radiator = { type: 'radiator', schedules: [] };
+    answer(rooms, [SAUNA, { name: 'office', heaters: [radiator, radiator, radiator] }]);
+
+    expect((await card()).style.getPropertyValue('--heater-lines')).toBe('3');
   });
 
   describe('the schedule of a room, in a window', () => {
@@ -329,6 +351,19 @@ describe('Rooms', () => {
       const notes = [...(await open('sauna')).querySelectorAll('.weeks > .dialog__note')];
 
       expect(notes.map(words)).toEqual(['No heater']);
+    });
+
+    it('says that the service no longer lists the room, not that its heaters are unknown', async () => {
+      answer(rooms, [LIVING_ROOM, OFFICE]);
+      const shown = await open('office');
+
+      answer(rooms, [LIVING_ROOM]);
+      await fixture.whenStable();
+
+      expect(words(shown.querySelector('[data-testid="room-gone"]'))).toBe(
+        'The heating service no longer lists this room.',
+      );
+      expect(words(shown)).not.toContain('does not list the heaters');
     });
 
     it('follows the next answers of the service', async () => {

@@ -67,6 +67,14 @@ export class Rooms {
   private readonly views = computed(() => toRoomViews(this.rooms.value()));
   protected readonly floors = computed(() => groupByFloor(this.views()));
 
+  /**
+   * The lines every tile keeps for heaters: as many as the room with the most has, two at least -
+   * so that a room with three does not make its tile taller than the others (review of HAS-266).
+   */
+  protected readonly heaterLines = computed(() =>
+    Math.max(2, ...this.views().map((room) => room.heaters?.length ?? 0)),
+  );
+
   /** Whether the answer is a list at all: a 200 without a body is not "no rooms". */
   protected readonly listed = computed(() => Array.isArray(this.rooms.value()));
 

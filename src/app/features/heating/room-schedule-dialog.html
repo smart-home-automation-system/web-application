@@ -19,7 +19,10 @@
 
     @let room = data.room();
     <div class="weeks">
-      @if (room === undefined || room.heaters === undefined) {
+      @if (room === undefined) {
+        <!-- the next answer no longer has the room: not a room whose heaters are unknown -->
+        <p class="dialog__note" data-testid="room-gone">{{ t('heating.rooms.schedule.gone') }}</p>
+      } @else if (room.heaters === undefined) {
         <p class="dialog__note">{{ t('heating.rooms.heatersUnknown') }}</p>
       } @else {
         @for (heater of room.heaters; track $index) {

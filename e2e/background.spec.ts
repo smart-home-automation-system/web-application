@@ -24,9 +24,10 @@ test.describe('photo behind a view', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
   });
 
+  // every page of the menu has a photo since HAS-266: the page of an unknown address has none
   test('is absent from a view that names no photo', async ({ page }) => {
-    await page.goto('/about');
-    await expect(page.getByRole('heading', { level: 1, name: 'About' })).toBeVisible();
+    await page.goto('/no-such-page');
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
 
     await expect(page.locator('app-view-background img')).toHaveCount(0);
     await expect(page.locator('app-view-background')).toBeHidden();

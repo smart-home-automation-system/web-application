@@ -122,9 +122,12 @@ mat-card-content {
 // the room of two heaters, whether the room has one, two or none
 .room__heaters {
   display: grid;
+  // a grid item may be narrower than its text, so the ellipsis of a line can work
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 2px;
-  min-height: 2.6rem;
+  // 1.3rem a line, for as many heaters as the room with the most has (rooms.ts)
+  min-height: calc(var(--heater-lines, 2) * 1.3rem);
   margin-top: 4px;
 }
 

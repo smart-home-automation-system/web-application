@@ -72,6 +72,9 @@ export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather
             <ng-content />
             <app-api-error-strip [error]="resource().error()" />
           }
+          <!-- the failures of the other calls of a tile (the heating: its rooms and sensors) are
+               told while its own call still loads too -->
+          <ng-content select="[tileFailures]" />
         </mat-card-content>
       </mat-card>
     </ng-container>

@@ -361,4 +361,16 @@ describe('Household', () => {
     // only a change carried out closes the window
     expect(document.querySelector('mat-dialog-container')).toBeNull();
   });
+
+  // what was typed is not lost to Escape or a click beside the window (review of HAS-266)
+  it('closes the window of a new member with its buttons only', async () => {
+    answerTheRegistryWith([AURELIA, BORYS]);
+    button(page(), 'Add a member')!.click();
+    fixture.detectChanges();
+    await settled();
+
+    const [opened] = TestBed.inject(MatDialog).openDialogs;
+
+    expect(opened.disableClose).toBe(true);
+  });
 });

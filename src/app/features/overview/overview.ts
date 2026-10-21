@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
-import { LanguageStore } from '../../core/i18n/language-store';
 import { Ticker } from '../../core/time/ticker';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
@@ -78,8 +77,6 @@ export class Overview {
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
   private readonly ticker = inject(Ticker);
   private readonly heatingApi = inject(HeatingApi);
-  private readonly transloco = inject(TranslocoService);
-  private readonly language = inject(LanguageStore).language;
 
   // the state of the system only: the switch is on the heating page (owner, 2026-10-21, HAS-266)
   protected readonly heating = this.heatingApi.watchStatus();
@@ -203,17 +200,7 @@ export class Overview {
   // ---- sensors ----
 
   private readonly sensorRows = computed(() => toSensorRows(this.sensors.value()));
+  /** For the red light of the heating tile; its words are put in the template, which follows a
+   * language whose texts arrive later (review of HAS-266). */
   protected readonly sensorSummary = computed(() => summarise(this.sensorRows()));
-  /**
-   * The blinking light of the heating tile (owner, 2026-10-21, HAS-266): how many sensors fell
-   * silent, in the words of the language on screen; none while every one reports.
-   */
-  protected readonly silentSensorsText = computed(() => {
-    // read so that the words follow the language
-    this.language();
-    const { silent, total } = this.sensorSummary();
-    return silent > 0
-      ? this.transloco.translate('heating.sensors.silentCount', { silent, total })
-      : undefined;
-  });
 }

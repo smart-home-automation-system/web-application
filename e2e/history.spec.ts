@@ -125,11 +125,12 @@ test.describe('the history of a room', () => {
   async function open(page: Page, room: string): Promise<Locator> {
     await page.goto('/heating');
     const entry = page.getByTestId('rooms').locator(`[data-room="${room}"]`);
-    await entry.getByRole('button').click();
-    return entry.getByTestId('room-history');
+    // the history is in the window of the schedule of the room (HAS-266)
+    await entry.getByTestId('room-schedule').click();
+    return page.getByRole('dialog').getByTestId('room-history');
   }
 
-  test('is drawn in the panel of the room, with the schedule the room has today', async ({
+  test('is drawn in the window of the room, with the schedule the room has today', async ({
     page,
   }) => {
     const history = await open(page, 'living room');

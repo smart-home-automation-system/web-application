@@ -150,6 +150,7 @@ export const pl: Messages = {
       noTarget: 'Teraz poza harmonogramem',
       noHeater: 'Bez ogrzewania',
       heatersUnknown: 'Serwis nie podaje ogrzewania tego pokoju.',
+      heatersNotListed: 'Grzejniki nieznane',
       legend:
         'Cel: temperatura, której harmonogram wymaga w tej chwili. Wymaga grzania: w pokoju jest chłodniej. Grzejnik bez stanu nie odpowiedział od startu serwisu ogrzewania.',
       heater: {
@@ -180,6 +181,7 @@ export const pl: Messages = {
         close: 'Zamknij',
         readOnly:
           'Serwis ogrzewania nie przyjmuje jeszcze zmian harmonogramów: są pokazane tak, jak je zapisano.',
+        gone: 'Serwis ogrzewania nie podaje już tego pokoju.',
       },
     },
   },

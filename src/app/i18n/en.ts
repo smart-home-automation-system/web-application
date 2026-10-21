@@ -150,6 +150,7 @@ export const en = {
       noTarget: 'No schedule right now',
       noHeater: 'No heater',
       heatersUnknown: 'The service does not list the heaters.',
+      heatersNotListed: 'Heaters not listed',
       legend:
         'Target: what the schedule asks for now. Calls for heat: the room is colder. No status: the relay has not answered since the service started.',
       heater: {
@@ -180,6 +181,7 @@ export const en = {
         close: 'Close',
         readOnly:
           'The heating service does not take changes to the schedules yet: they are shown as stored.',
+        gone: 'The heating service no longer lists this room.',
       },
     },
   },

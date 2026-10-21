@@ -76,6 +76,9 @@ export class Household {
       ...ADD_MEMBER_DIALOG_SIZE,
       data,
       autoFocus: 'first-tabbable',
+      // Escape or a click beside it would lose what was typed, or the failure of a change on its
+      // way: the window closes with the buttons of the form only (review of HAS-266)
+      disableClose: true,
     });
   }
 }

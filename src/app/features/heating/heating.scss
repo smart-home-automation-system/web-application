@@ -84,8 +84,11 @@ mat-card-content {
 }
 
 // the rooms under the row, as wide as their widest floor and no wider (owner, 2026-10-21)
+// - and never narrower than a few tiles, or it is a strip while it holds only a progress bar or a
+// failure (review of HAS-266)
 .rooms {
   width: fit-content;
+  min-width: min(100%, 480px);
   max-width: 100%;
   margin-inline: auto;
 }

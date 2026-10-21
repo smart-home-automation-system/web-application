@@ -13,7 +13,14 @@
       link="/heating"
       waitingLabel="heatingSwitch.loading"
       [resource]="heating"
-      [signal]="silentSensorsText()"
+      [signal]="
+        sensorSummary().silent > 0
+          ? t('heating.sensors.silentCount', {
+              silent: sensorSummary().silent,
+              total: sensorSummary().total,
+            })
+          : undefined
+      "
       data-testid="tile-heating"
     >
       @let on = heatingEnabled();
@@ -73,8 +80,10 @@
       }
       <!-- the rooms and the sensors are calls of their own: a failure of either is told here,
            apart from the state of the system (the tile tells the freshness of that one) -->
-      <app-api-error-strip [error]="rooms.error()" />
-      <app-api-error-strip [error]="sensors.error()" />
+      <div tileFailures>
+        <app-api-error-strip [error]="rooms.error()" />
+        <app-api-error-strip [error]="sensors.error()" />
+      </div>
     </app-domain-tile>
 
     <app-domain-tile

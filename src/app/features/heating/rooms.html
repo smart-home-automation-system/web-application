@@ -1,5 +1,10 @@
 <ng-container *transloco="let t">
-  <mat-card appearance="outlined" class="rooms card--domain" data-testid="rooms">
+  <mat-card
+    appearance="outlined"
+    class="rooms card--domain"
+    data-testid="rooms"
+    [style.--heater-lines]="heaterLines()"
+  >
     <mat-card-header>
       <div mat-card-avatar class="domain-badge"><mat-icon>meeting_room</mat-icon></div>
       <mat-card-title>{{ t('heating.rooms.title') }}</mat-card-title>
@@ -54,7 +59,10 @@
 
                   <div class="room__heaters">
                     @if (room.heaters === undefined) {
-                      <span class="room__detail">{{ t('heating.rooms.heatersUnknown') }}</span>
+                      <!-- one line, as a heater: the sentence of the window would wrap -->
+                      <span class="room__detail heater__text">{{
+                        t('heating.rooms.heatersNotListed')
+                      }}</span>
                     } @else {
                       @for (heater of room.heaters; track $index) {
                         <span
@@ -65,7 +73,10 @@
                           <mat-icon class="heater__icon" aria-hidden="true">{{
                             kindIcon(heater)
                           }}</mat-icon>
-                          <span class="heater__text"
+                          <!-- the whole line in a tooltip, should a language not fit the tile -->
+                          <span
+                            class="heater__text"
+                            [attr.title]="t(kindLabel(heater)) + ': ' + t(stateLabel(heater))"
                             >{{ t(kindLabel(heater)) }}:&ngsp;{{ t(stateLabel(heater)) }}</span
                           >
                           @if (heater.callsForHeat === true) {
@@ -103,7 +114,7 @@
                           }}</mat-icon>
                           {{ t(windowLabel(window.state)) }}
                           @if (window.openSince | houseAge; as age) {
-                            &ngsp;{{ age }}
+                            &ngsp;{{ t('window.opened') }}&ngsp;{{ age }}
                           }
                         </span>
                       }
