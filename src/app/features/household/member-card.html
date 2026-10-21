@@ -160,7 +160,7 @@
           }
         </section>
 
-        <section class="block" [attr.aria-labelledby]="id + '-link'">
+        <section class="block block--link" [attr.aria-labelledby]="id + '-link'">
           <h3 class="block__title" [id]="id + '-link'">{{ t('household.link.title') }}</h3>
           @if (active()) {
             <a class="link" data-testid="personal-link" [href]="link()">{{ link() }}</a>

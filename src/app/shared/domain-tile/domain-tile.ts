@@ -9,6 +9,7 @@ import { PollingResource } from '../../core/api/polling-resource';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../api-error/api-error-strip';
 import { DataFreshness } from '../data-freshness/data-freshness';
+import { SignalLight } from '../signal-light/signal-light';
 
 /** A domain of the house: the colour of its cards (`--app-domain-…` in `_seasons.scss`). */
 export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather' | 'blinds';
@@ -32,6 +33,7 @@ export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather
     TranslocoDirective,
     ApiErrorStrip,
     DataFreshness,
+    SignalLight,
   ],
   template: `
     <ng-container *transloco="let t">
@@ -40,7 +42,7 @@ export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather
           <div mat-card-avatar class="domain-badge">
             <mat-icon>{{ icon() }}</mat-icon>
           </div>
-          <mat-card-title>
+          <mat-card-title class="tile__title">
             @if (link(); as path) {
               <a class="tile__link" [routerLink]="path">
                 <span>{{ t(heading()) }}</span>
@@ -48,6 +50,11 @@ export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather
               </a>
             } @else {
               {{ t(heading()) }}
+            }
+            <!-- a red light blinking next to the title: what somebody should look at, in its words
+                 in the tooltip and for a screen reader (the silent sensors of the heating, HAS-266) -->
+            @if (signal(); as said) {
+              <app-signal-light data-testid="tile-signal" [text]="said" />
             }
           </mat-card-title>
           <mat-card-subtitle>
@@ -83,6 +90,8 @@ export class DomainTile {
   readonly domain = input.required<TileDomain>();
   /** The address of the dashboard; none while the domain has no page of its own. */
   readonly link = input<string>();
+  /** A warning shown as a blinking red light next to the title - the words already translated. */
+  readonly signal = input<string>();
   /** The call the tile is about: its bar, its freshness and its failure. */
   readonly resource = input.required<PollingResource<unknown>>();
   /** Key of what a screen reader hears for the bar. */

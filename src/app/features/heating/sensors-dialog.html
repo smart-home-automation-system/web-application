@@ -1,0 +1,77 @@
+<ng-container *transloco="let t">
+  <div class="dialog__title" mat-dialog-title>
+    <div class="domain-badge"><mat-icon>device_thermostat</mat-icon></div>
+    <div class="dialog__heading">
+      <span>{{ t('heating.sensors.title') }}</span>
+      <app-data-freshness
+        [lastUpdated]="data.sensors.lastUpdated()"
+        [stale]="data.sensors.stale()"
+      />
+    </div>
+  </div>
+
+  <mat-dialog-content class="dialog__content">
+    <app-api-error-strip [error]="data.sensors.error()" />
+    @if (data.rows().length > 0) {
+      <table class="sensors__table" data-testid="sensor-table">
+        <caption class="visually-hidden">
+          {{
+            t('heating.sensors.title')
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ t('heating.sensors.room') }}</th>
+            <th scope="col">{{ t('heating.sensors.lastReading') }}</th>
+            <th scope="col">{{ t('heating.sensors.status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- by position: nothing promises that a room is listed once -->
+          @for (sensor of data.rows(); track $index) {
+            <tr [attr.data-room]="sensor.room">
+              <!-- the identifier of the backend, printed as it is: never a translation -->
+              <th scope="row" class="sensors__room">{{ sensor.room }}</th>
+              <td>
+                @if (sensor.lastReadingAt | houseAge; as age) {
+                  <!-- a space a screen reader hears: the age and the time are two things -->
+                  <span class="sensors__age">{{ age }}</span
+                  >&ngsp;<span class="sensors__time">{{
+                    sensor.lastReadingAt | houseDateTime
+                  }}</span>
+                } @else if (sensor.lastReadingAt === undefined) {
+                  <span class="sensors__time">{{ t('heating.sensors.noReading') }}</span>
+                } @else {
+                  <!-- a time this application cannot read: shown as it came, not as none -->
+                  <span class="sensors__time">{{ sensor.lastReadingAt }}</span>
+                }
+              </td>
+              <td>
+                <span class="sensors__badges">
+                  @if (sensor.stale === true) {
+                    <span class="badge badge--silent">{{ t('heating.sensors.silent') }}</span>
+                  } @else if (sensor.stale === false) {
+                    <span class="badge">{{ t('heating.sensors.reporting') }}</span>
+                  }
+                  @if (sensor.muted) {
+                    &ngsp;<span class="badge badge--muted">
+                      <mat-icon class="badge__icon">notifications_off</mat-icon>
+                      {{ t('heating.sensors.muted') }}
+                    </span>
+                  }
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <p class="dialog__note">{{ t('heating.sensors.legend') }}</p>
+    } @else if (!data.sensors.error()) {
+      <p class="dialog__note">{{ t('heating.sensors.none') }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog__actions">
+    <button matButton type="button" mat-dialog-close>{{ t('heating.sensors.close') }}</button>
+  </mat-dialog-actions>
+</ng-container>

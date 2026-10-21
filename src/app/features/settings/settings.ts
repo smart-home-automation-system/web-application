@@ -70,6 +70,8 @@ export class Settings {
     { name: 'household', label: 'domain.household' },
     { name: 'devices', label: 'domain.devices' },
     { name: 'weather', label: 'domain.weather' },
+    { name: 'blinds', label: 'domain.blinds' },
+    { name: 'light', label: 'domain.light' },
   ];
 
   protected chooseScheme(choice: SchemeChoice): void {

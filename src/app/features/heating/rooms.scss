@@ -1,11 +1,16 @@
 :host {
   display: block;
-  // an open room is laid out for the width of the card, not of the window
-  container: rooms / inline-size;
 }
 
 .rooms {
   --app-domain: var(--app-domain-heating);
+}
+
+// The card is as wide as its rows of tiles (heating.scss): the sentences under them wrap
+// within that width instead of setting it
+.room__note,
+app-api-error-strip {
+  contain: inline-size;
 }
 
 // tighter than Material's 16 px all round: the tiles are read, not touched
@@ -18,102 +23,73 @@ mat-card-content {
 }
 
 .floor + .floor {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
+// the floors as on the devices page: the name in the middle, over a row of tiles
 .floor__name {
-  margin: 0 0 6px;
-  font: var(--mat-sys-label-large);
-  letter-spacing: var(--mat-sys-label-large-tracking);
-  text-transform: uppercase;
-  color: var(--mat-sys-on-surface-variant);
+  margin: 0 0 8px;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-surface);
 }
 
-// as many rooms side by side as the card has room for; each as tall as what it says
+// A row of tiles of one width, standing in the middle of the card when it does not fill it
+// (owner, 2026-10-21, HAS-266); on a phone one column.
 .floor__rooms {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
-  gap: 8px;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 // A room: a box drawn with a line on the glass of the card, so its text stays text on glass.
+// One size for every room: a fixed width, and the same lines in each - a line with nothing to
+// say stays as an empty line, and the heaters keep the room of two.
 .room {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  width: 236px;
+  padding: 10px 12px 4px;
   border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
   border-radius: var(--mat-sys-corner-medium);
-  // its own stacking of the summary and the panel
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-// An open room takes the whole row of its floor: the summary keeps the width of a room and the
-// week gets the rest - under the summary where there is no room beside it.
-.room--open {
-  grid-column: 1 / -1;
-  border-color: var(--app-domain);
-
-  @container rooms (min-width: 560px) {
-    grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
-  }
-}
-
-.room__summary {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  margin: 0;
-  padding: 8px 10px 10px;
-  border: 0;
-  border-radius: inherit;
-  background: none;
   color: var(--mat-sys-on-surface);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 
-  &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface) 6%, transparent);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--mat-sys-on-surface);
-    outline-offset: 2px;
+  @media (max-width: 559px) {
+    width: 100%;
   }
 }
 
-// the facts of a room are rows of the summary itself
-.room__facts {
-  display: contents;
-}
-
-// "heating - reported 4 min ago" begins a line of its own
-.schedule .room__note::first-letter {
-  text-transform: uppercase;
-}
-
-.room__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-}
-
-// an identifier of the backend ("living room"), shown as a name
+// an identifier of the backend ("living room"), shown as a name; one line whatever the name
 .room__name {
+  margin: 0 0 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font: var(--mat-sys-title-small);
   letter-spacing: var(--mat-sys-title-small-tracking);
   text-transform: capitalize;
   color: var(--mat-sys-on-surface-variant);
 }
 
-.mat-icon.room__chevron {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
-  color: var(--mat-sys-on-surface-variant);
+// one line each, kept when empty
+.room__line {
+  margin: 0;
+  min-height: 1.25rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.room__temperature-line {
+  min-height: 2rem;
 }
 
 .room__temperature {
@@ -143,19 +119,28 @@ mat-card-content {
   margin: 0;
 }
 
+// the room of two heaters, whether the room has one, two or none
 .room__heaters {
   display: grid;
+  align-content: start;
   gap: 2px;
+  min-height: 2.6rem;
   margin-top: 4px;
 }
 
 .heater {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  min-width: 0;
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-surface-variant);
+}
+
+.heater__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 // A heater that works: the stronger of the two text colours and a heavier word. What tells it
@@ -165,10 +150,17 @@ mat-card-content {
   font-weight: 700;
 }
 
-.mat-icon.heater__icon {
+.mat-icon.heater__icon,
+.mat-icon.heater__calls {
+  flex: none;
   width: 16px;
   height: 16px;
   font-size: 16px;
+}
+
+.mat-icon.heater__calls {
+  color: var(--mat-sys-on-surface);
+  cursor: help;
 }
 
 .badge {
@@ -183,10 +175,23 @@ mat-card-content {
 }
 
 // HAS-232: the windows of the room; an open one in the colour of a warning, the hold as a badge
+// two lines kept: the state of the windows, and the hold under it where the two do not fit one
+.room__window-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  gap: 2px 6px;
+  min-height: 2.6rem;
+  margin-top: 2px;
+  white-space: normal;
+}
+
 .room__window {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .room__window[data-state='open'] {
@@ -194,6 +199,7 @@ mat-card-content {
 }
 
 .mat-icon.room__window-icon {
+  flex: none;
   width: 16px;
   height: 16px;
   font-size: 16px;
@@ -202,32 +208,16 @@ mat-card-content {
 .badge--held {
   border-color: var(--mat-sys-error);
   color: var(--mat-sys-error);
-  white-space: normal;
 }
 
-.room__panel {
-  display: grid;
-  gap: 12px;
-  padding: 8px 10px 10px;
-  // the weeks of two heaters side by side where the panel is wide enough for both
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  align-items: start;
-  min-width: 0;
-}
-
-.schedule {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.schedule__title {
-  margin: 0;
-  font: var(--mat-sys-title-small);
-  letter-spacing: var(--mat-sys-title-small-tracking);
-  color: var(--mat-sys-on-surface);
+// the button at the foot of every tile, whatever is above it
+.room__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
 }
 
 .rooms__legend {
   margin-top: 12px;
+  text-align: center;
 }

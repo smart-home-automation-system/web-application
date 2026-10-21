@@ -4,6 +4,8 @@
 
 .room {
   --app-domain: var(--app-domain-heating);
+  // as tall as the tallest card of its row
+  height: 100%;
 }
 
 // tighter than Material's 16 px all round, like the tiles of the other views

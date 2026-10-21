@@ -66,12 +66,23 @@
       </mat-card-content>
     </mat-card>
 
-    <app-heating-rooms class="tile--rooms" />
-
     <mat-card appearance="outlined" class="tile tile--sensors card--domain" data-testid="sensors">
       <mat-card-header>
         <div mat-card-avatar class="domain-badge"><mat-icon>device_thermostat</mat-icon></div>
-        <mat-card-title>{{ t('heating.sensors.title') }}</mat-card-title>
+        <mat-card-title class="tile__title">
+          {{ t('heating.sensors.title') }}
+          @if (summary().silent > 0) {
+            <app-signal-light
+              data-testid="sensors-signal"
+              [text]="
+                t('heating.sensors.silentCount', {
+                  silent: summary().silent,
+                  total: summary().total,
+                })
+              "
+            />
+          }
+        </mat-card-title>
         <mat-card-subtitle>
           <app-data-freshness [lastUpdated]="sensors.lastUpdated()" [stale]="sensors.stale()" />
         </mat-card-subtitle>
@@ -84,81 +95,33 @@
           @if (rows().length > 0) {
             @let counted = summary();
             @if (counted.silent > 0) {
-              <p class="sensors__summary sensors__summary--silent" data-testid="sensor-summary">
+              <p class="tile__state tile__state--on" data-testid="sensor-summary">
                 <mat-icon>sensors_off</mat-icon>
                 {{
-                  t('heating.sensors.silentCount', {
-                    silent: counted.silent,
-                    total: counted.total,
-                  })
+                  t('heating.sensors.silentShort', { silent: counted.silent, total: counted.total })
                 }}
               </p>
             } @else if (counted.allReporting) {
-              <p class="sensors__summary" data-testid="sensor-summary">
+              <p class="tile__state" data-testid="sensor-summary">
                 <mat-icon>sensors</mat-icon>
-                {{ t('heating.sensors.allReporting', { count: counted.total }) }}
+                {{ t('heating.sensors.allShort', { count: counted.total }) }}
               </p>
             }
-
-            <table class="sensors__table">
-              <caption class="visually-hidden">
-                {{
-                  t('heating.sensors.title')
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">{{ t('heating.sensors.room') }}</th>
-                  <th scope="col">{{ t('heating.sensors.lastReading') }}</th>
-                  <th scope="col">{{ t('heating.sensors.status') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- by position: nothing promises that a room is listed once -->
-                @for (sensor of rows(); track $index) {
-                  <tr [attr.data-room]="sensor.room">
-                    <!-- the identifier of the backend, printed as it is: never a translation -->
-                    <th scope="row" class="sensors__room">{{ sensor.room }}</th>
-                    <td>
-                      @if (sensor.lastReadingAt | houseAge; as age) {
-                        <!-- a space a screen reader hears: the age and the time are two things -->
-                        <span class="sensors__age">{{ age }}</span
-                        >&ngsp;<span class="sensors__time">{{
-                          sensor.lastReadingAt | houseDateTime
-                        }}</span>
-                      } @else if (sensor.lastReadingAt === undefined) {
-                        <span class="sensors__time">{{ t('heating.sensors.noReading') }}</span>
-                      } @else {
-                        <!-- a time this application cannot read: shown as it came, not as none -->
-                        <span class="sensors__time">{{ sensor.lastReadingAt }}</span>
-                      }
-                    </td>
-                    <td>
-                      <span class="sensors__badges">
-                        @if (sensor.stale === true) {
-                          <span class="badge badge--silent">{{ t('heating.sensors.silent') }}</span>
-                        } @else if (sensor.stale === false) {
-                          <span class="badge">{{ t('heating.sensors.reporting') }}</span>
-                        }
-                        @if (sensor.muted) {
-                          &ngsp;<span class="badge badge--muted">
-                            <mat-icon class="badge__icon">notifications_off</mat-icon>
-                            {{ t('heating.sensors.muted') }}
-                          </span>
-                        }
-                      </span>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-            <p class="tile__detail sensors__legend">{{ t('heating.sensors.legend') }}</p>
           } @else if (!sensors.error()) {
             <p class="tile__detail">{{ t('heating.sensors.none') }}</p>
           }
           <app-api-error-strip [error]="sensors.error()" />
         }
       </mat-card-content>
+
+      <mat-card-actions class="tile__actions">
+        <button matButton type="button" data-testid="sensors-details" (click)="openSensors()">
+          <mat-icon>list</mat-icon>
+          {{ t('heating.sensors.details') }}
+        </button>
+      </mat-card-actions>
     </mat-card>
   </section>
+
+  <app-heating-rooms class="rooms" />
 </ng-container>

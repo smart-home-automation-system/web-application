@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
+import { LanguageStore } from '../../core/i18n/language-store';
 import { Ticker } from '../../core/time/ticker';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
@@ -16,7 +17,8 @@ import { isOutOfDate, toWaterReading } from '../../data-access/water/water-readi
 import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
 import { MessageKey } from '../../i18n/messages';
-import { HeatingSwitch } from '../../shared/heating-switch/heating-switch';
+import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
+import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { toRoomViews } from '../../shared/room-heating/room-views';
@@ -44,13 +46,14 @@ interface DeviceLine {
 }
 
 /**
- * The landing page of the administrator: the house at a glance. The switch of the heating - the
- * card the heating page has, the one thing here that changes the house - and a tile per
- * dashboard with the few facts somebody looks for first, each leading to the page that has the
- * rest.
+ * The landing page of the administrator: the house at a glance - a tile per dashboard with the few
+ * facts somebody looks for first, each leading to the page that has the rest. Nothing here changes
+ * the house: the switch of the heating is on the heating page only (owner, 2026-10-21, HAS-266).
  *
- * Eight calls feed the page and each has one tile, with its own freshness and its own failure:
- * the page is whole when one service is down, and says which. The tiles claim what their
+ * Eight calls feed the page, each with its own failure: the page is whole when one service is
+ * down, and says which. Every tile is one call - but the heating tile, which tells the state of
+ * the system, its rooms and its silent sensors (three calls, owner's choice of HAS-266): it tells
+ * the freshness of the state and the failure of each of the three. The tiles claim what their
  * dashboards claim and nothing more - what an answer leaves out is "not known" here too.
  */
 @Component({
@@ -58,7 +61,8 @@ interface DeviceLine {
   imports: [
     MatIconModule,
     TranslocoDirective,
-    HeatingSwitch,
+    ApiErrorStrip,
+    HouseDateTimePipe,
     HouseAgePipe,
     LocalNumberPipe,
     DomainTile,
@@ -74,8 +78,11 @@ export class Overview {
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
   private readonly ticker = inject(Ticker);
   private readonly heatingApi = inject(HeatingApi);
+  private readonly transloco = inject(TranslocoService);
+  private readonly language = inject(LanguageStore).language;
 
-  protected readonly heating = this.heatingApi.watchSwitch();
+  // the state of the system only: the switch is on the heating page (owner, 2026-10-21, HAS-266)
+  protected readonly heating = this.heatingApi.watchStatus();
   protected readonly rooms = this.heatingApi.watchRooms();
   protected readonly sensors = this.heatingApi.watchSensors();
   protected readonly water = inject(WaterApi).watchTemperatures();
@@ -92,6 +99,20 @@ export class Overview {
   };
   protected readonly WHOLE: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
   protected readonly personState = PERSON_STATE_LABELS;
+
+  // ---- heating ----
+
+  /** True, false, or `undefined` while the answer does not say. */
+  protected readonly heatingEnabled = computed(() => {
+    const enabled: unknown = this.heating.value()?.isHeatingEnabled;
+    return typeof enabled === 'boolean' ? enabled : undefined;
+  });
+
+  /** When the system was last switched, house wall-clock time. */
+  protected readonly heatingSince = computed(() => {
+    const updatedAt: unknown = this.heating.value()?.updatedAt;
+    return typeof updatedAt === 'string' ? updatedAt : undefined;
+  });
 
   // ---- rooms ----
 
@@ -183,8 +204,16 @@ export class Overview {
 
   private readonly sensorRows = computed(() => toSensorRows(this.sensors.value()));
   protected readonly sensorSummary = computed(() => summarise(this.sensorRows()));
-  /** The sensors that fell silent, the ones somebody should look at first. */
-  protected readonly silentSensors = computed(() =>
-    this.sensorRows().filter((row) => row.stale === true),
-  );
+  /**
+   * The blinking light of the heating tile (owner, 2026-10-21, HAS-266): how many sensors fell
+   * silent, in the words of the language on screen; none while every one reports.
+   */
+  protected readonly silentSensorsText = computed(() => {
+    // read so that the words follow the language
+    this.language();
+    const { silent, total } = this.sensorSummary();
+    return silent > 0
+      ? this.transloco.translate('heating.sensors.silentCount', { silent, total })
+      : undefined;
+  });
 }

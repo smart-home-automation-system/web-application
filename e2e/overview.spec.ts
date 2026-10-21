@@ -1,30 +1,29 @@
 import { expect, startIn, test, useScenario } from './support';
 
 /**
- * The overview: the house at a glance, a tile per dashboard, fed by the mock API. The switch of
- * the heating on it is the card of the heating page - pressed in `dashboards.spec`, not here.
+ * The overview: the house at a glance, a tile per dashboard, fed by the mock API. Nothing on it
+ * changes the house: the switch of the heating is on the heating page only (HAS-266).
  */
 test.describe('overview', () => {
-  test('shows the heating with its switch and a tile per dashboard', async ({ page }) => {
+  test('shows the heating and a tile per dashboard, and no switch', async ({ page }) => {
     await page.goto('/overview');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
-    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
-    await expect(
-      page.getByTestId('heating-switch').getByRole('button', { name: 'Switch off' }),
-    ).toBeVisible();
 
-    const rooms = page.getByTestId('tile-rooms');
-    await expect(rooms).toContainText(/Rooms: \d+/);
-    await expect(rooms).toContainText(/Being heated now: \d+/);
-    await expect(rooms).toContainText('Coldest');
-    await expect(rooms).toContainText('Warmest');
-
-    // the two sensors of the mock house that fell silent, the muted one marked
-    const sensors = page.getByTestId('tile-sensors');
-    await expect(sensors.getByTestId('sensors-silent')).toContainText('Silent sensors: 2 of 8.');
-    await expect(sensors).toContainText(/bathroom down\s+3 days ago/);
-    await expect(sensors).toContainText(/garden\s+muted/);
+    // one tile for the heating (owner, 2026-10-21, HAS-266): the state, the rooms, the warning
+    const heating = page.getByTestId('tile-heating');
+    await expect(heating.getByTestId('heating-state')).toContainText('Enabled');
+    await expect(heating).toContainText(/Rooms: \d+/);
+    await expect(heating).toContainText(/Being heated now: \d+/);
+    await expect(heating).toContainText('Coldest');
+    await expect(heating).toContainText('Warmest');
+    // the two sensors of the mock house that fell silent: counted here, named on the heating page
+    await expect(heating.getByTestId('tile-signal')).toHaveAttribute(
+      'aria-label',
+      'Silent sensors: 2 of 8.',
+    );
+    await expect(heating).not.toContainText('muted');
+    await expect(page.getByRole('main').getByRole('button', { name: /Switch/ })).toHaveCount(0);
 
     const water = page.getByTestId('tile-water');
     await expect(water).toContainText(/Tank\s+40\.6 °C/);
@@ -49,8 +48,7 @@ test.describe('overview', () => {
   });
 
   for (const [tile, name, address] of [
-    ['tile-rooms', 'Rooms', '/heating'],
-    ['tile-sensors', 'Temperature sensors', '/heating'],
+    ['tile-heating', 'Heating system', '/heating'],
     ['tile-water', 'Hot water', '/water'],
     ['tile-boiler', 'Boiler room', '/boiler'],
     ['tile-presence', 'At home now', '/presence'],
@@ -73,11 +71,11 @@ test.describe('overview', () => {
     await expect(page.getByTestId('tile-water')).toContainText(
       'No temperature has been measured yet.',
     );
-    await expect(page.getByTestId('tile-sensors')).toContainText('No sensor has reported yet.');
-    const rooms = page.getByTestId('tile-rooms');
-    await expect(rooms).toContainText('No room has a reading yet.');
+    const heating = page.getByTestId('tile-heating');
+    // no sensor has reported: nothing is silent yet, so no warning
+    await expect(heating.getByTestId('tile-signal')).toHaveCount(0);
     // no relay has answered: nothing is said about how many rooms are heated
-    await expect(rooms.getByTestId('rooms-heating')).toHaveCount(0);
+    await expect(heating.getByTestId('rooms-heating')).toHaveCount(0);
     await expect(page.getByTestId('tile-boiler')).not.toContainText('Running');
     await expect(page.getByTestId('tile-weather')).toContainText(
       'No reading from the weather station yet.',
@@ -96,19 +94,12 @@ test.describe('overview', () => {
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
-    for (const tile of [
-      'tile-rooms',
-      'tile-sensors',
-      'tile-water',
-      'tile-boiler',
-      'tile-weather',
-      'tile-blinds',
-    ]) {
+    // the heating tile is three calls - the state, the rooms and the sensors - each one told
+    await expect(page.getByTestId('tile-heating').getByRole('alert')).toHaveCount(3);
+    for (const tile of ['tile-water', 'tile-boiler', 'tile-weather', 'tile-blinds']) {
       await expect(page.getByTestId(tile).getByRole('alert')).toHaveCount(1);
     }
-    await expect(
-      page.getByTestId('heating-switch').getByRole('button', { name: /Switch/ }),
-    ).toHaveCount(0);
+    await expect(page.getByRole('main').getByRole('button', { name: /Switch/ })).toHaveCount(0);
     // a tile still leads to its dashboard
     await expect(
       page.getByTestId('tile-water').getByRole('link', { name: 'Hot water' }),
@@ -135,14 +126,14 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(8);
+    expect(tops).toHaveLength(6);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(8);
+      expect(new Set(tops).size).toBe(6);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(8);
+      expect(heights).toHaveLength(6);
       expect(new Set(heights).size).toBe(1);
     }
   });
@@ -181,7 +172,7 @@ test.describe('overview', () => {
 
       expect(rows.length).toBeGreaterThan(1);
       const last = rows[rows.length - 1];
-      // eight tiles fill two rows of four; a wider screen leaves the last row short
+      // six tiles: on a screen with room for four the last row is short, in the middle
       expect(last.length).toBeLessThanOrEqual(rows[0].length);
       // the middle of every row is the middle of the page
       for (const row of rows) {
@@ -196,7 +187,7 @@ test.describe('overview', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Przegląd' })).toBeVisible();
     await expect(page.getByTestId('tile-water')).toContainText(/Zasobnik\s+40,6 °C/);
-    await expect(page.getByTestId('tile-sensors')).toContainText('bathroom down');
+    await expect(page.getByTestId('tile-heating')).toContainText('Najchłodniejszy');
     await expect(page.getByTestId('tile-weather')).toContainText(
       /Wiatr\s+2,4 m\/s\s+porywy 3,8 m\/s/,
     );

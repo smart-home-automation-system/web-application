@@ -11,7 +11,8 @@
 .page-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  // the title in the top left corner, as on the views without a button (owner, 2026-10-21)
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }

@@ -8,6 +8,8 @@
   align-items: stretch;
   gap: 12px;
   max-width: 960px;
+  // in the middle of the page, as the cards of the other views
+  margin-inline: auto;
 }
 
 // every card here is of the hot-water domain: its colour on the edge, the badge and the gauge
@@ -112,4 +114,5 @@ mat-card-content {
   display: block;
   max-width: 960px;
   margin-top: 12px;
+  margin-inline: auto;
 }

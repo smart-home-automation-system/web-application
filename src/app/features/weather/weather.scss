@@ -12,8 +12,8 @@ $gap: 12px;
 // charts in rows of three, of two or in one column - never a row of four with two under it and
 // an empty half beside them (owner, 2026-10-16, the overview). The counts follow the width of the
 // page, not of the window. Cards side by side end on one line (owner, 2026-10-10): their
-// contents differ by a line or two.
-.page-header,
+// contents differ by a line or two. The title stays in the top left corner, as on every other view
+// (owner, 2026-10-21, HAS-266).
 .cards,
 .charts {
   max-width: 1600px;

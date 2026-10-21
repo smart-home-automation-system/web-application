@@ -112,16 +112,15 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
-      // a room opened into the week of its two heaters, on a Thursday afternoon of the house
+      // the schedule of a room in its window, on a Thursday afternoon of the house
       test('heating, a room with its week', async ({ page }, testInfo) => {
         await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
         await page.goto('/heating');
         const room = page.getByTestId('rooms').locator('[data-room="living room"]');
-        await room.getByRole('button').click();
-        await expect(room.getByTestId('room-panel')).toBeVisible();
+        await room.getByTestId('room-schedule').click();
+        const window = page.getByRole('dialog');
         // the history of the room is drawn before the picture is taken
-        await expect(room.locator('.chart__plot svg')).toBeVisible();
-        await room.scrollIntoViewIfNeeded();
+        await expect(window.locator('.chart__plot svg')).toBeVisible();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'heating-room-week'),
         });
@@ -153,7 +152,7 @@ for (const language of ['en', 'pl'] as const) {
           await page.goto('/heating');
           await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
           if (scenario === 'default') {
-            await expect(page.getByRole('table')).toBeVisible();
+            await expect(page.getByTestId('room-tile').first()).toBeVisible();
           }
           await photoIsShown(page);
           await page.screenshot({

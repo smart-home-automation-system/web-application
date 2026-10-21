@@ -19,8 +19,16 @@ test.describe('heating', () => {
     );
     await expect(page.getByTestId('activity')).toContainText('Rooms are being heated');
 
-    const sensors = page.getByTestId('sensors');
-    await expect(sensors.getByTestId('sensor-summary')).toContainText('Silent sensors: 2 of 8.');
+    const card = page.getByTestId('sensors');
+    await expect(card.getByTestId('sensor-summary')).toContainText('Silent: 2 of 8');
+    // a red light by the title while a sensor is silent; the list is in a window
+    await expect(card.getByTestId('sensors-signal')).toHaveAttribute(
+      'aria-label',
+      'Silent sensors: 2 of 8.',
+    );
+    await expect(card.getByRole('table')).toHaveCount(0);
+    await card.getByRole('button', { name: 'Details' }).click();
+    const sensors = page.getByRole('dialog');
     await expect(sensors.getByRole('rowheader')).toHaveText([
       'bathroom down',
       'garden',
@@ -149,24 +157,23 @@ test.describe('heating', () => {
       await expect(page.getByRole('alert')).toHaveCount(0);
     });
 
-    test('opens a room into the week of its heaters, and closes it again', async ({ page }) => {
+    test('opens the schedule of a room in a window, and closes it again', async ({ page }) => {
       await page.goto('/heating');
       const livingRoom = page.getByTestId('rooms').locator('[data-room="living room"]');
-      const button = livingRoom.getByRole('button');
 
-      await expect(button).toHaveAttribute('aria-expanded', 'false');
-      await button.click();
+      await livingRoom.getByRole('button', { name: 'Schedule living room' }).click();
 
-      await expect(button).toHaveAttribute('aria-expanded', 'true');
-      const panel = livingRoom.getByTestId('room-panel');
-      // the history of the room first, then the week of each heater
-      await expect(panel.getByRole('heading', { level: 4 })).toHaveText([
-        'Temperature history',
+      const window = page.getByRole('dialog');
+      await expect(window).toContainText('living room');
+      await expect(window.getByTestId('schedule-read-only')).toBeVisible();
+      // the week of each heater, then the history of the room
+      await expect(window.getByRole('heading', { level: 3 })).toHaveText([
         'Radiator',
         'Floor heating',
       ]);
+      await expect(window.getByRole('heading', { level: 4 })).toHaveText(['Temperature history']);
       // several periods a day, and other ones at the weekend
-      const floor = panel.locator('.schedule').nth(1);
+      const floor = window.locator('.schedule').nth(1);
       await expect(floor.locator('.week__day')).toHaveText([
         /Mon\s+06:00–08:00\s·\s21\s°C\s+15:00–22:00\s·\s21\.5\s°C/,
         /Tue/,
@@ -178,36 +185,44 @@ test.describe('heating', () => {
       ]);
       await expect(floor.locator('.week__now')).toHaveCount(1);
 
-      // one room at a time
-      await page
-        .getByTestId('rooms')
-        .locator('[data-room="bathroom down"]')
-        .getByRole('button')
-        .click();
-      await expect(livingRoom.getByTestId('room-panel')).toHaveCount(0);
-      // a heater without a schedule
-      await expect(
-        page.getByTestId('rooms').locator('[data-room="bathroom down"]').getByTestId('room-panel'),
-      ).toContainText('No schedule.');
+      await window.getByRole('button', { name: 'Close' }).click();
+      await expect(page.getByRole('dialog')).toHaveCount(0);
 
+      // a heater without a schedule
       await page
         .getByTestId('rooms')
         .locator('[data-room="bathroom down"]')
-        .getByRole('button')
+        .getByRole('button', { name: /Schedule/ })
         .click();
-      await expect(page.getByTestId('room-panel')).toHaveCount(0);
+      await expect(page.getByRole('dialog')).toContainText('No schedule.');
     });
 
     test('can be opened from the keyboard', async ({ page }) => {
       await page.goto('/heating');
-      const button = page.getByTestId('rooms').locator('[data-room="office"]').getByRole('button');
+      const button = page
+        .getByTestId('rooms')
+        .locator('[data-room="office"]')
+        .getByRole('button', { name: /Schedule/ });
 
       await button.focus();
       await page.keyboard.press('Enter');
 
-      await expect(
-        page.getByTestId('rooms').locator('[data-room="office"]').getByTestId('room-panel'),
-      ).toContainText('07:00–17:00 · 20.5 °C');
+      await expect(page.getByRole('dialog')).toContainText('07:00–17:00 · 20.5 °C');
+    });
+
+    test('gives every room a tile of one size', async ({ page }) => {
+      await page.goto('/heating');
+      const tiles = page.getByTestId('room-tile');
+      await expect(tiles).toHaveCount(9);
+
+      const sizes = await tiles.evaluateAll((all) =>
+        all.map((tile) => {
+          const box = tile.getBoundingClientRect();
+          return `${Math.round(box.width)}x${Math.round(box.height)}`;
+        }),
+      );
+
+      expect(new Set(sizes).size).toBe(1);
     });
 
     // heating-service just after a start: it knows its rooms and schedules and nothing else
@@ -229,24 +244,24 @@ test.describe('heating', () => {
       await expect(page.getByRole('alert')).toHaveCount(0);
     });
 
-    test('fits a phone with a room open, without horizontal scrolling', async ({ page }) => {
+    test('fits a phone with the schedule of a room open, without horizontal scrolling', async ({
+      page,
+    }) => {
       await page.goto('/heating');
+      const overflow = () =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+      expect(await overflow()).toBe(0);
+
       await page
         .getByTestId('rooms')
         .locator('[data-room="living room"]')
-        .getByRole('button')
+        .getByRole('button', { name: /Schedule/ })
         .click();
-      await expect(page.getByTestId('room-panel')).toBeVisible();
+      await expect(page.getByRole('dialog')).toBeVisible();
 
-      const overflow = await page.evaluate(() => ({
-        page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        card: (() => {
-          const card = document.querySelector('[data-testid="rooms"]')!;
-          return card.scrollWidth - card.clientWidth;
-        })(),
-      }));
-
-      expect(overflow).toEqual({ page: 0, card: 0 });
+      expect(await overflow()).toBe(0);
     });
 
     test('speaks Polish, except for the identifiers of the rooms', async ({ page }) => {
@@ -290,19 +305,22 @@ test.describe('heating', () => {
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }
-    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
-    await expect(page.getByRole('table')).toHaveCount(0);
+    await expect(page.getByRole('main').getByRole('button', { name: /Switch/ })).toHaveCount(0);
+    await expect(page.getByTestId('room-tile')).toHaveCount(0);
   });
 
-  test('fits a phone without horizontal scrolling, the table included', async ({ page }) => {
+  test('fits a phone without horizontal scrolling, the window of the sensors included', async ({
+    page,
+  }) => {
     await page.goto('/heating');
+    await page.getByTestId('sensors-details').click();
     await expect(page.getByRole('table')).toBeVisible();
 
     const overflow = await page.evaluate(() => ({
       page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       card: (() => {
-        const card = document.querySelector('[data-testid="sensors"]')!;
-        return card.scrollWidth - card.clientWidth;
+        const table = document.querySelector('app-sensors-dialog table')!;
+        return table.scrollWidth - table.clientWidth;
       })(),
     }));
 
@@ -321,7 +339,9 @@ test.describe('heating', () => {
     await expect(
       card.getByRole('group', { name: 'Wyłączyć ogrzewanie całego domu?' }),
     ).toBeVisible();
-    const row = page.getByRole('row', { name: /bathroom down/ });
+    await expect(page.getByTestId('sensor-summary')).toContainText('Milczy: 2 z 8');
+    await page.getByRole('button', { name: 'Szczegóły' }).click();
+    const row = page.getByRole('dialog').getByRole('row', { name: /bathroom down/ });
     await expect(row).toContainText('3 dni temu');
     await expect(row).toContainText('Milczy');
   });
@@ -591,6 +611,7 @@ test.describe('the navigation with more destinations than a phone has room for',
       await bar.getByRole('button', { name: 'More' }).click();
       await expect(page.getByRole('menuitem')).toHaveText([
         /Blinds/,
+        /Lights/,
         /Heating/,
         /Hot water/,
         /Boiler room/,
@@ -614,6 +635,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Weather/,
         /Rooms/,
         /Blinds/,
+        /Lights/,
         /Heating/,
         /Hot water/,
         /Boiler room/,

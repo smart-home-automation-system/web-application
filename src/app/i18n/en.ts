@@ -124,6 +124,10 @@ export const en = {
       silent: 'Silent',
       muted: 'Muted',
       noReading: 'No reading',
+      silentShort: 'Silent: {{ silent }} of {{ total }}',
+      allShort: 'All reporting ({{ count }})',
+      details: 'Details',
+      close: 'Close',
       legend:
         'Silent: no reading for longer than the heating service allows. Muted: left out of the alerts.',
     },
@@ -172,6 +176,10 @@ export const en = {
         none: 'No schedule.',
         unknown: 'The service does not list the schedule.',
         unreadable: 'Periods that could not be read: {{ count }}.',
+        open: 'Schedule',
+        close: 'Close',
+        readOnly:
+          'The heating service does not take changes to the schedules yet: they are shown as stored.',
       },
     },
   },
@@ -1263,6 +1271,8 @@ export const en = {
     household: 'Household',
     devices: 'Devices',
     weather: 'Weather',
+    blinds: 'Blinds',
+    light: 'Lights',
   },
   // names of the seasons, as a label and inside a sentence
   season: {

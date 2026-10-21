@@ -124,6 +124,10 @@ export const pl: Messages = {
       silent: 'Milczy',
       muted: 'Wyciszony',
       noReading: 'Brak odczytu',
+      silentShort: 'Milczy: {{ silent }} z {{ total }}',
+      allShort: 'Wszystkie działają ({{ count }})',
+      details: 'Szczegóły',
+      close: 'Zamknij',
       legend:
         'Milczy: brak odczytu dłużej, niż dopuszcza serwis ogrzewania. Wyciszony: pomijany w alertach.',
     },
@@ -172,6 +176,10 @@ export const pl: Messages = {
         none: 'Brak harmonogramu.',
         unknown: 'Serwis nie podaje harmonogramu.',
         unreadable: 'Okresy, których aplikacja nie umie odczytać: {{ count }}.',
+        open: 'Harmonogram',
+        close: 'Zamknij',
+        readOnly:
+          'Serwis ogrzewania nie przyjmuje jeszcze zmian harmonogramów: są pokazane tak, jak je zapisano.',
       },
     },
   },
@@ -1252,6 +1260,8 @@ export const pl: Messages = {
     household: 'Domownicy',
     devices: 'Urządzenia',
     weather: 'Pogoda',
+    blinds: 'Rolety',
+    light: 'Światła',
   },
   season: {
     spring: 'Wiosna',

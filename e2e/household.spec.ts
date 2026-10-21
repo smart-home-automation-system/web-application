@@ -36,8 +36,8 @@ test('lists everybody the registry holds, switched off or not', async ({ page })
 test.describe('adding a member', () => {
   test('says what is wrong before anything is sent', async ({ page }) => {
     await open(page);
-    const form = page.getByTestId('registry');
-    await form.getByRole('button', { name: 'Add a member' }).click();
+    const form = page.getByRole('dialog');
+    await page.getByTestId('add-member').click();
 
     await form.getByRole('button', { name: 'Add', exact: true }).click();
     await expect(form).toContainText('A name has 3 to 50 characters.');
@@ -55,8 +55,8 @@ test.describe('adding a member', () => {
 
   test('adds the member as entered, the phone number without its spaces', async ({ page }) => {
     await open(page);
-    const form = page.getByTestId('registry');
-    await form.getByRole('button', { name: 'Add a member' }).click();
+    const form = page.getByRole('dialog');
+    await page.getByTestId('add-member').click();
 
     await form.getByLabel('Name').fill('  Fabian ');
     await form.getByLabel('Phone').fill('+48 500 100-106');
@@ -69,8 +69,8 @@ test.describe('adding a member', () => {
     await expect(fabian.getByTestId('phone')).toHaveText('+48500100106');
     await expect(fabian.getByTestId('rooms')).toHaveText('loft garage');
     await expect(fabian).toContainText('Resident');
-    // the form is gone, and the button is back
-    await expect(form.getByRole('button', { name: 'Add a member' })).toBeVisible();
+    // a change carried out closes the window
+    await expect(form).toHaveCount(0);
   });
 });
 

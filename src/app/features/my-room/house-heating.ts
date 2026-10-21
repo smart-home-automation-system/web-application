@@ -14,8 +14,9 @@ import { HeatingSwitch } from '../../shared/heating-switch/heating-switch';
   imports: [HeatingSwitch],
   template: `<app-heating-switch [control]="heating" />`,
   styles: `
+    // the card of the switch is the item of the grid of the page: it stretches to its row
     :host {
-      display: block;
+      display: contents;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

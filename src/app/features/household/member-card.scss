@@ -1,5 +1,11 @@
+:host {
+  display: block;
+}
+
+// as tall as the tallest card of its row
 .member {
   --app-domain: var(--app-domain-household);
+  height: 100%;
 }
 
 mat-card-subtitle {
@@ -23,7 +29,12 @@ mat-card-subtitle {
   color: var(--mat-sys-on-surface);
 }
 
+// the content fills the card the row stretched: the personal link and what follows it stand at its
+// bottom, on one line in every card of a row (owner, 2026-10-21, HAS-266)
 mat-card-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   padding-top: 8px;
 }
 
@@ -162,4 +173,10 @@ mat-card-content {
   flex-wrap: wrap;
   gap: 4px 8px;
   padding: 8px 16px 16px;
+}
+
+// pushed to the bottom of the card; its own gap kept above it
+.block.block--link {
+  margin-top: auto;
+  padding-top: 16px;
 }

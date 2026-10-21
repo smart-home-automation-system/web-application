@@ -21,6 +21,8 @@ $padding: 12px;
   // by its content the card was a narrow strip while it held only a progress bar or a failure,
   // and narrower than the cards of the other views on a phone.
   max-width: 2 * 260px + 3 * $padding + 2px;
+  // in the middle of the page, as the cards of the other views (owner, 2026-10-21, HAS-266)
+  margin-inline: auto;
 
   @media (min-width: $wide) {
     max-width: 2 * $device + $link + 2 * $padding + 2px;

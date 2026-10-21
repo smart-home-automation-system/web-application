@@ -1,5 +1,7 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 
 import {
   FakeResource,
@@ -50,6 +52,7 @@ describe('Heating', () => {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         {
           provide: HeatingApi,
           useValue: {
@@ -71,7 +74,10 @@ describe('Heating', () => {
     fixture = TestBed.createComponent(Heating);
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    TestBed.inject(MatDialog).closeAll();
+    vi.useRealTimers();
+  });
 
   async function part(
     name: 'heating-switch' | 'activity' | 'sensors' | 'floor-pump' | 'rooms',
@@ -83,9 +89,23 @@ describe('Heating', () => {
   const words = (element: Element | null | undefined) =>
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
-  /** The table as rows of cells, in words. */
+  /** The window of the sensors, opened with "Details" of their card. */
+  async function sensorsWindow(): Promise<HTMLElement> {
+    const open = document.querySelector<HTMLElement>('app-sensors-dialog');
+    if (open) {
+      await fixture.whenStable();
+      return open;
+    }
+    (await part('sensors'))
+      .querySelector<HTMLButtonElement>('[data-testid="sensors-details"]')!
+      .click();
+    await fixture.whenStable();
+    return document.querySelector<HTMLElement>('app-sensors-dialog')!;
+  }
+
+  /** The table of the window as rows of cells, in words. */
   async function table(): Promise<string[][]> {
-    return [...(await part('sensors')).querySelectorAll('tbody tr')].map((row) =>
+    return [...(await sensorsWindow()).querySelectorAll('tbody tr')].map((row) =>
       [...row.children].map(words),
     );
   }
@@ -180,7 +200,7 @@ describe('Heating', () => {
     it('names the columns, and each row by its room', async () => {
       answer(sensors, SENSORS);
 
-      const shown = await part('sensors');
+      const shown = await sensorsWindow();
 
       expect([...shown.querySelectorAll('thead th')].map(words)).toEqual([
         'Room',
@@ -191,20 +211,48 @@ describe('Heating', () => {
       expect(words(shown.querySelector('caption'))).toBe('Temperature sensors');
     });
 
-    it('says above the table how many sensors are silent', async () => {
+    it('says on the card how many sensors are silent, and lists none of them there', async () => {
       answer(sensors, SENSORS);
 
-      expect(words((await part('sensors')).querySelector('[data-testid="sensor-summary"]'))).toBe(
-        'sensors_off Silent sensors: 2 of 4.',
+      const card = await part('sensors');
+
+      expect(words(card.querySelector('[data-testid="sensor-summary"]'))).toBe(
+        'sensors_off Silent: 2 of 4',
       );
+      expect(card.querySelector('table')).toBeNull();
+      expect(words(card)).not.toContain('bathroom down');
     });
 
-    it('says that all report when all do', async () => {
+    it('lights a signal by the title while a sensor is silent', async () => {
+      answer(sensors, SENSORS);
+
+      const signal = (await part('sensors')).querySelector(
+        'mat-card-title [data-testid="sensors-signal"]',
+      );
+
+      expect(signal?.getAttribute('aria-label')).toBe('Silent sensors: 2 of 4.');
+      expect(signal?.getAttribute('role')).toBe('img');
+    });
+
+    it('says that all report when all do, without a signal', async () => {
       answer(sensors, SENSORS.slice(0, 2));
 
-      expect(words((await part('sensors')).querySelector('[data-testid="sensor-summary"]'))).toBe(
-        'sensors All sensors are reporting (2).',
+      const card = await part('sensors');
+
+      expect(words(card.querySelector('[data-testid="sensor-summary"]'))).toBe(
+        'sensors All reporting (2)',
       );
+      expect(card.querySelector('[data-testid="sensors-signal"]')).toBeNull();
+    });
+
+    it('opens the list in a window, which follows the next answers', async () => {
+      answer(sensors, SENSORS.slice(0, 2));
+      expect(await table()).toHaveLength(2);
+
+      answer(sensors, SENSORS);
+
+      expect(await table()).toHaveLength(4);
+      expect(words(await sensorsWindow())).toContain('Silent: no reading for longer');
     });
 
     it('marks a muted sensor that still reports', async () => {
@@ -217,8 +265,8 @@ describe('Heating', () => {
     it('claims nothing about a sensor whose answer does not say whether it is silent', async () => {
       answer(sensors, [{ room: 'office', lastReadingAt: '2026-10-08T14:27:00' }]);
 
-      expect(await table()).toEqual([['office', '3 min ago 8 Oct 2026, 14:27', '']]);
       expect((await part('sensors')).querySelector('[data-testid="sensor-summary"]')).toBeNull();
+      expect(await table()).toEqual([['office', '3 min ago 8 Oct 2026, 14:27', '']]);
     });
 
     it('says that there is no reading where the answer has no time', async () => {
@@ -249,7 +297,7 @@ describe('Heating', () => {
       const shown = await part('sensors');
 
       expect(words(shown)).toContain('No sensor has reported yet.');
-      expect(shown.querySelector('table')).toBeNull();
+      expect((await sensorsWindow()).querySelector('table')).toBeNull();
       expect(shown.querySelector('[role="alert"]')).toBeNull();
     });
 
@@ -271,8 +319,8 @@ describe('Heating', () => {
 
       const shown = await part('sensors');
 
-      expect(await table()).toHaveLength(4);
       expect(shown.querySelector('app-data-freshness')?.classList).toContain('freshness--stale');
+      expect(await table()).toHaveLength(4);
       expect(words(shown.querySelector('[role="alert"]'))).toContain(
         'The server cannot be reached.',
       );
@@ -333,9 +381,9 @@ describe('Heating', () => {
       'Pokoje są ogrzewane',
     );
     expect(words((fixture.nativeElement as HTMLElement).querySelector('h1'))).toBe('Ogrzewanie');
-    expect((await table())[0]).toEqual(['bathroom down', '3 dni temu 5 paź 2026, 14:10', 'Milczy']);
     expect(words((await part('sensors')).querySelector('[data-testid="sensor-summary"]'))).toBe(
-      'sensors_off Milczące czujniki: 2 z 4.',
+      'sensors_off Milczy: 2 z 4',
     );
+    expect((await table())[0]).toEqual(['bathroom down', '3 dni temu 5 paź 2026, 14:10', 'Milczy']);
   });
 });

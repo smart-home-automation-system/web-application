@@ -1,23 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { ApiError } from '../../core/api/api-error';
 import { sameName } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
 import { isRecord } from '../../core/util/is-record';
-import {
-  HouseholdApi,
-  HouseholdMember,
-  MemberDetails,
-} from '../../data-access/household/household-api';
-import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
-import { DataFreshness } from '../../shared/data-freshness/data-freshness';
+import { HouseholdApi, HouseholdMember } from '../../data-access/household/household-api';
+import { MessageKey } from '../../i18n/messages';
+import { SourcesStrip } from '../../shared/sources-strip/sources-strip';
+import { ADD_MEMBER_DIALOG_SIZE, AddMemberDialog, AddMemberDialogData } from './add-member-dialog';
 import { MemberCard } from './member-card';
-import { MemberForm } from './member-form';
 
 /**
  * The administration of the household: everybody the registry of `database-service` holds,
@@ -35,27 +29,23 @@ import { MemberForm } from './member-form';
  */
 @Component({
   selector: 'app-household',
-  imports: [
-    MatButtonModule,
-    MatCardModule,
-    MatIconModule,
-    MatProgressBarModule,
-    TranslocoDirective,
-    ApiErrorStrip,
-    DataFreshness,
-    MemberCard,
-    MemberForm,
-  ],
+  imports: [MatButtonModule, MatIconModule, TranslocoDirective, MemberCard, SourcesStrip],
   templateUrl: './household.html',
   styleUrl: './household.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Household {
   private readonly profiles = inject(ProfileStore);
+  private readonly dialog = inject(MatDialog);
   // Asked for anew, never an answer already on its way: that one may predate the change.
   protected readonly registry = inject(HouseholdApi).watchRegistry(
     () => void this.profiles.refreshAfterChange(),
   );
+
+  /** The one call of the page, told in the strip of sources as on the blinds page (HAS-266). */
+  protected readonly sources = [
+    { id: 'registry', label: 'household.registry.title' as MessageKey, resource: this.registry },
+  ];
 
   /**
    * The members of the answer, or `undefined` when the answer is not a list of them. Nothing
@@ -71,32 +61,21 @@ export class Household {
       : undefined;
   });
 
-  protected readonly adding = signal(false);
-  /** Why the member of the form was not added. */
-  protected readonly addFailure = signal<ApiError | undefined>(undefined);
-
   protected isOwn(member: HouseholdMember): boolean {
     const profile = this.profiles.profile();
     return profile !== undefined && sameName(profile.name, member.name);
   }
 
+  /** The new member is added in a window of its own, which follows the registry while open. */
   protected startAdding(): void {
-    this.addFailure.set(undefined);
-    this.adding.set(true);
-  }
-
-  protected stopAdding(): void {
-    this.addFailure.set(undefined);
-    this.adding.set(false);
-  }
-
-  protected async add(details: MemberDetails): Promise<void> {
-    this.addFailure.set(undefined);
-    const outcome = await this.registry.add(details);
-    if (outcome.carriedOut) {
-      this.adding.set(false);
-    } else {
-      this.addFailure.set(outcome.failure);
-    }
+    const data: AddMemberDialogData = {
+      registry: this.registry,
+      members: computed(() => this.members() ?? []),
+    };
+    this.dialog.open(AddMemberDialog, {
+      ...ADD_MEMBER_DIALOG_SIZE,
+      data,
+      autoFocus: 'first-tabbable',
+    });
   }
 }

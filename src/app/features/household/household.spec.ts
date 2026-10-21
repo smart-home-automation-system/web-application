@@ -1,6 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 
 import { provideI18nTesting } from '../../../testing/i18n';
 import { HouseholdMember } from '../../data-access/household/household-api';
@@ -37,7 +39,12 @@ describe('Household', () => {
     // the administrator this browser remembers
     localStorage.setItem('smart-home.profile', JSON.stringify(PROFILES[0]));
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideI18nTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideI18nTesting(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+      ],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(Household);
@@ -45,6 +52,7 @@ describe('Household', () => {
   });
 
   afterEach(() => {
+    TestBed.inject(MatDialog).closeAll();
     fixture.destroy();
     http.verify();
     vi.useRealTimers();
@@ -311,11 +319,14 @@ describe('Household', () => {
     expect(card('Aurelia').querySelector('app-device-form')).toBeNull();
   });
 
+  // the form is a window of its own (owner, 2026-10-21, HAS-266): the page under it stays as it is
   it('adds a member from the form, and refuses one whose name is taken without a call', async () => {
     answerTheRegistryWith([AURELIA, BORYS]);
     button(page(), 'Add a member')!.click();
     fixture.detectChanges();
-    const form = page().querySelector<HTMLElement>('[data-testid="registry"]')!;
+    await settled();
+    const form = document.querySelector<HTMLElement>('mat-dialog-container')!;
+    expect(page().querySelector('app-member-form')).toBeNull();
     const [name, phone] = [...form.querySelectorAll('input')];
     const type = (input: HTMLInputElement, text: string) => {
       input.value = text;
@@ -347,6 +358,7 @@ describe('Household', () => {
     answerTheProfiles();
 
     expect(card('Fabian')).not.toBeNull();
-    expect(form.querySelector('input')).toBeNull();
+    // only a change carried out closes the window
+    expect(document.querySelector('mat-dialog-container')).toBeNull();
   });
 });
