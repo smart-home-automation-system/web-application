@@ -1,0 +1,110 @@
+// The sources; the whole house and the empty house side by side, of one height; then the floors of
+// the house, each a row of room cards of one size standing in the middle of the page - the layout
+// of the blinds page (owner, 2026-10-18)
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  align-self: center;
+  width: min(100%, 960px);
+}
+
+.top__card {
+  --app-domain: var(--app-domain-light);
+}
+
+.top__content {
+  display: grid;
+  gap: 6px;
+}
+
+.top__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+.top__line--active {
+  font-weight: 600;
+  color: var(--mat-sys-on-primary-container);
+}
+
+.top__label {
+  font-weight: 600;
+}
+
+.top__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// three numbers side by side, of one width
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+
+  div {
+    display: grid;
+    gap: 2px;
+  }
+
+  dt {
+    font: var(--mat-sys-label-medium);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+    font-weight: 700;
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.note {
+  margin: 0;
+  text-align: center;
+  color: var(--mat-sys-on-background);
+}
+
+.floor__name {
+  margin: 0 0 10px;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-background);
+}
+
+.floor__rooms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+}
+
+// one column on a phone: the cards take its width
+@media (max-width: 479px) {
+  .floor__rooms app-light-room-card {
+    --light-card-width: 100%;
+  }
+}

@@ -67,6 +67,9 @@ describe('translations', () => {
       'rooms.pieces',
       'blindControl.position',
       'rooms.lights.brightness',
+      'lights.light.brightness',
+      'lights.rule.periodBrightness',
+      'lights.occupancy.lux',
       'blindControl.stop',
       // a number of minutes and a sign
       'blinds.schedule.end.after',

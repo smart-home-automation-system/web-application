@@ -37,6 +37,31 @@ describe('LightApi', () => {
     await off;
   });
 
+  it('sets the colour of a light with the dashboard as its source', async () => {
+    const sent = firstValueFrom(lights.color(41, { rgb: [255, 140, 0], white: 10 }), {
+      defaultValue: undefined,
+    });
+
+    const request = http.expectOne((call) => call.url === '/home/light/41/color');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ rgb: [255, 140, 0], white: 10 });
+    expect(request.request.params.get('source')).toBe('dashboard');
+    request.flush(null, { status: 202, statusText: 'Accepted' });
+    await sent;
+  });
+
+  it('switches a room by its name, encoded as a path segment, and answers what each light did', async () => {
+    const sent = firstValueFrom(lights.roomTurn('living room', false));
+
+    const request = http.expectOne((call) => call.url === '/home/light/rooms/living%20room');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.params.get('turn')).toBe('off');
+    expect(request.request.params.get('source')).toBe('dashboard');
+    const answer = { room: 'living room', turn: 'off', switched: [{ id: 5 }], failed: [] };
+    request.flush(answer, { status: 202, statusText: 'Accepted' });
+    expect(await sent).toEqual(answer);
+  });
+
   it('sets the brightness of a light', async () => {
     const sent = firstValueFrom(lights.brightness(45, 60), { defaultValue: undefined });
 

@@ -18,7 +18,16 @@ import {
   temperatureSensors,
   turnHeating,
 } from './heating.fixtures';
-import { lightsByRoom, setBrightness, turnLight } from './lights.fixtures';
+import {
+  emptyHouse,
+  lightRules,
+  lightRuns,
+  lightsByRoom,
+  setBrightness,
+  setColor,
+  turnLight,
+  turnRoom,
+} from './lights.fixtures';
 import { isHistoryRefusal, roomHistory, waterHistory, weatherHistory } from './history.fixtures';
 import {
   addDevice,
@@ -337,6 +346,36 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: /^\/home\/light\/(\d+)\/brightness$/,
     reply: (request, _fresh, [id]) =>
       setBrightness(id, request.params.get('value'), request.params.get('source')),
+  },
+  // HAS-266: the colour of an rgbw light, a room at once, the rules, their runs and the empty house
+  {
+    method: 'POST',
+    path: /^\/home\/light\/(\d+)\/color$/,
+    reply: (request, _fresh, [id]) => setColor(id, request.body, request.params.get('source')),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/light\/rooms\/([^/]+)$/,
+    reply: (request, _fresh, [room]) =>
+      turnRoom(decodeURIComponent(room), request.params.get('turn'), request.params.get('source')),
+  },
+  {
+    method: 'GET',
+    path: '/home/light/rules',
+    reply: (_request, fresh) => ({ status: 200, body: lightRules(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/light\/rooms\/([^/]+)\/rules\/runs$/,
+    reply: (_request, fresh, [room]) => ({
+      status: 200,
+      body: fresh ? [] : lightRuns(decodeURIComponent(room)),
+    }),
+  },
+  {
+    method: 'GET',
+    path: '/home/light/empty-house',
+    reply: (_request, fresh) => ({ status: 200, body: emptyHouse(fresh) }),
   },
   {
     // every device of the house: asked for by the administration page of the devices

@@ -1,0 +1,204 @@
+<ng-container *transloco="let t">
+  <mat-card
+    appearance="outlined"
+    class="room card--domain"
+    data-testid="light-room"
+    [attr.data-room]="room()"
+  >
+    <mat-card-header>
+      <!-- a room is shown by its identifier, as everywhere in the application -->
+      <mat-card-title>{{ room() }}</mat-card-title>
+      @let here = occupancy();
+      <!-- what the sensors of the room say: a room nobody senses is "not known", never empty -->
+      <mat-card-subtitle
+        class="occupancy"
+        data-testid="occupancy"
+        [attr.data-occupancy]="occupancyState()"
+      >
+        <mat-icon
+          class="occupancy__icon"
+          [attr.data-occupancy]="occupancyState()"
+          aria-hidden="true"
+          >{{
+            occupancyState() === 'occupied'
+              ? 'person'
+              : occupancyState() === 'empty'
+                ? 'person_off'
+                : 'help'
+          }}</mat-icon
+        >
+        <span class="occupancy__text"
+          >{{ t(OCCUPANCY_LABELS[occupancyState()]) }}
+          @if (here?.lastMotionAt | houseAge; as age) {
+            · {{ t('lights.occupancy.motion') }} {{ age }}
+          }
+          @if (isLux(here?.lux)) {
+            · {{ t('lights.occupancy.lux', { lux: here!.lux }) }}
+          } @else if (here?.illumination; as illumination) {
+            · {{ illuminationText(illumination) | displayText }}
+          }
+        </span>
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- a line per light: its bulb, its name, its marks and the two commands -->
+      <ul class="lights">
+        @for (row of shown(); track row.light.id) {
+          @let light = row.light;
+          @let command = stateOfCommand(light.id);
+          @let state = stateOf(light);
+          @let busy = command?.sending || roomBusy();
+          @let changed =
+            light.changedAt !== undefined
+              ? t('lights.light.changed') +
+                ' ' +
+                (light.changedAt | houseAge) +
+                ' · ' +
+                (lightSourceText(light.source) | displayText)
+              : t('lights.light.notChanged');
+          <li
+            class="light"
+            data-testid="light"
+            [attr.data-light]="light.id"
+            [attr.data-state]="state"
+          >
+            <mat-icon class="light__bulb" [attr.data-state]="state" aria-hidden="true">{{
+              state === 'off' ? 'light_off' : 'lightbulb'
+            }}</mat-icon>
+            <span class="light__name">
+              <span class="light__text">{{ row.name ?? t('lights.unnamed') }}</span>
+              @if (light.heldUntil !== undefined) {
+                <mat-icon
+                  class="light__mark"
+                  data-testid="light-held"
+                  role="img"
+                  [matTooltip]="
+                    t('lights.light.held', { time: (light.heldUntil | houseDateTime: TIME) })
+                  "
+                  matTooltipTouchGestures="off"
+                  [attr.aria-label]="
+                    t('lights.light.held', { time: (light.heldUntil | houseDateTime: TIME) })
+                  "
+                  >back_hand</mat-icon
+                >
+              }
+              @if (light.reachable === false) {
+                <mat-icon
+                  class="light__mark light__mark--warning"
+                  data-testid="light-unreachable"
+                  role="img"
+                  [matTooltip]="t('lights.light.unreachable')"
+                  matTooltipTouchGestures="off"
+                  [attr.aria-label]="t('lights.light.unreachable')"
+                  >wifi_off</mat-icon
+                >
+              }
+            </span>
+            <!-- the state in words, with the brightness of a light that is on; when and by whom in its tooltip -->
+            <span
+              class="light__state"
+              data-testid="light-state"
+              role="status"
+              tabindex="0"
+              [matTooltip]="changed"
+              matTooltipTouchGestures="off"
+              >{{ t(LIGHT_STATE_LABELS[state]) }}
+              @if (state === 'on' && dims(light) && light.brightness !== undefined) {
+                · {{ t('lights.light.brightness', { value: light.brightness }) }}
+              }
+            </span>
+            <span class="light__commands">
+              <button
+                matIconButton
+                type="button"
+                data-testid="light-on"
+                [disabled]="busy"
+                [attr.aria-label]="t('lights.light.on') + ' ' + (light.name ?? '')"
+                (click)="turn(light, true)"
+              >
+                <mat-icon>lightbulb</mat-icon>
+              </button>
+              <button
+                matIconButton
+                type="button"
+                data-testid="light-off"
+                [disabled]="busy"
+                [attr.aria-label]="t('lights.light.off') + ' ' + (light.name ?? '')"
+                (click)="turn(light, false)"
+              >
+                <mat-icon>light_off</mat-icon>
+              </button>
+            </span>
+          </li>
+        }
+      </ul>
+
+      <!-- one line reserved for what the last command came to: it never makes the card taller -->
+      <p class="status" role="status" data-testid="room-status">
+        @if (status(); as said) {
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span
+            class="status__text"
+            [matTooltip]="
+              (said.about ? said.about + ': ' : '') +
+              (said.text | displayText) +
+              (said.listed ? ' - ' + said.listed : '')
+            "
+            matTooltipTouchGestures="off"
+            >{{ said.about ? said.about + ': ' : '' }}{{ said.text | displayText
+            }}{{ said.listed ? ' - ' + said.listed : '' }}</span
+          >
+        }
+      </p>
+
+      <!-- the rule of the room in a few words; the whole of it in the window -->
+      <p class="rule" data-testid="room-rule">
+        <mat-icon aria-hidden="true">rule</mat-icon>
+        <span class="rule__text">
+          @if (!rulesKnown()) {
+            {{ t('lights.rule.unknown') }}
+          } @else if (summary(); as parts) {
+            @for (part of parts; track $index) {
+              @if (!$first) {
+                ·
+              }
+              {{ part | displayText }}
+            }
+          } @else {
+            {{ t('lights.rule.none') }}
+          }
+        </span>
+        @if (rule()?.enabledByResident === false) {
+          <mat-icon
+            class="rule__off"
+            data-testid="rule-resident-off"
+            role="img"
+            [matTooltip]="t('lights.rule.residentOff')"
+            matTooltipTouchGestures="off"
+            [attr.aria-label]="t('lights.rule.residentOff')"
+            >toggle_off</mat-icon
+          >
+        }
+      </p>
+    </mat-card-content>
+
+    <mat-card-actions class="room__actions">
+      <!-- the room at once: every light of it, one after the other in the service -->
+      <button
+        matButton
+        type="button"
+        data-testid="room-off"
+        [disabled]="roomBusy() || lightSending() || lights().length === 0"
+        (click)="roomOff()"
+      >
+        <mat-icon>light_off</mat-icon>{{ t('lights.room.off') }}
+        <span class="visually-hidden">{{ room() }}</span>
+      </button>
+      <button matButton type="button" data-testid="room-details" (click)="openDetails.emit()">
+        <mat-icon>tune</mat-icon>{{ t('lights.room.details') }}
+        <span class="visually-hidden">{{ room() }}</span>
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</ng-container>

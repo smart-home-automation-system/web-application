@@ -65,6 +65,12 @@ const pages: Page[] = [
     loadComponent: () => import('./features/blinds/blinds').then((m) => m.Blinds),
   },
   {
+    // every light of the house, the occupancy of its rooms, their rules and the empty house (HAS-266)
+    path: 'lights',
+    title: 'nav.lights',
+    loadComponent: () => import('./features/lights/lights').then((m) => m.Lights),
+  },
+  {
     // the editor of a schedule of the blinds (HAS-253): a new one, `?room=` to start with a room
     path: 'blinds/schedules/new',
     title: 'blinds.editor.titleNew',

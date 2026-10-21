@@ -445,6 +445,22 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the lights (HAS-266): the whole house and the empty house, a card of one size per room with
+      // its occupancy and rule, and the window of a room with the brightness and the colour
+      test('lights', async ({ page }, testInfo) => {
+        await page.goto('/lights');
+        await expect(page.getByTestId('light-room').first()).toBeVisible();
+        await expect(page.getByTestId('empty-house-night')).toBeVisible();
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'lights') });
+
+        await page.locator('[data-room="living room"] [data-testid="room-details"]').click();
+        await expect(page.getByTestId('window-light').first()).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'lights-room'),
+        });
+      });
+
       // the administration of the devices (HAS-290): a card per room, floor by floor; the window
       // of a room with a device being changed and a question open; the window opened with "Add"
       test('devices', async ({ page }, testInfo) => {

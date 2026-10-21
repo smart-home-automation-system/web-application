@@ -412,8 +412,9 @@ e2e/              # Playwright tests
     the service answered without (it skips one without `lightKind`) has no controls and says why
     (`unknownToService`); while the service has not answered, the controls stay. The codes of the
     commands have texts in `shared/lights/light-errors.ts` (test lists them); the rules' codes
-    (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes rules (HAS-266/267). The
-    colour of an rgbw light is not set here (HAS-266).
+    (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes rules (HAS-267). The
+    colour of an rgbw light is set on the lights page only (HAS-266). The two reads after a command
+    are `lightReadBack` (`shared/lights/light-read-back.ts`) since HAS-266, shared with the lights page.
   - **The pause of the schedules of a blind** (`blinds-service`, `PUT` / `DELETE
     /blinds/{id}/schedule-pause`) ends by itself with the next run it prevents. **The schedules
     themselves are not shown here** (owner, 2026-10-18): they, and the lights, get pages of their
@@ -491,6 +492,44 @@ e2e/              # Playwright tests
     and frost (HAS-249: `watchProtection`, the banner and its clear button) and whether a move was
     confirmed (HAS-250: `lastCommandConfirmed`). `reachable: false` is marked; a missing
     `reachable` is not, never "unreachable".
+- **The lights** (HAS-266, `features/lights/`, the administrator's; route `/lights`, after the blinds
+  in the menu, domain colour `light`, no photo yet) is every light of `light-service`, the occupancy
+  of its rooms, their rules and the empty house - the layout of the blinds page. What to keep:
+  - **Three calls, told once** in `SourcesStrip`: `GET /light` (the lights **and the occupancy of
+    each room** - one answer, so `/rooms/{room}/occupancy` is not called), `GET /light/rules` and
+    `GET /light/empty-house`. The runs of the engine are a fourth call, made by the window of a room
+    for that room (`watchRuns`, the last 24 hours of the house by `historyRange('day')`), with its
+    own freshness and failure in the window.
+  - **A room card of one size per floor** (`LightRoomCard`, 300 px): the occupancy under the name, a
+    line per light, a line reserved for what the last command came to, a line for the rule, "All
+    off" and "Details". The page sets `--light-lines` **per floor** - the most lights of a room of
+    that floor: per house, the seven lights of the sanctum made every card seven lines tall (found on
+    the live page).
+  - **No switch on a light**: a toggle would show a light the service says nothing of as off. The
+    state is the bulb and its word (`stateOf`, `LIGHT_STATE_LABELS` in `shared/lights/light-labels.ts`),
+    the commands are two buttons; the brightness is told while the light is on.
+  - **The occupancy is the service's**: `occupied` true / false, otherwise "not known" - a room with
+    motion sensors only is never empty; `lux` is a number only when it is one (`isLux`, 0 is a
+    reading). The whole-house card counts on / off / not known and names the rooms a presence sensor
+    says somebody is in.
+  - **The window of a room** (`LightRoomWindow`, the size of the rooms window): per light when it
+    changed and by whom, the manual hold, a brightness slider for a light that dims, and for an rgbw
+    light sliders of red, green, blue - **white only when the light reported `color.white`** (a Gen2
+    RGBW in the profile rgb refuses white with `UNSUPPORTED_CAPABILITY`; the device tells, not the
+    registry). A colour starts from what the light reported, white for one not heard of. Then the
+    sensors, the rule as stored and the runs. Its light commands wait for a command of the whole room
+    (`roomBusy`, found in review) as the card's do.
+  - **Commands through `DeviceCommands`**: one per light and per room at a time; a room command
+    answers with the lights it could not switch (`failed`), told as "Not switched: n - names", never
+    as a state. Every command is followed by `lightReadBack`.
+  - **The rules are shown, not written** (their editor is HAS-267), and **a missing answer of the
+    rules is "Rules not known", never "No rule"**. The resident's switch off is a mark on the card.
+  - **The empty house** card: the state of the house, whether the service acts (`active`) or from
+    when (`actingFrom`), the night, the phase and what the simulation lights (or would light - a
+    preview while somebody is home); **an empty `lit` is "nothing"**, tested against `undefined`
+    (found by a test: `@if (x; as y)` hid it).
+  - Every value of the service is its word (`light-labels.ts`): a source, a reason, a phase, a word of
+    a Shelly device (`HTTP_in`) this version does not know is printed as it came.
 - **The editor of a schedule of the blinds** (HAS-253, `features/blinds/schedule-editor/`, the
   administrator's): a page, `/blinds/schedules/new` (`?room=` starts with every blind of that
   room) and `/blinds/schedules/{id}` - two routes, so the router never reuses the page for another
@@ -840,7 +879,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
@@ -1085,7 +1124,13 @@ up in a production build.
   registry - the office relay off, the living room dimmer on and held by hand, the bedroom strip
   not heard of; a command with `source=dashboard` switches it and holds it for 30 minutes, and
   `NOT_FOUND_LIGHT` / `UNSUPPORTED_CAPABILITY` are refused as `light-service` refuses them.
-  `no-readings` answers every light without a state. `resetLights()` for a unit test that changed them.
+  Since HAS-266 the mock service also knows lights the mock registry does not (ids from 40: an Eaton
+  desk lamp, an rgbw strip with white and one without - the profile rgb -, a hall light the rules
+  lit, an unreachable kitchen light that refuses with `DEVICE_FAILED`), the occupancy of each room,
+  the rules of three rooms (the living room's switched off by the resident), the runs of the office
+  and the hall, and the empty house; the colour and the room command are refused as the service
+  refuses them. `no-readings` answers every light without a state, every room unknown, no rule.
+  `resetLights()` for a unit test that changed them.
 - **And so can the mock device registry** (`devices.fixtures.ts`): thirteen invented devices -
   addresses of the documentation range, made-up ids - whose writes change what the registry
   answers next and are refused as `database-service` refuses them (`INVALID_DEVICE` in the
