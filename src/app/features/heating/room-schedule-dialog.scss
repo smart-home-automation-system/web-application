@@ -1,0 +1,69 @@
+:host {
+  display: block;
+  --app-domain: var(--app-domain-heating);
+}
+
+.dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog__heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+// an identifier of the backend ("living room"), shown as a name
+.dialog__room {
+  text-transform: capitalize;
+  overflow-wrap: anywhere;
+}
+
+.dialog__floor {
+  font: var(--mat-sys-body-medium);
+  letter-spacing: var(--mat-sys-body-medium-tracking);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.dialog__content {
+  display: grid;
+  gap: 16px;
+}
+
+.dialog__actions {
+  justify-content: flex-end;
+}
+
+.dialog__note {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// the weeks of two heaters side by side where the window is wide enough for both
+.weeks {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: start;
+}
+
+.schedule {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.schedule__title {
+  margin: 0;
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface);
+}
+
+// "heating - reported 4 min ago" begins a line of its own
+.schedule__state::first-letter {
+  text-transform: uppercase;
+}

@@ -1,20 +1,18 @@
-// The page is laid out for the screen it is on, so that a week fits without scrolling wherever
-// there is room for it (owner, 2026-10-08: a list that has to be scrolled next to a screen that
-// is mostly empty is the wrong layout). A phone and a narrow window: one column. A window:
-// who is at home and the period side by side, the two lists of days under them - side by side
-// too once they have the room. A wide screen: three columns, the two small cards stacked in
-// the first and a list of days in each of the other two.
+// Two rows (owner, 2026-10-21, HAS-266): who is at home now and the period side by side, the two
+// lists of days under them - side by side too once they have the room; on a phone one column.
+// The cards of a row are of one size: the same width and the height of the taller of the two.
 .cards {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  // no wider than the lists of days read well, in the middle of a wide screen (owner, 2026-10-21)
+  max-width: 1200px;
+  margin-inline: auto;
   grid-template-areas:
     'now'
     'period'
     'resident'
     'house';
   gap: 12px;
-  // a card is as tall as what it has to say, not as its neighbour
-  align-items: start;
 
   @media (min-width: 640px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -28,15 +26,6 @@
     grid-template-areas:
       'now period'
       'resident house';
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: minmax(280px, 3fr) repeat(2, minmax(0, 5fr));
-    // the lists of days span both rows; the last row takes what they need beyond the first card
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-      'now resident house'
-      'period resident house';
   }
 }
 

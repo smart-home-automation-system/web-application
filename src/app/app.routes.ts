@@ -54,7 +54,7 @@ const pages: Page[] = [
     // every room of the house, its devices, and the lights and blinds controlled from it (HAS-232)
     path: 'rooms',
     title: 'nav.rooms',
-    data: { background: 'devices' },
+    data: { background: 'rooms' },
     loadComponent: () => import('./features/rooms/rooms').then((m) => m.Rooms),
   },
   {
@@ -63,6 +63,13 @@ const pages: Page[] = [
     title: 'nav.blinds',
     data: { background: 'blinds' },
     loadComponent: () => import('./features/blinds/blinds').then((m) => m.Blinds),
+  },
+  {
+    // every light of the house, the occupancy of its rooms, their rules and the empty house (HAS-266)
+    path: 'lights',
+    title: 'nav.lights',
+    data: { background: 'lights' },
+    loadComponent: () => import('./features/lights/lights').then((m) => m.Lights),
   },
   {
     // the editor of a schedule of the blinds (HAS-253): a new one, `?room=` to start with a room
@@ -106,11 +113,13 @@ const pages: Page[] = [
   {
     path: 'settings',
     title: 'nav.settings',
+    data: { background: 'settings' },
     loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
   },
   {
     path: 'about',
     title: 'nav.about',
+    data: { background: 'about' },
     loadComponent: () => import('./features/about/about').then((m) => m.About),
   },
   {

@@ -182,10 +182,21 @@ e2e/              # Playwright tests
   room unknown to `FLOORS` goes to "Other" instead of vanishing; and the week is placed
   with `houseWeekMinute` - the day and minute of the house. The card and the week set
   `preserveWhitespaces`: their rows are pieces of text side by side, and a unit test read
-  "heatingCalls for heat" without it. A room is a `<button>` named by the room
-  (`aria-labelledby`) and described by its facts, and `aria-controls` is there only while the
-  panel is. In a browser test scope a room to the card (`getByTestId('rooms')`): the sensor
-  table carries `data-room` too.
+  "heatingCalls for heat" without it.
+- **The layout of the heating page** (owner, 2026-10-21, HAS-266): a row of four cards of one size
+  in the middle of the page - the switch, the heating of the rooms, the floor pump and the
+  temperature sensors - and the rooms under it, **a card as wide as its widest floor** (`fit-content`;
+  its notes set `contain: inline-size`, or the legend would widen it). The sensors card only says
+  how many are silent, with a red `SignalLight` (`shared/signal-light/`, the light of the overview
+  too) by its title; **the table is in a window** (`SensorsDialog`, "Details"), which follows the
+  call of the page. **Every room is a tile of one size** (`rooms.html`), by floor as on the devices
+  page: every line is always rendered, empty or not, and a heater that calls for heat is a mark
+  with the words for a screen reader - a line that wraps would make its tile taller. The button
+  of a tile opens the schedule of the room in a window (`RoomScheduleDialog`: the week of each
+  heater and the history of the room, the room as a signal over the polled rooms). **It is
+  read-only**: `heating-service` has no endpoint that writes a schedule, and the window says so -
+  editing needs that endpoint first. In a browser test scope a room to the card
+  (`getByTestId('rooms')`): the sensor table in its window carries `data-room` too.
 - **"My room" is a list of capability cards** (HAS-202, `features/my-room/`). The page renders
   `ROOM_CAPABILITIES` (`capabilities.ts`) for the room on screen and knows none of the cards by
   name; heating (`RoomHeating`) is the first. **A new thing a room can show or do is an entry
@@ -219,7 +230,11 @@ e2e/              # Playwright tests
   of the page pass - the room, `GET` only: nobody there has the permission, so a call to the
   switch of the house, read or write, fails the test.
 - **The administration of the household** (HAS-204, `features/household/`, the administrator's)
-  is the one view that reads the whole registry and the one that changes it. What to keep:
+  is the one view that reads the whole registry and the one that changes it. **The layout of the
+  blinds page since HAS-266** (owner, 2026-10-21): "Add a member" in the header, the registry call
+  told in `SourcesStrip`, the notes of an empty or unreadable registry under it, the member cards of
+  a row of one height with their personal link at the bottom - no card of the registry any more, and
+  the form of a new member in a window (`AddMemberDialog`), so the cards never move. What to keep:
   - **A change is a method of the resource, and resolves with how it ended**
     (`HouseholdRegistry`, `ChangeOutcome`): the calls go **one after the other** - every write
     of the registry stores the whole row, so two for one member can undo each other - the
@@ -369,11 +384,12 @@ e2e/              # Playwright tests
     text of `INVALID_SCHEDULE`.
   - **An address is typed on the text keypad**: `inputmode="decimal"` gives a phone set to
     Polish a comma and no dot.
-  - **The photo of the view is a room with the devices of the registry in it** - blinds, lamps,
-    wall switches, a motion and a door sensor, a weather display (`devices`, prompt in
-    `public/backgrounds/README.md`). Its white end is narrowed to 230: a lit lamp shade under a
-    card failed the secondary text of the dark scheme - a photo with a lamp in it will again.
-- **The rooms of the house** (HAS-232, `features/rooms/`, the administrator's; owner 2026-10-17)
+  - **The photo of the view is a room with the devices of the registry in it** - a blind, lamps,
+    wall switches and a push button, a thermostat, motion, presence, opening and temperature
+    sensors, a Bluetooth gateway, a weather station outside (`devices`, from ChatGPT since HAS-266,
+    prompt in `public/backgrounds/README.md`, tones `41-255`). A lit lamp shade near the top or
+    under a card fails the text of the dark scheme: the prompt keeps the lamps at mid height.
+- **The rooms of the house** (HAS-232, `features/rooms/`, the administrator's; owner 2026-10-17; photo `rooms` since HAS-266 - an upstairs hall with open doors, tones `42-255`)
   is the devices page read the other way round: every room floor by floor (`groupByFloor` of the
   devices page), a card of one size per room (`RoomTile`, the width of the devices card) with one
   line for each of the owner's rows - temperature first, heating, lights, blinds, motion,
@@ -412,8 +428,9 @@ e2e/              # Playwright tests
     the service answered without (it skips one without `lightKind`) has no controls and says why
     (`unknownToService`); while the service has not answered, the controls stay. The codes of the
     commands have texts in `shared/lights/light-errors.ts` (test lists them); the rules' codes
-    (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes rules (HAS-266/267). The
-    colour of an rgbw light is not set here (HAS-266).
+    (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes rules (HAS-267). The
+    colour of an rgbw light is set on the lights page only (HAS-266). The two reads after a command
+    are `lightReadBack` (`shared/lights/light-read-back.ts`) since HAS-266, shared with the lights page.
   - **The pause of the schedules of a blind** (`blinds-service`, `PUT` / `DELETE
     /blinds/{id}/schedule-pause`) ends by itself with the next run it prevents. **The schedules
     themselves are not shown here** (owner, 2026-10-18): they, and the lights, get pages of their
@@ -437,7 +454,7 @@ e2e/              # Playwright tests
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
-  rooms in the menu, domain colour `blinds`, photo `blinds`; "Rolety" in Polish, as everywhere
+  rooms in the menu, domain colour `blinds`, photo `blinds` - from ChatGPT since HAS-266, tones `36-245`; "Rolety" in Polish, as everywhere
   else in the application) is every blind of `blinds-service`, its schedules - **the one place of
   the application that shows them** (owner, 2026-10-18) - and the holidays they count. **The
   layout is the owner's** (2026-10-18, after a first version of cards of every size): at the top
@@ -491,6 +508,44 @@ e2e/              # Playwright tests
     and frost (HAS-249: `watchProtection`, the banner and its clear button) and whether a move was
     confirmed (HAS-250: `lastCommandConfirmed`). `reachable: false` is marked; a missing
     `reachable` is not, never "unreachable".
+- **The lights** (HAS-266, `features/lights/`, the administrator's; route `/lights`, after the blinds
+  in the menu, domain colour `light`, photo `lights` - tones narrowed to `45-220`) is every light of `light-service`, the occupancy
+  of its rooms, their rules and the empty house - the layout of the blinds page. What to keep:
+  - **Three calls, told once** in `SourcesStrip`: `GET /light` (the lights **and the occupancy of
+    each room** - one answer, so `/rooms/{room}/occupancy` is not called), `GET /light/rules` and
+    `GET /light/empty-house`. The runs of the engine are a fourth call, made by the window of a room
+    for that room (`watchRuns`, the last 24 hours of the house by `historyRange('day')`), with its
+    own freshness and failure in the window.
+  - **A room card of one size per floor** (`LightRoomCard`, 300 px): the occupancy under the name, a
+    line per light, a line reserved for what the last command came to, a line for the rule, "All
+    off" and "Details". The page sets `--light-lines` **per floor** - the most lights of a room of
+    that floor: per house, the seven lights of the sanctum made every card seven lines tall (found on
+    the live page).
+  - **No switch on a light**: a toggle would show a light the service says nothing of as off. The
+    state is the bulb and its word (`stateOf`, `LIGHT_STATE_LABELS` in `shared/lights/light-labels.ts`),
+    the commands are two buttons; the brightness is told while the light is on.
+  - **The occupancy is the service's**: `occupied` true / false, otherwise "not known" - a room with
+    motion sensors only is never empty; `lux` is a number only when it is one (`isLux`, 0 is a
+    reading). The whole-house card counts on / off / not known and names the rooms a presence sensor
+    says somebody is in.
+  - **The window of a room** (`LightRoomWindow`, the size of the rooms window): per light when it
+    changed and by whom, the manual hold, a brightness slider for a light that dims, and for an rgbw
+    light sliders of red, green, blue - **white only when the light reported `color.white`** (a Gen2
+    RGBW in the profile rgb refuses white with `UNSUPPORTED_CAPABILITY`; the device tells, not the
+    registry). A colour starts from what the light reported, white for one not heard of. Then the
+    sensors, the rule as stored and the runs. Its light commands wait for a command of the whole room
+    (`roomBusy`, found in review) as the card's do.
+  - **Commands through `DeviceCommands`**: one per light and per room at a time; a room command
+    answers with the lights it could not switch (`failed`), told as "Not switched: n - names", never
+    as a state. Every command is followed by `lightReadBack`.
+  - **The rules are shown, not written** (their editor is HAS-267), and **a missing answer of the
+    rules is "Rules not known", never "No rule"**. The resident's switch off is a mark on the card.
+  - **The empty house** card: the state of the house, whether the service acts (`active`) or from
+    when (`actingFrom`), the night, the phase and what the simulation lights (or would light - a
+    preview while somebody is home); **an empty `lit` is "nothing"**, tested against `undefined`
+    (found by a test: `@if (x; as y)` hid it).
+  - Every value of the service is its word (`light-labels.ts`): a source, a reason, a phase, a word of
+    a Shelly device (`HTTP_in`) this version does not know is printed as it came.
 - **The editor of a schedule of the blinds** (HAS-253, `features/blinds/schedule-editor/`, the
   administrator's): a page, `/blinds/schedules/new` (`?room=` starts with every blind of that
   room) and `/blinds/schedules/{id}` - two routes, so the router never reuses the page for another
@@ -602,7 +657,15 @@ e2e/              # Playwright tests
   blinds tile (HAS-254, `summariseBlinds`) counts open, closed, moving and not known - with a
   position 0 is closed and more is open; `stopped` without a position is not known - and reads
   `/blinds` once a minute, not at the 10 s of the blinds page. **A new tile is a new resource** - two values of two calls in one tile would tell
-  one failure for both. An input of a component must not be called `title`: written as a plain
+  one failure for both. **The one exception is the heating tile** (owner, 2026-10-21, HAS-266):
+  one tile "Heating system" (`tile-heating`, `HeatingApi.watchStatus`) with the state of the
+  system and since when, the rooms (count, heated now, coldest, warmest - four aligned columns) and a
+  red light blinking next to the title for silent sensors (`signal` of `DomainTile`, its words in the
+  tooltip and the `aria-label`, steady under reduced motion) - three calls; it tells the freshness of the state and an error strip
+  for each of the three, and names no sensor (the heating page does). **The overview changes
+  nothing in the house**: the switch of the heating is on the heating page only, and the former
+  tiles "Rooms" and "Temperature sensors" are gone (the first led to the heating page under the
+  name of the rooms view). An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
   the overview through the real routes lets its eight reads through with `isOverviewRead`
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
@@ -648,7 +711,7 @@ e2e/              # Playwright tests
     `ChartLine` draws bars, on an axis from 0.
   - **The rows are always full** (owner, 2026-10-16, the overview): container queries give the
     cards 6 / 3 / 2 / 1 columns and the charts 3 / 2 / 1 - never a row of four with two under it.
-  - The photo `weather` (a garden with the station) has its tones narrowed to `0-220`.
+  - The photo `weather` (a garden with the station, from ChatGPT since HAS-266) has its tones narrowed to `35-230`.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason
@@ -677,6 +740,10 @@ e2e/              # Playwright tests
   in for every empty place (`:nth-child(<c>n + 1):nth-last-child(<r>)`) - for any number of
   tiles. **Each count of columns has a range with an upper bound**: without it the rule of three
   columns also moved the seventh tile of a page of four (found by the browser test).
+- **The title of every view is in the top left corner** (owner, 2026-10-21, HAS-266): the cards
+  of a page stand in its middle, the `.page-header` never does (the overview and the weather page
+  had it inside their centred width), and a header with a button (blinds, household) keeps the
+  title at the top (`align-items: flex-start`), not in the middle of the button's height.
 - **A card is as big as what it says** (owner, 2026-10-08, HAS-195): never stretched to the
   height of its neighbour (`align-items: start` on a grid of cards) or across a wide screen and
   left mostly empty. Where a box has to be taller than its text - the furnace next to two
@@ -840,7 +907,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
@@ -910,6 +977,8 @@ the text never depends on it.
 
 - **A route names its photo** in `data.background` (`app.routes.ts`), by a name from
   `BACKGROUNDS` (`core/background/backgrounds.ts`); a route without one shows the plain glow.
+  Since HAS-266 every view of the menu has one but About (the rooms view and the settings, a
+  home-office corner where the house is set up, got photos of their own then).
   `ViewBackground` (`core/layout/`) in the shell reads the name after every navigation and
   renders the `<img>` with both sizes (`srcset`, `sizes="100vw"`) on a layer fixed to the screen
   under the glow — `z-index: -2` in the shell's stacking context, `100lvh` tall for the same
@@ -954,8 +1023,12 @@ the text never depends on it.
   "even, mid-toned light at the top of the frame" in the prompt and it may not be needed.
 - **`confirm-generation` of the Superdesign CLI can time out while the generation succeeds.** It
   is idempotent: look with `get-generation <id> --wait`, never quote again.
-- **Adding a photo**: generate the source (Superdesign, `npx --yes @superdesign/cli@latest
-  generate-image`; the owner logs in once and confirms the quote), run
+- **Adding a photo**: Claude writes the prompt and **the owner generates the source in ChatGPT**
+  (owner, 2026-10-21: its pictures look better than Superdesign's; it gives about 1672 × 941, so
+  the 2560 variant is upscaled - hidden by the haze and the glass) and puts the file where Claude
+  can read it; Superdesign (`npx --yes @superdesign/cli@latest generate-image`, a quote the owner
+  confirms) only when the owner asks for it. **Every prompt ends with the size** (owner,
+  2026-10-21): "Output: exactly 2560 × 1440 pixels, landscape 16:9." Then run
   `node scripts/make-background.mjs <source> <name> [<black>-<white>]` — it writes `public/backgrounds/<name>-2560.webp`
   (at most 400 kB), `-1280.webp` and `<name>.json` (the two patches) — add the name to
   `BACKGROUNDS`, name it in the route, and record the prompt and the model in
@@ -1085,7 +1158,13 @@ up in a production build.
   registry - the office relay off, the living room dimmer on and held by hand, the bedroom strip
   not heard of; a command with `source=dashboard` switches it and holds it for 30 minutes, and
   `NOT_FOUND_LIGHT` / `UNSUPPORTED_CAPABILITY` are refused as `light-service` refuses them.
-  `no-readings` answers every light without a state. `resetLights()` for a unit test that changed them.
+  Since HAS-266 the mock service also knows lights the mock registry does not (ids from 40: an Eaton
+  desk lamp, an rgbw strip with white and one without - the profile rgb -, a hall light the rules
+  lit, an unreachable kitchen light that refuses with `DEVICE_FAILED`), the occupancy of each room,
+  the rules of three rooms (the living room's switched off by the resident), the runs of the office
+  and the hall, and the empty house; the colour and the room command are refused as the service
+  refuses them. `no-readings` answers every light without a state, every room unknown, no rule.
+  `resetLights()` for a unit test that changed them.
 - **And so can the mock device registry** (`devices.fixtures.ts`): thirteen invented devices -
   addresses of the documentation range, made-up ids - whose writes change what the registry
   answers next and are refused as `database-service` refuses them (`INVALID_DEVICE` in the

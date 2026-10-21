@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 2560,
+    "height": 1440
+  },
+  "tones": {
+    "black": 45,
+    "white": 220
+  },
+  "files": {
+    "lights-2560.webp": {
+      "bytes": 199548,
+      "quality": 82
+    },
+    "lights-1280.webp": {
+      "bytes": 84482,
+      "quality": 82
+    }
+  },
+  "darkest": "#2d2d2d",
+  "lightest": "#dcc89a",
+  "top": {
+    "darkest": "#3e352f",
+    "lightest": "#dcc89a"
+  }
+}

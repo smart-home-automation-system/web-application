@@ -1,26 +1,26 @@
 {
   "source": {
-    "width": 4096,
-    "height": 2304
+    "width": 2560,
+    "height": 1440
   },
   "tones": {
-    "black": 0,
+    "black": 43,
     "white": 255
   },
   "files": {
     "heating-2560.webp": {
-      "bytes": 168984,
+      "bytes": 231312,
       "quality": 82
     },
     "heating-1280.webp": {
-      "bytes": 44968,
+      "bytes": 100830,
       "quality": 82
     }
   },
-  "darkest": "#221912",
-  "lightest": "#d2c9c5",
+  "darkest": "#3a302b",
+  "lightest": "#fed299",
   "top": {
-    "darkest": "#53525d",
-    "lightest": "#aea198"
+    "darkest": "#39342b",
+    "lightest": "#dca16d"
   }
 }

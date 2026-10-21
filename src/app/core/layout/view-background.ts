@@ -121,6 +121,9 @@ export class ViewBackground {
       this.remove(() => true);
       return;
     }
+    // A photo still loading is not on screen and has no fade to end: it goes at once, or it would
+    // stay in the page for good (the photo of the settings, switched off as it loaded - HAS-266)
+    this.remove((layer) => this.state(layer.key) === 'loading');
     for (const layer of this.layers()) {
       this.setState(layer.key, 'leaving');
     }

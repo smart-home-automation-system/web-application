@@ -30,7 +30,7 @@ test.describe('language', () => {
     await choose(page, 'Change language', 'Polski');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Przegląd' })).toBeVisible();
-    const tile = page.getByTestId('heating-switch');
+    const tile = page.getByTestId('tile-heating');
     await expect(tile.getByText('Włączone')).toBeVisible();
     // the date follows the language too: Polish month, 24-hour clock
     await expect(tile.getByText('Włączono: 28 wrz 2026, 06:45')).toBeVisible();

@@ -11,9 +11,9 @@ $max-columns: 5;
   container-type: inline-size;
 }
 
-// The board and its title stand in the middle of a wide screen, not against its left edge
-// (owner, 2026-10-16: "the empty part on the right makes no sense").
-.page-header,
+// The board stands in the middle of a wide screen, not against its left edge (owner, 2026-10-16:
+// "the empty part on the right makes no sense"); its title in the top left corner, as on every
+// other view (owner, 2026-10-21, HAS-266).
 .tiles {
   max-width: 1600px;
   margin-inline: auto;
@@ -66,4 +66,50 @@ $max-columns: 5;
       }
     }
   }
+}
+
+// The coldest and the warmest room: four columns shared by both rows - the label, the room, the
+// temperature and the age of its reading - so each of them stands under the same in the row above.
+.extremes {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 6px 8px;
+  margin: 8px 0 0;
+}
+
+.extremes__row {
+  display: contents;
+}
+
+.extremes dt {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.extremes dd {
+  margin: 0;
+}
+
+// a name from outside may be long: it breaks inside its own column, which stays aligned
+.extremes__room {
+  overflow-wrap: anywhere;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.extremes__temperature {
+  text-align: right;
+  font: var(--mat-sys-title-small);
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.extremes__age {
+  text-align: right;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
 }

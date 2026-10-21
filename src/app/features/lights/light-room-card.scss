@@ -1,0 +1,166 @@
+// Every card the same size (the rule of the blinds page, owner 2026-10-18): a fixed width, a line
+// per light for as many lights as the room with the most on its floor has (`--light-lines`, set per floor), one
+// line for the state of the last command, one for the rule, and the commands of the room at the bottom
+:host {
+  display: block;
+  width: var(--light-card-width, 300px);
+}
+
+.room {
+  --app-domain: var(--app-domain-light);
+  height: 100%;
+}
+
+// one line, whatever the name: a name of two lines would make its card taller than the others
+mat-card-title,
+.occupancy__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+mat-card-header {
+  display: block;
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.occupancy {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mat-icon.occupancy__icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &[data-occupancy='occupied'] {
+    color: var(--mat-sys-on-primary-container);
+  }
+}
+
+$line: 40px;
+
+.lights {
+  display: grid;
+  grid-auto-rows: $line;
+  align-content: start;
+  min-height: calc(var(--light-lines, 1) * #{$line});
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.light {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px;
+}
+
+// lit when on, plain when off, faint when the service says nothing
+.mat-icon.light__bulb {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &[data-state='on'] {
+    color: var(--app-domain-light);
+    font-variation-settings: 'FILL' 1;
+  }
+
+  &[data-state='unknown'] {
+    opacity: 0.45;
+  }
+}
+
+.light__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font: var(--mat-sys-title-small);
+  // the space of the font is under 2 px at this size: bold words next to each other read as one
+  word-spacing: 0.12em;
+}
+
+.light__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mat-icon.light__mark {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.mat-icon.light__mark--warning {
+  color: var(--mat-sys-on-error-container);
+}
+
+.light__state {
+  white-space: nowrap;
+  font: var(--mat-sys-body-small);
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.light__commands {
+  display: inline-flex;
+}
+
+// a line of its own, there when empty too: what appears in it moves nothing
+.status,
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.status {
+  color: var(--mat-sys-on-error-container);
+}
+
+.rule {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.status__text,
+.rule__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mat-icon.rule__off {
+  color: var(--mat-sys-on-error-container);
+}
+
+.room__actions {
+  justify-content: space-between;
+  padding: 0 4px 4px;
+}

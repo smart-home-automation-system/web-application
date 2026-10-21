@@ -1,0 +1,158 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('lights.title') }}</h1>
+  </header>
+
+  <!-- the calls the page is made of, each with its freshness and its failure, told once -->
+  <app-sources-strip [sources]="sources" domain="light" loadingLabel="lights.loading" />
+
+  <!-- the whole house and the empty house, side by side and of one height -->
+  <div class="top">
+    <mat-card appearance="outlined" class="top__card card--domain" data-testid="house-lights">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>home</mat-icon></div>
+        <mat-card-title>{{ t('lights.house.title') }}</mat-card-title>
+        <mat-card-subtitle>{{
+          t('lights.house.count', {
+            lights: counts().on + counts().off + counts().unknown,
+            rooms: rooms()?.length ?? 0,
+          })
+        }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="top__content">
+        @if (rooms() !== undefined) {
+          <dl class="facts">
+            <div>
+              <dt>{{ t('lights.house.on') }}</dt>
+              <dd data-testid="count-on">{{ counts().on }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('lights.house.off') }}</dt>
+              <dd data-testid="count-off">{{ counts().off }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('lights.house.unknown') }}</dt>
+              <dd data-testid="count-unknown">{{ counts().unknown }}</dd>
+            </div>
+          </dl>
+          <p class="top__line" data-testid="occupied-rooms">
+            <span class="top__label">{{ t('lights.house.occupied') }}</span>
+            <!-- a room is shown by its identifier, as everywhere in the application -->
+            {{ occupied().length === 0 ? t('lights.house.nobody') : occupied().join(', ') }}
+          </p>
+          <p class="top__note">{{ t('lights.house.occupiedNote') }}</p>
+        } @else if (!lights.loading()) {
+          <p class="top__note">{{ t('lights.unreadable') }}</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <!-- the empty house: whether nobody is at home, and what the service does about it -->
+    <mat-card appearance="outlined" class="top__card card--domain" data-testid="empty-house">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>nights_stay</mat-icon></div>
+        <mat-card-title>{{ t('lights.emptyHouse.title') }}</mat-card-title>
+        <mat-card-subtitle data-testid="empty-house-state">
+          @if (house(); as now) {
+            {{ houseText(now.house) | displayText }}
+            @if (now.house === 'empty' && now.emptySince !== undefined) {
+              · {{ t('lights.emptyHouse.since') }} {{ now.emptySince | houseAge }}
+            }
+          } @else {
+            {{ t('lights.emptyHouse.house.unknown') }}
+          }
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="top__content">
+        @if (house(); as now) {
+          @if (now.enabled === false) {
+            <p class="top__line" data-testid="empty-house-disabled">
+              {{ t('lights.emptyHouse.disabled') }}
+            </p>
+          } @else if (now.active === true) {
+            <p class="top__line top__line--active" data-testid="empty-house-active">
+              <mat-icon aria-hidden="true">nightlight</mat-icon>
+              {{ t('lights.emptyHouse.active') }}
+            </p>
+          } @else if (now.actingFrom !== undefined) {
+            <p class="top__line" data-testid="empty-house-acting-from">
+              {{
+                t('lights.emptyHouse.actingFrom', { time: (now.actingFrom | houseDateTime: TIME) })
+              }}
+            </p>
+          }
+          @if (now.dusk !== undefined && now.sunrise !== undefined) {
+            <p class="top__line" data-testid="empty-house-night">
+              <span class="top__label">{{ t('lights.emptyHouse.night') }}</span>
+              {{ now.dusk | houseDateTime: TIME }} – {{ now.sunrise | houseDateTime: TIME }}
+            </p>
+          }
+          @if (now.phase !== undefined) {
+            <p class="top__line" data-testid="empty-house-phase">
+              <span class="top__label">{{ t('lights.emptyHouse.phaseLabel') }}</span>
+              {{ phaseText(now.phase) | displayText }}
+              @if (now.nextChangeAt !== undefined) {
+                ·
+                {{
+                  t('lights.emptyHouse.nextChange', {
+                    time: (now.nextChangeAt | houseDateTime: TIME),
+                  })
+                }}
+              }
+            </p>
+          }
+          @let names = lit();
+          <!-- an empty list is "nothing": tested against undefined, never with "as" -->
+          @if (names !== undefined) {
+            <p class="top__line" data-testid="empty-house-lit">
+              <span class="top__label">{{
+                now.active === true
+                  ? t('lights.emptyHouse.litNow')
+                  : t('lights.emptyHouse.litPreview')
+              }}</span>
+              {{ names === '' ? t('lights.emptyHouse.nothingLit') : names }}
+            </p>
+          }
+          <p class="top__note">{{ t('lights.emptyHouse.note') }}</p>
+        } @else if (!emptyHouse.loading()) {
+          <p class="top__note">{{ t('lights.emptyHouse.unreadable') }}</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  @if (rooms() === undefined) {
+    @if (!lights.loading()) {
+      <p class="note">{{ t('lights.unreadable') }}</p>
+    }
+  } @else if (floors().length === 0) {
+    <p class="note" data-testid="no-lights">{{ t('lights.none') }}</p>
+  }
+
+  <!-- a floor is a row of the rooms on it that have lights, in the order of the house -->
+  @for (floor of floors(); track floor.id) {
+    <section
+      class="floor"
+      data-testid="floor"
+      [attr.data-floor]="floor.id"
+      [style.--light-lines]="linesOf(floor)"
+    >
+      <h2 class="floor__name">{{ t(floor.label) }}</h2>
+      <div class="floor__rooms">
+        @for (group of floor.rooms; track group.room) {
+          <app-light-room-card
+            [room]="group.room"
+            [lights]="group.lights"
+            [occupancy]="group.occupancy"
+            [rule]="ruleOf()?.get(group.room)"
+            [rulesKnown]="ruleOf() !== undefined"
+            [refresh]="readLights"
+            [commands]="lightCommands"
+            [roomCommands]="roomCommands"
+            (openDetails)="openRoom(group.room)"
+          />
+        }
+      </div>
+    </section>
+  }
+</ng-container>

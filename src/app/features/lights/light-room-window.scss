@@ -1,0 +1,218 @@
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.title__room {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.content {
+  display: grid;
+  gap: 14px;
+}
+
+.section {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  h3 {
+    margin: 0;
+    font: var(--mat-sys-title-small);
+  }
+}
+
+.lights,
+.sensors,
+.runs,
+.periods {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lights {
+  gap: 12px;
+}
+
+.light {
+  display: grid;
+  gap: 4px;
+}
+
+.light__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+// lit when on, plain when off, faint when the service says nothing - as on the card
+.mat-icon.light__bulb {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &[data-state='on'] {
+    color: var(--app-domain-light);
+    font-variation-settings: 'FILL' 1;
+  }
+
+  &[data-state='unknown'] {
+    opacity: 0.45;
+  }
+}
+
+.light__name,
+.line__label {
+  font-weight: 600;
+  // the space of the font is under 2 px at this size: bold words next to each other read as one
+  word-spacing: 0.12em;
+}
+
+.light__name {
+  font: var(--mat-sys-title-small);
+}
+
+.light__state {
+  font: var(--mat-sys-body-small);
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.light__commands {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+// a colour of the house, drawn as it is: an outline keeps a dark or a pale one visible on the glass
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--mat-sys-outline);
+}
+
+.swatch--large {
+  width: 28px;
+  height: 28px;
+}
+
+.control,
+.color {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.control__label {
+  min-width: 6em;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.control__slider {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.color__sliders {
+  display: grid;
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.color__row {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  align-items: center;
+
+  mat-slider {
+    min-width: 0;
+  }
+}
+
+.color__name {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.line,
+.note,
+.sensors li,
+.periods li {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.line {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.warning,
+.failure {
+  color: var(--mat-sys-on-error-container);
+}
+
+.failure {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+}
+
+.rule {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+
+  dt {
+    font-weight: 600;
+    word-spacing: 0.12em;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.runs li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  font: var(--mat-sys-body-small);
+}
+
+.runs__time {
+  min-width: 7.5em;
+  font-weight: 600;
+}
+
+@media (max-width: 479px) {
+  .rule {
+    grid-template-columns: 1fr;
+    gap: 0;
+
+    dd {
+      margin-bottom: 6px;
+    }
+  }
+}

@@ -1,0 +1,65 @@
+<ng-container *transloco="let t">
+  <div class="dialog__title" mat-dialog-title>
+    <div class="domain-badge"><mat-icon>calendar_month</mat-icon></div>
+    <div class="dialog__heading">
+      <!-- the identifier of the backend, printed as it is: never a translation -->
+      <span class="dialog__room">{{ data.name }}</span>
+      <span class="dialog__floor"
+        >{{ t(data.floor) }} · {{ t('heating.rooms.schedule.open') }}</span
+      >
+      <app-data-freshness [lastUpdated]="data.rooms.lastUpdated()" [stale]="data.rooms.stale()" />
+    </div>
+  </div>
+
+  <mat-dialog-content class="dialog__content">
+    <app-api-error-strip [error]="data.rooms.error()" />
+    <p class="dialog__note" data-testid="schedule-read-only">
+      {{ t('heating.rooms.schedule.readOnly') }}
+    </p>
+
+    @let room = data.room();
+    <div class="weeks">
+      @if (room === undefined) {
+        <!-- the next answer no longer has the room: not a room whose heaters are unknown -->
+        <p class="dialog__note" data-testid="room-gone">{{ t('heating.rooms.schedule.gone') }}</p>
+      } @else if (room.heaters === undefined) {
+        <p class="dialog__note">{{ t('heating.rooms.heatersUnknown') }}</p>
+      } @else {
+        @for (heater of room.heaters; track $index) {
+          <section class="schedule" data-testid="heater-schedule">
+            <h3 class="schedule__title">{{ t(kindLabel(heater)) }}</h3>
+            @if (heater.reportedAt | houseAge; as age) {
+              <p class="dialog__note schedule__state">
+                {{ t(stateLabel(heater)) }}&ngsp;·&ngsp;{{
+                  t('heating.rooms.heater.reported')
+                }}&ngsp;{{ age }}
+              </p>
+            }
+            @if (heater.periods === undefined) {
+              <p class="dialog__note">{{ t('heating.rooms.schedule.unknown') }}</p>
+            } @else if (heater.periods.length > 0) {
+              <app-heater-week [periods]="heater.periods" />
+            } @else if (heater.unreadablePeriods === 0) {
+              <p class="dialog__note">{{ t('heating.rooms.schedule.none') }}</p>
+            }
+            @if (heater.unreadablePeriods > 0) {
+              <p class="dialog__note">
+                {{ t('heating.rooms.schedule.unreadable', { count: heater.unreadablePeriods }) }}
+              </p>
+            }
+          </section>
+        } @empty {
+          <p class="dialog__note">{{ t('heating.rooms.noHeater') }}</p>
+        }
+      }
+    </div>
+
+    <app-room-history [room]="data.name" [schedules]="schedules()" />
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog__actions">
+    <button matButton type="button" mat-dialog-close>
+      {{ t('heating.rooms.schedule.close') }}
+    </button>
+  </mat-dialog-actions>
+</ng-container>

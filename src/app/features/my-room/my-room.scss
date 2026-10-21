@@ -1,14 +1,14 @@
 // Made for the phone: one column, the cards of the room first and the switch of the house under
-// them. In a window the cards stand side by side, each as tall as what it says and no wider
-// than a card reads well.
+// them. In a window the cards stand side by side in the middle of the page, as on the other views
+// (owner, 2026-10-21, HAS-266): columns of one width, the cards of a row of one height.
 .cards {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  align-items: start;
 
   @media (min-width: 900px) {
-    grid-template-columns: repeat(auto-fill, minmax(360px, 480px));
+    grid-template-columns: repeat(auto-fit, minmax(360px, 480px));
+    justify-content: center;
   }
 }
 
@@ -18,7 +18,8 @@
   flex-wrap: wrap;
   width: fit-content;
   max-width: 100%;
-  margin: 0 0 12px;
+  // in the middle, over the cards
+  margin: 0 auto 12px;
 }
 
 // an identifier of the backend ("living room"), shown as a name

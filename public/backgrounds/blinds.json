@@ -1,26 +1,26 @@
 {
   "source": {
-    "width": 4096,
-    "height": 2304
+    "width": 2560,
+    "height": 1440
   },
   "tones": {
-    "black": 0,
-    "white": 255
+    "black": 36,
+    "white": 245
   },
   "files": {
     "blinds-2560.webp": {
-      "bytes": 389254,
-      "quality": 76
+      "bytes": 356236,
+      "quality": 82
     },
     "blinds-1280.webp": {
-      "bytes": 105568,
+      "bytes": 147692,
       "quality": 82
     }
   },
-  "darkest": "#0a0500",
-  "lightest": "#ffd094",
+  "darkest": "#2e2e27",
+  "lightest": "#f5d4ba",
   "top": {
-    "darkest": "#77503f",
-    "lightest": "#ffc292"
+    "darkest": "#443624",
+    "lightest": "#f5d4ba"
   }
 }

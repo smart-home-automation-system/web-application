@@ -76,6 +76,7 @@ describe('application routing', () => {
         'Weather',
         'Rooms',
         'Blinds',
+        'Lights',
         'Heating',
         'Hot water',
         'Boiler room',
@@ -103,6 +104,7 @@ describe('application routing', () => {
     const offered = [...document.querySelectorAll<HTMLAnchorElement>('a[mat-menu-item]')];
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
       '/blinds',
+      '/lights',
       '/heating',
       '/water',
       '/boiler',
@@ -116,6 +118,7 @@ describe('application routing', () => {
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
     ).toEqual([
       'Blinds',
+      'Lights',
       'Heating',
       'Hot water',
       'Boiler room',
@@ -210,6 +213,7 @@ describe('application routing', () => {
           'Pogoda',
           'Pokoje',
           'Rolety',
+          'Światła',
           'Ogrzewanie',
           'Ciepła woda',
           'Kotłownia',

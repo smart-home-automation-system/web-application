@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 
 import {
   FakeResource,
@@ -76,7 +78,8 @@ describe('Rooms', () => {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
-        // the history of an open room has tests of its own (room-history.spec): here it waits
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+        // the history in the window of a room has tests of its own (room-history.spec): here it waits
         {
           provide: HeatingApi,
           useValue: { watchRooms: () => rooms, watchRoomHistory: () => fakeQueryResource() },
@@ -86,7 +89,10 @@ describe('Rooms', () => {
     fixture = TestBed.createComponent(Rooms);
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    TestBed.inject(MatDialog).closeAll();
+    vi.useRealTimers();
+  });
 
   const words = (element: Element | null | undefined) =>
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -100,9 +106,11 @@ describe('Rooms', () => {
     return (await card()).querySelector(`[data-room="${name}"]`)!;
   }
 
+  /** The window of the schedule of a room, opened with the button of its tile. */
   async function open(name: string): Promise<HTMLElement> {
-    (await room(name)).querySelector('button')!.click();
-    return (await room(name)).querySelector('[data-testid="room-panel"]')!;
+    (await room(name)).querySelector<HTMLButtonElement>('[data-testid="room-schedule"]')!.click();
+    await fixture.whenStable();
+    return document.querySelector<HTMLElement>('app-room-schedule-dialog')!;
   }
 
   it('shows a progress bar until the call has answered', async () => {
@@ -116,13 +124,13 @@ describe('Rooms', () => {
   it('shows a room: its temperature with the age of the reading, the target and its heaters', async () => {
     answer(rooms, [LIVING_ROOM]);
 
-    const summary = words((await room('living room')).querySelector('button'));
+    const summary = words(await room('living room'));
 
     expect(summary).toContain('living room');
     expect(summary).toContain('19.4 °C');
     expect(summary).toContain('Measured 3 min ago');
     expect(summary).toContain('Target 21.5 °C');
-    expect(summary).toContain('Radiator: heating Calls for heat');
+    expect(summary).toContain('Radiator: heating local_fire_department Calls for heat');
     expect(summary).toContain('Floor heating: off');
   });
 
@@ -142,7 +150,7 @@ describe('Rooms', () => {
   it('says "no status yet" for a heater the service has not heard from, never "off"', async () => {
     answer(rooms, [OFFICE]);
 
-    const summary = words((await room('office')).querySelector('button'));
+    const summary = words(await room('office'));
 
     expect(summary).toContain('23.8 °C');
     expect(summary).toContain('Target 20.5 °C');
@@ -154,7 +162,7 @@ describe('Rooms', () => {
   it('says that a room has not reported, and that it has no heater', async () => {
     answer(rooms, [SAUNA]);
 
-    const summary = words((await room('sauna')).querySelector('button'));
+    const summary = words(await room('sauna'));
 
     expect(summary).toContain('No reading yet');
     expect(summary).toContain('No heater');
@@ -172,7 +180,7 @@ describe('Rooms', () => {
   it('says that the service lists no heaters when the answer carries no list', async () => {
     answer(rooms, [{ name: 'office' }]);
 
-    expect(words(await room('office'))).toContain('The service does not list the heaters.');
+    expect(words(await room('office'))).toContain('Heaters not listed');
   });
 
   it('groups the rooms by floor, each floor under its name', async () => {
@@ -191,18 +199,59 @@ describe('Rooms', () => {
     ]);
   });
 
-  describe('the week of a room', () => {
-    it('is closed until the room is opened, and the button says which it is', async () => {
+  it('keeps the same lines in every tile, so that every tile has one size', async () => {
+    answer(rooms, [LIVING_ROOM, OFFICE, SAUNA, { name: 'kitchen' }]);
+
+    const lines = async (name: string) =>
+      (await room(name)).querySelectorAll('.room__line, .room__heaters, .room__actions').length;
+
+    expect(
+      new Set([
+        await lines('living room'),
+        await lines('office'),
+        await lines('sauna'),
+        await lines('kitchen'),
+      ]).size,
+    ).toBe(1);
+  });
+
+  // the words of My room and the rooms view (review of HAS-266)
+  it('says since when a window is open, and that it holds the heating', async () => {
+    answer(rooms, [
+      { ...OFFICE, window: { state: 'open', openSince: '2026-10-08T14:18:00', hold: true } },
+    ]);
+
+    const line = (await room('office')).querySelector('.room__window-line');
+
+    expect(words(line?.querySelector('[data-testid="room-window"]'))).toContain(
+      'opened 12 min ago',
+    );
+    expect(line?.querySelector('[data-testid="room-held"]')).toBeTruthy();
+  });
+
+  // as many lines for heaters in every tile as the room with the most has (review of HAS-266)
+  it('keeps room in every tile for the heaters of the room with the most', async () => {
+    const radiator = { type: 'radiator', schedules: [] };
+    answer(rooms, [SAUNA, { name: 'office', heaters: [radiator, radiator, radiator] }]);
+
+    expect((await card()).style.getPropertyValue('--heater-lines')).toBe('3');
+  });
+
+  describe('the schedule of a room, in a window', () => {
+    it('opens from the button of the tile, named by the room', async () => {
       answer(rooms, [LIVING_ROOM]);
-      const button = (await room('living room')).querySelector('button')!;
+      const button = (await room('living room')).querySelector('[data-testid="room-schedule"]')!;
 
-      expect(button.getAttribute('aria-expanded')).toBe('false');
-      expect((await card()).querySelector('[data-testid="room-panel"]')).toBeNull();
+      expect(words(button)).toBe('calendar_month Schedule living room');
+      expect(document.querySelector('app-room-schedule-dialog')).toBeNull();
 
-      const panel = await open('living room');
+      const shown = await open('living room');
 
-      expect(button.getAttribute('aria-expanded')).toBe('true');
-      expect(panel.id).toBe(button.getAttribute('aria-controls'));
+      expect(words(shown)).toContain('living room Ground floor · Schedule');
+      // heating-service takes no change to a schedule yet
+      expect(words(shown.querySelector('[data-testid="schedule-read-only"]'))).toContain(
+        'does not take changes to the schedules yet',
+      );
     });
 
     // a room with several periods: every day of the week with its own
@@ -298,37 +347,34 @@ describe('Rooms', () => {
     it('says that a room without a heater has none', async () => {
       answer(rooms, [SAUNA]);
 
-      // the panel also holds the history of the room: what it says about the heaters is its note
-      const notes = [...(await open('sauna')).querySelectorAll(':scope > .room__note')];
+      // the window also holds the history of the room: what it says about the heaters is its note
+      const notes = [...(await open('sauna')).querySelectorAll('.weeks > .dialog__note')];
 
       expect(notes.map(words)).toEqual(['No heater']);
     });
 
-    it('shows one room at a time, and closes it again', async () => {
+    it('says that the service no longer lists the room, not that its heaters are unknown', async () => {
       answer(rooms, [LIVING_ROOM, OFFICE]);
+      const shown = await open('office');
 
-      await open('living room');
-      await open('office');
+      answer(rooms, [LIVING_ROOM]);
+      await fixture.whenStable();
 
-      expect(
-        [...(await card()).querySelectorAll('.room--open')].map((entry) =>
-          entry.getAttribute('data-room'),
-        ),
-      ).toEqual(['office']);
-
-      expect(await open('office')).toBeNull();
+      expect(words(shown.querySelector('[data-testid="room-gone"]'))).toBe(
+        'The heating service no longer lists this room.',
+      );
+      expect(words(shown)).not.toContain('does not list the heaters');
     });
 
-    it('stays open over the next answers of the service', async () => {
+    it('follows the next answers of the service', async () => {
       answer(rooms, [LIVING_ROOM]);
-      await open('living room');
+      const shown = await open('living room');
+      expect(shown.querySelectorAll('.schedule')).toHaveLength(2);
 
-      answer(rooms, [
-        { ...LIVING_ROOM, temperature: { value: 20.1, updatedAt: '2026-10-08T14:29:30' } },
-      ]);
+      answer(rooms, [{ ...LIVING_ROOM, heaters: [LIVING_ROOM.heaters![0]] }]);
+      await fixture.whenStable();
 
-      expect(words(await room('living room'))).toContain('20.1 °C');
-      expect((await room('living room')).querySelector('[data-testid="room-panel"]')).toBeTruthy();
+      expect(shown.querySelectorAll('.schedule')).toHaveLength(1);
     });
   });
 
@@ -343,30 +389,6 @@ describe('Rooms', () => {
 
     expect(shown).toContain('The service did not answer with a list of rooms.');
     expect(shown).not.toContain('The service lists no room.');
-  });
-
-  it('names the button of a room by the room, and describes it by what the card says', async () => {
-    answer(rooms, [LIVING_ROOM]);
-    const shown = await room('living room');
-    const button = shown.querySelector('button')!;
-    const byId = (attribute: string) =>
-      words(shown.querySelector(`[id="${button.getAttribute(attribute)}"]`));
-
-    expect(byId('aria-labelledby')).toBe('living room');
-    expect(byId('aria-describedby')).toContain('19.4 °C');
-    // the panel does not exist while the room is closed
-    expect(button.hasAttribute('aria-controls')).toBe(false);
-  });
-
-  it('gives two rooms of one name panels of their own', async () => {
-    answer(rooms, [SAUNA, SAUNA]);
-    (await card()).querySelectorAll<HTMLElement>('[data-room="sauna"] button')[0].click();
-
-    const ids = [...(await card()).querySelectorAll('[data-testid="room-panel"]')].map(
-      (panel) => panel.id,
-    );
-
-    expect(new Set(ids).size).toBe(2);
   });
 
   it('says that the service lists no room when it answers with none', async () => {
@@ -408,7 +430,7 @@ describe('Rooms', () => {
     expect(shown).toContain('19,4 °C');
     expect(shown).toContain('Pomiar 3 min temu');
     expect(shown).toContain('Cel 21,5 °C');
-    expect(shown).toContain('Grzejnik: grzeje Wymaga grzania');
+    expect(shown).toContain('Grzejnik: grzeje local_fire_department Wymaga grzania');
     expect(shown).toContain('Podłoga: nie grzeje');
     expect(shown).toContain('Grzejnik: brak stanu');
     expect(shown).toContain('Brak odczytu');

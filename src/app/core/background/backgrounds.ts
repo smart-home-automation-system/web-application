@@ -14,6 +14,10 @@ export const BACKGROUNDS = [
   'devices',
   'weather',
   'blinds',
+  'lights',
+  'rooms',
+  'settings',
+  'about',
 ] as const;
 
 export type BackgroundName = (typeof BACKGROUNDS)[number];

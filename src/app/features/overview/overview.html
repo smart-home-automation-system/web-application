@@ -4,112 +4,86 @@
   </header>
 
   <section class="tiles" [attr.aria-label]="t('overview.systems')">
-    <!-- the card of the heating page: the state of the whole heating and its switch -->
-    <app-heating-switch [control]="heating" />
-
+    <!-- the heating at a glance (owner, 2026-10-21, HAS-266): the state of the system, the rooms
+         and a warning when a sensor fell silent - the switch is on the heating page only -->
     <app-domain-tile
-      heading="overview.rooms.title"
-      icon="meeting_room"
+      heading="heatingSwitch.title"
+      icon="mode_heat"
       domain="heating"
       link="/heating"
-      waitingLabel="overview.rooms.loading"
-      [resource]="rooms"
-      data-testid="tile-rooms"
+      waitingLabel="heatingSwitch.loading"
+      [resource]="heating"
+      [signal]="
+        sensorSummary().silent > 0
+          ? t('heating.sensors.silentCount', {
+              silent: sensorSummary().silent,
+              total: sensorSummary().total,
+            })
+          : undefined
+      "
+      data-testid="tile-heating"
     >
-      @let summary = roomsSummary();
-      @if (summary.total > 0) {
-        <p class="tile__lead">{{ t('overview.rooms.count', { count: summary.total }) }}</p>
-        @if (summary.heating !== undefined) {
-          <p class="tile__detail" data-testid="rooms-heating">
-            {{ t('overview.rooms.heating', { count: summary.heating }) }}
+      @let on = heatingEnabled();
+      @if (on !== undefined) {
+        <p class="tile__lead" [class.tile__lead--ok]="on" data-testid="heating-state">
+          <mat-icon>{{ on ? 'check_circle' : 'do_not_disturb_on' }}</mat-icon>
+          <span>{{ t(on ? 'heatingSwitch.enabled' : 'heatingSwitch.disabled') }}</span>
+        </p>
+        @if (heatingSince(); as time) {
+          <p class="tile__detail">
+            {{
+              t(on ? 'heatingSwitch.switchedOn' : 'heatingSwitch.switchedOff', {
+                time: time | houseDateTime,
+              })
+            }}
           </p>
         }
+      } @else if (!heating.error()) {
+        <p class="tile__detail">{{ t('heatingSwitch.unknown') }}</p>
+      }
+
+      @let summary = roomsSummary();
+      @if (summary.total > 0) {
+        <p class="tile__detail" data-testid="rooms-count">
+          {{ t('overview.rooms.count', { count: summary.total }) }}
+          @if (summary.heating !== undefined) {
+            ·
+            <span data-testid="rooms-heating">{{
+              t('overview.rooms.heating', { count: summary.heating })
+            }}</span>
+          }
+        </p>
         @if (summary.coldest; as coldest) {
-          <dl class="tile__rows">
-            <div class="tile__row">
+          <!-- four columns shared by both rows: the label, the room, the temperature, the age -->
+          <dl class="extremes">
+            <div class="extremes__row">
               <dt>{{ t('overview.rooms.coldest') }}</dt>
               <!-- the identifier of the backend, printed as it is: never a translation -->
-              <dd>
-                <span class="tile__name">{{ coldest.name }}</span>
-                <strong>{{ coldest.temperature | localNumber: ONE_DECIMAL }} °C</strong>
-                @if (coldest.measuredAt | houseAge; as age) {
-                  <span class="tile__age">{{ age }}</span>
-                }
+              <dd class="extremes__room">{{ coldest.name }}</dd>
+              <dd class="extremes__temperature">
+                {{ coldest.temperature | localNumber: ONE_DECIMAL }} °C
               </dd>
+              <dd class="extremes__age">{{ coldest.measuredAt | houseAge }}</dd>
             </div>
             @if (summary.warmest; as warmest) {
-              <div class="tile__row">
+              <div class="extremes__row">
                 <dt>{{ t('overview.rooms.warmest') }}</dt>
-                <dd>
-                  <span class="tile__name">{{ warmest.name }}</span>
-                  <strong>{{ warmest.temperature | localNumber: ONE_DECIMAL }} °C</strong>
-                  @if (warmest.measuredAt | houseAge; as age) {
-                    <span class="tile__age">{{ age }}</span>
-                  }
+                <dd class="extremes__room">{{ warmest.name }}</dd>
+                <dd class="extremes__temperature">
+                  {{ warmest.temperature | localNumber: ONE_DECIMAL }} °C
                 </dd>
+                <dd class="extremes__age">{{ warmest.measuredAt | houseAge }}</dd>
               </div>
             }
           </dl>
-        } @else {
-          <p class="tile__detail">{{ t('overview.rooms.noReading') }}</p>
         }
-      } @else if (!rooms.error()) {
-        <!-- an answer that is no list is not a house without rooms -->
-        <p class="tile__detail">
-          {{ t(roomsListed() ? 'heating.rooms.none' : 'heating.rooms.notListed') }}
-        </p>
       }
-    </app-domain-tile>
-
-    <app-domain-tile
-      heading="overview.sensors.title"
-      icon="sensors"
-      domain="heating"
-      link="/heating"
-      waitingLabel="heating.sensors.loading"
-      [resource]="sensors"
-      data-testid="tile-sensors"
-    >
-      @let health = sensorSummary();
-      @if (health.total === 0) {
-        @if (!sensors.error()) {
-          <p class="tile__detail">{{ t('heating.sensors.none') }}</p>
-        }
-      } @else if (health.allReporting) {
-        <p class="tile__lead tile__lead--ok">
-          <mat-icon>check_circle</mat-icon>
-          <span>{{ t('heating.sensors.allReporting', { count: health.total }) }}</span>
-        </p>
-      } @else if (health.silent > 0) {
-        <p class="tile__lead tile__lead--alert" data-testid="sensors-silent">
-          <mat-icon>warning</mat-icon>
-          <span>{{
-            t('heating.sensors.silentCount', { silent: health.silent, total: health.total })
-          }}</span>
-        </p>
-        <dl class="tile__rows">
-          @for (sensor of silentSensors(); track $index) {
-            <div class="tile__row">
-              <!-- the identifier of the backend, printed as it is -->
-              <dt>
-                <span class="tile__name">{{ sensor.room }}</span>
-                @if (sensor.muted) {
-                  <span class="tile__tag">{{ t('overview.sensors.muted') }}</span>
-                }
-              </dt>
-              <dd>
-                @if (sensor.lastReadingAt | houseAge; as age) {
-                  {{ age }}
-                } @else {
-                  {{ t('heating.sensors.noReading') }}
-                }
-              </dd>
-            </div>
-          }
-        </dl>
-      } @else {
-        <p class="tile__detail">{{ t('overview.sensors.unknown') }}</p>
-      }
+      <!-- the rooms and the sensors are calls of their own: a failure of either is told here,
+           apart from the state of the system (the tile tells the freshness of that one) -->
+      <div tileFailures>
+        <app-api-error-strip [error]="rooms.error()" />
+        <app-api-error-strip [error]="sensors.error()" />
+      </div>
     </app-domain-tile>
 
     <app-domain-tile

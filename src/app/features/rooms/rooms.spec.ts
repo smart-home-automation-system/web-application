@@ -10,7 +10,8 @@ import { RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { SmartDevice } from '../../data-access/devices/device-registry-api';
 import { Room } from '../../data-access/heating/heating-api';
 import { RoomLights } from '../../data-access/light/light-api';
-import { LIGHTS_READ_AGAIN_AFTER_MS, Rooms } from './rooms';
+import { LIGHTS_READ_AGAIN_AFTER_MS } from '../../shared/lights/light-read-back';
+import { Rooms } from './rooms';
 
 const DEVICES: readonly SmartDevice[] = [
   {

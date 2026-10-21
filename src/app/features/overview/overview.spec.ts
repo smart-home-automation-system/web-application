@@ -1,4 +1,3 @@
-import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -64,7 +63,7 @@ const WEATHER: CurrentWeather = {
   humidity: { value: 58, measuredAt: '2026-10-10T18:29:10', stale: false },
 };
 
-type Tile = 'rooms' | 'sensors' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds';
+type Tile = 'heating' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -75,7 +74,6 @@ describe('Overview', () => {
   let presence: FakeResource<readonly ResidentPresence[] | null>;
   let weather: FakeResource<CurrentWeather | null>;
   let blinds: FakeResource<readonly RoomBlinds[] | null>;
-  let turned: boolean[];
   let fixture: ComponentFixture<Overview>;
 
   beforeEach(() => {
@@ -88,7 +86,6 @@ describe('Overview', () => {
     presence = fakeResource();
     weather = fakeResource();
     blinds = fakeResource();
-    turned = [];
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -96,12 +93,7 @@ describe('Overview', () => {
         {
           provide: HeatingApi,
           useValue: {
-            watchSwitch: () => ({
-              ...heating,
-              switching: signal(false),
-              switchFailure: signal(undefined),
-              turn: (on: boolean) => turned.push(on),
-            }),
+            watchStatus: () => heating,
             watchRooms: () => rooms,
             watchSensors: () => sensors,
           },
@@ -143,15 +135,7 @@ describe('Overview', () => {
   }
 
   it('shows a progress bar in every tile until its call has answered', async () => {
-    for (const name of [
-      'rooms',
-      'sensors',
-      'water',
-      'boiler',
-      'presence',
-      'weather',
-      'blinds',
-    ] as const) {
+    for (const name of ['heating', 'water', 'boiler', 'presence', 'weather', 'blinds'] as const) {
       expect((await tile(name)).querySelector('mat-progress-bar'), name).toBeTruthy();
     }
 
@@ -165,8 +149,7 @@ describe('Overview', () => {
     const link = async (name: Tile) =>
       (await tile(name)).querySelector('a.tile__link')?.getAttribute('href');
 
-    expect(await link('rooms')).toBe('/heating');
-    expect(await link('sensors')).toBe('/heating');
+    expect(await link('heating')).toBe('/heating');
     expect(await link('water')).toBe('/water');
     expect(await link('boiler')).toBe('/boiler');
     expect(await link('presence')).toBe('/presence');
@@ -174,35 +157,26 @@ describe('Overview', () => {
     expect(await link('blinds')).toBe('/blinds');
   });
 
-  describe('the heating of the house', () => {
-    it('is the card of the heating page, with its state and its switch', async () => {
+  // one tile for the heating (owner, 2026-10-21, HAS-266): the state, the rooms, the silent
+  // sensors - and no switch, which is on the heating page only
+  describe('the heating', () => {
+    it('tells the state of the system and since when, and offers no switch', async () => {
       answerAll();
-      await fixture.whenStable();
 
-      const card = page().querySelector('[data-testid="heating-switch"]');
-      expect(words(card?.querySelector('[data-testid="heating-state"]'))).toContain('Enabled');
-      expect(words(card)).toContain('Switched on: 28 Sept 2026, 06:45');
+      const heatingTile = await tile('heating');
+
+      expect(words(heatingTile.querySelector('[data-testid="heating-state"]'))).toBe(
+        'check_circle Enabled',
+      );
+      expect(words(heatingTile)).toContain('Switched on: 28 Sept 2026, 06:45');
+      expect(heatingTile.querySelector('button')).toBeNull();
+      expect(page().querySelector('[data-testid="heating-switch"]')).toBeNull();
     });
 
-    // the one control of the page that changes the house: never without the question first
-    it('asks before it switches', async () => {
+    it('says how many rooms there are, how many are heated, and the two extremes', async () => {
       answerAll();
-      await fixture.whenStable();
-      const card = page().querySelector('[data-testid="heating-switch"]') as HTMLElement;
 
-      (card.querySelector('.switch__trigger') as HTMLButtonElement).click();
-      await fixture.whenStable();
-
-      expect(turned).toEqual([]);
-      expect(words(card)).toContain('Cancel');
-    });
-  });
-
-  describe('the rooms', () => {
-    it('says how many there are, how many are heated, and the two extremes', async () => {
-      answer(rooms, ROOMS);
-
-      const text = words(await tile('rooms'));
+      const text = words(await tile('heating'));
 
       expect(text).toContain('Rooms: 4');
       expect(text).toContain('Being heated now: 1');
@@ -214,59 +188,63 @@ describe('Overview', () => {
 
     // right after a start of the service no relay has answered: "0 heated" would be a claim
     it('claims nothing about heating while no relay has answered', async () => {
+      answerAll();
       answer(rooms, [{ name: 'living room', temperature: { value: 21 }, heaters: [{}] }]);
 
-      expect((await tile('rooms')).querySelector('[data-testid="rooms-heating"]')).toBeNull();
+      expect((await tile('heating')).querySelector('[data-testid="rooms-heating"]')).toBeNull();
     });
 
-    it('says that no room has a reading yet', async () => {
-      answer(rooms, [{ name: 'living room', heaters: [] }]);
+    // a red light blinking next to the title (owner, 2026-10-21): its words for a screen reader
+    it('lights a signal by the title when sensors fell silent, and names none of them', async () => {
+      answerAll();
 
-      expect(words(await tile('rooms'))).toContain('No room has a reading yet.');
+      const signal = (await tile('heating')).querySelector(
+        'mat-card-title [data-testid="tile-signal"]',
+      );
+
+      expect(signal?.getAttribute('aria-label')).toBe('Silent sensors: 2 of 3.');
+      expect(signal?.getAttribute('role')).toBe('img');
+      expect(words(await tile('heating'))).not.toContain('muted');
     });
 
-    it('does not read an answer that is no list as a house without rooms', async () => {
-      answer(rooms, null);
-
-      expect(words(await tile('rooms'))).toContain('The service did not answer with a list');
-    });
-  });
-
-  describe('the temperature sensors', () => {
-    it('names the sensors that fell silent, with how long ago each last reported', async () => {
-      answer(sensors, SENSORS);
-
-      const text = words(await tile('sensors'));
-
-      expect(text).toContain('Silent sensors: 2 of 3.');
-      expect(text).toMatch(/bathroom down 3 days ago/);
-      expect(text).toMatch(/sauna muted \d+ days ago/);
-      expect(text).not.toContain('living room');
-    });
-
-    it('says that all report when every sensor is known to', async () => {
+    it('lights no signal while every sensor reports', async () => {
+      answerAll();
       answer(sensors, [SENSORS[0]]);
 
-      const text = words(await tile('sensors'));
-
-      expect(text).toContain('All sensors are reporting (1).');
-      expect((await tile('sensors')).querySelector('[data-testid="sensors-silent"]')).toBeNull();
+      expect((await tile('heating')).querySelector('[data-testid="tile-signal"]')).toBeNull();
     });
 
-    // a sensor whose `stale` is no flag is neither reporting nor silent
-    it('does not call sensors reporting when the answer does not say', async () => {
-      answer(sensors, [{ room: 'living room', lastReadingAt: '2026-10-10T18:28:00' }]);
+    it('says the signal in the language on screen', async () => {
+      await useLanguage('pl');
+      answerAll();
 
-      const text = words(await tile('sensors'));
-
-      expect(text).toContain('The service does not say which sensors are reporting.');
-      expect(text).not.toContain('All sensors');
+      expect(
+        (await tile('heating'))
+          .querySelector('[data-testid="tile-signal"]')
+          ?.getAttribute('aria-label'),
+      ).toBe('Milczące czujniki: 2 z 3.');
     });
 
-    it('says that no sensor has reported yet', async () => {
-      answer(sensors, []);
+    // the failures of the other calls are not held back by the call of the state (review of HAS-266)
+    it('tells a failure of the rooms while the state of the system still loads', async () => {
+      fail(rooms, new ApiError('server', 502));
 
-      expect(words(await tile('sensors'))).toContain('No sensor has reported yet.');
+      const heatingTile = await tile('heating');
+
+      expect(heatingTile.querySelector('mat-progress-bar')).toBeTruthy();
+      expect(words(heatingTile.querySelector('[role="alert"]'))).toContain('(error 502)');
+    });
+
+    it('tells a failure of the rooms or the sensors in the tile, apart from the state', async () => {
+      answerAll();
+      fail(sensors, new ApiError('server', 502));
+
+      const heatingTile = await tile('heating');
+
+      expect(heatingTile.querySelector('[role="alert"]')).toBeTruthy();
+      expect(words(heatingTile.querySelector('[data-testid="heating-state"]'))).toContain(
+        'Enabled',
+      );
     });
   });
 
@@ -481,7 +459,7 @@ describe('Overview', () => {
 
       expect((await tile('boiler')).querySelector('[role="alert"]')).toBeTruthy();
       expect(words(await tile('boiler'))).toContain('Furnace On');
-      for (const name of ['rooms', 'sensors', 'water', 'presence'] as const) {
+      for (const name of ['heating', 'water', 'presence'] as const) {
         expect((await tile(name)).querySelector('[role="alert"]'), name).toBeNull();
       }
       expect(words(await tile('water'))).toContain('46.8 °C');
@@ -506,7 +484,7 @@ describe('Overview', () => {
 
     expect(words(await tile('water'))).toContain('Zasobnik 46,8 °C');
     expect(words(page().querySelector('h1'))).toBe('Przegląd');
-    expect(words(await tile('rooms'))).toContain('Najchłodniejszy bedroom 18,9 °C');
+    expect(words(await tile('heating'))).toContain('Najchłodniejszy bedroom 18,9 °C');
     expect(words(await tile('presence'))).toContain('Aurelia W domu');
     expect(words(await tile('weather'))).toContain('Wiatr 3,2 m/s porywy 5,7 m/s');
   });

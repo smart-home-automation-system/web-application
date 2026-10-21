@@ -9,6 +9,13 @@
   box-sizing: border-box;
 }
 
+// the title and, at its right, a signal the page may put there
+.tile__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 // the colour of the domain the tile is about, on its edge and its badge
 .tile[data-domain='heating'] {
   --app-domain: var(--app-domain-heating);

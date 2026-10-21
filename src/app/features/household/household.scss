@@ -1,31 +1,40 @@
-// As many members side by side as the window has room for, each card as tall as what it says:
-// one column on a phone, five or six on a wide screen.
+// The title with the way to a new member; the strip of the registry call; the members - the layout
+// of the blinds page (owner, 2026-10-21, HAS-266)
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// the title, and the way to a new member next to it - as the way to a new schedule of the blinds
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  // the title in the top left corner, as on the views without a button (owner, 2026-10-21)
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+// As many members side by side as the window has room for, in the middle of the page - a last row
+// that is not full too, as the room cards of the blinds page (owner, 2026-10-21, HAS-266). The cards
+// are of one width, and the cards of a row of one height; on a phone one column.
 .cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
   gap: 16px;
-  align-items: start;
+
+  app-member-card {
+    // three in a row on a screen 1440 px wide
+    flex: 0 1 360px;
+    min-width: min(100%, 320px);
+  }
 }
 
-.registry {
-  --app-domain: var(--app-domain-household);
-}
-
-mat-card-content {
-  padding-top: 8px;
-}
-
-.registry__note {
-  margin: 0 0 12px;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.registry__form-title {
-  margin: 0 0 8px;
-  font: var(--mat-sys-title-medium);
-  letter-spacing: var(--mat-sys-title-medium-tracking);
-}
-
-.registry__add {
-  margin-bottom: 8px;
+.note {
+  margin: 0;
+  text-align: center;
+  color: var(--mat-sys-on-background);
 }
