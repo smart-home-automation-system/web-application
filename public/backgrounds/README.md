@@ -18,6 +18,7 @@ argument of the script) - by as little as makes `npm run check:contrast` pass.
 | `room` | My room | 2026-10-09, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `household` | Household | 2026-10-09, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 | `weather` | Weather | 2026-10-16, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
+| `lights` | Lights | 2026-10-21, Superdesign, `bytedance/seedream-5.0-lite`, 4K 16:9 (4096 × 2304) |
 
 ## Prompts
 
@@ -192,3 +193,18 @@ and winter; `0-225` still failed by a hair.
 
 Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
 owner on 2026-10-18 (HAS-252). Full tones: `check:contrast` passes without narrowing them.
+
+### `lights`
+
+> Photorealistic wide photograph of the open living space of a modern family house at dusk, with
+> its lights on. The things spread from the left edge to the right: a kitchen with warm LED strips
+> under the wall cabinets, three pendant lamps over a wooden dining table, a sofa with an arc floor
+> lamp dimmed beside it, a TV wall with an amber colour LED strip glowing behind a floating shelf,
+> two wall sconces by a glass door to the garden, a light switch panel and a small white motion
+> sensor on the wall. Even, soft, mid-toned light along the top of the frame: a warm ceiling lit
+> indirectly, no bright bare bulbs, no black beams at the top. No large empty wall, floor or
+> ceiling; no people, no text, no brand logos. Realistic interior photography, 16:9.
+
+Model `bytedance/seedream-5.0-lite`, image size 4K, aspect ratio 16:9; prompt agreed with the
+owner on 2026-10-21 (HAS-266). Tones narrowed to `25-240`: the lit ceiling and the dark corner
+in the top band failed the title (4.07:1 light, 4.36:1 dark); `20-245` still failed one pair.

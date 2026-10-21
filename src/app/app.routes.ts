@@ -68,6 +68,7 @@ const pages: Page[] = [
     // every light of the house, the occupancy of its rooms, their rules and the empty house (HAS-266)
     path: 'lights',
     title: 'nav.lights',
+    data: { background: 'lights' },
     loadComponent: () => import('./features/lights/lights').then((m) => m.Lights),
   },
   {

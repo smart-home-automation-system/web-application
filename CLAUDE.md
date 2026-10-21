@@ -493,7 +493,7 @@ e2e/              # Playwright tests
     confirmed (HAS-250: `lastCommandConfirmed`). `reachable: false` is marked; a missing
     `reachable` is not, never "unreachable".
 - **The lights** (HAS-266, `features/lights/`, the administrator's; route `/lights`, after the blinds
-  in the menu, domain colour `light`, no photo yet) is every light of `light-service`, the occupancy
+  in the menu, domain colour `light`, photo `lights` - tones narrowed to `25-240`) is every light of `light-service`, the occupancy
   of its rooms, their rules and the empty house - the layout of the blinds page. What to keep:
   - **Three calls, told once** in `SourcesStrip`: `GET /light` (the lights **and the occupancy of
     each room** - one answer, so `/rooms/{room}/occupancy` is not called), `GET /light/rules` and
