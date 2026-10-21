@@ -47,6 +47,8 @@
 
 .top__label {
   font-weight: 600;
+  // the space of the font is under 2 px at this size: bold words next to each other read as one
+  word-spacing: 0.12em;
 }
 
 .top__note {

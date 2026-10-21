@@ -90,6 +90,8 @@ $line: 40px;
   gap: 4px;
   min-width: 0;
   font: var(--mat-sys-title-small);
+  // the space of the font is under 2 px at this size: bold words next to each other read as one
+  word-spacing: 0.12em;
 }
 
 .light__text {
