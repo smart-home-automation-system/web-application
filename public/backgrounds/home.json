@@ -1,22 +1,26 @@
 {
   "source": {
-    "width": 4096,
-    "height": 2304
+    "width": 2560,
+    "height": 1440
+  },
+  "tones": {
+    "black": 46,
+    "white": 255
   },
   "files": {
     "home-2560.webp": {
-      "bytes": 206216,
+      "bytes": 329226,
       "quality": 82
     },
     "home-1280.webp": {
-      "bytes": 58874,
+      "bytes": 140126,
       "quality": 82
     }
   },
-  "darkest": "#050c06",
-  "lightest": "#f9dfac",
+  "darkest": "#303233",
+  "lightest": "#f2c17d",
   "top": {
-    "darkest": "#01469b",
-    "lightest": "#0468c7"
+    "darkest": "#32343c",
+    "lightest": "#e1a161"
   }
 }

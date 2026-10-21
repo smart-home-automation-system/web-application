@@ -1,26 +1,26 @@
 {
   "source": {
-    "width": 4096,
-    "height": 2304
+    "width": 2560,
+    "height": 1440
   },
   "tones": {
-    "black": 0,
-    "white": 232
+    "black": 25,
+    "white": 255
   },
   "files": {
     "water-2560.webp": {
-      "bytes": 356282,
+      "bytes": 245056,
       "quality": 82
     },
     "water-1280.webp": {
-      "bytes": 77162,
+      "bytes": 102132,
       "quality": 82
     }
   },
-  "darkest": "#1d1e1f",
-  "lightest": "#d7d7d8",
+  "darkest": "#221c19",
+  "lightest": "#f6bf7c",
   "top": {
-    "darkest": "#414145",
-    "lightest": "#d7d7d8"
+    "darkest": "#443423",
+    "lightest": "#edb775"
   }
 }

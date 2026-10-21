@@ -1,26 +1,26 @@
 {
   "source": {
-    "width": 4096,
-    "height": 2304
+    "width": 2560,
+    "height": 1440
   },
   "tones": {
-    "black": 0,
-    "white": 220
+    "black": 35,
+    "white": 230
   },
   "files": {
     "weather-2560.webp": {
-      "bytes": 391202,
-      "quality": 64
+      "bytes": 391140,
+      "quality": 70
     },
     "weather-1280.webp": {
-      "bytes": 169188,
+      "bytes": 232934,
       "quality": 82
     }
   },
-  "darkest": "#0d0e06",
-  "lightest": "#dcdcdc",
+  "darkest": "#392d26",
+  "lightest": "#e4ded2",
   "top": {
-    "darkest": "#9e772f",
-    "lightest": "#dcdcdc"
+    "darkest": "#4d3523",
+    "lightest": "#e4ded2"
   }
 }

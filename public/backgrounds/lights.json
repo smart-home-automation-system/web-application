@@ -1,26 +1,26 @@
 {
   "source": {
-    "width": 4096,
-    "height": 2304
+    "width": 2560,
+    "height": 1440
   },
   "tones": {
-    "black": 25,
-    "white": 240
+    "black": 45,
+    "white": 220
   },
   "files": {
     "lights-2560.webp": {
-      "bytes": 90878,
+      "bytes": 199548,
       "quality": 82
     },
     "lights-1280.webp": {
-      "bytes": 32416,
+      "bytes": 84482,
       "quality": 82
     }
   },
-  "darkest": "#191919",
-  "lightest": "#f0daba",
+  "darkest": "#2d2d2d",
+  "lightest": "#dcc89a",
   "top": {
-    "darkest": "#453629",
-    "lightest": "#f0dab9"
+    "darkest": "#3e352f",
+    "lightest": "#dcc89a"
   }
 }

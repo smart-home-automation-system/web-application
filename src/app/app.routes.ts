@@ -54,7 +54,7 @@ const pages: Page[] = [
     // every room of the house, its devices, and the lights and blinds controlled from it (HAS-232)
     path: 'rooms',
     title: 'nav.rooms',
-    data: { background: 'devices' },
+    data: { background: 'rooms' },
     loadComponent: () => import('./features/rooms/rooms').then((m) => m.Rooms),
   },
   {
@@ -113,11 +113,13 @@ const pages: Page[] = [
   {
     path: 'settings',
     title: 'nav.settings',
+    data: { background: 'settings' },
     loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
   },
   {
     path: 'about',
     title: 'nav.about',
+    data: { background: 'about' },
     loadComponent: () => import('./features/about/about').then((m) => m.About),
   },
   {
