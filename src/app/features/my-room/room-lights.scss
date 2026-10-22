@@ -1,0 +1,89 @@
+// the lights of the room one under the other, each in its own frame (`app-light-control`), the
+// layout of the blinds card
+:host {
+  display: contents;
+}
+
+.lights {
+  --app-domain: var(--app-domain-light);
+}
+
+.lights__content {
+  display: grid;
+  gap: 10px;
+}
+
+.lights__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.occupancy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  &[data-occupancy='occupied'] {
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.mat-icon.occupancy__icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.lights__room {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.rule {
+  display: grid;
+  gap: 4px;
+}
+
+.rule__line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+.lights__failure {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-error);
+  margin: 0;
+}
+
+.lights__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}

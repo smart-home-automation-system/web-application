@@ -141,11 +141,13 @@ test.describe('a resident with two rooms', () => {
 
     await page.goto('/room');
 
-    // the switch of the house and the three cards of the room (HAS-254): each tells its call; the
-    // blinds and the sensors are shown for the failure - nobody knows then if the room has any
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(4);
-    for (const card of ['room-heating', 'room-blinds', 'room-sensors']) {
-      await expect(page.getByTestId(card).getByRole('alert')).toContainText(
+    // the switch of the house and the four cards of the room: each tells its call - the lights
+    // card two, its lights and its rule (HAS-268); the blinds, the lights and the sensors are
+    // shown for the failure - nobody knows then if the room has any
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(6);
+    await expect(page.getByTestId('room-lights').getByRole('alert')).toHaveCount(2);
+    for (const card of ['room-heating', 'room-blinds', 'room-sensors', 'room-lights']) {
+      await expect(page.getByTestId(card).getByRole('alert').first()).toContainText(
         'The service is not available right now (error 502).',
       );
     }
@@ -215,6 +217,80 @@ test.describe('the administrator', () => {
 
 // HAS-254: the blinds of the room are the one thing on this page that can be pressed - for a
 // member whose profile has the room, no permission needed - and the sensors are listed
+// HAS-268: the lights of the room, pressable by the membership of the room
+test.describe('the lights of the room', () => {
+  test.describe('for a resident with a light in the room', () => {
+    test.use({ profile: 'resident-two-rooms' });
+
+    test('switches the light strip and sets its brightness, reading the lights back', async ({
+      page,
+    }) => {
+      await page.goto('/room');
+      const lights = page.getByTestId('room-lights');
+      const strip = lights.locator('[data-light="13"]');
+
+      // named without the room and the kind; nothing heard of it since the start of the service
+      await expect(strip.locator('.light__name')).toHaveText('Light strip');
+      await expect(strip.getByTestId('light-state')).toHaveText('not known yet');
+
+      await strip.getByRole('button', { name: 'On Bedroom light strip' }).click();
+      await expect(strip.getByTestId('light-state')).toContainText('on');
+
+      await strip.getByTestId('brightness').fill('35');
+      await strip.getByRole('button', { name: 'Set Brightness Bedroom light strip' }).click();
+      await expect(strip.getByTestId('light-state')).toHaveText('on · 35 %');
+
+      await lights.getByRole('button', { name: 'All off bedroom' }).click();
+      await expect(strip.getByTestId('light-state')).toHaveText('off');
+      // the bedroom has no rule: nothing to switch off, said so
+      await expect(lights.getByTestId('room-rule')).toContainText('No rule');
+      await expect(lights.getByTestId('rule-switch')).toHaveCount(0);
+    });
+
+    test('shows no card of lights for a room that has none', async ({ page }) => {
+      await page.goto('/room');
+      await expect(page.getByTestId('room-lights')).toBeVisible();
+
+      await page.getByTestId('room-switcher').getByRole('radio', { name: 'wardrobe' }).click();
+      await expect(page.getByTestId('room-temperature')).toBeVisible();
+      await expect(page.getByTestId('room-lights')).toHaveCount(0);
+    });
+
+    test('tells a command that was not carried out and leaves the light as it is', async ({
+      page,
+    }) => {
+      await useScenario(page, 'writes-fail');
+      await page.goto('/room');
+      const strip = page.getByTestId('room-lights').locator('[data-light="13"]');
+
+      await strip.getByRole('button', { name: 'On Bedroom light strip' }).click();
+      await expect(strip.getByTestId('light-failure')).toBeVisible();
+      await expect(strip.getByTestId('light-state')).toHaveText('not known yet');
+    });
+  });
+
+  test.describe('for a member with a rule in the room', () => {
+    test.use({ profile: 'admin' });
+
+    test('stops the automation of the room with the switch, which shows what is stored', async ({
+      page,
+    }) => {
+      await page.goto('/room');
+      const lights = page.getByTestId('room-lights');
+      await expect(lights.getByTestId('room-rule')).toContainText('off 15 min after empty');
+      await expect(lights.getByTestId('occupancy')).toContainText('Occupied');
+
+      const automation = lights.getByTestId('rule-switch').getByRole('switch');
+      await expect(automation).toHaveAttribute('aria-checked', 'true');
+      await automation.click();
+      await expect(automation).toHaveAttribute('aria-checked', 'false');
+
+      await automation.click();
+      await expect(automation).toHaveAttribute('aria-checked', 'true');
+    });
+  });
+});
+
 test.describe('the blinds and the sensors of the room', () => {
   test.describe('for a resident with blinds in the room', () => {
     test.use({ profile: 'resident-two-rooms' });
@@ -276,6 +352,7 @@ test.describe('the blinds and the sensors of the room', () => {
       await expect(sensors.locator('.sensors__row')).toHaveCount(1);
       await expect(sensors.locator('.sensors__state')).toHaveText('state not known yet');
       await expect(page.getByTestId('room-blinds')).toHaveCount(0);
+      await expect(page.getByTestId('room-lights')).toHaveCount(0);
       await expect(sensors.locator('button, [tabindex]')).toHaveCount(0);
     });
   });

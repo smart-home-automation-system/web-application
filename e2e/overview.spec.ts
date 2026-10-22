@@ -44,6 +44,14 @@ test.describe('overview', () => {
     await expect(weather).toContainText(/Rain\s+None/);
     await expect(weather).toContainText(/Daylight\s+18,450 lx/);
     await expect(weather.getByTestId('weather-measured')).toHaveText(/Measured 1 min\.? ago/);
+
+    // HAS-268: the lights counted, where one is on, and the empty house
+    const lights = page.getByTestId('tile-light');
+    await expect(lights).toContainText(/On\s+3/);
+    await expect(lights).toContainText(/Off\s+4/);
+    await expect(lights).toContainText(/Not known\s+1/);
+    await expect(lights.getByTestId('lit-rooms')).toHaveText('Lit in: living room, hall up');
+    await expect(lights.getByTestId('empty-house')).toContainText('Somebody is at home');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
@@ -53,6 +61,7 @@ test.describe('overview', () => {
     ['tile-boiler', 'Boiler room', '/boiler'],
     ['tile-presence', 'At home now', '/presence'],
     ['tile-weather', 'Weather', '/weather'],
+    ['tile-light', 'Lights', '/lights'],
   ] as const) {
     test(`leads from "${name}" to ${address}`, async ({ page }) => {
       await page.goto('/overview');
@@ -90,12 +99,14 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(8);
+    await expect(alerts).toHaveCount(10);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
-    // the heating tile is three calls - the state, the rooms and the sensors - each one told
+    // the heating tile is three calls - the state, the rooms and the sensors - each one told;
+    // the lights tile two - the lights and the empty house
     await expect(page.getByTestId('tile-heating').getByRole('alert')).toHaveCount(3);
+    await expect(page.getByTestId('tile-light').getByRole('alert')).toHaveCount(2);
     for (const tile of ['tile-water', 'tile-boiler', 'tile-weather', 'tile-blinds']) {
       await expect(page.getByTestId(tile).getByRole('alert')).toHaveCount(1);
     }
@@ -126,14 +137,14 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(6);
+    expect(tops).toHaveLength(7);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(6);
+      expect(new Set(tops).size).toBe(7);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(6);
+      expect(heights).toHaveLength(7);
       expect(new Set(heights).size).toBe(1);
     }
   });
@@ -172,7 +183,7 @@ test.describe('overview', () => {
 
       expect(rows.length).toBeGreaterThan(1);
       const last = rows[rows.length - 1];
-      // six tiles: on a screen with room for four the last row is short, in the middle
+      // seven tiles (HAS-268): on a screen with room for four the last row is short, in the middle
       expect(last.length).toBeLessThanOrEqual(rows[0].length);
       // the middle of every row is the middle of the page
       for (const row of rows) {

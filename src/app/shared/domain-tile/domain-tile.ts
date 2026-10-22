@@ -12,7 +12,14 @@ import { DataFreshness } from '../data-freshness/data-freshness';
 import { SignalLight } from '../signal-light/signal-light';
 
 /** A domain of the house: the colour of its cards (`--app-domain-…` in `_seasons.scss`). */
-export type TileDomain = 'heating' | 'water' | 'boiler' | 'household' | 'weather' | 'blinds';
+export type TileDomain =
+  | 'heating'
+  | 'water'
+  | 'boiler'
+  | 'household'
+  | 'weather'
+  | 'blinds'
+  | 'light';
 
 /**
  * A card about one call of one domain of the house - a tile of the overview, whose title leads to

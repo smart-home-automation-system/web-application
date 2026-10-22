@@ -66,6 +66,18 @@ export const en = {
       moving: 'Moving',
       unknown: 'Not known',
     },
+    lights: {
+      title: 'Lights',
+      on: 'On',
+      off: 'Off',
+      unknown: 'Not known',
+      litIn: 'Lit in:',
+      houseEmpty: 'The house is empty',
+      houseOccupied: 'Somebody is at home',
+      houseUnknown: 'Whether anybody is at home is not known',
+      acting: 'the empty house is acted on',
+      watchingOnly: 'the empty house is watched only',
+    },
     weather: {
       title: 'Weather',
       loading: 'Loading the weather',
@@ -968,6 +980,11 @@ export const en = {
     blinds: {
       title: 'Blinds',
       note: 'The schedules of the blinds are set by the administrator; a pause holds them back until their next run.',
+    },
+    lights: {
+      title: 'Lights',
+      automation: 'Automatic lighting of the room',
+      note: 'The rules of the lights are set by the administrator; the switch stops them in this room until it is switched on again.',
     },
     sensors: {
       title: 'Sensors',

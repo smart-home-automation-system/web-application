@@ -2,6 +2,7 @@ import { Type } from '@angular/core';
 
 import { RoomBlinds } from './room-blinds';
 import { RoomHeating } from './room-heating';
+import { RoomLights } from './room-lights';
 import { RoomSensors } from './room-sensors';
 
 /**
@@ -24,7 +25,9 @@ export interface RoomCapability {
 
 export const ROOM_CAPABILITIES: readonly RoomCapability[] = [
   { id: 'heating', component: RoomHeating },
-  // HAS-254: the one card of the page with controls, and the sensors the registry places there
+  // HAS-268: the lights of the room with their controls and the switch of the resident
+  { id: 'lights', component: RoomLights },
+  // HAS-254: the blinds with their controls, and the sensors the registry places there
   { id: 'blinds', component: RoomBlinds },
   { id: 'sensors', component: RoomSensors },
 ];

@@ -65,6 +65,18 @@ export const pl: Messages = {
       moving: 'W ruchu',
       unknown: 'Nieznany stan',
     },
+    lights: {
+      title: 'Światła',
+      on: 'Świecą się',
+      off: 'Zgaszone',
+      unknown: 'Nieznany stan',
+      litIn: 'Świeci się w:',
+      houseEmpty: 'Dom jest pusty',
+      houseOccupied: 'Ktoś jest w domu',
+      houseUnknown: 'Nie wiadomo, czy ktoś jest w domu',
+      acting: 'pusty dom jest obsługiwany',
+      watchingOnly: 'pusty dom jest tylko obserwowany',
+    },
     weather: {
       title: 'Pogoda',
       loading: 'Wczytywanie pogody',
@@ -961,6 +973,11 @@ export const pl: Messages = {
     blinds: {
       title: 'Rolety',
       note: 'Harmonogramy rolet ustawia administrator; pauza wstrzymuje je do następnego uruchomienia.',
+    },
+    lights: {
+      title: 'Światła',
+      automation: 'Automatyczne oświetlenie pokoju',
+      note: 'Reguły świateł ustawia administrator; przełącznik wstrzymuje je w tym pokoju, dopóki nie zostanie włączony ponownie.',
     },
     sensors: {
       title: 'Czujniki',

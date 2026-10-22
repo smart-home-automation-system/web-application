@@ -1,0 +1,122 @@
+<ng-container *transloco="let t">
+  @if (shown()) {
+    <mat-card appearance="outlined" class="lights card--domain" data-testid="room-lights">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>lightbulb</mat-icon></div>
+        <mat-card-title>{{ t('myRoom.lights.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="answer.lastUpdated()" [stale]="answer.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="lights__content">
+        <app-api-error-strip [error]="answer.error()" [describeWith]="describeError" />
+
+        @let here = occupancy();
+        <!-- what the sensors of the room say: a room nobody senses is "not known", never empty -->
+        <p class="occupancy" data-testid="occupancy" [attr.data-occupancy]="occupancyState()">
+          <mat-icon class="occupancy__icon" aria-hidden="true">{{
+            occupancyState() === 'occupied'
+              ? 'person'
+              : occupancyState() === 'empty'
+                ? 'person_off'
+                : 'help'
+          }}</mat-icon>
+          <span
+            >{{ t(OCCUPANCY_LABELS[occupancyState()]) }}
+            @if (here?.lastMotionAt | houseAge; as age) {
+              · {{ t('lights.occupancy.motion') }} {{ age }}
+            }
+            @if (isLux(here?.lux)) {
+              · {{ t('lights.occupancy.lux', { lux: here!.lux }) }}
+            } @else if (here?.illumination; as illumination) {
+              · {{ illuminationText(illumination) | displayText }}
+            }
+          </span>
+        </p>
+
+        <ul class="lights__list">
+          @for (row of lights() ?? []; track row.light.id) {
+            <li [attr.data-light]="row.light.id">
+              <app-light-control
+                [light]="row.light"
+                [name]="row.name"
+                [commands]="commands"
+                [refresh]="refresh"
+                [roomBusy]="roomBusy()"
+              />
+            </li>
+          }
+        </ul>
+
+        <!-- the room at once: only once its lights are known - a failure before any answer
+             leaves nothing to press -->
+        @if ((lights() ?? []).length > 0) {
+          <div class="lights__room">
+            <!-- the room at once: every light of it, one after the other in the service -->
+            <button
+              matButton="outlined"
+              type="button"
+              data-testid="room-off"
+              [disabled]="roomBusy() || lightSending()"
+              (click)="roomOff()"
+            >
+              <mat-icon>light_off</mat-icon>{{ t('lights.room.off') }}
+              <span class="visually-hidden">{{ room() }}</span>
+            </button>
+            @if (roomState(); as state) {
+              @if (state.error) {
+                <span class="lights__failure" role="alert" data-testid="room-failure">{{
+                  lightFailureOf(state) | displayText
+                }}</span>
+              } @else if (!state.sending && state.answer?.failed?.length) {
+                <span class="lights__failure" role="alert" data-testid="room-failure">{{
+                  t('lights.room.skipped', { count: state.answer!.failed!.length })
+                }}</span>
+              }
+            }
+          </div>
+        }
+
+        <!-- the rule of the room in a few words, and the one thing a resident changes about it -->
+        <div class="rule" data-testid="room-rule">
+          <p class="rule__line">
+            <mat-icon aria-hidden="true">rule</mat-icon>
+            <span class="rule__text">
+              @if (!ruleKnown()) {
+                {{ t('lights.rule.unknown') }}
+              } @else if (summary(); as parts) {
+                @for (part of parts; track $index) {
+                  @if (!$first) {
+                    ·
+                  }
+                  {{ part | displayText }}
+                }
+              } @else {
+                {{ t('lights.rule.none') }}
+              }
+            </span>
+          </p>
+          <app-api-error-strip [error]="noRule() ? undefined : rule.error()" />
+          @if (ruleView(); as rule) {
+            <mat-slide-toggle
+              class="rule__switch"
+              data-testid="rule-switch"
+              [checked]="rule.enabledByResident !== false"
+              [disabled]="switchState()?.sending === true"
+              (toggleChange)="toggleAutomation()"
+            >
+              {{ t('myRoom.lights.automation') }}
+              <span class="visually-hidden">{{ room() }}</span>
+            </mat-slide-toggle>
+            @if (switchState()?.error; as error) {
+              <p class="lights__failure" role="alert" data-testid="rule-failure">
+                {{ lightFailureOf(switchState()!) | displayText }}
+              </p>
+            }
+          }
+        </div>
+        <p class="lights__note">{{ t('myRoom.lights.note') }}</p>
+      </mat-card-content>
+    </mat-card>
+  }
+</ng-container>

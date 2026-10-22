@@ -193,10 +193,41 @@ export class LightApi {
    * room is read from here, not from `/rooms/{room}/occupancy`, so a page tells one freshness and
    * one failure for both. Call in an injection context: the polling lives as long as the caller.
    */
-  watchLights(): PollingResource<readonly RoomLights[] | null> {
+  watchLights(intervalMs = POLL_EVERY_MS): PollingResource<readonly RoomLights[] | null> {
     return pollingResource(() => this.api.get<readonly RoomLights[] | null>('/light'), {
-      intervalMs: POLL_EVERY_MS,
+      intervalMs,
     });
+  }
+
+  /**
+   * The lights of one room with its occupancy (HAS-268, the card of "My room"): the name is read
+   * when a call is made. A room without lights answers with an empty list; a 404 with the code
+   * `NOT_FOUND_LIGHT` is what a room command answers for such a room.
+   */
+  watchRoom(room: () => string): PollingResource<RoomLights | null> {
+    return pollingResource(
+      () => this.api.get<RoomLights | null>(`/light/rooms/${encodeURIComponent(room())}`),
+      { intervalMs: POLL_EVERY_MS },
+    );
+  }
+
+  /** The rule of one room as stored; a 404 with the code `NOT_FOUND_RULE` is a room without one. */
+  watchRoomRule(room: () => string): PollingResource<RoomRule | null> {
+    return pollingResource(
+      () => this.api.get<RoomRule | null>(`/light/rooms/${encodeURIComponent(room())}/rules`),
+      { intervalMs: POLL_RULES_EVERY_MS },
+    );
+  }
+
+  /**
+   * The switch of the resident (HAS-268): `false` stops both rules of the room until the resident
+   * switches them on again; a write of the administrator keeps it. Answers the rule as stored.
+   */
+  residentEnabled(room: string, enabled: boolean): Observable<RoomRule | null> {
+    return this.api.put<RoomRule | null>(
+      `/light/rooms/${encodeURIComponent(room)}/rules/resident-enabled`,
+      { enabled },
+    );
   }
 
   /** Every room with a rule. */

@@ -158,3 +158,8 @@ export function cssColorOf(rgb: readonly number[] | undefined): string | undefin
   }
   return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 }
+
+/** A number of lux: 0 is a reading, anything that is not a number is none. */
+export function isLux(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}

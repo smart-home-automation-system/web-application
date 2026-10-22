@@ -5,6 +5,7 @@ import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
+import { EmptyHouse, LightApi, RoomLights } from '../../data-access/light/light-api';
 import { BoilerApi, BoilerStatus } from '../../data-access/boiler/boiler-api';
 import {
   HeatingApi,
@@ -63,7 +64,7 @@ const WEATHER: CurrentWeather = {
   humidity: { value: 58, measuredAt: '2026-10-10T18:29:10', stale: false },
 };
 
-type Tile = 'heating' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds';
+type Tile = 'heating' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds' | 'light';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -74,6 +75,8 @@ describe('Overview', () => {
   let presence: FakeResource<readonly ResidentPresence[] | null>;
   let weather: FakeResource<CurrentWeather | null>;
   let blinds: FakeResource<readonly RoomBlinds[] | null>;
+  let lights: FakeResource<readonly RoomLights[] | null>;
+  let emptyHouse: FakeResource<EmptyHouse | null>;
   let fixture: ComponentFixture<Overview>;
 
   beforeEach(() => {
@@ -86,6 +89,8 @@ describe('Overview', () => {
     presence = fakeResource();
     weather = fakeResource();
     blinds = fakeResource();
+    lights = fakeResource();
+    emptyHouse = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -103,6 +108,10 @@ describe('Overview', () => {
         { provide: PresenceApi, useValue: { watchNow: () => presence } },
         { provide: WeatherApi, useValue: { watchCurrent: () => weather } },
         { provide: BlindsApi, useValue: { watchBlinds: () => blinds } },
+        {
+          provide: LightApi,
+          useValue: { watchLights: () => lights, watchEmptyHouse: () => emptyHouse },
+        },
       ],
     });
     fixture = TestBed.createComponent(Overview);
@@ -132,6 +141,8 @@ describe('Overview', () => {
     answer(presence, PEOPLE);
     answer(weather, WEATHER);
     answer(blinds, []);
+    answer(lights, []);
+    answer(emptyHouse, { house: 'occupied', enabled: true, active: false });
   }
 
   it('shows a progress bar in every tile until its call has answered', async () => {
@@ -365,6 +376,83 @@ describe('Overview', () => {
       answer(blinds, []);
 
       expect(words(await tile('blinds'))).toContain('The blinds service knows no blind yet.');
+    });
+  });
+
+  // HAS-268: the lights counted, where one is on, and the empty house - two calls in one tile
+  describe('the lights', () => {
+    const rows = async () =>
+      [...(await tile('light')).querySelectorAll('.tile__row')].map((row) => words(row));
+
+    it('counts the on, the off and the not known, and names the rooms with a light on', async () => {
+      answer(lights, [
+        {
+          room: 'office',
+          lights: [
+            { id: 1, on: true },
+            { id: 2, on: false },
+          ],
+        },
+        { room: 'kitchen', lights: [{ id: 3, on: false }] },
+        // a light nothing was heard of yet, and one on in a third room
+        { room: 'hall up', lights: [{ id: 4 }, { id: 5, on: true }] },
+      ]);
+
+      expect(await rows()).toEqual(['On 2', 'Off 2', 'Not known 1']);
+      expect(words((await tile('light')).querySelector('[data-testid="lit-rooms"]'))).toBe(
+        'Lit in: office, hall up',
+      );
+    });
+
+    it('leaves out the not known and the rooms when nothing is on', async () => {
+      answer(lights, [{ room: 'office', lights: [{ id: 1, on: false }] }]);
+
+      expect(await rows()).toEqual(['On 0', 'Off 1']);
+      expect((await tile('light')).querySelector('[data-testid="lit-rooms"]')).toBeNull();
+    });
+
+    it('says when the service knows no light', async () => {
+      answer(lights, []);
+
+      expect(words(await tile('light'))).toContain('The light service knows no light.');
+    });
+
+    it('says whether the house is empty, and whether the empty house is acted on', async () => {
+      answer(lights, []);
+      answer(emptyHouse, { house: 'empty', enabled: true, active: true });
+
+      const line = (await tile('light')).querySelector('[data-testid="empty-house"]')!;
+      expect(words(line)).toBe('The house is empty · the empty house is acted on');
+      expect(line.getAttribute('data-house')).toBe('empty');
+
+      answer(emptyHouse, { house: 'occupied', enabled: false });
+      expect(words((await tile('light')).querySelector('[data-testid="empty-house"]'))).toBe(
+        'Somebody is at home · the empty house is watched only',
+      );
+    });
+
+    it('does not guess the house from a word it does not know', async () => {
+      answer(lights, []);
+      answer(emptyHouse, { house: 'maybe' });
+
+      expect(words((await tile('light')).querySelector('[data-testid="empty-house"]'))).toBe(
+        'Whether anybody is at home is not known',
+      );
+    });
+
+    it('tells a failure of the empty house in the tile, apart from the lights', async () => {
+      answer(lights, [{ room: 'office', lights: [{ id: 1, on: true }] }]);
+      fail(emptyHouse, new ApiError('server', 502));
+
+      const shown = await tile('light');
+      expect(words(shown.querySelector('[role="alert"]'))).toContain('(error 502)');
+      expect(await rows()).toEqual(['On 1', 'Off 0']);
+    });
+
+    it('leads to the lights page', async () => {
+      answerAll();
+
+      expect((await tile('light')).querySelector('a')?.getAttribute('href')).toBe('/lights');
     });
   });
 

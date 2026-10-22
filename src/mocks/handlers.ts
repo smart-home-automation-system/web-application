@@ -23,8 +23,11 @@ import {
   lightRules,
   lightRuns,
   lightsByRoom,
+  roomLights,
+  roomRule,
   setBrightness,
   setColor,
+  setResidentEnabled,
   turnLight,
   turnRoom,
 } from './lights.fixtures';
@@ -358,6 +361,22 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: /^\/home\/light\/rooms\/([^/]+)$/,
     reply: (request, _fresh, [room]) =>
       turnRoom(decodeURIComponent(room), request.params.get('turn'), request.params.get('source')),
+  },
+  // HAS-268: the lights card of My room - one room, its rule, and the switch of the resident
+  {
+    method: 'GET',
+    path: /^\/home\/light\/rooms\/([^/]+)$/,
+    reply: (_request, fresh, [room]) => roomLights(decodeURIComponent(room), fresh),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/light\/rooms\/([^/]+)\/rules$/,
+    reply: (_request, fresh, [room]) => roomRule(decodeURIComponent(room), fresh),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/light\/rooms\/([^/]+)\/rules\/resident-enabled$/,
+    reply: (request, _fresh, [room]) => setResidentEnabled(decodeURIComponent(room), request.body),
   },
   {
     method: 'GET',
