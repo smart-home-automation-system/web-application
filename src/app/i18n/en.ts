@@ -1001,8 +1001,11 @@ export const en = {
       periodsNote:
         'Local time of the house. A "To" earlier than "From" is the next day, the same time is the whole day. A brightness or a colour left empty: the lights keep their own.',
       manualHold: 'Leave alone for',
-      holdNote: 'A light somebody switched or changed by other means than the rules is left alone that long.',
+      holdNote:
+        'A light somebody switched or changed by other means than the rules is left alone that long.',
       residentEnabled: 'The rules of the room are on',
+      residentReadFailed:
+        'The switch was sent, but the rule could not be read again - the state shown may be old.',
       residentNote:
         'The switch of the resident on My room: taken at once, and kept by a save of the rule.',
       save: 'Save',
@@ -1038,6 +1041,8 @@ export const en = {
         brightnessNoDimmer: 'A brightness needs a light that dims in the room.',
         colorNoRgbw: 'A colour or a white needs an rgbw light in the room.',
         invalid: 'The rule is not one the light service takes.',
+        droppedPeriods:
+          'Periods the service stored and this version cannot read: {{ count }} - a save leaves them out.',
       },
     },
     error: {

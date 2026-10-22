@@ -997,6 +997,8 @@ export const pl: Messages = {
       holdNote:
         'Światło, które ktoś przełączył lub zmienił inaczej niż reguły, zostaje tak długo nietknięte.',
       residentEnabled: 'Reguły pomieszczenia działają',
+      residentReadFailed:
+        'Przełącznik został wysłany, ale nie udało się odczytać reguły - pokazany stan może być nieaktualny.',
       residentNote:
         'Przełącznik mieszkańca z Mojego pokoju: działa od razu, a zapis reguły go zachowuje.',
       save: 'Zapisz',
@@ -1032,6 +1034,8 @@ export const pl: Messages = {
         brightnessNoDimmer: 'Jasność potrzebuje ściemnianego światła w pomieszczeniu.',
         colorNoRgbw: 'Kolor lub biel potrzebuje światła rgbw w pomieszczeniu.',
         invalid: 'Usługa świateł nie przyjmuje takiej reguły.',
+        droppedPeriods:
+          'Okresy zapisane w usłudze, których ta wersja nie umie odczytać: {{ count }} - zapis je pominie.',
       },
     },
     error: {

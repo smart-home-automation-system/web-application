@@ -29,9 +29,15 @@ import { ApiError, toApiError } from '../../../core/api/api-error';
 import { DeviceCommands } from '../../../core/api/device-commands';
 import { isRecord } from '../../../core/util/is-record';
 import { DeviceRegistryApi, SmartDevice } from '../../../data-access/devices/device-registry-api';
-import { LightApi, RoomRule, RoomRuleBody } from '../../../data-access/light/light-api';
+import {
+  LightApi,
+  MotionPeriod,
+  RoomRule,
+  RoomRuleBody,
+} from '../../../data-access/light/light-api';
 import { MessageKey } from '../../../i18n/messages';
 import { ApiErrorStrip } from '../../../shared/api-error/api-error-strip';
+import { ChangeFailure, changeFailureOf } from '../../../shared/api-error/change-failure';
 import { DataFreshness } from '../../../shared/data-freshness/data-freshness';
 import { shortName } from '../../../shared/device-names/device-names';
 import { DisplayTextPipe } from '../../../shared/display-text/display-text.pipe';
@@ -62,12 +68,6 @@ type Load =
   | { readonly state: 'loading' }
   | { readonly state: 'failed'; readonly error: ApiError }
   | { readonly state: 'ready' };
-
-/** What failed, with the sentence that comes first. */
-interface Failure {
-  readonly error: ApiError;
-  readonly summary: MessageKey;
-}
 
 /** A light of the room as the registry knows it, for the list of what the rule can rely on. */
 interface RoomLightRow {
@@ -175,12 +175,18 @@ export class RuleEditor {
   private readonly revision = signal(0);
 
   protected readonly saving = signal(false);
-  protected readonly saveError = signal<Failure | undefined>(undefined);
+  protected readonly saveError = signal<ChangeFailure | undefined>(undefined);
+  /** What the last check of the whole rule found that no field shows - told, never a silent save. */
+  protected readonly wholeProblem = signal<MessageKey | undefined>(undefined);
+  /** Periods the stored rule has and this version cannot read: a save leaves them out. */
+  protected readonly droppedPeriods = signal(0);
+  /** The read after the switch of the resident failed: what the service holds is not known. */
+  protected readonly residentReadFailed = signal<ApiError | undefined>(undefined);
   /** The last save was carried out and read back. */
   protected readonly saved = signal(false);
   protected readonly removing = signal(false);
   protected readonly askRemove = signal(false);
-  protected readonly removeError = signal<Failure | undefined>(undefined);
+  protected readonly removeError = signal<ChangeFailure | undefined>(undefined);
   private readonly keep = viewChild<unknown, ElementRef<HTMLElement>>('keep', { read: ElementRef });
 
   /** The switch of the resident: one write at a time, then the rule is read again. */
@@ -229,7 +235,7 @@ export class RuleEditor {
         id: device.id,
         name: device.name,
         kind: device.kind,
-        eaton: device.vendor === 'eaton' || device.eaton !== undefined,
+        eaton: device.vendor === 'eaton' || isRecord(device.eaton),
       }))
       .sort((left, right) => (left.name ?? '').localeCompare(right.name ?? '')),
   );
@@ -361,8 +367,10 @@ export class RuleEditor {
       return;
     }
     const rule = this.body();
-    // the last check: the order of the service, on what is about to be sent
-    if (ruleProblem(rule) !== undefined) {
+    // the last check: the order of the service, on what is about to be sent - told, never silent
+    const problem = ruleProblem(rule);
+    this.wholeProblem.set(problem);
+    if (problem !== undefined) {
       return;
     }
     this.saving.set(true);
@@ -375,7 +383,7 @@ export class RuleEditor {
       }
     } catch (failure: unknown) {
       this.saveError.set(
-        failureOf(failure, 'lights.editor.saveFailed', 'lights.editor.saveNoAnswer'),
+        changeFailureOf(failure, 'lights.editor.saveFailed', 'lights.editor.saveNoAnswer'),
       );
     } finally {
       this.saving.set(false);
@@ -392,7 +400,11 @@ export class RuleEditor {
       await firstValueFrom(this.api.removeRule(this.room));
       await this.router.navigate(['/lights']);
     } catch (failure: unknown) {
-      const said = failureOf(failure, 'lights.editor.removeFailed', 'lights.editor.removeNoAnswer');
+      const said = changeFailureOf(
+        failure,
+        'lights.editor.removeFailed',
+        'lights.editor.removeNoAnswer',
+      );
       // a rule the service does not know is gone all the same
       if (said.error.hasCode('NOT_FOUND_RULE')) {
         await this.router.navigate(['/lights']);
@@ -411,6 +423,7 @@ export class RuleEditor {
     if (typeof enabled !== 'boolean') {
       return;
     }
+    this.residentReadFailed.set(undefined);
     this.residentCommands.send(
       this.room,
       this.api.residentEnabled(this.room, !enabled),
@@ -439,10 +452,13 @@ export class RuleEditor {
             error: new ApiError('invalid-response', 200),
             summary: 'lights.editor.readBackFailed',
           });
+        } else {
+          this.residentReadFailed.set(new ApiError('invalid-response', 200));
         }
         return false;
       }
       this.stored.set(rule);
+      this.residentReadFailed.set(undefined);
       if (fill) {
         this.fill(rule);
       }
@@ -465,6 +481,9 @@ export class RuleEditor {
       } else if (error.hasCode('NOT_FOUND_RULE')) {
         // removed elsewhere: there is no switch left to show
         this.stored.set(undefined);
+      } else {
+        // the switch was sent, but what the service holds now is not known: said, never hidden
+        this.residentReadFailed.set(error);
       }
       return false;
     }
@@ -477,11 +496,11 @@ export class RuleEditor {
     this.motionOnEnabled.set(rule.motionOnEnabled === true);
     this.onlyBelowLux.setValue(text(rule.onlyBelowLux));
     this.motionOffAfter.setValue(text(rule.motionOffAfterMinutes));
-    this.periods.set(
-      (Array.isArray(rule.periods) ? rule.periods : [])
-        .filter(isRecord)
-        .map((period) => new PeriodForm(period)),
-    );
+    const periods: readonly unknown[] = Array.isArray(rule.periods) ? rule.periods : [];
+    const readable = periods.filter(isRecord) as MotionPeriod[];
+    this.periods.set(readable.map((period) => new PeriodForm(period)));
+    // what cannot be read is not dropped unseen: the page says a save leaves it out
+    this.droppedPeriods.set(periods.length - readable.length);
     this.manualHold.setValue(text(rule.manualHoldMinutes));
     for (const control of this.controls()) {
       control.markAsPristine();
@@ -519,10 +538,4 @@ export class RuleEditor {
       manualHoldMinutes: wholeOf(this.manualHold.value) ?? Number.NaN,
     };
   }
-}
-
-/** A change that got no answer may have been carried out all the same: that is not "failed". */
-function failureOf(failure: unknown, failed: MessageKey, unanswered: MessageKey): Failure {
-  const error = toApiError(failure);
-  return { error, summary: error.kind === 'network' ? unanswered : failed };
 }

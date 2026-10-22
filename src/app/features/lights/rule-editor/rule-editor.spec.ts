@@ -375,6 +375,31 @@ describe('RuleEditor', () => {
       // the form is not filled again: what was typed stays
       expect(input('manual-hold').value).toBe('120');
     });
+
+    // found in review: a failed read after the switch was swallowed, the switch kept the old state
+    it('says when the rule could not be read after the switch of the resident', async () => {
+      toggle('resident-switch');
+      await settle();
+      http.expectOne((call) => call.url.endsWith('/resident-enabled')).flush(STORED);
+      await settle();
+      ruleRead().flush(
+        { errors: [{ message: 'down' }] },
+        { status: 502, statusText: 'Bad Gateway' },
+      );
+      await settle();
+
+      expect(said()).toContain('the state shown may be old');
+    });
+  });
+
+  // found in review: a period that cannot be read was dropped from the form, and from the next save, unseen
+  it('tells a stored period this version cannot read', async () => {
+    await open('office', { ...STORED, periods: [...STORED.periods!, null as never] });
+
+    expect(allByTestId('period-row')).toHaveLength(2);
+    expect(byTestId('periods-dropped')?.textContent).toContain(
+      'cannot read: 1 - a save leaves them out',
+    );
   });
 
   it('tells a rule that could not be read, and offers no form', async () => {

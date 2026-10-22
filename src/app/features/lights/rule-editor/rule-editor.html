@@ -302,6 +302,11 @@
                   {{ t('lights.editor.problem.noPeriod') }}
                 </p>
               }
+              @if (droppedPeriods() > 0) {
+                <p class="problem" role="alert" data-testid="periods-dropped">
+                  {{ t('lights.editor.problem.droppedPeriods', { count: droppedPeriods() }) }}
+                </p>
+              }
               <p class="note">{{ t('lights.editor.periodsNote') }}</p>
             </section>
 
@@ -330,6 +335,9 @@
 
             @if (problems().room; as problem) {
               <p class="problem" role="alert" data-testid="room-problem">{{ t(problem) }}</p>
+            }
+            @if (wholeProblem(); as problem) {
+              <p class="problem" role="alert" data-testid="whole-problem">{{ t(problem) }}</p>
             }
             @if (saveError(); as failure) {
               <app-api-error-strip
@@ -423,6 +431,14 @@
                 <p class="problem" role="alert" data-testid="resident-failure">
                   {{ lightFailureOf(residentState()!) | displayText }}
                 </p>
+              }
+              @if (residentReadFailed(); as error) {
+                <app-api-error-strip
+                  data-testid="resident-read-failed"
+                  [error]="error"
+                  [summary]="t('lights.editor.residentReadFailed')"
+                  [describeWith]="describeError"
+                />
               }
               <p class="note">{{ t('lights.editor.residentNote') }}</p>
             </section>
