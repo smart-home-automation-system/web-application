@@ -234,7 +234,10 @@ e2e/              # Playwright tests
   the lights page, and **the switch of the resident** (`PUT .../rules/resident-enabled`) is the one
   thing a resident changes about it: a `mat-slide-toggle` with `disableToggleValue`, which shows
   `enabledByResident` as stored and reads the rule back after the write - a failed write leaves it
-  where the service has it. Two 404s with a code are answers, not failures: `NOT_FOUND_LIGHT`
+  where the service has it; a rule answered without the field gets no switch, only "not known"
+  (missing is never read as on or off). The colour chosen on the sliders of `LightControl` is a
+  `linkedSignal` of the colour the light reported: a colour set by a rule or another hand is never
+  shown as chosen. Two 404s with a code are answers, not failures: `NOT_FOUND_LIGHT`
   (a room command for a room without lights; an empty list is the same) hides the card,
   `NOT_FOUND_RULE` says "No rule" and offers no switch. Every command goes through
   `lightReadBack` (the two reads, for an Eaton light). `profile-pages.spec` lets the two reads of
