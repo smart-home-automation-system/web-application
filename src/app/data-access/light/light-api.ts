@@ -109,6 +109,22 @@ export interface RoomRule {
   readonly updatedAt?: string;
 }
 
+/**
+ * The rule of a room as the administrator writes it (`PUT /home/light/rooms/{room}/rules`, HAS-267):
+ * **whole, nothing has a default** - a field left out is refused by the service, never read as off.
+ * The switch of the resident is not part of it; a write keeps it. The delay of a rule that is off
+ * may be left out or kept for later; `onlyBelowLux` left out is "whatever the light".
+ */
+export interface RoomRuleBody {
+  readonly autoOffEnabled: boolean;
+  readonly autoOffDelayMinutes?: number;
+  readonly motionOnEnabled: boolean;
+  readonly onlyBelowLux?: number;
+  readonly motionOffAfterMinutes?: number;
+  readonly periods: readonly MotionPeriod[];
+  readonly manualHoldMinutes: number;
+}
+
 /** What the engine sent to a light of a room (`light_rule_run`, HAS-262). */
 export interface RuleRun {
   /** The registry id of the light. */
@@ -230,6 +246,32 @@ export class LightApi {
     );
   }
 
+  /**
+   * The rule of one room, read once (HAS-267, its editor): a 404 with the code `NOT_FOUND_RULE` is a
+   * room without one. `null` for an answer without a body.
+   */
+  readRule(room: string): Observable<RoomRule | null> {
+    return this.api.get<RoomRule | null>(`/light/rooms/${encodeURIComponent(room)}/rules`);
+  }
+
+  /**
+   * Writes the rule of a room whole - created or replaced; the switch of the resident is kept. The
+   * service answers the rule as stored, which the editor does not use: it reads the rule again.
+   * `INVALID_RULE` names the first rule broken - in `details` only, which never reaches the screen.
+   */
+  replaceRule(room: string, rule: RoomRuleBody): Observable<void> {
+    return this.api
+      .put<unknown>(`/light/rooms/${encodeURIComponent(room)}/rules`, rule)
+      .pipe(map(() => undefined));
+  }
+
+  /** Removes the rule of a room; `NOT_FOUND_RULE` for a room without one. */
+  removeRule(room: string): Observable<void> {
+    return this.api
+      .delete<unknown>(`/light/rooms/${encodeURIComponent(room)}/rules`)
+      .pipe(map(() => undefined));
+  }
+
   /** Every room with a rule. */
   watchRules(): PollingResource<readonly RoomRule[] | null> {
     return pollingResource(() => this.api.get<readonly RoomRule[] | null>('/light/rules'), {
@@ -248,13 +290,13 @@ export class LightApi {
    * What the engine sent in one room in the last 24 hours of the house (to the end of the running
    * hour - the service allows 7 days). The range is taken anew at every call: the clock moving on
    * is not another question, so the answer needs no tag (the rule of a history). One resource is
-   * for one room - the window of a room is made anew for another.
+   * for one room - its caller is made anew for another; the name is read when a call is made.
    */
-  watchRuns(room: string): PollingResource<readonly RuleRun[] | null> {
+  watchRuns(room: () => string): PollingResource<readonly RuleRun[] | null> {
     return pollingResource(
       () =>
         this.api.get<readonly RuleRun[] | null>(
-          `/light/rooms/${encodeURIComponent(room)}/rules/runs`,
+          `/light/rooms/${encodeURIComponent(room())}/rules/runs`,
           { ...historyRange('day', Date.now(), this.timeZone) },
         ),
       { intervalMs: POLL_RUNS_EVERY_MS },

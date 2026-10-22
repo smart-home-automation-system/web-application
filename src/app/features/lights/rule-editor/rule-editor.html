@@ -1,0 +1,440 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>
+      {{ t('lights.editor.title') }}
+      <span class="page-header__room">{{ room }}</span>
+    </h1>
+  </header>
+
+  <mat-card appearance="outlined" class="editor card--domain" data-testid="rule-editor">
+    <mat-card-content>
+      @switch (load().state) {
+        @case ('loading') {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('lights.editor.loading')" />
+        }
+        @case ('failed') {
+          @let failed = load();
+          @if (failed.state === 'failed') {
+            <app-api-error-strip
+              [error]="failed.error"
+              [summary]="t('lights.editor.loadFailed')"
+              [describeWith]="describeError"
+            />
+          }
+        }
+        @case ('ready') {
+          <p class="stored" data-testid="rule-stored">
+            @if (stored(); as rule) {
+              @if (rule.updatedAt | houseAge; as age) {
+                {{ t('lights.window.ruleWritten') }} {{ age }}
+              } @else {
+                {{ t('lights.editor.stored') }}
+              }
+            } @else {
+              {{ t('lights.editor.noRule') }}
+            }
+          </p>
+
+          <!-- the room as the registry knows it: what the rule can rely on -->
+          <section class="section devices" data-testid="rule-devices">
+            <h2 class="section__title">{{ t('lights.editor.devices') }}</h2>
+            <app-data-freshness [lastUpdated]="registry.lastUpdated()" [stale]="registry.stale()" />
+            <app-api-error-strip
+              [error]="registry.error()"
+              [summary]="t('lights.editor.devicesFailed')"
+            />
+            @if (lights(); as lights) {
+              <div class="devices__lists">
+                <div>
+                  <h3 class="label">{{ t('lights.window.lights') }}</h3>
+                  @if (lights.length === 0) {
+                    <p class="note">{{ t('lights.editor.noLights') }}</p>
+                  } @else {
+                    <ul class="devices__list">
+                      @for (light of lights; track light.id ?? $index) {
+                        <li data-testid="rule-light">
+                          <mat-icon aria-hidden="true">lightbulb</mat-icon>
+                          <span class="devices__name">{{ light.name ?? t('lights.unnamed') }}</span>
+                          ·
+                          {{
+                            lightKindLabels[light.lightKind ?? '']
+                              ? t(lightKindLabels[light.lightKind!])
+                              : light.lightKind
+                          }}
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+                <div>
+                  <h3 class="label">{{ t('lights.editor.sensors') }}</h3>
+                  @if (sensors()?.length === 0) {
+                    <p class="note">{{ t('lights.window.noSensors') }}</p>
+                  } @else {
+                    <ul class="devices__list">
+                      @for (sensor of sensors(); track sensor.id ?? $index) {
+                        <li data-testid="rule-sensor" [attr.data-eaton]="sensor.eaton">
+                          <mat-icon aria-hidden="true">sensors</mat-icon>
+                          <span class="devices__name">{{
+                            sensor.name ?? t('lights.unnamed')
+                          }}</span>
+                          · {{ sensorKindText(sensor.kind) | displayText }}
+                          @if (sensor.eaton) {
+                            · <span class="warning">{{ t('lights.editor.eatonPir') }}</span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+            }
+            @if (roomBlocked(); as blocked) {
+              <p class="problem" role="alert" data-testid="room-blocked">{{ t(blocked) }}</p>
+            }
+            <p class="note">{{ t('lights.editor.devicesNote') }}</p>
+          </section>
+
+          <form
+            class="form"
+            novalidate
+            (submit)="$event.preventDefault(); save()"
+            (input)="changed()"
+            (click)="changed()"
+            (keyup)="changed()"
+          >
+            <!-- auto-off: every light of the room off a while after it is empty -->
+            <section class="section" data-testid="rule-auto-off">
+              <h2 class="section__title">{{ t('lights.window.autoOff') }}</h2>
+              <mat-slide-toggle
+                data-testid="auto-off-enabled"
+                [checked]="autoOffEnabled()"
+                (toggleChange)="setAutoOff(!autoOffEnabled())"
+                >{{ t('lights.editor.autoOffEnabled') }}</mat-slide-toggle
+              >
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="number">
+                <mat-label>{{ t('lights.editor.autoOffDelay') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="numeric"
+                  autocomplete="off"
+                  data-testid="auto-off-delay"
+                  [formControl]="autoOffDelay"
+                />
+                <span matTextSuffix>min</span>
+                <mat-hint>{{ MIN_DELAY_MINUTES }} … {{ MAX_DELAY_MINUTES }}</mat-hint>
+                @if (problemOf(autoOffDelay); as problem) {
+                  <mat-error>{{
+                    t(problem, { min: MIN_DELAY_MINUTES, max: MAX_DELAY_MINUTES })
+                  }}</mat-error>
+                }
+              </mat-form-field>
+              <p class="note">{{ t('lights.editor.autoOffNote') }}</p>
+            </section>
+
+            <!-- motion-on: a motion lights the room, as the period of the moment says -->
+            <section class="section" data-testid="rule-motion-on">
+              <h2 class="section__title">{{ t('lights.window.motionOn') }}</h2>
+              <mat-slide-toggle
+                data-testid="motion-on-enabled"
+                [checked]="motionOnEnabled()"
+                (toggleChange)="setMotionOn(!motionOnEnabled())"
+                >{{ t('lights.editor.motionOnEnabled') }}</mat-slide-toggle
+              >
+              <div class="numbers">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="number">
+                  <mat-label>{{ t('lights.editor.onlyBelowLux') }}</mat-label>
+                  <input
+                    matInput
+                    inputmode="numeric"
+                    autocomplete="off"
+                    data-testid="only-below-lux"
+                    [formControl]="onlyBelowLux"
+                  />
+                  <span matTextSuffix>lx</span>
+                  <mat-hint>{{ t('lights.editor.onlyBelowLuxHint') }}</mat-hint>
+                  @if (problemOf(onlyBelowLux); as problem) {
+                    <mat-error>{{ t(problem, { min: MIN_LUX, max: MAX_LUX }) }}</mat-error>
+                  }
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="number">
+                  <mat-label>{{ t('lights.editor.motionOffAfter') }}</mat-label>
+                  <input
+                    matInput
+                    inputmode="numeric"
+                    autocomplete="off"
+                    data-testid="motion-off-after"
+                    [formControl]="motionOffAfter"
+                  />
+                  <span matTextSuffix>min</span>
+                  <mat-hint>{{ MIN_DELAY_MINUTES }} … {{ MAX_DELAY_MINUTES }}</mat-hint>
+                  @if (problemOf(motionOffAfter); as problem) {
+                    <mat-error>{{
+                      t(problem, { min: MIN_DELAY_MINUTES, max: MAX_DELAY_MINUTES })
+                    }}</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <h3 class="label">{{ t('lights.window.periods') }}</h3>
+              @if (periods().length === 0) {
+                <p class="note">{{ t('lights.editor.noPeriods') }}</p>
+              }
+              @for (row of periods(); track row.key) {
+                @let number = $index + 1;
+                <div
+                  class="period"
+                  role="group"
+                  data-testid="period-row"
+                  [attr.aria-label]="t('lights.editor.period', { number })"
+                >
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="time">
+                    <mat-label>{{ t('lights.editor.from') }}</mat-label>
+                    <input
+                      matInput
+                      type="time"
+                      step="60"
+                      data-testid="period-from"
+                      [formControl]="row.from"
+                    />
+                    @if (problemOf(row.from); as problem) {
+                      <mat-error>{{ t(problem) }}</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="time">
+                    <mat-label>{{ t('lights.editor.to') }}</mat-label>
+                    <input
+                      matInput
+                      type="time"
+                      step="60"
+                      data-testid="period-to"
+                      [formControl]="row.to"
+                    />
+                    @if (problemOf(row.to); as problem) {
+                      <mat-error>{{ t(problem) }}</mat-error>
+                    }
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="small">
+                    <mat-label>{{ t('lights.window.brightness') }}</mat-label>
+                    <input
+                      matInput
+                      inputmode="numeric"
+                      autocomplete="off"
+                      data-testid="period-brightness"
+                      [formControl]="row.brightness"
+                    />
+                    <span matTextSuffix>%</span>
+                    @if (problemOf(row.brightness); as problem) {
+                      <mat-error>{{ t(problem) }}</mat-error>
+                    }
+                  </mat-form-field>
+                  @if (colorOffered() || row.colored()) {
+                    <span class="color">
+                      <mat-checkbox
+                        data-testid="period-color-on"
+                        [checked]="row.colorOn()"
+                        (change)="setColorOn(row, $event.checked)"
+                        >{{ t('lights.window.color') }}</mat-checkbox
+                      >
+                      @if (row.colorOn()) {
+                        <input
+                          class="color__picker"
+                          type="color"
+                          data-testid="period-color"
+                          [value]="row.color()"
+                          [attr.aria-label]="t('lights.editor.colorOf', { number })"
+                          (input)="setColor(row, $any($event.target).value)"
+                        />
+                      }
+                    </span>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="small">
+                      <mat-label>{{ t('lights.window.white') }}</mat-label>
+                      <input
+                        matInput
+                        inputmode="numeric"
+                        autocomplete="off"
+                        data-testid="period-white"
+                        [formControl]="row.white"
+                      />
+                      @if (problemOf(row.white); as problem) {
+                        <mat-error>{{ t(problem) }}</mat-error>
+                      }
+                    </mat-form-field>
+                  }
+                  <button
+                    matIconButton
+                    type="button"
+                    data-testid="period-remove"
+                    [attr.aria-label]="t('lights.editor.removePeriod', { number })"
+                    (click)="removePeriod(row)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                  @if (row.unreadable(); as unreadable) {
+                    <!-- the value as the service gave it, never a parameter of a translation -->
+                    <p class="problem period__problem" role="alert" data-testid="period-unreadable">
+                      {{ t('lights.editor.problem.unreadableColor') }} {{ unreadable }}
+                    </p>
+                  }
+                </div>
+              }
+              <button
+                matButton="outlined"
+                type="button"
+                data-testid="period-add"
+                [disabled]="periods().length >= MAX_PERIODS"
+                (click)="addPeriod()"
+              >
+                <mat-icon>add</mat-icon>{{ t('lights.editor.addPeriod') }}
+              </button>
+              @if (problems().overlap; as pair) {
+                <p class="problem" role="alert" data-testid="periods-overlap">
+                  {{
+                    t('lights.editor.problem.overlapOf', {
+                      first: pair[0] + 1,
+                      second: pair[1] + 1,
+                    })
+                  }}
+                </p>
+              }
+              @if (problems().noPeriod) {
+                <p class="problem" role="alert" data-testid="periods-missing">
+                  {{ t('lights.editor.problem.noPeriod') }}
+                </p>
+              }
+              <p class="note">{{ t('lights.editor.periodsNote') }}</p>
+            </section>
+
+            <!-- the manual hold: a light somebody else switched is left alone that long -->
+            <section class="section" data-testid="rule-hold">
+              <h2 class="section__title">{{ t('lights.window.hold') }}</h2>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="number">
+                <mat-label>{{ t('lights.editor.manualHold') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="numeric"
+                  autocomplete="off"
+                  data-testid="manual-hold"
+                  [formControl]="manualHold"
+                />
+                <span matTextSuffix>min</span>
+                <mat-hint>{{ MIN_DELAY_MINUTES }} … {{ MAX_DELAY_MINUTES }}</mat-hint>
+                @if (problemOf(manualHold); as problem) {
+                  <mat-error>{{
+                    t(problem, { min: MIN_DELAY_MINUTES, max: MAX_DELAY_MINUTES })
+                  }}</mat-error>
+                }
+              </mat-form-field>
+              <p class="note">{{ t('lights.editor.holdNote') }}</p>
+            </section>
+
+            @if (problems().room; as problem) {
+              <p class="problem" role="alert" data-testid="room-problem">{{ t(problem) }}</p>
+            }
+            @if (saveError(); as failure) {
+              <app-api-error-strip
+                [error]="failure.error"
+                [summary]="t(failure.summary)"
+                [describeWith]="describeError"
+              />
+            }
+            <p class="saved" role="status" data-testid="rule-saved">
+              @if (saved()) {
+                <mat-icon aria-hidden="true">check_circle</mat-icon>{{ t('lights.editor.saved') }}
+              }
+            </p>
+
+            <div class="actions">
+              <button
+                matButton="filled"
+                type="submit"
+                data-testid="rule-save"
+                [disabled]="saving() || removing()"
+              >
+                {{ t('lights.editor.save') }}
+              </button>
+              <a matButton routerLink="/lights" data-testid="rule-back">{{
+                t('lights.editor.back')
+              }}</a>
+              <span class="actions__space"></span>
+              @if (stored()) {
+                @if (askRemove()) {
+                  <span class="question" role="alert" data-testid="remove-question">
+                    {{ t('lights.editor.removeQuestion') }}
+                    <button
+                      matButton
+                      type="button"
+                      data-testid="rule-remove-cancel"
+                      #keep
+                      (click)="askRemove.set(false)"
+                    >
+                      {{ t('lights.editor.cancel') }}
+                    </button>
+                    <button
+                      matButton="outlined"
+                      type="button"
+                      data-testid="rule-remove-confirm"
+                      [disabled]="removing()"
+                      (click)="remove()"
+                    >
+                      {{ t('lights.editor.remove') }}
+                    </button>
+                  </span>
+                } @else {
+                  <button
+                    matButton
+                    type="button"
+                    data-testid="rule-remove"
+                    [disabled]="saving() || removing()"
+                    (click)="askRemove.set(true)"
+                  >
+                    <mat-icon>delete</mat-icon>{{ t('lights.editor.remove') }}
+                  </button>
+                }
+              }
+            </div>
+            @if (removeError(); as failure) {
+              <app-api-error-strip
+                [error]="failure.error"
+                [summary]="t(failure.summary)"
+                [describeWith]="describeError"
+              />
+            }
+          </form>
+
+          <!-- the switch of the resident: My room's, sent at once - not part of what a save writes -->
+          @if (stored(); as rule) {
+            <section class="section resident" data-testid="rule-resident">
+              <h2 class="section__title">{{ t('lights.window.resident') }}</h2>
+              @if (rule.enabledByResident !== undefined) {
+                <mat-slide-toggle
+                  data-testid="resident-switch"
+                  [checked]="rule.enabledByResident"
+                  [disabled]="residentState()?.sending === true"
+                  (toggleChange)="toggleResident()"
+                  >{{ t('lights.editor.residentEnabled') }}</mat-slide-toggle
+                >
+              } @else {
+                <p class="note" data-testid="resident-unknown">
+                  {{ t('lights.editor.residentEnabled') }}: {{ t('lights.window.ruleUnknown') }}
+                </p>
+              }
+              @if (residentState()?.error) {
+                <p class="problem" role="alert" data-testid="resident-failure">
+                  {{ lightFailureOf(residentState()!) | displayText }}
+                </p>
+              }
+              <p class="note">{{ t('lights.editor.residentNote') }}</p>
+            </section>
+          }
+
+          <!-- what the engine did in the room: its own call, with its own freshness and failure -->
+          <section class="section runs" data-testid="rule-runs">
+            <h2 class="section__title">{{ t('lights.window.runs') }}</h2>
+            <app-rule-runs [room]="room" [names]="names()" />
+          </section>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</ng-container>

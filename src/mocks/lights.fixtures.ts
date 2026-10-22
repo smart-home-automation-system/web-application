@@ -1,11 +1,16 @@
+import { isRecord } from '../app/core/util/is-record';
+import { ROOM_NAMES } from '../app/data-access/household/registry-values';
 import {
   EmptyHouse,
   Light,
   Occupancy,
   RoomLights,
   RoomRule,
+  RoomRuleBody,
   RuleRun,
 } from '../app/data-access/light/light-api';
+import { roomProblem, ruleProblem } from '../app/features/lights/rule-editor/room-rule-rules';
+import { deviceRegistry } from './devices.fixtures';
 import type { MockReply } from './handlers';
 import { houseTime } from './house-time';
 
@@ -133,20 +138,81 @@ const AT_THE_START: readonly StoredLight[] = [
     source: 'empty-house',
     reachable: true,
   },
+  {
+    // HAS-267: a hall on an Eaton PIR only - its lights stay with NetLinx, it gets no rule
+    id: 46,
+    name: 'Hall down ceiling',
+    room: 'hall down',
+    vendor: 'eaton',
+    kind: 'relay',
+    on: false,
+    changedSecondsAgo: 40 * 60 + 5,
+    source: 'external',
+    reachable: true,
+  },
+];
+
+/** A rule as the mock service stores it: what the administrator wrote, the switch, how old it is. */
+interface StoredRule extends RoomRuleBody {
+  readonly room: string;
+  readonly enabledByResident: boolean;
+  readonly writtenSecondsAgo: number;
+}
+
+/**
+ * The rules at the start (HAS-261): the office switches itself off, the hall up lights by motion,
+ * the living room's rule is switched off by its resident (HAS-268). Each is one the room can have -
+ * the lights and sensors of the mock registry (`devices.fixtures.ts`) are what they are judged by.
+ */
+const RULES_AT_THE_START: readonly StoredRule[] = [
+  {
+    room: 'office',
+    autoOffEnabled: true,
+    autoOffDelayMinutes: 15,
+    motionOnEnabled: false,
+    periods: [],
+    manualHoldMinutes: 60,
+    enabledByResident: true,
+    writtenSecondsAgo: 3 * 86400 + 5,
+  },
+  {
+    room: 'hall up',
+    autoOffEnabled: true,
+    autoOffDelayMinutes: 10,
+    motionOnEnabled: true,
+    onlyBelowLux: 30,
+    motionOffAfterMinutes: 3,
+    // the hall up has a relay only: its periods set no brightness and no colour
+    periods: [
+      { from: '16:00', to: '22:00' },
+      { from: '22:00', to: '06:00' },
+    ],
+    manualHoldMinutes: 30,
+    enabledByResident: true,
+    writtenSecondsAgo: 86400 + 5,
+  },
+  {
+    room: 'living room',
+    autoOffEnabled: true,
+    autoOffDelayMinutes: 10,
+    motionOnEnabled: false,
+    periods: [],
+    manualHoldMinutes: 10,
+    enabledByResident: false,
+    writtenSecondsAgo: 2 * 86400 + 5,
+  },
 ];
 
 let lights: StoredLight[] = AT_THE_START.map((one) => ({ ...one }));
 // the changes an Eaton light has not reported yet, by when it reports them
 let unreported: { readonly at: number; readonly report: () => void }[] = [];
-/** The switch of the resident per room (HAS-268), as the fixtures of the rules start with it. */
-const RESIDENT_AT_THE_START: ReadonlyMap<string, boolean> = new Map([['living room', false]]);
-let residentEnabled = new Map(RESIDENT_AT_THE_START);
+let rules: StoredRule[] = structuredClone([...RULES_AT_THE_START]);
 
-/** For a unit test that switched a light. */
+/** For a unit test that switched a light or changed a rule. */
 export function resetLights(): void {
   lights = AT_THE_START.map((one) => ({ ...one }));
   unreported = [];
-  residentEnabled = new Map(RESIDENT_AT_THE_START);
+  rules = structuredClone([...RULES_AT_THE_START]);
 }
 
 function reportDue(now: Date): void {
@@ -233,6 +299,12 @@ function occupancyOf(room: string, now: Date): Occupancy {
         lastMotionAt: houseTime(now, 2 * 60 + 10),
         sensors: [{ id: 8, name: 'Hall motion sensor', kind: 'motion sensor' }],
       };
+    case 'hall down':
+      return {
+        room,
+        lastMotionAt: houseTime(now, 40 * 60 + 5),
+        sensors: [{ id: 54, name: 'Hall down PIR', kind: 'motion sensor' }],
+      };
     case 'kitchen':
       return {
         room,
@@ -280,49 +352,18 @@ export function lightsByRoom(fresh = false, now: Date = new Date()): RoomLights[
   });
 }
 
-/** `GET /home/light/rules`: the office switches itself off, the hall up lights by motion. */
+/** `GET /home/light/rules`: every room with a rule, by its name, as the service sorts them. */
 export function lightRules(fresh = false, now: Date = new Date()): RoomRule[] {
   if (fresh) {
     return [];
   }
-  return [
-    {
-      room: 'office',
-      autoOffEnabled: true,
-      autoOffDelayMinutes: 15,
-      motionOnEnabled: false,
-      periods: [],
-      manualHoldMinutes: 60,
-      enabledByResident: residentEnabled.get('office') ?? true,
-      updatedAt: houseTime(now, 3 * 86400 + 5),
-    },
-    {
-      room: 'hall up',
-      autoOffEnabled: true,
-      autoOffDelayMinutes: 10,
-      motionOnEnabled: true,
-      onlyBelowLux: 30,
-      motionOffAfterMinutes: 3,
-      periods: [
-        { from: '16:00', to: '22:00', brightness: 80 },
-        { from: '22:00', to: '06:00', brightness: 10, rgb: [255, 120, 0] },
-      ],
-      manualHoldMinutes: 30,
-      enabledByResident: residentEnabled.get('hall up') ?? true,
-      updatedAt: houseTime(now, 86400 + 5),
-    },
-    {
-      room: 'living room',
-      autoOffEnabled: true,
-      autoOffDelayMinutes: 10,
-      motionOnEnabled: false,
-      periods: [],
-      manualHoldMinutes: 10,
-      // the switch of My room: the resident has stopped the rules of the room (at the start)
-      enabledByResident: residentEnabled.get('living room') ?? true,
-      updatedAt: houseTime(now, 2 * 86400 + 5),
-    },
-  ];
+  return [...rules]
+    .sort((left, right) => left.room.localeCompare(right.room))
+    .map(({ writtenSecondsAgo, periods, ...rule }) => ({
+      ...rule,
+      periods: structuredClone([...periods]),
+      updatedAt: houseTime(now, writtenSecondsAgo),
+    }));
 }
 
 /** `GET /home/light/rooms/{room}/rules/runs`: what the engine sent in the room today. */
@@ -557,9 +598,74 @@ export function setResidentEnabled(room: string, body: unknown): MockReply {
   if (typeof enabled !== 'boolean') {
     return refused(400, 'enabled must be true or false', 'INVALID_RULE');
   }
-  if (!lightRules().some((one) => one.room === room)) {
+  const index = rules.findIndex((one) => one.room === room);
+  if (index < 0) {
     return refused(404, `No rule for room [${room}]`, 'NOT_FOUND_RULE');
   }
-  residentEnabled.set(room, enabled);
+  // a rule already in that state is not written, so its time stays
+  if (rules[index].enabledByResident !== enabled) {
+    rules[index] = { ...rules[index], enabledByResident: enabled, writtenSecondsAgo: 0 };
+  }
   return { status: 200, body: lightRules().find((one) => one.room === room) };
+}
+
+/**
+ * `PUT /home/light/rooms/{room}/rules` (HAS-267): the rule written whole, created or replaced - the
+ * switch of the resident kept. Refused as `light-service` refuses it: `INVALID_RULE` with the first
+ * rule broken, the body first, then the room as the mock registry has it - its reason in `details`,
+ * which the application never shows.
+ */
+export function replaceRule(room: string, body: unknown): MockReply {
+  if (!ROOM_NAMES.includes(room)) {
+    return refused(400, `Unknown room [${room}]`);
+  }
+  const rule = (isRecord(body) ? body : {}) as unknown as RoomRuleBody;
+  const devices = deviceRegistry().filter(
+    (device) => device.room === room && device.enabled !== false,
+  );
+  const problem =
+    ruleProblem(rule) ??
+    roomProblem(rule, {
+      lights: devices.filter((device) => device.kind === 'light' && device.lightKind),
+      sensors: devices
+        .filter((device) => device.kind === 'presence sensor' || device.kind === 'motion sensor')
+        .map((device) => ({ kind: device.kind, eaton: device.vendor === 'eaton' })),
+    });
+  if (problem !== undefined) {
+    return {
+      status: 400,
+      body: { errors: [{ message: 'Invalid room rule', code: 'INVALID_RULE', details: problem }] },
+    };
+  }
+  const kept = rules.find((one) => one.room === room)?.enabledByResident ?? true;
+  const stored: StoredRule = {
+    room,
+    autoOffEnabled: rule.autoOffEnabled,
+    ...(rule.autoOffDelayMinutes === undefined
+      ? {}
+      : { autoOffDelayMinutes: rule.autoOffDelayMinutes }),
+    motionOnEnabled: rule.motionOnEnabled,
+    ...(rule.onlyBelowLux === undefined ? {} : { onlyBelowLux: rule.onlyBelowLux }),
+    ...(rule.motionOffAfterMinutes === undefined
+      ? {}
+      : { motionOffAfterMinutes: rule.motionOffAfterMinutes }),
+    // stored by the start of each period, as the service orders them
+    periods: [...rule.periods].sort((left, right) =>
+      (left.from ?? '').localeCompare(right.from ?? ''),
+    ),
+    manualHoldMinutes: rule.manualHoldMinutes,
+    enabledByResident: kept,
+    writtenSecondsAgo: 0,
+  };
+  rules = [...rules.filter((one) => one.room !== room), stored];
+  return { status: 200, body: lightRules().find((one) => one.room === room) };
+}
+
+/** `DELETE /home/light/rooms/{room}/rules`: 204, or the 404 of a room without a rule. */
+export function removeRule(room: string): MockReply {
+  if (!rules.some((one) => one.room === room)) {
+    return refused(404, `No rule for room [${room}]`, 'NOT_FOUND_RULE');
+  }
+  rules = rules.filter((one) => one.room !== room);
+  return { status: 204, body: null };
 }

@@ -48,7 +48,8 @@ test.describe('overview', () => {
     // HAS-268: the lights counted, where one is on, and the empty house
     const lights = page.getByTestId('tile-light');
     await expect(lights).toContainText(/On\s+3/);
-    await expect(lights).toContainText(/Off\s+4/);
+    // HAS-267: the hall down ceiling, off, came with the hall on an Eaton PIR only
+    await expect(lights).toContainText(/Off\s+5/);
     await expect(lights).toContainText(/Not known\s+1/);
     await expect(lights.getByTestId('lit-rooms')).toHaveText('Lit in: living room, hall up');
     await expect(lights.getByTestId('empty-house')).toContainText('Somebody is at home');

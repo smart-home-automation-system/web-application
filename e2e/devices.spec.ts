@@ -5,8 +5,8 @@ import { expect, startIn, test, useScenario } from './support';
 /**
  * The administration of the device registry, fed by the mock API - whose registry can be
  * changed, in the memory of the page, and refuses what the real one refuses. Nothing here
- * reaches a real registry. The mock house has fourteen invented devices: Shelly ones of every
- * generation, Eaton ones on both gateways, three Bluetooth sensors, blinds that are switched
+ * reaches a real registry. The mock house has twenty-two invented devices: Shelly ones of every
+ * generation, Eaton ones on both gateways, five Bluetooth sensors, blinds that are switched
  * off and blinds with the sensor of their window.
  *
  * The page has a card per room, floor by floor; the devices of a room are in its window
@@ -28,7 +28,7 @@ async function choose(form: Locator, label: string, option: string): Promise<voi
 
 async function open(page: Page): Promise<void> {
   await page.goto('/devices');
-  await expect(count(page)).toHaveText('Devices: 14');
+  await expect(count(page)).toHaveText('Devices: 22');
 }
 
 /** The window of a room, opened with one of the two buttons of its card. */
@@ -58,11 +58,9 @@ test('lays the rooms out floor by floor, each counting its devices by kind', asy
     page.locator('[data-floor="upper"] [data-room-card]').locator('mat-card-title'),
   ).toHaveText(['office', 'tobi', 'livia', 'bedroom', 'wardrobe', 'bathroom up']);
   const office = card(page, 'office');
-  await expect(office.getByTestId('count')).toHaveText('Devices: 5');
+  await expect(office.getByTestId('count')).toHaveText('Devices: 8');
   await expect(office.locator('[data-kind="blinds"]')).toHaveText(/Blinds\s*2/);
-  await expect(office.locator('[data-kind="presence sensor"]')).toHaveText(
-    /Presence sensor\s*none/,
-  );
+  await expect(office.locator('[data-kind="presence sensor"]')).toHaveText(/Presence sensor\s*1/);
   // HAS-289: the corridor upstairs, written with a space as every room of two words
   await expect(page.locator('[data-floor="circulation"] [data-room-card="hall up"]')).toBeVisible();
   // the weather station and the Bluetooth gateways count as other
@@ -89,8 +87,11 @@ test('shows the devices of a room in its window, with how each is reached', asyn
   await expect(office.getByTestId('name')).toHaveText([
     'Office door blinds',
     'Office window blinds',
+    'Office desk lamp',
     'Office main light',
     'Office window sensor',
+    'Office motion sensor',
+    'Office presence',
     'Office temperature sensor 48',
   ]);
   const door = device(page, 'Office door blinds');
@@ -150,7 +151,7 @@ test.describe('adding a device', () => {
     await expect(form.getByTestId('binding-taken')).toHaveText(
       'Another device already has this channel of the Shelly at this address.',
     );
-    await expect(count(page)).toHaveText('Devices: 14');
+    await expect(count(page)).toHaveText('Devices: 22');
   });
 
   test('registers a Shelly as entered, in its room', async ({ page }) => {
@@ -174,7 +175,7 @@ test.describe('adding a device', () => {
     await expect(added.getByTestId('kind')).toContainText('outside the window');
     // the form is gone, the window shows the room, and its card counts the device
     await expect(room.locator('app-smart-device-form')).toHaveCount(0);
-    await expect(count(page)).toHaveText('Devices: 15');
+    await expect(count(page)).toHaveText('Devices: 23');
     await expect(card(page, 'loft').locator('[data-kind="blinds"]')).toHaveText(/Blinds\s*1/);
   });
 
@@ -185,7 +186,7 @@ test.describe('adding a device', () => {
     const office = await openRoom(page, 'office');
     await office.getByRole('button', { name: 'Add a device here' }).click();
     await expect(office.getByRole('combobox', { name: 'Room' })).toHaveText('office');
-    await office.getByLabel('Name').fill('Office desk lamp');
+    await office.getByLabel('Name').fill('Office reading lamp');
     await choose(office, 'Kind', 'Light');
     await office.getByTestId('binding').getByRole('radio', { name: 'Eaton' }).click();
     await office.getByTestId('gateway').getByRole('radio', { name: 'lights' }).click();
@@ -199,7 +200,7 @@ test.describe('adding a device', () => {
     await office.getByTestId('light-kind').getByRole('radio', { name: 'dimmed' }).click();
     await office.getByRole('button', { name: 'Add', exact: true }).click();
 
-    const lamp = device(page, 'Office desk lamp');
+    const lamp = device(page, 'Office reading lamp');
     await expect(lamp.getByTestId('vendor')).toHaveText('Eaton');
     await expect(lamp.getByTestId('binding')).toContainText('gateway lights point 13');
     await expect(lamp.getByTestId('kind')).toContainText('dimmed');
@@ -217,7 +218,7 @@ test.describe('adding a device', () => {
     const sensor = device(page, 'Kitchen door sensor');
     await expect(sensor.getByTestId('binding')).toContainText('Bluetooth 7c:c6:b6:00:00:09');
     await expect(sensor.getByTestId('vendor')).toHaveText('Other');
-    await expect(count(page)).toHaveText('Devices: 16');
+    await expect(count(page)).toHaveText('Devices: 24');
   });
 });
 
@@ -238,8 +239,8 @@ test.describe('changing a device', () => {
     await form.getByRole('button', { name: 'Save' }).click();
 
     // the window follows the registry: the device left the office
-    await expect(dialog(page).getByTestId('device')).toHaveCount(4);
-    await expect(card(page, 'office').getByTestId('count')).toHaveText('Devices: 4');
+    await expect(dialog(page).getByTestId('device')).toHaveCount(7);
+    await expect(card(page, 'office').getByTestId('count')).toHaveText('Devices: 7');
     await dialog(page).getByRole('button', { name: 'Close' }).click();
     await openRoom(page, 'bedroom');
     await expect(dialog(page).getByTestId('name')).toHaveText([
@@ -337,22 +338,22 @@ test.describe('removing a device', () => {
 
     await question.getByRole('button', { name: 'Cancel' }).click();
     await expect(sensor.getByRole('group')).toHaveCount(0);
-    await expect(count(page)).toHaveText('Devices: 14');
+    await expect(count(page)).toHaveText('Devices: 22');
   });
 
   test('removes the device, and its room stays with none', async ({ page }) => {
     await open(page);
-    const hall = await openRoom(page, 'hall up');
-    const sensor = device(page, 'Hall motion sensor');
+    const loft = await openRoom(page, 'loft');
+    const sensor = device(page, 'Loft presence sensor');
 
-    await sensor.getByRole('button', { name: 'Remove Hall motion sensor' }).click();
+    await sensor.getByRole('button', { name: 'Remove Loft presence sensor' }).click();
     // a Shelly is nobody's point: no warning about the AMX system
     await expect(sensor.getByTestId('eaton-warning')).toHaveCount(0);
     await sensor.getByRole('group').getByRole('button', { name: 'Remove' }).click();
 
-    await expect(count(page)).toHaveText('Devices: 13');
-    await expect(hall.getByTestId('no-devices')).toBeVisible();
-    await expect(card(page, 'hall up').getByTestId('count')).toHaveText('Devices: 0');
+    await expect(count(page)).toHaveText('Devices: 21');
+    await expect(loft.getByTestId('no-devices')).toBeVisible();
+    await expect(card(page, 'loft').getByTestId('count')).toHaveText('Devices: 0');
   });
 });
 

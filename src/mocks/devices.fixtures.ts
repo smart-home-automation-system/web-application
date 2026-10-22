@@ -179,15 +179,106 @@ const AT_THE_START: readonly StoredDevice[] = [
     vendor: 'shelly',
     bthome: { address: '7c:c6:b6:00:00:03' },
   },
+  // HAS-267: the lights and sensors the rules of the mock light-service are judged by - the same
+  // ids as its lights (`lights.fixtures.ts`), and a hall down on an Eaton PIR only, which gets no rule
+  {
+    id: 40,
+    name: 'Office desk lamp',
+    room: 'office',
+    kind: 'light',
+    enabled: true,
+    vendor: 'eaton',
+    eaton: { gateway: 'lights', point: 14 },
+    lightKind: 'dimmer',
+  },
+  {
+    id: 41,
+    name: 'Living room colour strip',
+    room: 'living room',
+    kind: 'light',
+    enabled: true,
+    vendor: 'shelly',
+    shelly: {
+      address: '192.0.2.51',
+      generation: 2,
+      deviceId: 'shellyplusrgbwpm-0a0b0c0d0e06',
+      channel: 0,
+    },
+    lightKind: 'rgbw',
+  },
+  {
+    id: 42,
+    name: 'Hall up ceiling',
+    room: 'hall up',
+    kind: 'light',
+    enabled: true,
+    vendor: 'eaton',
+    eaton: { gateway: 'lights', point: 15 },
+    lightKind: 'relay',
+  },
+  {
+    id: 46,
+    name: 'Hall down ceiling',
+    room: 'hall down',
+    kind: 'light',
+    enabled: true,
+    vendor: 'eaton',
+    eaton: { gateway: 'lights', point: 16 },
+    lightKind: 'relay',
+  },
+  {
+    id: 50,
+    name: 'Office presence',
+    room: 'office',
+    kind: 'presence sensor',
+    enabled: true,
+    vendor: 'shelly',
+    shelly: {
+      address: '192.0.2.42',
+      generation: 4,
+      deviceId: 'shellypresence-0a0b0c0d0e07',
+      channel: 200,
+    },
+  },
+  {
+    id: 51,
+    name: 'Office motion sensor',
+    room: 'office',
+    kind: 'motion sensor',
+    enabled: true,
+    vendor: 'shelly',
+    bthome: { address: '7c:c6:b6:00:00:04' },
+  },
+  {
+    id: 52,
+    name: 'Living room motion sensor',
+    room: 'living room',
+    kind: 'motion sensor',
+    enabled: true,
+    vendor: 'shelly',
+    bthome: { address: '7c:c6:b6:00:00:05' },
+  },
+  {
+    id: 54,
+    name: 'Hall down PIR',
+    room: 'hall down',
+    kind: 'motion sensor',
+    enabled: true,
+    vendor: 'eaton',
+    eaton: { gateway: 'lights', point: 30 },
+  },
 ];
 
+// the ids from 40 on are the lights and sensors of the rules: a device added gets the next id after 14
+const FIRST_FREE_ID = 15;
+
 let devices: StoredDevice[] = structuredClone([...AT_THE_START]);
-let nextId = AT_THE_START.length + 1;
+let nextId = FIRST_FREE_ID;
 
 /** The registry as it started - for a unit test that changed it. */
 export function resetDevices(): void {
   devices = structuredClone([...AT_THE_START]);
-  nextId = AT_THE_START.length + 1;
+  nextId = FIRST_FREE_ID;
 }
 
 /** `GET /home/device/registry`: every device, by room and then by name, as the service sorts. */
