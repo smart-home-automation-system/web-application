@@ -98,16 +98,24 @@
           </p>
           <app-api-error-strip [error]="noRule() ? undefined : rule.error()" />
           @if (ruleView(); as rule) {
-            <mat-slide-toggle
-              class="rule__switch"
-              data-testid="rule-switch"
-              [checked]="rule.enabledByResident !== false"
-              [disabled]="switchState()?.sending === true"
-              (toggleChange)="toggleAutomation()"
-            >
-              {{ t('myRoom.lights.automation') }}
-              <span class="visually-hidden">{{ room() }}</span>
-            </mat-slide-toggle>
+            <!-- the switch shows the field as stored; a rule without it has nothing to show and
+                 nothing to flip - missing is never read as on or off -->
+            @if (rule.enabledByResident !== undefined) {
+              <mat-slide-toggle
+                class="rule__switch"
+                data-testid="rule-switch"
+                [checked]="rule.enabledByResident"
+                [disabled]="switchState()?.sending === true"
+                (toggleChange)="toggleAutomation()"
+              >
+                {{ t('myRoom.lights.automation') }}
+                <span class="visually-hidden">{{ room() }}</span>
+              </mat-slide-toggle>
+            } @else {
+              <p class="lights__note" data-testid="rule-switch-unknown">
+                {{ t('myRoom.lights.automation') }}: {{ t('lights.window.ruleUnknown') }}
+              </p>
+            }
             @if (switchState()?.error; as error) {
               <p class="lights__failure" role="alert" data-testid="rule-failure">
                 {{ lightFailureOf(switchState()!) | displayText }}

@@ -1,17 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { CommandState, DeviceCommands } from '../../core/api/device-commands';
+import { DeviceCommands } from '../../core/api/device-commands';
 import { Light, LightApi } from '../../data-access/light/light-api';
-import { DisplayText, MessageKey } from '../../i18n/messages';
+import { MessageKey } from '../../i18n/messages';
 import { DisplayTextPipe } from '../display-text/display-text.pipe';
 import { HouseAgePipe } from '../house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
-import { describeLightError } from './light-errors';
+import { lightFailureOf } from './light-errors';
 import { LIGHT_STATE_LABELS, cssColorOf, dims, lightSourceText, stateOf } from './light-labels';
 
 /** A light a control can address: one with an id. */
@@ -33,13 +40,8 @@ const COLOR_PARTS: readonly ColorPart[] = [
   { index: 3, label: 'lights.window.white' },
 ];
 
-/** A failed command in words: one that got no answer may have been carried out all the same. */
-export function lightFailureOf(state: CommandState<unknown>): DisplayText {
-  const error = state.error;
-  return error === undefined || error.kind === 'network'
-    ? { key: 'lights.commandFailed' }
-    : describeLightError(error);
-}
+const sameColor = (left: Chosen, right: Chosen) =>
+  left.every((part, index) => part === right[index]);
 
 /**
  * One light with its controls (HAS-268): its bulb and state, when and by whom it changed, on and
@@ -100,18 +102,21 @@ export class LightControl {
     this.hasWhite() ? COLOR_PARTS : COLOR_PARTS.slice(0, 3),
   );
 
-  /** The colour being chosen; untouched, it starts from what the light reported. */
-  private readonly chosen = signal<Chosen | undefined>(undefined);
+  /** The colour the light reported, white where it reported none - the same until it changes. */
+  private readonly reportedColor = computed(
+    (): Chosen => {
+      const rgb = this.light().color?.rgb;
+      const [red, green, blue] = cssColorOf(rgb) !== undefined && rgb ? rgb : WHITE;
+      return [red, green, blue, this.light().color?.white ?? 0];
+    },
+    { equal: sameColor },
+  );
 
-  protected readonly chosenColor = computed((): Chosen => {
-    const chosen = this.chosen();
-    if (chosen) {
-      return chosen;
-    }
-    const rgb = this.light().color?.rgb;
-    const [red, green, blue] = cssColorOf(rgb) !== undefined && rgb ? rgb : WHITE;
-    return [red, green, blue, this.light().color?.white ?? 0];
-  });
+  /**
+   * The colour being chosen: what the light reported until a slider moves, and again what it
+   * reports once that changes - a colour set by a rule or another hand is never shown as chosen.
+   */
+  protected readonly chosenColor = linkedSignal<Chosen>(() => this.reportedColor());
 
   protected readonly swatch = computed(() => {
     const [red, green, blue] = this.chosenColor();
@@ -121,7 +126,7 @@ export class LightControl {
   protected choose(part: 0 | 1 | 2 | 3, value: number): void {
     const next = [...this.chosenColor()] as [number, number, number, number];
     next[part] = Math.min(255, Math.max(0, Math.round(value)));
-    this.chosen.set(next);
+    this.chosenColor.set(next);
   }
 
   protected turn(on: boolean): void {
@@ -131,6 +136,9 @@ export class LightControl {
 
   /** 1 ... 100: the service refuses 0 - "off" is the way to switch a light off. */
   protected setBrightness(value: number): void {
+    if (!Number.isFinite(value)) {
+      return;
+    }
     const id = this.light().id;
     const brightness = Math.min(100, Math.max(1, Math.round(value)));
     this.commands().send(id, this.api.brightness(id, brightness), this.refresh());

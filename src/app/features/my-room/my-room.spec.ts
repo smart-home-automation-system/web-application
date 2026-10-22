@@ -807,6 +807,18 @@ describe('MyRoom', () => {
       ).toBe('false');
     });
 
+    // missing is never read as on or off: a rule without the field gets no switch to flip
+    it('offers no switch for a rule the service answers without enabledByResident', async () => {
+      await page();
+      answer(lastLights().resource, LIGHTS);
+      answer(lastRule().resource, { ...RULE, enabledByResident: undefined });
+
+      expect((await card())!.querySelector('[data-testid="rule-switch"]')).toBeNull();
+      expect(words((await card())!.querySelector('[data-testid="rule-switch-unknown"]'))).toBe(
+        'Automatic lighting of the room: not known',
+      );
+    });
+
     it('says that the room has no rule, and offers no switch - the 404 of the service is no failure', async () => {
       await page();
       answer(lastLights().resource, LIGHTS);

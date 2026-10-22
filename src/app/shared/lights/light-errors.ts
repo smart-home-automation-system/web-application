@@ -1,4 +1,5 @@
 import { ApiError } from '../../core/api/api-error';
+import { CommandState } from '../../core/api/device-commands';
 import { DisplayText, MessageKey } from '../../i18n/messages';
 import { describeApiError } from '../api-error/describe-api-error';
 
@@ -23,4 +24,12 @@ export const LIGHT_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
 export function describeLightError(error: ApiError): DisplayText {
   const named = Object.entries(LIGHT_ERROR_TEXTS).find(([code]) => error.hasCode(code));
   return named ? { key: named[1] } : describeApiError(error);
+}
+
+/** A failed command in words: one that got no answer may have been carried out all the same. */
+export function lightFailureOf(state: CommandState<unknown>): DisplayText {
+  const error = state.error;
+  return error === undefined || error.kind === 'network'
+    ? { key: 'lights.commandFailed' }
+    : describeLightError(error);
 }

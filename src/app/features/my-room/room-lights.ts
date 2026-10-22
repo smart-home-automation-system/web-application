@@ -16,8 +16,8 @@ import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { shortName } from '../../shared/device-names/device-names';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
-import { LightControl, lightFailureOf } from '../../shared/lights/light-control';
-import { describeLightError } from '../../shared/lights/light-errors';
+import { LightControl } from '../../shared/lights/light-control';
+import { describeLightError, lightFailureOf } from '../../shared/lights/light-errors';
 import {
   OCCUPANCY_LABELS,
   illuminationText,
@@ -140,7 +140,10 @@ export class RoomLights {
 
   /** The switch of the resident: the opposite of what is stored, read back from the service. */
   protected toggleAutomation(): void {
-    const enabled = this.ruleView()?.enabledByResident !== false;
+    const enabled = this.ruleView()?.enabledByResident;
+    if (enabled === undefined) {
+      return;
+    }
     this.ruleCommands.send(this.room(), this.api.residentEnabled(this.room(), !enabled), () =>
       this.rule.refresh(),
     );

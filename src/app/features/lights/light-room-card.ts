@@ -17,12 +17,12 @@ import {
   OCCUPANCY_LABELS,
   dims,
   illuminationText,
+  isLux,
   lightSourceText,
   occupancyOf,
   stateOf,
 } from '../../shared/lights/light-labels';
-import { lightFailureOf } from '../../shared/lights/light-control';
-import { isLux } from '../../shared/lights/light-labels';
+import { lightFailureOf } from '../../shared/lights/light-errors';
 import { AddressedLight } from './light-rooms';
 import { ruleSummary } from './rule-summary';
 
@@ -179,4 +179,4 @@ function failedOf(
 
 // shared with the lights card of My room since HAS-268; kept here by name for the window
 export { isLux } from '../../shared/lights/light-labels';
-export { lightFailureOf } from '../../shared/lights/light-control';
+export { lightFailureOf } from '../../shared/lights/light-errors';
