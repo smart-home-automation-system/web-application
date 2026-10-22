@@ -31,6 +31,7 @@ import { BlindSchedule, ScheduleToday } from '../../../data-access/blinds/blind-
 import { BlindsApi } from '../../../data-access/blinds/blinds-api';
 import { MessageKey } from '../../../i18n/messages';
 import { ApiErrorStrip } from '../../../shared/api-error/api-error-strip';
+import { ChangeFailure, changeFailureOf } from '../../../shared/api-error/change-failure';
 import { DataFreshness } from '../../../shared/data-freshness/data-freshness';
 import { shortName } from '../../../shared/device-names/device-names';
 import { DisplayTextPipe } from '../../../shared/display-text/display-text.pipe';
@@ -184,12 +185,12 @@ export class ScheduleEditor {
 
   protected readonly saving = signal(false);
   /** Why the last save did not end in the schedule read back, and what to say first. */
-  protected readonly saveError = signal<Failure | undefined>(undefined);
+  protected readonly saveError = signal<ChangeFailure | undefined>(undefined);
   /** The last save was carried out and read back. */
   protected readonly saved = signal(false);
   protected readonly removing = signal(false);
   protected readonly askRemove = signal(false);
-  protected readonly removeError = signal<Failure | undefined>(undefined);
+  protected readonly removeError = signal<ChangeFailure | undefined>(undefined);
   private readonly keep = viewChild<unknown, ElementRef<HTMLElement>>('keep', { read: ElementRef });
 
   protected readonly DAY_TYPES = DAY_TYPES;
@@ -392,7 +393,7 @@ export class ScheduleEditor {
       }
     } catch (failure: unknown) {
       this.saveError.set(
-        failureOf(failure, 'blinds.editor.saveFailed', 'blinds.editor.saveNoAnswer'),
+        changeFailureOf(failure, 'blinds.editor.saveFailed', 'blinds.editor.saveNoAnswer'),
       );
     } finally {
       this.saving.set(false);
@@ -411,7 +412,11 @@ export class ScheduleEditor {
       await firstValueFrom(this.api.deleteSchedule(this.id));
       await this.router.navigate(['/blinds']);
     } catch (failure: unknown) {
-      const said = failureOf(failure, 'blinds.editor.removeFailed', 'blinds.editor.removeNoAnswer');
+      const said = changeFailureOf(
+        failure,
+        'blinds.editor.removeFailed',
+        'blinds.editor.removeNoAnswer',
+      );
       // a schedule the service does not know is gone all the same
       if (said.error.hasCode('NOT_FOUND_SCHEDULE')) {
         await this.router.navigate(['/blinds']);
@@ -507,18 +512,6 @@ export class ScheduleEditor {
       ...(action === 'position' ? { position: this.position() } : {}),
     };
   }
-}
-
-/** What failed, with the sentence that comes first. */
-interface Failure {
-  readonly error: ApiError;
-  readonly summary: MessageKey;
-}
-
-/** A change that got no answer may have been carried out all the same: that is not "failed". */
-function failureOf(failure: unknown, failed: MessageKey, unanswered: MessageKey): Failure {
-  const error = toApiError(failure);
-  return { error, summary: error.kind === 'network' ? unanswered : failed };
 }
 
 /** The id of the address; `undefined` for `new`, or for anything that is no id. */

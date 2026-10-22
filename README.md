@@ -97,8 +97,18 @@ dashboards:
   to, the rule of the room in a few words and **All off**. "Details" opens a window for the room:
   per light when it changed and by whom and its manual hold, the brightness of a dimmer, red /
   green / blue (and white) of an rgbw light, the sensors of the room, the rule as stored and what
-  the rules engine sent in the last 24 hours. The rules are shown, not written yet (HAS-267); a
-  resident stops the rules of their own room on My room (HAS-268).
+  the rules engine sent in the last 24 hours. A resident stops the rules of their own room on My
+  room (HAS-268).
+- **The rule of a room** (HAS-267, the administrator's, `/lights/rooms/{room}/rules`, from "Change
+  the rule" / "Write a rule" in the window of a room): what the rule can rely on - the lights of the
+  room (switching, dimming, colour) and its presence and motion sensors as the device registry has
+  them - then **auto-off** (off so many minutes after the room is empty), **motion-on** (on at a
+  motion, only below a lux, off again after the last motion, with the periods of the day: from, to,
+  a brightness, and for an rgbw light a colour and a white), **the manual hold** and the switch of
+  the resident. Every rule of `light-service` is checked before anything is sent - overlapping
+  periods, motion-on without a period, what the room cannot do; **a room on Eaton PIRs only gets no
+  rule** (its lights stay with NetLinx). A save writes the rule whole and shows what the service
+  stored; removing asks first. Under the form, what the rules did in the room in the last 24 hours.
 - **Heating**: a row of four cards of one size (HAS-266) - the switch of the whole heating
   system, whether any room is being heated right now, the pump of the floor heating and the
   **temperature sensors**: how many report, with a red blinking light while one is silent, and
@@ -398,6 +408,10 @@ Endpoints used today:
 | `GET` | `/home/calendar/days?from=&to=` | The days of the next 60 days of the house (blinds: the holidays on weekdays), every 15 min. Needs `database-service` 0.14.0 or later |
 | `GET` | `/home/light` | Every light by room with its state, brightness, reachability and `heldUntil` (rooms), polled every 10 s and right after every command. Needs `light-service` 0.6.0 and `api-gateway-service` 0.8.0 or later |
 | `POST` | `/home/light/{id}?turn=on\|off&source=dashboard`, `/home/light/{id}/brightness?value=1..100&source=dashboard` | Switches a light by its registry id, sets the brightness of a dimmer or an rgbw light (rooms). The rules engine holds a light changed from here; the lights are read again |
+| `GET` | `/home/light/rooms/{room}/rules` | The rule of a room (my room: every 60 s; the editor of the rule: once, and again after a save); `404 NOT_FOUND_RULE` is a room without one. Needs `light-service` 0.6.0 or later |
+| `PUT` / `DELETE` | `/home/light/rooms/{room}/rules` | Writes the rule of a room whole, or removes it (the editor of the rule, HAS-267); the rule is read again, the answer of the write is not used. `INVALID_RULE` names what the service refused only in `details`, which is never shown - the editor checks every rule of the service first |
+| `PUT` | `/home/light/rooms/{room}/rules/resident-enabled` | The switch of the resident (my room, the editor of the rule); the rule is read again |
+| `GET` | `/home/light/rooms/{room}/rules/runs?from=&to=` | What the rules engine sent in a room in the last 24 hours (the window of a room, the editor of the rule), every 60 s |
 | `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |

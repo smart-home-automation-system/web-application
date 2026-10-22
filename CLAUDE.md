@@ -228,8 +228,7 @@ e2e/              # Playwright tests
   `GET /light/rooms/{room}/rules` every minute. A line per light is the shared `LightControl`
   (`shared/lights/light-control`): on and off, the brightness of a dimmer, the colour of an rgbw
   light (white only when the light reported a white channel) - the controls of the window of the
-  lights page, which keeps its own copy until HAS-267 rewrites it (the e2e of the window name its
-  test ids). "All off" is `POST /light/rooms/{room}?turn=off`, shown only once the lights are known
+  lights page too, since HAS-267 (one copy). "All off" is `POST /light/rooms/{room}?turn=off`, shown only once the lights are known
   - a failure before any answer leaves nothing to press. The rule of the room is `ruleSummary` of
   the lights page, and **the switch of the resident** (`PUT .../rules/resident-enabled`) is the one
   thing a resident changes about it: a `mat-slide-toggle` with `disableToggleValue`, which shows
@@ -447,8 +446,8 @@ e2e/              # Playwright tests
     late too, so the browser test of the dimmer passes only with the second read. A registry light
     the service answered without (it skips one without `lightKind`) has no controls and says why
     (`unknownToService`); while the service has not answered, the controls stay. The codes of the
-    commands have texts in `shared/lights/light-errors.ts` (test lists them); the rules' codes
-    (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes rules (HAS-267). The
+    commands have texts in `shared/lights/light-errors.ts` (test lists them), the rules' codes
+    (`INVALID_RULE`, `NOT_FOUND_RULE`) too since their editor (HAS-267). The
     colour of an rgbw light is set on the lights page and on My room (HAS-266, HAS-268). The two reads after a command
     are `lightReadBack` (`shared/lights/light-read-back.ts`) since HAS-266, shared with the lights page.
   - **The pause of the schedules of a blind** (`blinds-service`, `PUT` / `DELETE
@@ -548,24 +547,59 @@ e2e/              # Playwright tests
     motion sensors only is never empty; `lux` is a number only when it is one (`isLux`, 0 is a
     reading). The whole-house card counts on / off / not known and names the rooms a presence sensor
     says somebody is in.
-  - **The window of a room** (`LightRoomWindow`, the size of the rooms window): per light when it
-    changed and by whom, the manual hold, a brightness slider for a light that dims, and for an rgbw
-    light sliders of red, green, blue - **white only when the light reported `color.white`** (a Gen2
-    RGBW in the profile rgb refuses white with `UNSUPPORTED_CAPABILITY`; the device tells, not the
-    registry). A colour starts from what the light reported, white for one not heard of. Then the
-    sensors, the rule as stored and the runs. Its light commands wait for a command of the whole room
-    (`roomBusy`, found in review) as the card's do.
+  - **The window of a room** (`LightRoomWindow`, the size of the rooms window): every light as the
+    shared `LightControl` of My room (since HAS-267) - when it changed and by whom, the manual hold, a
+    brightness slider for a light that dims, and for an rgbw light sliders of red, green, blue -
+    **white only when the light reported `color.white`** (a Gen2 RGBW in the profile rgb refuses
+    white with `UNSUPPORTED_CAPABILITY`; the device tells, not the registry). A colour starts from what
+    the light reported, white for one not heard of. Then the sensors, the rule as stored with the link
+    to its editor ("Change the rule" / "Write a rule"; the window **closes itself on
+    `NavigationStart`**), and the runs (`RuleRuns`, shared with the editor). Its light commands wait
+    for a command of the whole room (`roomBusy`, found in review) as the card's do.
   - **Commands through `DeviceCommands`**: one per light and per room at a time; a room command
     answers with the lights it could not switch (`failed`), told as "Not switched: n - names", never
     as a state. Every command is followed by `lightReadBack`.
-  - **The rules are shown, not written** (their editor is HAS-267), and **a missing answer of the
-    rules is "Rules not known", never "No rule"**. The resident's switch off is a mark on the card.
+  - **The rules are written by their editor** (HAS-267, below), never on the card; **a missing answer
+    of the rules is "Rules not known", never "No rule"**. The resident's switch off is a mark on the card.
   - **The empty house** card: the state of the house, whether the service acts (`active`) or from
     when (`actingFrom`), the night, the phase and what the simulation lights (or would light - a
     preview while somebody is home); **an empty `lit` is "nothing"**, tested against `undefined`
     (found by a test: `@if (x; as y)` hid it).
   - Every value of the service is its word (`light-labels.ts`): a source, a reason, a phase, a word of
     a Shelly device (`HTTP_in`) this version does not know is printed as it came.
+- **The editor of the rule of a room** (HAS-267, `features/lights/rule-editor/`, the administrator's):
+  a page, `/lights/rooms/{room}/rules` - one address per room, read once; the way in is the window of
+  the room on the lights page. Auto-off (switch, delay), motion-on (switch, "only below" lux, off
+  after, the periods), the manual hold, the switch of the resident and the runs of 24 hours. What to
+  keep:
+  - **`room-rule-rules.ts` is a copy of `RoomRuleRules` of `light-service`** - delays and hold 1-180
+    min, lux 1-100 000, 12 periods, brightness 1-100, rgb and white 0-255, the overlap of periods
+    (from included, to not; across midnight two pieces; the same from and to the whole day), motion-on
+    needs a period - and its room half (`roomProblem`, the order of `checkRoom`): a light, **a room on
+    Eaton PIRs only gets no rule** (told at the top before anything is entered), a non-Eaton sensor for
+    auto-off, a non-Eaton motion sensor for motion-on, a light that dims for a brightness, an rgbw
+    light for a colour or a white. Its test pins the numbers; **a rule changed there is changed here**.
+    `INVALID_RULE` carries its reason in `details`, which never reaches the screen, so every rule is
+    checked here first; a refusal still says "for a reason this page could not check".
+  - **What the rule can rely on is the device registry of the room** (`DeviceRegistryApi.watchRoom`,
+    every minute, its freshness on the page) - the service judges a rule by the same registry: lights
+    with a `lightKind`, presence and motion sensors, an Eaton one by `vendor` or its `eaton` binding.
+    The answer of `light-service` has no vendor of a sensor, so it is not read here. While the registry
+    is not known, the room half is not checked (the service still is). A colour and a white are offered
+    only for a room with an rgbw light - or a period that already has one.
+  - **A save sends the rule whole and reads it back** (`PUT` replaces it; a delay of a rule that is
+    off is sent when given, left out when empty), then fills the form from what the service stored;
+    the answer of the `PUT` is not used. A failed save keeps the form; one without an answer may have
+    been carried out. Removing asks in place, Cancel focused; `NOT_FOUND_RULE` on a removal counts as
+    removed; both lead back to `/lights`. A room without a rule (`NOT_FOUND_RULE` on the first read) is
+    a new rule, never a failure.
+  - **The switch of the resident is not part of a save** (the service keeps it): it is My room's
+    switch, sent at once and read back without filling the form again (what was typed stays). Shown
+    only for a stored rule; a rule without `enabledByResident` says "not known".
+  - An `rgb` this version cannot read is named on its row and stops the save until a colour or none
+    is chosen - nothing is sent back unseen. The colour is the browser's colour field (`#rrggbb`).
+  - What the form breaks as a whole (overlap, no period, the room) is told after the first save
+    attempt and follows every change after it (`revision`, bumped by the events of the form).
 - **The editor of a schedule of the blinds** (HAS-253, `features/blinds/schedule-editor/`, the
   administrator's): a page, `/blinds/schedules/new` (`?room=` starts with every blind of that
   room) and `/blinds/schedules/{id}` - two routes, so the router never reuses the page for another
@@ -1191,8 +1225,13 @@ up in a production build.
   the rules of three rooms (the living room's switched off by the resident), the runs of the office
   and the hall, and the empty house; the colour and the room command are refused as the service
   refuses them. `no-readings` answers every light without a state, every room unknown, no rule.
-  `resetLights()` for a unit test that changed them.
-- **And so can the mock device registry** (`devices.fixtures.ts`): thirteen invented devices -
+  Since HAS-267 the rules can be written and removed (`replaceRule`, `removeRule`), refused with
+  `INVALID_RULE` by `room-rule-rules.ts` against the mock registry, and a hall down on an Eaton PIR
+  only (light 46) gets none; every rule at the start is one its room can have (a test writes each
+  back). `resetLights()` for a unit test that changed them.
+- **And so can the mock device registry** (`devices.fixtures.ts`): invented devices - fourteen of
+  every kind with ids 1-14, and since HAS-267 the lights and sensors the mock rules are judged by
+  (ids 40-54, the same ids as the mock lights; an added device still gets id 15) -
   addresses of the documentation range, made-up ids - whose writes change what the registry
   answers next and are refused as `database-service` refuses them (`INVALID_DEVICE` in the
   words of `DeviceRules`, `DEVICE_CONFLICT`, `NOT_FOUND_DEVICE`). `resetDevices()` for a unit

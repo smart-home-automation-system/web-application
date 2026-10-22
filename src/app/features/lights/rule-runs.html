@@ -1,0 +1,24 @@
+<ng-container *transloco="let t">
+  <app-data-freshness [lastUpdated]="runs.lastUpdated()" [stale]="runs.stale()" />
+  <app-api-error-strip [error]="runs.error()" />
+  @if (rows(); as rows) {
+    @if (rows.length === 0) {
+      <p class="note" data-testid="window-no-runs">{{ t('lights.window.noRuns') }}</p>
+    } @else {
+      <ul class="runs">
+        @for (row of rows; track $index) {
+          <li data-testid="run">
+            <span class="runs__time">{{ row.run.at | houseDateTime: DAY_TIME }}</span>
+            <span class="runs__what"
+              >{{ row.light }} · {{ runActionText(row.run.action) | displayText }} ·
+              {{ runReasonText(row.run.reason) | displayText }}</span
+            >
+            @if (row.run.error; as code) {
+              <span class="warning">{{ runErrorText(code) | displayText }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</ng-container>

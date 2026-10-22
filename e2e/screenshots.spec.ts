@@ -460,6 +460,25 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the editor of the rule of a room (HAS-267): what the rule can rely on, auto-off, motion-on
+      // with its periods and their colour, the hold, the switch of the resident and the runs
+      test('lights rule editor', async ({ page }, testInfo) => {
+        await page.goto('/lights/rooms/hall%20up/rules');
+        await expect(page.getByTestId('period-row')).toHaveCount(2);
+        await expect(page.getByTestId('run').first()).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'lights-rule-editor'),
+          fullPage: true,
+        });
+
+        // a room on Eaton PIRs only: told at the top, before anything is entered
+        await page.goto('/lights/rooms/hall%20down/rules');
+        await expect(page.getByTestId('room-blocked')).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'lights-rule-eaton'),
+        });
+      });
+
       // the administration of the devices (HAS-290): a card per room, floor by floor; the window
       // of a room with a device being changed and a question open; the window opened with "Add"
       test('devices', async ({ page }, testInfo) => {
@@ -472,7 +491,7 @@ for (const language of ['en', 'pl'] as const) {
 
         await card('office').locator('.room__actions button').first().click();
         const dialog = page.getByRole('dialog');
-        await expect(dialog.getByTestId('device')).toHaveCount(5);
+        await expect(dialog.getByTestId('device')).toHaveCount(8);
         // the window fades in: a picture of it once nothing moves any more
         await page.waitForFunction(() => document.getAnimations().length === 0);
         await page.screenshot({

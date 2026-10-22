@@ -23,6 +23,8 @@ import {
   lightRules,
   lightRuns,
   lightsByRoom,
+  removeRule,
+  replaceRule,
   roomLights,
   roomRule,
   setBrightness,
@@ -377,6 +379,17 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'PUT',
     path: /^\/home\/light\/rooms\/([^/]+)\/rules\/resident-enabled$/,
     reply: (request, _fresh, [room]) => setResidentEnabled(decodeURIComponent(room), request.body),
+  },
+  // HAS-267: the editor of the rule of a room writes it whole, or removes it
+  {
+    method: 'PUT',
+    path: /^\/home\/light\/rooms\/([^/]+)\/rules$/,
+    reply: (request, _fresh, [room]) => replaceRule(decodeURIComponent(room), request.body),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/light\/rooms\/([^/]+)\/rules$/,
+    reply: (_request, _fresh, [room]) => removeRule(decodeURIComponent(room)),
   },
   {
     method: 'GET',

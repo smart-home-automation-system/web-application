@@ -1,0 +1,35 @@
+:host {
+  display: grid;
+  gap: 6px;
+}
+
+.note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.runs {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 10px;
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.runs__time {
+  min-width: 7.5em;
+  font-weight: 600;
+}
+
+.warning {
+  color: var(--mat-sys-on-error-container);
+}

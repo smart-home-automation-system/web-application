@@ -5,15 +5,18 @@ import { describeApiError } from '../api-error/describe-api-error';
 
 /**
  * The named refusals of the lights in `light-service` (`LightError`, whose constant names are wire
- * contract there, pinned by `LightErrorTest`), each with a sentence of our own. The codes of its
- * rules (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes them. A new or renamed
- * code of a command needs a text here - the test of this file lists them.
+ * contract there, pinned by `LightErrorTest`), each with a sentence of our own - the codes of a
+ * command and, since the editor of the rules (HAS-267), of a rule. `INVALID_RULE` carries its reason
+ * in `details` only, which never reaches the screen: its text says that the service refused what this
+ * page could not check. A new or renamed code needs a text here - the test of this file lists them.
  */
 export const LIGHT_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   NOT_FOUND_LIGHT: 'lights.error.notFound',
   UNSUPPORTED_CAPABILITY: 'lights.error.unsupportedCapability',
   DEVICE_FAILED: 'lights.error.deviceFailed',
   REGISTRY_UNAVAILABLE: 'lights.error.registryUnavailable',
+  INVALID_RULE: 'lights.error.invalidRule',
+  NOT_FOUND_RULE: 'lights.error.notFoundRule',
 };
 
 /**

@@ -5,170 +5,19 @@
   </h2>
 
   <mat-dialog-content class="content">
-    <!-- every light of the room: its state, when and by whom it changed, and its controls -->
+    <!-- every light of the room with its controls: the control of My room (HAS-268) -->
     <section class="section" data-testid="window-lights">
       <h3>{{ t('lights.window.lights') }}</h3>
       <ul class="lights">
         @for (row of shown(); track row.light.id) {
-          @let light = row.light;
-          @let command = stateOfCommand(light.id);
-          @let state = stateOf(light);
-          @let reported = cssColorOf(light.color?.rgb);
-          <li
-            class="light"
-            data-testid="window-light"
-            [attr.data-light]="light.id"
-            [attr.data-state]="state"
-          >
-            <div class="light__head">
-              <mat-icon class="light__bulb" [attr.data-state]="state" aria-hidden="true">{{
-                state === 'off' ? 'light_off' : 'lightbulb'
-              }}</mat-icon>
-              <span class="light__name">{{ row.name ?? t('lights.unnamed') }}</span>
-              <span class="light__state" data-testid="window-light-state" role="status"
-                >{{ t(LIGHT_STATE_LABELS[state]) }}
-                @if (state === 'on' && dims(light) && light.brightness !== undefined) {
-                  · {{ t('lights.light.brightness', { value: light.brightness }) }}
-                }
-              </span>
-              @if (reported !== undefined) {
-                <!-- the colour the light reported - a colour of the house, not of the theme -->
-                <span
-                  class="swatch"
-                  data-testid="reported-color"
-                  role="img"
-                  [style.background]="reported"
-                  [attr.aria-label]="
-                    t('lights.window.reportedColor', { rgb: light.color!.rgb!.join(', ') })
-                  "
-                ></span>
-              }
-              <span class="light__commands">
-                <button
-                  matButton="outlined"
-                  type="button"
-                  data-testid="window-light-on"
-                  [disabled]="command?.sending || data.roomBusy()"
-                  (click)="turn(light, true)"
-                >
-                  {{ t('lights.window.on') }}
-                  <span class="visually-hidden">{{ light.name }}</span>
-                </button>
-                <button
-                  matButton="outlined"
-                  type="button"
-                  data-testid="window-light-off"
-                  [disabled]="command?.sending || data.roomBusy()"
-                  (click)="turn(light, false)"
-                >
-                  {{ t('lights.window.off') }}
-                  <span class="visually-hidden">{{ light.name }}</span>
-                </button>
-              </span>
-            </div>
-
-            <p class="note">
-              @if (light.changedAt !== undefined) {
-                {{ t('lights.light.changed') }} {{ light.changedAt | houseAge }} ·
-                {{ lightSourceText(light.source) | displayText }}
-              } @else {
-                {{ t('lights.light.notChanged') }}
-              }
-              @if (light.reachable === false) {
-                ·
-                <span class="warning" data-testid="window-light-unreachable">{{
-                  t('lights.light.unreachable')
-                }}</span>
-              }
-            </p>
-            @if (light.heldUntil !== undefined) {
-              <p class="note" data-testid="window-light-held">
-                {{ t('lights.light.held', { time: (light.heldUntil | houseDateTime: TIME) }) }}
-              </p>
-            }
-
-            @if (dims(light)) {
-              <div class="control">
-                <span class="control__label">{{ t('lights.window.brightness') }}</span>
-                <!-- step 1: the level a light reports is shown as it is, and sent as it is -->
-                <mat-slider min="1" max="100" step="1" discrete class="control__slider">
-                  <input
-                    matSliderThumb
-                    #level
-                    data-testid="brightness"
-                    [value]="light.brightness ?? 50"
-                    [attr.aria-label]="t('lights.window.brightness') + ' ' + (light.name ?? '')"
-                  />
-                </mat-slider>
-                <button
-                  matButton
-                  type="button"
-                  data-testid="set-brightness"
-                  [disabled]="command?.sending || data.roomBusy()"
-                  (click)="setBrightness(light, level.valueAsNumber)"
-                >
-                  {{ t('lights.window.set') }}
-                  <span class="visually-hidden"
-                    >{{ t('lights.window.brightness') }} {{ light.name }}</span
-                  >
-                </button>
-              </div>
-            }
-
-            @if (light.kind === 'rgbw') {
-              @let chosen = chosenOf(light);
-              <div
-                class="color"
-                role="group"
-                [attr.aria-label]="t('lights.window.color') + ' ' + (light.name ?? '')"
-              >
-                <span class="control__label">{{ t('lights.window.color') }}</span>
-                <span class="color__sliders">
-                  @for (part of colorParts(light); track part.index) {
-                    <span class="color__row">
-                      <span class="color__name" aria-hidden="true">{{ t(part.label) }}</span>
-                      <mat-slider min="0" max="255" step="1" discrete>
-                        <input
-                          matSliderThumb
-                          [attr.data-testid]="'color-' + part.index"
-                          [value]="chosen[part.index]"
-                          [attr.aria-label]="t(part.label) + ' ' + (light.name ?? '')"
-                          (valueChange)="choose(light, part.index, $event)"
-                        />
-                      </mat-slider>
-                    </span>
-                  }
-                </span>
-                <span
-                  class="swatch swatch--large"
-                  data-testid="chosen-color"
-                  role="img"
-                  [style.background]="swatchOf(light)"
-                  [attr.aria-label]="t('lights.window.chosenColor')"
-                ></span>
-                <button
-                  matButton
-                  type="button"
-                  data-testid="set-color"
-                  [disabled]="command?.sending || data.roomBusy()"
-                  (click)="setColor(light)"
-                >
-                  {{ t('lights.window.set') }}
-                  <span class="visually-hidden"
-                    >{{ t('lights.window.color') }} {{ light.name }}</span
-                  >
-                </button>
-              </div>
-              @if (!hasWhite(light)) {
-                <p class="note">{{ t('lights.window.noWhite') }}</p>
-              }
-            }
-
-            @if (command?.error) {
-              <p class="failure" role="alert" data-testid="window-light-failure">
-                {{ lightFailureOf(command!) | displayText }}
-              </p>
-            }
+          <li data-testid="window-light" [attr.data-light]="row.light.id">
+            <app-light-control
+              [light]="row.light"
+              [name]="row.name"
+              [commands]="data.commands"
+              [refresh]="data.refresh"
+              [roomBusy]="data.roomBusy()"
+            />
           </li>
         }
       </ul>
@@ -216,7 +65,7 @@
       }
     </section>
 
-    <!-- the rule of the room as stored: shown here, written by its editor -->
+    <!-- the rule of the room as stored: shown here, written by its editor (HAS-267) -->
     <section class="section" data-testid="window-rule">
       <h3>{{ t('lights.window.rule') }}</h3>
       @if (data.rule(); as known) {
@@ -298,33 +147,22 @@
       } @else {
         <p class="note">{{ t('lights.rule.unknown') }}</p>
       }
+      <!-- the editor: a page of its own - the window closes on the way there -->
+      <a
+        matButton="outlined"
+        class="rule__edit"
+        data-testid="window-rule-edit"
+        [routerLink]="editor"
+      >
+        <mat-icon>edit</mat-icon
+        >{{ data.rule()?.rule ? t('lights.window.changeRule') : t('lights.window.writeRule') }}
+      </a>
     </section>
 
     <!-- what the engine sent in the room: its own call, with its own freshness and failure -->
     <section class="section" data-testid="window-runs">
       <h3>{{ t('lights.window.runs') }}</h3>
-      <app-data-freshness [lastUpdated]="runs.lastUpdated()" [stale]="runs.stale()" />
-      <app-api-error-strip [error]="runs.error()" />
-      @if (runRows(); as rows) {
-        @if (rows.length === 0) {
-          <p class="note" data-testid="window-no-runs">{{ t('lights.window.noRuns') }}</p>
-        } @else {
-          <ul class="runs">
-            @for (row of rows; track $index) {
-              <li data-testid="run">
-                <span class="runs__time">{{ row.run.at | houseDateTime: DAY_TIME }}</span>
-                <span class="runs__what"
-                  >{{ row.light }} · {{ runActionText(row.run.action) | displayText }} ·
-                  {{ runReasonText(row.run.reason) | displayText }}</span
-                >
-                @if (row.run.error; as code) {
-                  <span class="warning">{{ runErrorText(code) | displayText }}</span>
-                }
-              </li>
-            }
-          </ul>
-        }
-      }
+      <app-rule-runs [room]="data.room" [names]="names()" />
     </section>
   </mat-dialog-content>
 

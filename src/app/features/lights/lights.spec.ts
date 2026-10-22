@@ -453,6 +453,10 @@ describe('Lights', () => {
       expect(text(rule?.querySelector('[data-testid="window-rule-resident"]'))).toBe(
         'Switched off by the resident',
       );
+      // HAS-267: the rule is written on a page of its own
+      const edit = rule?.querySelector<HTMLAnchorElement>('[data-testid="window-rule-edit"]');
+      expect(text(edit)).toContain('Change the rule');
+      expect(edit?.getAttribute('href')).toBe('/lights/rooms/living%20room/rules');
       expect(text(dialog().querySelector('[data-testid="window-no-runs"]'))).toBe(
         'Nothing in the last 24 hours.',
       );
@@ -485,8 +489,7 @@ describe('Lights', () => {
       http.expectOne((call) => call.url.endsWith('/rules/runs')).flush([]);
       fixture.detectChanges();
 
-      const on = () =>
-        windowLight(3).querySelector<HTMLButtonElement>('[data-testid="window-light-on"]')!;
+      const on = () => windowLight(3).querySelector<HTMLButtonElement>('[data-testid="light-on"]')!;
       expect(on().disabled).toBe(true);
 
       command.flush(

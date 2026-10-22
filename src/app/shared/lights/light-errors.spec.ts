@@ -8,14 +8,16 @@ import { LIGHT_ERROR_TEXTS, describeLightError } from './light-errors';
 
 /**
  * The codes of the lights in `light-service` (`LightError`). The names are wire contract there,
- * pinned by `LightErrorTest`; this is the other end of it. `INVALID_RULE` and `NOT_FOUND_RULE`
- * belong to the rules, which no page writes yet.
+ * pinned by `LightErrorTest`; this is the other end of it. `INVALID_PLAN` belongs to the plan of
+ * the empty house, which no page writes yet; the codes of the rules came with their editor (HAS-267).
  */
 const CODES_OF_THE_SERVICE = [
   'NOT_FOUND_LIGHT',
   'UNSUPPORTED_CAPABILITY',
   'DEVICE_FAILED',
   'REGISTRY_UNAVAILABLE',
+  'INVALID_RULE',
+  'NOT_FOUND_RULE',
 ];
 
 const refusal = (status: number, code?: string) =>

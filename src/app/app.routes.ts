@@ -72,6 +72,14 @@ const pages: Page[] = [
     loadComponent: () => import('./features/lights/lights').then((m) => m.Lights),
   },
   {
+    // the editor of the rule of a room (HAS-267): one page per room, the room named by the address
+    path: 'lights/rooms/:room/rules',
+    title: 'lights.editor.title',
+    data: { background: 'lights' },
+    loadComponent: () =>
+      import('./features/lights/rule-editor/rule-editor').then((m) => m.RuleEditor),
+  },
+  {
     // the editor of a schedule of the blinds (HAS-253): a new one, `?room=` to start with a room
     path: 'blinds/schedules/new',
     title: 'blinds.editor.titleNew',
