@@ -211,17 +211,34 @@ e2e/              # Playwright tests
   the code stays a failure; **the choice of a room that is gone is forgotten in an effect**, not
   hidden by a computed (hidden, it pulled the page back by itself when the room returned -
   found in review, the lesson of the heating switch again); and **nothing about a room can be
-  pressed but its blinds** (owner, 2026-10-18, HAS-254) - `my-room.spec` lists every control
-  there is, the blind controls and their pause switch by name, and a new one fails that test on
-  purpose. The cards since HAS-254: heating (with the windows of the room and the hold of its
-  heating, as on the heating page), **blinds** (`RoomBlinds`, `GET /blinds/rooms/{room}`) and
-  **sensors** (`RoomSensors`, the motion and presence sensors of `GET /device/registry?room=`, their
-  state "not known yet"). **A card of a room without such devices is not drawn** - neither while
-  the first answer is on its way; a failure before any answer is drawn, since nobody knows then
-  whether the room has any. The sensors card is **the one read of the device registry outside the
-  administration**: the answer holds the addresses of those devices, the page shows names and
-  kinds only (documented at `DeviceRegistryApi.watchRoom`). No schedules here: they are the
-  administrator's, on the blinds page. **The switch of the heating of the whole house is on this page only for a member
+  pressed but its blinds and its lights** (owner, 2026-10-18, HAS-254; HAS-268) - `my-room.spec`
+  lists every control there is, the blind controls and their pause switch by name, and a new one
+  fails that test on purpose. The cards: heating (with the windows of the room and the hold of its
+  heating, as on the heating page), **lights** (`RoomLights`, HAS-268 - below), **blinds**
+  (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, the motion and
+  presence sensors of `GET /device/registry?room=`, their state "not known yet"). **A card of a
+  room without such devices is not drawn** - neither while the first answer is on its way; a
+  failure before any answer is drawn, since nobody knows then whether the room has any. The
+  sensors card is **the one read of the device registry outside the administration**: the answer
+  holds the addresses of those devices, the page shows names and kinds only (documented at
+  `DeviceRegistryApi.watchRoom`). No schedules here: they are the administrator's, on the blinds
+  page.
+  **The lights card** (HAS-268, `RoomLights`): `GET /light/rooms/{room}` every 10 s (the lights
+  with the occupancy of the room, as the rooms view and the lights page read them) and
+  `GET /light/rooms/{room}/rules` every minute. A line per light is the shared `LightControl`
+  (`shared/lights/light-control`): on and off, the brightness of a dimmer, the colour of an rgbw
+  light (white only when the light reported a white channel) - the controls of the window of the
+  lights page, which keeps its own copy until HAS-267 rewrites it (the e2e of the window name its
+  test ids). "All off" is `POST /light/rooms/{room}?turn=off`, shown only once the lights are known
+  - a failure before any answer leaves nothing to press. The rule of the room is `ruleSummary` of
+  the lights page, and **the switch of the resident** (`PUT .../rules/resident-enabled`) is the one
+  thing a resident changes about it: a `mat-slide-toggle` with `disableToggleValue`, which shows
+  `enabledByResident` as stored and reads the rule back after the write - a failed write leaves it
+  where the service has it. Two 404s with a code are answers, not failures: `NOT_FOUND_LIGHT`
+  (a room command for a room without lights; an empty list is the same) hides the card,
+  `NOT_FOUND_RULE` says "No rule" and offers no switch. Every command goes through
+  `lightReadBack` (the two reads, for an Eaton light). `profile-pages.spec` lets the two reads of
+  `/home/light/rooms/` through, like those of the blinds and the registry. **The switch of the heating of the whole house is on this page only for a member
   with the permission `heating_switch`** (owner, 2026-10-09): `HouseHeating` is rendered under
   `hasPermission(profile, 'heating_switch')`, and it is a component of its own so that the
   state of the switch is not even asked for without it. Not the role decides - the
@@ -429,7 +446,7 @@ e2e/              # Playwright tests
     (`unknownToService`); while the service has not answered, the controls stay. The codes of the
     commands have texts in `shared/lights/light-errors.ts` (test lists them); the rules' codes
     (`INVALID_RULE`, `NOT_FOUND_RULE`) come with the page that writes rules (HAS-267). The
-    colour of an rgbw light is set on the lights page only (HAS-266). The two reads after a command
+    colour of an rgbw light is set on the lights page and on My room (HAS-266, HAS-268). The two reads after a command
     are `lightReadBack` (`shared/lights/light-read-back.ts`) since HAS-266, shared with the lights page.
   - **The pause of the schedules of a blind** (`blinds-service`, `PUT` / `DELETE
     /blinds/{id}/schedule-pause`) ends by itself with the next run it prevents. **The schedules
@@ -656,7 +673,14 @@ e2e/              # Playwright tests
   age of its reading, because the service keeps the last one of a sensor that fell silent. The
   blinds tile (HAS-254, `summariseBlinds`) counts open, closed, moving and not known - with a
   position 0 is closed and more is open; `stopped` without a position is not known - and reads
-  `/blinds` once a minute, not at the 10 s of the blinds page. **A new tile is a new resource** - two values of two calls in one tile would tell
+  `/blinds` once a minute, not at the 10 s of the blinds page. The lights tile (HAS-268,
+  `tile-light`, domain `light`) counts on, off and not known (`countStates` of the lights page over
+  `/light` once a minute) and names the rooms with a light on - **joined in TypeScript**, a
+  template `@for` with a comma printed a space before it under `preserveWhitespaces` - and tells
+  the empty house (`/light/empty-house`: empty, occupied or not known, acted on or watched only)
+  as a second call of the tile, its failure in the `tileFailures` slot of `DomainTile`, apart from
+  the lights. Its Polish rows say "Świecą się" / "Zgaszone", not "Włączone": the screenshots find
+  the heating state by that word, and a second one broke them. **A new tile is a new resource** - two values of two calls in one tile would tell
   one failure for both. **The one exception is the heating tile** (owner, 2026-10-21, HAS-266):
   one tile "Heating system" (`tile-heating`, `HeatingApi.watchStatus`) with the state of the
   system and since when, the rooms (count, heated now, coldest, warmest - four aligned columns) and a
