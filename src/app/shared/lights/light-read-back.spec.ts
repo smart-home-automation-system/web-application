@@ -1,4 +1,8 @@
-import { EnvironmentInjector, createEnvironmentInjector, runInInjectionContext } from '@angular/core';
+import {
+  EnvironmentInjector,
+  createEnvironmentInjector,
+  runInInjectionContext,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { LIGHTS_READ_AGAIN_AFTER_MS, lightReadBack } from './light-read-back';

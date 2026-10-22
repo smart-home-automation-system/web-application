@@ -72,4 +72,36 @@ describe('LightApi', () => {
     request.flush(null, { status: 202, statusText: 'Accepted' });
     await sent;
   });
+
+  // HAS-268: the card of My room - one room, its rule and the switch of the resident
+  it('reads one room and its rule by the name of the room, encoded as a path segment', () => {
+    vi.useFakeTimers();
+    try {
+      TestBed.runInInjectionContext(() => {
+        lights.watchRoom(() => 'living room');
+        lights.watchRoomRule(() => 'living room');
+      });
+      vi.advanceTimersByTime(0);
+
+      const room = http.expectOne('/home/light/rooms/living%20room');
+      expect(room.request.method).toBe('GET');
+      room.flush({ room: 'living room', lights: [] });
+      const rule = http.expectOne('/home/light/rooms/living%20room/rules');
+      expect(rule.request.method).toBe('GET');
+      rule.flush({ room: 'living room' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('writes the switch of the resident as a body, and answers the rule as stored', async () => {
+    const answer = firstValueFrom(lights.residentEnabled('living room', false));
+
+    const request = http.expectOne('/home/light/rooms/living%20room/rules/resident-enabled');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ enabled: false });
+    request.flush({ room: 'living room', enabledByResident: false });
+
+    expect(await answer).toEqual({ room: 'living room', enabledByResident: false });
+  });
 });

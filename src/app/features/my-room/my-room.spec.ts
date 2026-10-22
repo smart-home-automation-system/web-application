@@ -11,6 +11,7 @@ import { of } from 'rxjs';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi, HeatingStatus, Room } from '../../data-access/heating/heating-api';
+import { LightApi, RoomLights, RoomRule } from '../../data-access/light/light-api';
 import { MyRoom } from './my-room';
 
 /** Thursday 8 October 2026, 14:30:00 on the clocks of the house (Europe/Warsaw, summer time). */
@@ -79,6 +80,9 @@ describe('MyRoom', () => {
   /** The blinds (HAS-254) and the sensors of the registry asked for, per room, in order. */
   let blindsAsked: { name: () => string; resource: FakeResource<RoomBlinds | null> }[];
   let sensorsAsked: { name: () => string; resource: FakeResource<readonly SmartDevice[] | null> }[];
+  /** The lights of the room and its rule (HAS-268) asked for, per room, in order. */
+  let lightsAsked: { name: () => string; resource: FakeResource<RoomLights | null> }[];
+  let rulesAsked: { name: () => string; resource: FakeResource<RoomRule | null> }[];
   /** The commands sent to the blinds, in words. */
   let sent: string[];
 
@@ -92,6 +96,8 @@ describe('MyRoom', () => {
     fixture = undefined;
     blindsAsked = [];
     sensorsAsked = [];
+    lightsAsked = [];
+    rulesAsked = [];
     sent = [];
     TestBed.configureTestingModule({
       providers: [
@@ -139,6 +145,43 @@ describe('MyRoom', () => {
             resumeSchedules: (id: number) => {
               sent.push(`resume ${id}`);
               return of(undefined);
+            },
+          },
+        },
+        {
+          provide: LightApi,
+          useValue: {
+            watchRoom: (name: () => string) => {
+              const resource = fakeResource<RoomLights | null>();
+              lightsAsked.push({ name, resource });
+              return resource;
+            },
+            watchRoomRule: (name: () => string) => {
+              const resource = fakeResource<RoomRule | null>();
+              rulesAsked.push({ name, resource });
+              return resource;
+            },
+            turn: (id: number, on: boolean) => {
+              sent.push(`light ${on ? 'on' : 'off'} ${id}`);
+              return of(undefined);
+            },
+            brightness: (id: number, value: number) => {
+              sent.push(`brightness ${value} ${id}`);
+              return of(undefined);
+            },
+            color: (id: number, color: { rgb: number[]; white?: number }) => {
+              sent.push(
+                `color ${color.rgb.join('/')}${color.white === undefined ? '' : ' white ' + color.white} ${id}`,
+              );
+              return of(undefined);
+            },
+            roomTurn: (room: string, on: boolean) => {
+              sent.push(`room ${on ? 'on' : 'off'} ${room}`);
+              return of({ room, turn: on ? 'on' : 'off', switched: [], failed: [] });
+            },
+            residentEnabled: (room: string, enabled: boolean) => {
+              sent.push(`resident ${enabled ? 'on' : 'off'} ${room}`);
+              return of(null);
             },
           },
         },
@@ -645,6 +688,173 @@ describe('MyRoom', () => {
     it('tells a failure before any answer: nobody knows then whether the room has blinds', async () => {
       await page();
       fail(lastBlinds().resource, new ApiError('server', 503));
+
+      expect(words(await card())).toContain('The service is not available right now');
+    });
+  });
+
+  describe('the lights of the room', () => {
+    const LIGHTS: RoomLights = {
+      room: 'bedroom',
+      anyOn: true,
+      lights: [
+        {
+          id: 13,
+          name: 'Bedroom light strip',
+          kind: 'rgbw',
+          on: true,
+          brightness: 60,
+          color: { rgb: [255, 120, 0] },
+        },
+        {
+          id: 12,
+          name: 'Bedroom ceiling light',
+          kind: 'relay',
+          on: false,
+          changedAt: '2026-10-08T14:20:00',
+        },
+      ],
+      occupancy: { room: 'bedroom', occupied: true, lastMotionAt: '2026-10-08T14:29:00', lux: 39 },
+    };
+    const RULE: RoomRule = {
+      room: 'bedroom',
+      autoOffEnabled: true,
+      autoOffDelayMinutes: 15,
+      motionOnEnabled: false,
+      manualHoldMinutes: 60,
+      enabledByResident: true,
+    };
+
+    const card = async () => (await page()).querySelector('[data-testid="room-lights"]');
+    const lastLights = () => lightsAsked.at(-1)!;
+    const lastRule = () => rulesAsked.at(-1)!;
+
+    it('lists them for the room on screen, by name and without the room, with the occupancy', async () => {
+      await page();
+      expect(lastLights().name()).toBe('bedroom');
+      expect(lastRule().name()).toBe('bedroom');
+      answer(lastLights().resource, LIGHTS);
+
+      const names = [...(await card())!.querySelectorAll('.light__name')].map(words);
+      expect(names).toEqual(['Ceiling', 'Light strip']);
+      expect(words((await card())!.querySelector('[data-testid="occupancy"]'))).toBe(
+        'person Occupied · motion 1 min ago · 39 lx',
+      );
+      expect(
+        words((await card())!.querySelector('[data-light="13"] [data-testid="light-state"]')),
+      ).toBe('on · 60 %');
+      // the strip has colour sliders and no white; the ceiling light has neither
+      expect(
+        (await card())!.querySelectorAll('[data-light="13"] [data-testid^="color-"]'),
+      ).toHaveLength(3);
+      expect(
+        (await card())!.querySelector('[data-light="12"] [data-testid="brightness"]'),
+      ).toBeNull();
+    });
+
+    it('sends a command and reads the room again - nothing optimistic', async () => {
+      await page();
+      answer(lastLights().resource, LIGHTS);
+      const refreshed = vi.spyOn(lastLights().resource, 'refresh');
+
+      (await card())!
+        .querySelector<HTMLButtonElement>('[data-light="12"] [data-testid="light-on"]')!
+        .click();
+      await page();
+
+      expect(sent).toEqual(['light on 12']);
+      expect(refreshed).toHaveBeenCalled();
+    });
+
+    it('switches the room off at once and reads it again', async () => {
+      await page();
+      answer(lastLights().resource, LIGHTS);
+      const refreshed = vi.spyOn(lastLights().resource, 'refresh');
+
+      (await card())!.querySelector<HTMLButtonElement>('[data-testid="room-off"]')!.click();
+      await page();
+
+      expect(sent).toEqual(['room off bedroom']);
+      expect(refreshed).toHaveBeenCalled();
+    });
+
+    it('shows the rule in a few words with the switch of the resident, which reads the rule back', async () => {
+      await page();
+      answer(lastLights().resource, LIGHTS);
+      answer(lastRule().resource, RULE);
+      const refreshed = vi.spyOn(lastRule().resource, 'refresh');
+
+      expect(words((await card())!.querySelector('.rule__text'))).toBe(
+        'off 15 min after empty · by hand left 60 min',
+      );
+      const toggle = (await card())!.querySelector<HTMLElement>(
+        '[data-testid="rule-switch"] [role="switch"]',
+      )!;
+      expect(toggle.getAttribute('aria-checked')).toBe('true');
+
+      toggle.click();
+      await page();
+
+      expect(sent).toEqual(['resident off bedroom']);
+      expect(refreshed).toHaveBeenCalled();
+      // the switch shows what the service stores, not what was clicked
+      expect(toggle.getAttribute('aria-checked')).toBe('true');
+      answer(lastRule().resource, { ...RULE, enabledByResident: false });
+      expect(
+        (await card())!
+          .querySelector('[data-testid="rule-switch"] [role="switch"]')!
+          .getAttribute('aria-checked'),
+      ).toBe('false');
+    });
+
+    // missing is never read as on or off: a rule without the field gets no switch to flip
+    it('offers no switch for a rule the service answers without enabledByResident', async () => {
+      await page();
+      answer(lastLights().resource, LIGHTS);
+      answer(lastRule().resource, { ...RULE, enabledByResident: undefined });
+
+      expect((await card())!.querySelector('[data-testid="rule-switch"]')).toBeNull();
+      expect(words((await card())!.querySelector('[data-testid="rule-switch-unknown"]'))).toBe(
+        'Automatic lighting of the room: not known',
+      );
+    });
+
+    it('says that the room has no rule, and offers no switch - the 404 of the service is no failure', async () => {
+      await page();
+      answer(lastLights().resource, LIGHTS);
+      fail(
+        lastRule().resource,
+        new ApiError('client', 404, [{ message: 'Rule not found', code: 'NOT_FOUND_RULE' }]),
+      );
+
+      expect(words((await card())!.querySelector('.rule__text'))).toBe('No rule');
+      expect((await card())!.querySelector('[data-testid="rule-switch"]')).toBeNull();
+      expect((await card())!.querySelector('[role="alert"]')).toBeNull();
+    });
+
+    it('shows no card for a room without lights, nor while the first answer is on its way', async () => {
+      await page();
+      expect(await card()).toBeNull();
+
+      answer(lastLights().resource, { room: 'bedroom', lights: [] });
+      expect(await card()).toBeNull();
+    });
+
+    it('shows no card for the 404 of a room without lights, also after an answer with some', async () => {
+      await page();
+      answer(lastLights().resource, LIGHTS);
+      expect(await card()).not.toBeNull();
+
+      fail(
+        lastLights().resource,
+        new ApiError('client', 404, [{ message: 'No light in room', code: 'NOT_FOUND_LIGHT' }]),
+      );
+      expect(await card()).toBeNull();
+    });
+
+    it('tells a failure before any answer: nobody knows then whether the room has lights', async () => {
+      await page();
+      fail(lastLights().resource, new ApiError('server', 503));
 
       expect(words(await card())).toContain('The service is not available right now');
     });

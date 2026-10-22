@@ -1,0 +1,147 @@
+<ng-container *transloco="let t">
+  @let one = light();
+  @let reported = cssColorOf(one.color?.rgb);
+  <div class="light__head">
+    <mat-icon class="light__bulb" [attr.data-state]="state()" aria-hidden="true">{{
+      state() === 'off' ? 'light_off' : 'lightbulb'
+    }}</mat-icon>
+    <span class="light__name">{{ name() ?? one.name ?? t('lights.unnamed') }}</span>
+    <span class="light__state" data-testid="light-state" role="status"
+      >{{ t(LIGHT_STATE_LABELS[state()]) }}
+      @if (state() === 'on' && dimmable() && one.brightness !== undefined) {
+        · {{ t('lights.light.brightness', { value: one.brightness }) }}
+      }
+    </span>
+    @if (reported !== undefined) {
+      <!-- the colour the light reported - a colour of the house, not of the theme -->
+      <span
+        class="swatch"
+        data-testid="reported-color"
+        role="img"
+        [style.background]="reported"
+        [attr.aria-label]="t('lights.window.reportedColor', { rgb: one.color!.rgb!.join(', ') })"
+      ></span>
+    }
+    <span class="light__commands">
+      <button
+        matButton="outlined"
+        type="button"
+        data-testid="light-on"
+        [disabled]="busy()"
+        (click)="turn(true)"
+      >
+        {{ t('lights.window.on') }}
+        <span class="visually-hidden">{{ one.name }}</span>
+      </button>
+      <button
+        matButton="outlined"
+        type="button"
+        data-testid="light-off"
+        [disabled]="busy()"
+        (click)="turn(false)"
+      >
+        {{ t('lights.window.off') }}
+        <span class="visually-hidden">{{ one.name }}</span>
+      </button>
+    </span>
+  </div>
+
+  <p class="note">
+    @if (one.changedAt !== undefined) {
+      {{ t('lights.light.changed') }} {{ one.changedAt | houseAge }} ·
+      {{ lightSourceText(one.source) | displayText }}
+    } @else {
+      {{ t('lights.light.notChanged') }}
+    }
+    @if (one.reachable === false) {
+      ·
+      <span class="warning" data-testid="light-unreachable">{{
+        t('lights.light.unreachable')
+      }}</span>
+    }
+  </p>
+  @if (one.heldUntil !== undefined) {
+    <p class="note" data-testid="light-held">
+      {{ t('lights.light.held', { time: (one.heldUntil | houseDateTime: TIME) }) }}
+    </p>
+  }
+
+  @if (dimmable()) {
+    <div class="control">
+      <span class="control__label">{{ t('lights.window.brightness') }}</span>
+      <!-- step 1: the level a light reports is shown as it is, and sent as it is -->
+      <mat-slider min="1" max="100" step="1" discrete class="control__slider">
+        <input
+          matSliderThumb
+          #level
+          data-testid="brightness"
+          [value]="one.brightness ?? 50"
+          [attr.aria-label]="t('lights.window.brightness') + ' ' + (one.name ?? '')"
+        />
+      </mat-slider>
+      <button
+        matButton
+        type="button"
+        data-testid="set-brightness"
+        [disabled]="busy()"
+        (click)="setBrightness(level.valueAsNumber)"
+      >
+        {{ t('lights.window.set') }}
+        <span class="visually-hidden">{{ t('lights.window.brightness') }} {{ one.name }}</span>
+      </button>
+    </div>
+  }
+
+  @if (colourful()) {
+    @let chosen = chosenColor();
+    <div
+      class="color"
+      role="group"
+      [attr.aria-label]="t('lights.window.color') + ' ' + (one.name ?? '')"
+    >
+      <span class="control__label">{{ t('lights.window.color') }}</span>
+      <span class="color__sliders">
+        @for (part of colorParts(); track part.index) {
+          <span class="color__row">
+            <span class="color__name" aria-hidden="true">{{ t(part.label) }}</span>
+            <mat-slider min="0" max="255" step="1" discrete>
+              <input
+                matSliderThumb
+                [attr.data-testid]="'color-' + part.index"
+                [value]="chosen[part.index]"
+                [attr.aria-label]="t(part.label) + ' ' + (one.name ?? '')"
+                (valueChange)="choose(part.index, $event)"
+              />
+            </mat-slider>
+          </span>
+        }
+      </span>
+      <span
+        class="swatch swatch--large"
+        data-testid="chosen-color"
+        role="img"
+        [style.background]="swatch()"
+        [attr.aria-label]="t('lights.window.chosenColor')"
+      ></span>
+      <button
+        matButton
+        type="button"
+        data-testid="set-color"
+        [disabled]="busy()"
+        (click)="setColor()"
+      >
+        {{ t('lights.window.set') }}
+        <span class="visually-hidden">{{ t('lights.window.color') }} {{ one.name }}</span>
+      </button>
+    </div>
+    @if (!hasWhite()) {
+      <p class="note">{{ t('lights.window.noWhite') }}</p>
+    }
+  }
+
+  @if (command()?.error) {
+    <p class="failure" role="alert" data-testid="light-failure">
+      {{ lightFailureOf(command()!) | displayText }}
+    </p>
+  }
+</ng-container>

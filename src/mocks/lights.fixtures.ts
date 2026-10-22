@@ -138,11 +138,15 @@ const AT_THE_START: readonly StoredLight[] = [
 let lights: StoredLight[] = AT_THE_START.map((one) => ({ ...one }));
 // the changes an Eaton light has not reported yet, by when it reports them
 let unreported: { readonly at: number; readonly report: () => void }[] = [];
+/** The switch of the resident per room (HAS-268), as the fixtures of the rules start with it. */
+const RESIDENT_AT_THE_START: ReadonlyMap<string, boolean> = new Map([['living room', false]]);
+let residentEnabled = new Map(RESIDENT_AT_THE_START);
 
 /** For a unit test that switched a light. */
 export function resetLights(): void {
   lights = AT_THE_START.map((one) => ({ ...one }));
   unreported = [];
+  residentEnabled = new Map(RESIDENT_AT_THE_START);
 }
 
 function reportDue(now: Date): void {
@@ -289,7 +293,7 @@ export function lightRules(fresh = false, now: Date = new Date()): RoomRule[] {
       motionOnEnabled: false,
       periods: [],
       manualHoldMinutes: 60,
-      enabledByResident: true,
+      enabledByResident: residentEnabled.get('office') ?? true,
       updatedAt: houseTime(now, 3 * 86400 + 5),
     },
     {
@@ -304,7 +308,7 @@ export function lightRules(fresh = false, now: Date = new Date()): RoomRule[] {
         { from: '22:00', to: '06:00', brightness: 10, rgb: [255, 120, 0] },
       ],
       manualHoldMinutes: 30,
-      enabledByResident: true,
+      enabledByResident: residentEnabled.get('hall up') ?? true,
       updatedAt: houseTime(now, 86400 + 5),
     },
     {
@@ -314,8 +318,8 @@ export function lightRules(fresh = false, now: Date = new Date()): RoomRule[] {
       motionOnEnabled: false,
       periods: [],
       manualHoldMinutes: 10,
-      // the switch of My room: the resident has stopped the rules of the room
-      enabledByResident: false,
+      // the switch of My room: the resident has stopped the rules of the room (at the start)
+      enabledByResident: residentEnabled.get('living room') ?? true,
       updatedAt: houseTime(now, 2 * 86400 + 5),
     },
   ];
@@ -530,4 +534,32 @@ export function turnRoom(room: string, turn: string | null, source: string | nul
     return refused(502, 'Device failed', 'DEVICE_FAILED');
   }
   return { status: 202, body: { room, turn, switched, failed } };
+}
+
+/** `GET /home/light/rooms/{room}` (HAS-268): the room as `lightsByRoom` has it; a room without lights is an empty list. */
+export function roomLights(room: string, fresh = false, now: Date = new Date()): MockReply {
+  const found = lightsByRoom(fresh, now).find((one) => one.room === room);
+  return { status: 200, body: found ?? { room, lights: [], occupancy: { room, sensors: [] } } };
+}
+
+/** `GET /home/light/rooms/{room}/rules`: the rule as stored, or the 404 of a room without one. */
+export function roomRule(room: string, fresh = false, now: Date = new Date()): MockReply {
+  const rule = lightRules(fresh, now).find((one) => one.room === room);
+  return rule
+    ? { status: 200, body: rule }
+    : refused(404, `No rule for room [${room}]`, 'NOT_FOUND_RULE');
+}
+
+/** `PUT /home/light/rooms/{room}/rules/resident-enabled`: the switch of the resident, kept until a reset. */
+export function setResidentEnabled(room: string, body: unknown): MockReply {
+  const enabled =
+    typeof body === 'object' && body !== null ? (body as { enabled?: unknown }).enabled : undefined;
+  if (typeof enabled !== 'boolean') {
+    return refused(400, 'enabled must be true or false', 'INVALID_RULE');
+  }
+  if (!lightRules().some((one) => one.room === room)) {
+    return refused(404, `No rule for room [${room}]`, 'NOT_FOUND_RULE');
+  }
+  residentEnabled.set(room, enabled);
+  return { status: 200, body: lightRules().find((one) => one.room === room) };
 }

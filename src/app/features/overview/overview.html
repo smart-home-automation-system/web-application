@@ -339,5 +339,67 @@
         <p class="tile__detail">{{ t('blinds.unreadable') }}</p>
       }
     </app-domain-tile>
+
+    <!-- HAS-268: the lights of the house counted by what they report, and the empty house -->
+    <app-domain-tile
+      heading="overview.lights.title"
+      icon="lightbulb"
+      domain="light"
+      link="/lights"
+      waitingLabel="lights.loading"
+      [resource]="lights"
+      data-testid="tile-light"
+    >
+      @if (lightsSummary(); as count) {
+        @if (count.total === 0) {
+          <p class="tile__detail">{{ t('lights.none') }}</p>
+        } @else {
+          <dl class="tile__rows">
+            <div class="tile__row" data-state="on">
+              <dt>{{ t('overview.lights.on') }}</dt>
+              <dd>
+                <strong>{{ count.on }}</strong>
+              </dd>
+            </div>
+            <div class="tile__row" data-state="off">
+              <dt>{{ t('overview.lights.off') }}</dt>
+              <dd>
+                <strong>{{ count.off }}</strong>
+              </dd>
+            </div>
+            @if (count.unknown > 0) {
+              <div class="tile__row" data-state="unknown">
+                <dt>{{ t('overview.lights.unknown') }}</dt>
+                <dd>
+                  <strong class="tile__quiet">{{ count.unknown }}</strong>
+                </dd>
+              </div>
+            }
+          </dl>
+          @if (count.litRooms) {
+            <!-- the rooms by their identifiers, printed as they are: never a translation -->
+            <p class="tile__detail" data-testid="lit-rooms">
+              {{ t('overview.lights.litIn') }} {{ count.litRooms }}
+            </p>
+          }
+        }
+      } @else if (!lights.error()) {
+        <p class="tile__detail">{{ t('lights.unreadable') }}</p>
+      }
+      <!-- the empty house: its own call, told apart from the lights -->
+      @if (emptyHouse.value(); as house) {
+        <p class="tile__detail" data-testid="empty-house" [attr.data-house]="houseState()">
+          {{ t(HOUSE_LABELS[houseState()]) }}
+          @if (house.active === true) {
+            · {{ t('overview.lights.acting') }}
+          } @else if (house.enabled === false) {
+            · {{ t('overview.lights.watchingOnly') }}
+          }
+        </p>
+      }
+      <div tileFailures>
+        <app-api-error-strip [error]="emptyHouse.error()" />
+      </div>
+    </app-domain-tile>
   </section>
 </ng-container>

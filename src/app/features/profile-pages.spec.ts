@@ -105,6 +105,8 @@ describe('profiles in the application', () => {
         request.method === 'GET' &&
         (request.url.startsWith('/home/heating/rooms/') ||
           request.url.startsWith('/home/blinds/rooms/') ||
+          // HAS-268: the lights of the room and its rule
+          request.url.startsWith('/home/light/rooms/') ||
           (request.url === '/home/device/registry' && request.params.has('room'))),
     );
     // the overview of the administrator reads one call per tile - the state of the switch among

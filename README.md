@@ -43,8 +43,9 @@ dashboards:
   and a **red blinking light** by its title while a temperature sensor is silent; the switch itself
   is on the heating page only. Then the hot water, the boiler room, who is at home - with a warning
   when the detection has not checked for more than five minutes - the weather (temperature, dew
-  point, wind and gusts, rain, daylight) and the blinds (HAS-254: how many are open, closed, moving
-  and not known, read once a minute). Every call has its own freshness and its own failure, so the
+  point, wind and gusts, rain, daylight), the blinds (HAS-254: how many are open, closed, moving
+  and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
+  the rooms with a light on, and whether the house is empty and acted on). Every call has its own freshness and its own failure, so the
   page stays whole while one service is down; the title of a tile leads to the dashboard that has
   the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
@@ -96,7 +97,8 @@ dashboards:
   to, the rule of the room in a few words and **All off**. "Details" opens a window for the room:
   per light when it changed and by whom and its manual hold, the brightness of a dimmer, red /
   green / blue (and white) of an rgbw light, the sensors of the room, the rule as stored and what
-  the rules engine sent in the last 24 hours. The rules are shown, not written yet (HAS-267).
+  the rules engine sent in the last 24 hours. The rules are shown, not written yet (HAS-267); a
+  resident stops the rules of their own room on My room (HAS-268).
 - **Heating**: a row of four cards of one size (HAS-266) - the switch of the whole heating
   system, whether any room is being heated right now, the pump of the floor heating and the
   **temperature sensors**: how many report, with a red blinking light while one is silent, and
@@ -135,9 +137,14 @@ dashboards:
   blinds of the room** - each with its position, open / stop / close, a position for one that can
   go to one, and the pause of its schedules until their next run (no card for a room without
   blinds; the schedules themselves stay the administrator's) - and **the motion and presence
-  sensors** the registry places in the room, their state not known yet. The heating is read-only; setting a temperature or a schedule is not part of
-  this application for anybody yet, and will be the administrator's alone. The blinds are the
-  only controls of a room - and for a member the household registry grants the permission
+  sensors** the registry places in the room, their state not known yet. Since HAS-268 also **the
+  lights of the room**: the occupancy of the room, each light with on / off, the brightness of a
+  dimmer and the colour of an rgbw light, "All off", and the rule of the room in a few words with
+  **the switch of the resident**, which stops the automatic lighting of the room until it is
+  switched on again (no card for a room without lights; the rules themselves stay the
+  administrator's). The heating is read-only; setting a temperature or a schedule is not part of
+  this application for anybody yet, and will be the administrator's alone. The blinds and the
+  lights are the only controls of a room - and for a member the household registry grants the permission
   `heating_switch`: that member also gets the switch of the heating of the whole house here,
   the same card as on the heating dashboard.
 - **Household**: the administration of the household registry, the administrator's. Everybody

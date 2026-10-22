@@ -1,0 +1,113 @@
+// One light in a frame of its own, as a blind control is: the styles of the window of the lights
+// page, for the card of "My room"
+:host {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+.light__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.mat-icon.light__bulb {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &[data-state='on'] {
+    color: var(--app-domain-light);
+  }
+}
+
+.light__name {
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface);
+}
+
+.light__state {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.light__commands {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+// a colour of the house, drawn as it is: an outline keeps a dark or a pale one visible on the glass
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--mat-sys-outline);
+}
+
+.swatch--large {
+  width: 28px;
+  height: 28px;
+}
+
+.control,
+.color {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.control__label {
+  min-width: 6em;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.control__slider {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.color__sliders {
+  display: grid;
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.color__row {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  align-items: center;
+
+  mat-slider {
+    min-width: 0;
+  }
+}
+
+.color__name {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.note,
+.failure {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.warning,
+.failure {
+  color: var(--mat-sys-error);
+}

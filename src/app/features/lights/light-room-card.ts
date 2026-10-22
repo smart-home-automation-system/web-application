@@ -17,11 +17,12 @@ import {
   OCCUPANCY_LABELS,
   dims,
   illuminationText,
+  isLux,
   lightSourceText,
   occupancyOf,
   stateOf,
 } from '../../shared/lights/light-labels';
-import { describeLightError } from '../../shared/lights/light-errors';
+import { lightFailureOf } from '../../shared/lights/light-errors';
 import { AddressedLight } from './light-rooms';
 import { ruleSummary } from './rule-summary';
 
@@ -176,15 +177,6 @@ function failedOf(
   return Array.isArray(failed) ? failed : [];
 }
 
-/** A failed command in words: one that got no answer may have been carried out all the same. */
-/** A number of lux: 0 is a reading, anything that is not a number is none. */
-export function isLux(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value);
-}
-
-export function lightFailureOf(state: CommandState<unknown>): DisplayText {
-  const error = state.error;
-  return error === undefined || error.kind === 'network'
-    ? { key: 'lights.commandFailed' }
-    : describeLightError(error);
-}
+// shared with the lights card of My room since HAS-268; kept here by name for the window
+export { isLux } from '../../shared/lights/light-labels';
+export { lightFailureOf } from '../../shared/lights/light-errors';

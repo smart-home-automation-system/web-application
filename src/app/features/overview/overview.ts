@@ -26,6 +26,9 @@ import { FLOORS } from '../../shared/floors/floors';
 import { summarise, toSensorRows } from '../heating/sensor-rows';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { blindsOf } from '../../shared/blinds/addressed-blind';
+import { LightApi } from '../../data-access/light/light-api';
+import { stateOf } from '../../shared/lights/light-labels';
+import { countStates, lightRoomsOf } from '../lights/light-rooms';
 import {
   PERSON_STATE_LABELS,
   lastCheck,
@@ -89,6 +92,10 @@ export class Overview {
   protected readonly weather = inject(CurrentWeatherStore).current;
   // counts only: once a minute, not at the pace of the blinds page
   protected readonly blinds = inject(BlindsApi).watchBlinds(60_000);
+  // HAS-268: the lights of the house counted, and the empty house - two calls, each told
+  private readonly lightApi = inject(LightApi);
+  protected readonly lights = this.lightApi.watchLights(60_000);
+  protected readonly emptyHouse = this.lightApi.watchEmptyHouse();
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
@@ -164,6 +171,39 @@ export class Overview {
   // ---- blinds (HAS-254) ----
 
   protected readonly blindsSummary = computed(() => summariseBlinds(blindsOf(this.blinds.value())));
+
+  // ---- lights ----
+
+  /** The lights counted by state and the rooms with one on; `undefined` while not answered. */
+  protected readonly lightsSummary = computed(() => {
+    const rooms = lightRoomsOf(this.lights.value());
+    if (rooms === undefined) {
+      return undefined;
+    }
+    const counts = countStates(rooms);
+    return {
+      ...counts,
+      total: counts.on + counts.off + counts.unknown,
+      // the rooms with a light on, by their identifiers as the service orders them - joined here,
+      // so the template prints no space before a comma
+      litRooms: rooms
+        .filter((room) => room.lights.some((light) => stateOf(light) === 'on'))
+        .map((room) => room.room)
+        .join(', '),
+    };
+  });
+
+  /** `empty`, `occupied` or `unknown` - what the service says; anything else is unknown. */
+  protected readonly houseState = computed((): 'empty' | 'occupied' | 'unknown' => {
+    const house = this.emptyHouse.value()?.house;
+    return house === 'empty' || house === 'occupied' ? house : 'unknown';
+  });
+  protected readonly HOUSE_LABELS: Readonly<Record<'empty' | 'occupied' | 'unknown', MessageKey>> =
+    {
+      empty: 'overview.lights.houseEmpty',
+      occupied: 'overview.lights.houseOccupied',
+      unknown: 'overview.lights.houseUnknown',
+    };
 
   // ---- presence ----
 

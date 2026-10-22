@@ -76,3 +76,7 @@ mat-card-content {
 .tile[data-domain='blinds'] {
   --app-domain: var(--app-domain-blinds);
 }
+
+.tile[data-domain='light'] {
+  --app-domain: var(--app-domain-light);
+}

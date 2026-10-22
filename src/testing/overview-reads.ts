@@ -20,6 +20,9 @@ export const OVERVIEW_READS: readonly string[] = [
   '/home/presence/residents/presence',
   '/home/weather/current',
   '/home/blinds',
+  // HAS-268: the lights tile, two calls
+  '/home/light',
+  '/home/light/empty-house',
 ];
 
 export function isShellRead(request: HttpRequest<unknown>): boolean {
