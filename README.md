@@ -37,15 +37,16 @@ built on (API client, polling, error handling, house time, two languages, the pr
 household), the mock API for development, and the delivery pipeline - the overview and the
 dashboards:
 
-- **Overview**: the house at a glance, the landing page of the administrator - the switch of the
-  heating (the card of the heating page) and a tile per dashboard: the rooms (how many, how many
-  are being heated, the coldest and the warmest of the house with the age of each reading), the
-  temperature sensors that fell silent, the hot water, the boiler room, who is at home - with
-  a warning when the detection has not checked for more than five minutes - and the weather
-  (temperature, dew point, wind and gusts, rain, daylight) - and the blinds (HAS-254: how many are
-  open, closed, moving and not known, read once a minute). Each tile is fed by one call, so it has its own
-  freshness and its own failure and the page stays whole while one service is down; its title
-  leads to the dashboard that has the rest.
+- **Overview**: the house at a glance, the landing page of the administrator - a tile per
+  dashboard. **Heating** (HAS-266): whether the system is on and since when, how many rooms there
+  are and how many are being heated, the coldest and the warmest room with the age of each reading,
+  and a **red blinking light** by its title while a temperature sensor is silent; the switch itself
+  is on the heating page only. Then the hot water, the boiler room, who is at home - with a warning
+  when the detection has not checked for more than five minutes - the weather (temperature, dew
+  point, wind and gusts, rain, daylight) and the blinds (HAS-254: how many are open, closed, moving
+  and not known, read once a minute). Every call has its own freshness and its own failure, so the
+  page stays whole while one service is down; the title of a tile leads to the dashboard that has
+  the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
   the outdoor temperature and humidity, led by an icon of rain or of a strong wind (8 m/s), with
   the age of the reading. A failed call keeps the last reading, its age marked, with the reason
@@ -86,15 +87,30 @@ dashboards:
   checked before saving - a threshold that can never be crossed too (`below 0 lx`; the hint shows
   what the operator chosen can meet, `1 … 200 000 lx` below); a save is read back from the service, a failed one keeps the form; the
   line of today is what the engine makes of the saved schedule. Removing asks first.
-- **Heating**: the switch of the whole heating system, whether any room is being heated right
-  now, the pump of the floor heating, **the rooms of the house** floor by floor - the
-  temperature of each with the age of its reading, the temperature its schedule asks for right
-  now, and its heaters with what their relays last reported; a room opens into **the history
-  of its temperature** - the last 24 hours, 7 or 30 days, with the schedule the room has today
-  as a dashed line - and the week of its heaters, read-only - and the temperature sensors: when each room last reported, which sensor
-  has fallen silent and which is left out of the alerts. The switch is the one control of the application
-  that changes the house: it asks before it acts, and what it shows afterwards is what the
-  house answers when asked again, never what was clicked.
+- **Lights** (HAS-266, the administrator's): every light of `light-service`. At the top **the
+  whole house** (lights on, off and not known, the rooms a presence sensor says somebody is in) and
+  **the empty house** (whether anybody is at home, whether the service acts on it, tonight's dusk
+  and sunrise, the phase of the presence simulation and what it lights). Under them, floor by floor,
+  a card of one size per room with lights: the occupancy of the room (occupied, empty or not known,
+  the last motion, lux), a line per light with its state and on / off, what the last command came
+  to, the rule of the room in a few words and **All off**. "Details" opens a window for the room:
+  per light when it changed and by whom and its manual hold, the brightness of a dimmer, red /
+  green / blue (and white) of an rgbw light, the sensors of the room, the rule as stored and what
+  the rules engine sent in the last 24 hours. The rules are shown, not written yet (HAS-267).
+- **Heating**: a row of four cards of one size (HAS-266) - the switch of the whole heating
+  system, whether any room is being heated right now, the pump of the floor heating and the
+  **temperature sensors**: how many report, with a red blinking light while one is silent, and
+  their list in a window ("Details": when each room last reported, which sensor has fallen silent
+  and which is left out of the alerts). Under them **the rooms of the house**, a tile of one size
+  per room, floor by floor as on the devices page: the temperature with the age of its reading,
+  the temperature its schedule asks for right now, each heater with what its relay last reported
+  (a flame where it calls for heat), and the windows of the room with the hold of its heating.
+  "Schedule" on a tile opens a window with the week of each heater and **the history of the
+  temperature of the room** - the last 24 hours, 7 or 30 days, with the schedule the room has
+  today as a dashed line. The schedules are read-only: `heating-service` has no way to change
+  one yet. The switch is the one control of the page that changes the house: it asks before it
+  acts, and what it shows afterwards is what the house answers when asked again, never what was
+  clicked.
 - **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
   circulation, **when the sensors were read** - a reading older than 6 minutes is marked out of
@@ -126,7 +142,8 @@ dashboards:
   the same card as on the heating dashboard.
 - **Household**: the administration of the household registry, the administrator's. Everybody
   the registry holds, switched off or not, with their phone, role, rooms, permissions and
-  devices - and the forms to add a member, change one, switch one off and on, remove one, and
+  devices - and the forms to add a member (from the button by the title, in a window of its own -
+  HAS-266), change one, switch one off and on, remove one, and
   to add, change and remove the devices the presence detection looks for. Each active member
   has their **personal link** there, with a **QR code** to scan with the phone. What the
   registry would refuse is said before anything is sent (a name of 3 to 50 characters, a phone
@@ -156,6 +173,9 @@ dashboards:
 
 Hot water, the boiler room and the presence are read-only.
 
+Every view stands in the **middle of the page**, with its title in the top left corner, and the
+cards of a row are of one size (HAS-266).
+
 **The charts** are drawn with ECharts, downloaded by the first view that shows one and never
 with the first page. A history is asked for with its two ends only - the services choose how
 the range is cut into buckets - and **a bucket without a reading is a break in the line**, never
@@ -182,9 +202,9 @@ the season**: green in spring, gold in summer, rust in autumn and blue in winter
 and a dark variant that follows the setting of the device. The season is taken from the clock of
 the browser (it starts on 21 March, 22 June, 23 September and 22 December) and changes by itself
 at midnight, also in a dashboard that is never reloaded. Each domain of the house — heating, hot
-water, the boiler room, the household, the devices — keeps a colour of its own all year, so a card is known by
-its colour before it is read. Behind the glass of a view lies a **photo of its place** — the
-Overview a house with its garden — under a haze of the page colour, so the photo gives the view
+water, the boiler room, the household, the devices, the blinds, the lights — keeps a colour of its own all year, so a card is known by
+its colour before it is read. Behind the glass of every page lies a **photo of its place** — the
+Overview a house with its garden, the heating a living room in winter — under a haze of the page colour, so the photo gives the view
 its mood and never competes with the text; a slow device can switch the photos off in the
 Settings. The **Settings** page can also show any season and either scheme for preview; the
 choices stay in that browser. All eight variants are checked for WCAG AA contrast on every
@@ -207,7 +227,7 @@ remembers them from then on. Without a remembered profile the application shows 
 picker** with the active members; each entry is that member's personal link.
 
 On a phone the navigation is a bar at the bottom with five places. With more destinations than
-that - the administrator has six - it shows the first four and **More**, which lists the rest.
+that - the administrator has fourteen - it shows the first four and **More**, which lists the rest.
 
 | Role | What the interface offers |
 |---|---|
