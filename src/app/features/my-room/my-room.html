@@ -36,14 +36,15 @@
       </mat-card>
     }
 
-    <!-- HAS-282: the appliances are the household's - once, after the rooms, for every member -->
-    <app-household-appliances />
-
-    <!-- HAS-284: the notifications of this device, for every member -->
-    <app-device-notifications />
-
-    @if (switchesHeating()) {
-      <app-house-heating />
-    }
+    <!-- what is the household's, not a room's, in a row of its own under the rooms (owner,
+         2026-10-25): the appliances (HAS-282), the notifications of this device (HAS-284) and the
+         switch of the house for a member allowed it - side by side, of one height -->
+    <div class="household" data-testid="household-cards">
+      <app-household-appliances />
+      <app-device-notifications />
+      @if (switchesHeating()) {
+        <app-house-heating />
+      }
+    </div>
   </section>
 </ng-container>

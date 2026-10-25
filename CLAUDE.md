@@ -747,6 +747,10 @@ e2e/              # Playwright tests
     next to that appliance (`acknowledgeFailureOf`) - no answer is "may have been marked all the
     same". `NOTHING_TO_ACKNOWLEDGE` and `NOT_FOUND_APPLIANCE` have texts
     (`shared/appliances/appliance-views.ts`, whose test lists them).
+  - **What is the household's stands in a row of its own under the rooms** (`.household` of
+    `my-room.scss`, owner 2026-10-25): the appliances, the notifications of this device and the switch
+    of the house, in the columns of the page and of one height (the cards are the grid items - their
+    hosts are `display: contents`). A card put loose into `.cards` lands at the left of a new row.
   - **The card of My room is not a capability of a room** (`HouseholdAppliances`, rendered once
     under the rooms): the appliances are the household's, for every member, whatever their rooms.
     It is not drawn while the list is empty or not answered yet; a failure before any answer is.

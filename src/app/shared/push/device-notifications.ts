@@ -107,6 +107,11 @@ export const PUSH_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
     </ng-container>
   `,
   styles: `
+    // the card is laid out by the page that shows it (the row of the household on My room)
+    :host {
+      display: contents;
+    }
+
     .notifications {
       --app-domain: var(--app-domain-household);
     }

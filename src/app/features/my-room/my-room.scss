@@ -12,6 +12,22 @@
   }
 }
 
+// what is the household's and not a room's (the appliances, the notifications of this device, the switch
+// of the house): a row of its own under the rooms, the columns of the page, every card of the row one
+// height (owner, 2026-10-25) - a grid stretches its items, and the cards are the items (their hosts are
+// `display: contents`)
+.household {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 480px));
+    justify-content: center;
+  }
+}
+
 // the rooms of the member, above the cards; the names wrap rather than push the page wide
 .switcher {
   display: flex;
