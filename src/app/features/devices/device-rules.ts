@@ -48,7 +48,9 @@ export function bindingsOf(kind: string): readonly Binding[] {
       return ['shelly', 'eaton'];
     case 'weather station':
       return ['bthome'];
+    // a gateway is a Shelly, and so is the plug an appliance runs on (HAS-282)
     case 'bthome gateway':
+    case 'appliance':
       return ['shelly'];
     default:
       return BINDINGS;

@@ -45,7 +45,9 @@ dashboards:
   when the detection has not checked for more than five minutes - the weather (temperature, dew
   point, wind and gusts, rain, daylight), the blinds (HAS-254: how many are open, closed, moving
   and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
-  the rooms with a light on, and whether the house is empty and acted on). Every call has its own freshness and its own failure, so the
+  the rooms with a light on, and whether the house is empty and acted on) and the appliances
+  (HAS-282: which of the washing machine, the dryer and the dishwasher runs and which waits to be
+  emptied - nothing to press there). Every call has its own freshness and its own failure, so the
   page stays whole while one service is down; the title of a tile leads to the dashboard that has
   the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
@@ -156,7 +158,15 @@ dashboards:
   this application for anybody yet, and will be the administrator's alone. The blinds and the
   lights are the only controls of a room - and for a member the household registry grants the permission
   `heating_switch`: that member also gets the switch of the heating of the whole house here,
-  the same card as on the heating dashboard.
+  the same card as on the heating dashboard. Under the rooms, for every member, **the appliances
+  of the household** (HAS-282): the washing machine, the dryer and the dishwasher with their state,
+  running since or finished at, and "Emptied" for one that has finished and waits - the reminders
+  of `appliance-service` stop with it. Not by room: the appliances are the household's.
+- **The appliance notice**: above every page, for every member with a profile, a strip for each
+  appliance that has finished and waits to be emptied, with since when, "Emptied" and a close
+  button that hides it for the visit - it comes back with the next finished cycle. Nothing is
+  said while the call fails. (Once the NFC tags of HAS-343 claim a run, the acknowledgement of a
+  member is the tag and the button becomes the administrator's.)
 - **Household**: the administration of the household registry, the administrator's. Everybody
   the registry holds, switched off or not, with their phone, role, rooms, permissions and
   devices - and the forms to add a member (from the button by the title, in a window of its own -
@@ -219,7 +229,7 @@ the season**: green in spring, gold in summer, rust in autumn and blue in winter
 and a dark variant that follows the setting of the device. The season is taken from the clock of
 the browser (it starts on 21 March, 22 June, 23 September and 22 December) and changes by itself
 at midnight, also in a dashboard that is never reloaded. Each domain of the house — heating, hot
-water, the boiler room, the household, the devices, the blinds, the lights — keeps a colour of its own all year, so a card is known by
+water, the boiler room, the household, the devices, the blinds, the lights, the appliances — keeps a colour of its own all year, so a card is known by
 its colour before it is read. Behind the glass of every page lies a **photo of its place** — the
 Overview a house with its garden, the heating a living room in winter — under a haze of the page colour, so the photo gives the view
 its mood and never competes with the text; a slow device can switch the photos off in the
@@ -412,6 +422,9 @@ Endpoints used today:
 | `PUT` / `DELETE` | `/home/light/rooms/{room}/rules` | Writes the rule of a room whole, or removes it (the editor of the rule, HAS-267); the rule is read again, the answer of the write is not used. `INVALID_RULE` names what the service refused only in `details`, which is never shown - the editor checks every rule of the service first |
 | `PUT` | `/home/light/rooms/{room}/rules/resident-enabled` | The switch of the resident (my room, the editor of the rule); the rule is read again |
 | `GET` | `/home/light/rooms/{room}/rules/runs?from=&to=` | What the rules engine sent in a room in the last 24 hours (the window of a room, the editor of the rule), every 60 s |
+| `GET` | `/home/appliance` | The appliances of the household with their state, `finishedAt` and `awaitingSince` (the notice of every page, my room, overview), polled every 30 s and right after an acknowledgement. Needs `appliance-service` 0.3.0 and `api-gateway-service` 0.9.0 or later |
+| `POST` | `/home/appliance/{id}/acknowledge` | Marks a finished appliance as emptied (the notice, my room); the list is read again, the answer is not used. `409 NOTHING_TO_ACKNOWLEDGE` and `404 NOT_FOUND_APPLIANCE` have texts of their own |
+| `GET` | `/home/appliance/{id}/runs?from=&to=`, `/home/appliance/{id}/samples?from=&to=` | The cycles and the power draw of one appliance - in the data-access class for the history of HAS-283, not called by a page yet |
 | `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |

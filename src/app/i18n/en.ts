@@ -78,6 +78,13 @@ export const en = {
       acting: 'the empty house is acted on',
       watchingOnly: 'the empty house is watched only',
     },
+    // HAS-282: what the appliances do
+    appliances: {
+      running: 'Running',
+      waiting: 'Waits to be emptied',
+      nothing: 'None',
+      unknown: 'Not known',
+    },
     weather: {
       title: 'Weather',
       loading: 'Loading the weather',
@@ -1055,6 +1062,40 @@ export const en = {
       notFoundRule: 'The room has no rule.',
     },
   },
+  // HAS-282: the washing machine, the dryer and the dishwasher - the card of My room, the tile of the
+  // overview and the notice above every page. The names are the registry's, printed as they are
+  appliances: {
+    title: 'Appliances',
+    loading: 'Loading the appliances',
+    none: 'The household has no appliance yet.',
+    unreadable: 'The appliance service did not answer with a list.',
+    note: 'Mark a finished appliance as emptied and the reminders stop.',
+    acknowledge: 'Emptied',
+    acknowledging: 'Sending…',
+    acknowledgeFailed: 'Not marked as emptied.',
+    acknowledgeNoAnswer:
+      'No answer - it may have been marked all the same; the list shows what the service has.',
+    runningSince: 'Running since {{ time }}',
+    finishedAt: 'Finished at {{ time }}',
+    state: {
+      idle: 'Idle',
+      running: 'Running',
+      finishing: 'Finishing',
+      finished: 'Finished - waits to be emptied',
+      unknown: 'Not known',
+    },
+    error: {
+      notFound: 'The appliance service does not watch this appliance.',
+      nothingToAcknowledge: 'Nothing waits to be emptied any more.',
+    },
+    notice: {
+      // the name of the appliance stands between the two, printed as it is: never a parameter
+      finished: 'Finished:',
+      waits: '- waits to be emptied.',
+      since: 'Since {{ time }}',
+      dismiss: 'Close the notice about',
+    },
+  },
   myRoom: {
     title: 'My room',
     switcher: 'Your rooms',
@@ -1217,6 +1258,7 @@ export const en = {
       weatherStation: 'Weather station',
       bthomeGateway: 'Bluetooth gateway',
       pushButton: 'Push button',
+      appliance: 'Appliance',
     },
     lightKind: {
       relay: 'switched',
@@ -1377,6 +1419,7 @@ export const en = {
     weather: 'Weather',
     blinds: 'Blinds',
     light: 'Lights',
+    appliance: 'Appliances',
   },
   // names of the seasons, as a label and inside a sentence
   season: {

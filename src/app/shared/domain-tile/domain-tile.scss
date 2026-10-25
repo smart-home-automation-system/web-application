@@ -80,3 +80,7 @@ mat-card-content {
 .tile[data-domain='light'] {
   --app-domain: var(--app-domain-light);
 }
+
+.tile[data-domain='appliance'] {
+  --app-domain: var(--app-domain-appliance);
+}

@@ -4,6 +4,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
 import { Ticker } from '../../core/time/ticker';
+import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
 import { HeatingApi } from '../../data-access/heating/heating-api';
@@ -26,6 +27,7 @@ import { FLOORS } from '../../shared/floors/floors';
 import { summarise, toSensorRows } from '../heating/sensor-rows';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { blindsOf } from '../../shared/blinds/addressed-blind';
+import { summariseAppliances, toApplianceViews } from '../../shared/appliances/appliance-views';
 import { LightApi } from '../../data-access/light/light-api';
 import { stateOf } from '../../shared/lights/light-labels';
 import { countStates, lightRoomsOf } from '../lights/light-rooms';
@@ -52,8 +54,8 @@ interface DeviceLine {
  * facts somebody looks for first, each leading to the page that has the rest. Nothing here changes
  * the house: the switch of the heating is on the heating page only (owner, 2026-10-21, HAS-266).
  *
- * Eight calls feed the page, each with its own failure: the page is whole when one service is
- * down, and says which. Every tile is one call - but the heating tile, which tells the state of
+ * Eleven calls feed the page (the appliances since HAS-282), each with its own failure: the page
+ * is whole when one service is down, and says which. Every tile is one call - but the heating tile, which tells the state of
  * the system, its rooms and its silent sensors (three calls, owner's choice of HAS-266): it tells
  * the freshness of the state and the failure of each of the three. The tiles claim what their
  * dashboards claim and nothing more - what an answer leaves out is "not known" here too.
@@ -96,6 +98,8 @@ export class Overview {
   private readonly lightApi = inject(LightApi);
   protected readonly lights = this.lightApi.watchLights(60_000);
   protected readonly emptyHouse = this.lightApi.watchEmptyHouse();
+  // HAS-282: the resource of the notice of the shell - one poller, so the two never disagree
+  protected readonly appliances = inject(ApplianceStore).appliances;
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
@@ -190,6 +194,24 @@ export class Overview {
         .filter((room) => room.lights.some((light) => stateOf(light) === 'on'))
         .map((room) => room.room)
         .join(', '),
+    };
+  });
+
+  // ---- appliances (HAS-282) ----
+
+  /** What runs and what waits, the names joined here; `undefined` while the answer is no list. */
+  protected readonly appliancesSummary = computed(() => {
+    const answer = this.appliances.value();
+    if (!Array.isArray(answer)) {
+      return undefined;
+    }
+    const views = toApplianceViews(answer);
+    const summary = summariseAppliances(views);
+    return {
+      total: views.length,
+      running: summary.running.join(', '),
+      waiting: summary.waiting.join(', '),
+      unknown: summary.unknown,
     };
   });
 

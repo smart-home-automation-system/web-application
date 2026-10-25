@@ -4,6 +4,8 @@ import { provideRouter } from '@angular/router';
 import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
+import { Appliance } from '../../data-access/appliance/appliance-api';
+import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { EmptyHouse, LightApi, RoomLights } from '../../data-access/light/light-api';
 import { BoilerApi, BoilerStatus } from '../../data-access/boiler/boiler-api';
@@ -64,7 +66,8 @@ const WEATHER: CurrentWeather = {
   humidity: { value: 58, measuredAt: '2026-10-10T18:29:10', stale: false },
 };
 
-type Tile = 'heating' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds' | 'light';
+type Tile =
+  'heating' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds' | 'light' | 'appliance';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -77,6 +80,7 @@ describe('Overview', () => {
   let blinds: FakeResource<readonly RoomBlinds[] | null>;
   let lights: FakeResource<readonly RoomLights[] | null>;
   let emptyHouse: FakeResource<EmptyHouse | null>;
+  let appliances: FakeResource<readonly Appliance[] | null>;
   let fixture: ComponentFixture<Overview>;
 
   beforeEach(() => {
@@ -91,6 +95,7 @@ describe('Overview', () => {
     blinds = fakeResource();
     lights = fakeResource();
     emptyHouse = fakeResource();
+    appliances = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -111,6 +116,10 @@ describe('Overview', () => {
         {
           provide: LightApi,
           useValue: { watchLights: () => lights, watchEmptyHouse: () => emptyHouse },
+        },
+        {
+          provide: ApplianceStore,
+          useFactory: () => ({ appliances: appliances }),
         },
       ],
     });
@@ -453,6 +462,47 @@ describe('Overview', () => {
       answerAll();
 
       expect((await tile('light')).querySelector('a')?.getAttribute('href')).toBe('/lights');
+    });
+  });
+
+  // HAS-282: what the appliances do - no page of their own yet, and nothing here acknowledges
+  describe('the appliances', () => {
+    const rows = async () =>
+      [...(await tile('appliance')).querySelectorAll('.tile__row')].map((row) => words(row));
+
+    it('names what runs - a pause of a cycle included - and what waits to be emptied', async () => {
+      answer(appliances, [
+        { id: 61, name: 'Washing machine', state: 'running' },
+        { id: 62, name: 'Dryer', state: 'finished' },
+        { id: 63, name: 'Dishwasher', state: 'finishing' },
+        { id: 64, name: 'Spare', state: 'idle' },
+      ]);
+
+      expect(await rows()).toEqual([
+        'Running Washing machine, Dishwasher',
+        'Waits to be emptied Dryer',
+      ]);
+    });
+
+    it('says none for what does not run or wait, and counts the not known', async () => {
+      answer(appliances, [
+        { id: 61, name: 'Washing machine', state: 'idle' },
+        { id: 62, name: 'Dryer' },
+      ]);
+
+      expect(await rows()).toEqual(['Running None', 'Waits to be emptied None', 'Not known 1']);
+    });
+
+    it('offers nothing to press and leads nowhere - the appliances have no page yet', async () => {
+      answer(appliances, [{ id: 62, name: 'Dryer', state: 'finished' }]);
+
+      expect((await tile('appliance')).querySelectorAll('button, a')).toHaveLength(0);
+    });
+
+    it('says when the household has no appliance', async () => {
+      answer(appliances, []);
+
+      expect(words(await tile('appliance'))).toContain('The household has no appliance yet.');
     });
   });
 

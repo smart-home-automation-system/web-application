@@ -19,7 +19,8 @@ export type TileDomain =
   | 'household'
   | 'weather'
   | 'blinds'
-  | 'light';
+  | 'light'
+  | 'appliance';
 
 /**
  * A card about one call of one domain of the house - a tile of the overview, whose title leads to

@@ -39,7 +39,7 @@ export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
- * `SmartVendor`, `EatonGatewayType` of `smart-home-sdk` 1.9.0) - copies, like the ones above,
+ * `SmartVendor`, `EatonGatewayType` of `smart-home-sdk` 1.13.0) - copies, like the ones above,
  * and under the same rule: they are what the administration of the devices offers, and what
  * the registry already holds is shown and sent back as it is.
  */
@@ -53,9 +53,21 @@ export const DEVICE_KINDS = [
   'weather station',
   'bthome gateway',
   'push button',
+  // HAS-282 (smart-home-sdk 1.13.0): a washing machine, a dryer or a dishwasher, the plug it runs on -
+  // known here, and not offered for a new device: its settings are written through the API (HAS-283)
+  'appliance',
 ] as const;
 
 export type DeviceKind = (typeof DEVICE_KINDS)[number];
+
+/**
+ * The kinds the form offers for a device - every kind but the appliance, whose eight settings the
+ * form has no fields for (the registry refuses an appliance without them). A device of the registry
+ * that is one keeps its kind on offer when edited, and its settings travel back untouched.
+ */
+export const OFFERED_KINDS: readonly DeviceKind[] = DEVICE_KINDS.filter(
+  (kind) => kind !== 'appliance',
+);
 
 export const LIGHT_KINDS = ['relay', 'dimmer', 'rgbw'] as const;
 

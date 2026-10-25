@@ -67,3 +67,11 @@
 .notice button {
   flex: none;
 }
+
+// HAS-282: a finished appliance - the season's tint, as the strip of a new version
+.notice--appliance {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+
+  --mat-icon-button-icon-color: var(--mat-sys-on-primary-container);
+}

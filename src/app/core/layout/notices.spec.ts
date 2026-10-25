@@ -1,7 +1,10 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
+import { Appliance, FailedAcknowledgement } from '../../data-access/appliance/appliance-api';
+import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { ApiError } from '../api/api-error';
 import { ConnectionStore } from '../api/connection-store';
 import { ProfileStore } from '../profile/profile-store';
@@ -19,12 +22,31 @@ describe('Notices', () => {
   const refresh = vi.fn(() => Promise.resolve(true));
   const newVersion = signal(false);
   const reload = vi.fn();
+  const member = signal<{ name: string } | undefined>(undefined);
+  let appliances: FakeResource<readonly Appliance[] | null>;
+  const acknowledgeFailure = signal<FailedAcknowledgement | undefined>(undefined);
+  const acknowledge = vi.fn();
+  let storesMade = 0;
 
   function create(): void {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
-        { provide: ProfileStore, useValue: { loading: asking, refresh } },
+        { provide: ProfileStore, useValue: { loading: asking, refresh, profile: member } },
+        {
+          provide: ApplianceStore,
+          useFactory: () => {
+            storesMade++;
+            return {
+              appliances: {
+                ...appliances,
+                acknowledging: signal(undefined),
+                acknowledgeFailure,
+                acknowledge,
+              },
+            };
+          },
+        },
         { provide: AppUpdate, useValue: { available: newVersion, reload } },
       ],
     });
@@ -58,6 +80,11 @@ describe('Notices', () => {
     localStorage.removeItem(STORAGE_KEY);
     asking.set(false);
     newVersion.set(false);
+    member.set(undefined);
+    appliances = fakeResource();
+    acknowledgeFailure.set(undefined);
+    acknowledge.mockClear();
+    storesMade = 0;
     refresh.mockClear();
     reload.mockClear();
     // the timers of the component and the clock; Angular keeps its own scheduling
@@ -236,6 +263,128 @@ describe('Notices', () => {
 
       expect(notice('offline')).toBeTruthy();
       expect(notice('update')).toBeTruthy();
+    });
+  });
+
+  // HAS-282: a finished appliance waits to be emptied
+  describe('when an appliance has finished', () => {
+    const DRYER: Appliance = {
+      id: 62,
+      name: 'Dryer',
+      state: 'finished',
+      finishedAt: '2026-10-08T11:30:00',
+      awaitingSince: '2026-10-08T11:40:00',
+    };
+    const WASHER: Appliance = { id: 61, name: 'Washing machine', state: 'running' };
+
+    function applianceNotices(): HTMLElement[] {
+      return [...host().querySelectorAll<HTMLElement>('[data-testid="appliance-notice"]')];
+    }
+
+    async function withProfile(): Promise<void> {
+      create();
+      member.set({ name: 'Ola' });
+      await fixture.whenStable();
+    }
+
+    it('announces it with the time it began to wait, for a member with a profile', async () => {
+      await withProfile();
+      answer(appliances, [DRYER, WASHER]);
+      await fixture.whenStable();
+
+      expect(applianceNotices()).toHaveLength(1);
+      expect(text(applianceNotices()[0])).toBe(
+        'Finished: Dryer - waits to be emptied. Since 11:40',
+      );
+    });
+
+    // a dishwasher that finished last night and still waits is not "since 23:40" of today
+    it('names the date of a cycle that began to wait on another day', async () => {
+      await withProfile();
+      answer(appliances, [{ ...DRYER, awaitingSince: '2026-10-07T23:40:00' }]);
+      await fixture.whenStable();
+
+      expect(text(applianceNotices()[0])).toBe(
+        `Finished: Dryer - waits to be emptied. Since ${time(
+          new Date(2026, 9, 7, 23, 40).getTime(),
+          { dateStyle: 'medium', timeStyle: 'short' },
+        )}`,
+      );
+    });
+
+    // the name is the registry's: a text with braces in it is printed, never substituted
+    it('prints the name of the appliance as it is', async () => {
+      await withProfile();
+      answer(appliances, [{ ...DRYER, name: '{{ name }}' }]);
+      await fixture.whenStable();
+
+      expect(text(applianceNotices()[0])).toContain('Finished: {{ name }} - waits to be emptied.');
+    });
+
+    it('goes with the profile', async () => {
+      await withProfile();
+      answer(appliances, [DRYER]);
+      await fixture.whenStable();
+
+      member.set(undefined);
+      await fixture.whenStable();
+
+      expect(applianceNotices()).toHaveLength(0);
+    });
+
+    // the pages around the profiles: the appliances are not even asked for
+    it('says nothing, and asks nothing, without a profile', async () => {
+      create();
+      await fixture.whenStable();
+
+      expect(storesMade).toBe(0);
+      expect(applianceNotices()).toHaveLength(0);
+    });
+
+    it('acknowledges it on request', async () => {
+      await withProfile();
+      answer(appliances, [DRYER]);
+      await fixture.whenStable();
+
+      applianceNotices()[0].querySelector<HTMLButtonElement>('button')!.click();
+
+      expect(acknowledge).toHaveBeenCalledWith(62);
+    });
+
+    it('tells an acknowledgement that got no answer as one that may have been carried out', async () => {
+      await withProfile();
+      answer(appliances, [DRYER]);
+      acknowledgeFailure.set({ id: 62, error: NO_ANSWER });
+      await fixture.whenStable();
+
+      expect(
+        applianceNotices()[0].querySelector('[data-testid="appliance-notice-failure"]')
+          ?.textContent,
+      ).toContain('may have been marked all the same');
+    });
+
+    it('goes for this visit when closed, and comes back with the next finished cycle', async () => {
+      await withProfile();
+      answer(appliances, [DRYER]);
+      await fixture.whenStable();
+
+      applianceNotices()[0].querySelectorAll<HTMLButtonElement>('button')[1].click();
+      await fixture.whenStable();
+      expect(applianceNotices()).toHaveLength(0);
+
+      answer(appliances, [{ ...DRYER, awaitingSince: '2026-10-08T15:10:00' }]);
+      await fixture.whenStable();
+      expect(applianceNotices()).toHaveLength(1);
+    });
+
+    // the strip would tell a state the service may no longer have
+    it('says nothing while the call of the appliances fails', async () => {
+      await withProfile();
+      answer(appliances, [DRYER]);
+      fail(appliances, new ApiError('server', 502));
+      await fixture.whenStable();
+
+      expect(applianceNotices()).toHaveLength(0);
     });
   });
 });

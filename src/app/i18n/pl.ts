@@ -77,6 +77,12 @@ export const pl: Messages = {
       acting: 'pusty dom jest obsługiwany',
       watchingOnly: 'pusty dom jest tylko obserwowany',
     },
+    appliances: {
+      running: 'Pracuje',
+      waiting: 'Czeka na opróżnienie',
+      nothing: 'Nic',
+      unknown: 'Nieznany stan',
+    },
     weather: {
       title: 'Pogoda',
       loading: 'Wczytywanie pogody',
@@ -1048,6 +1054,38 @@ export const pl: Messages = {
       notFoundRule: 'Pomieszczenie nie ma reguły.',
     },
   },
+  // the names of the registry are English (Dishwasher): no word here takes the gender of a name
+  appliances: {
+    title: 'AGD',
+    loading: 'Wczytywanie urządzeń AGD',
+    none: 'Domownicy nie mają jeszcze urządzeń AGD.',
+    unreadable: 'Usługa urządzeń AGD nie odpowiedziała listą.',
+    note: 'Oznacz skończone urządzenie jako opróżnione, a przypomnienia ustaną.',
+    acknowledge: 'Odebrane',
+    acknowledging: 'Wysyłanie…',
+    acknowledgeFailed: 'Nie oznaczono jako opróżnione.',
+    acknowledgeNoAnswer:
+      'Brak odpowiedzi - mogło zostać oznaczone mimo to; lista pokazuje stan usługi.',
+    runningSince: 'Pracuje od {{ time }}',
+    finishedAt: 'Koniec pracy o {{ time }}',
+    state: {
+      idle: 'Bezczynne',
+      running: 'Pracuje',
+      finishing: 'Kończy pracę',
+      finished: 'Koniec pracy - czeka na opróżnienie',
+      unknown: 'Nieznany stan',
+    },
+    error: {
+      notFound: 'Usługa urządzeń AGD nie obserwuje tego urządzenia.',
+      nothingToAcknowledge: 'Nic już nie czeka na opróżnienie.',
+    },
+    notice: {
+      finished: 'Koniec pracy:',
+      waits: '- czeka na opróżnienie.',
+      since: 'Od {{ time }}',
+      dismiss: 'Zamknij komunikat:',
+    },
+  },
   myRoom: {
     title: 'Mój pokój',
     switcher: 'Twoje pokoje',
@@ -1208,6 +1246,7 @@ export const pl: Messages = {
       weatherStation: 'Stacja pogodowa',
       bthomeGateway: 'Bramka Bluetooth',
       pushButton: 'Przycisk',
+      appliance: 'Urządzenie AGD',
     },
     lightKind: {
       relay: 'przełączane',
@@ -1366,6 +1405,7 @@ export const pl: Messages = {
     weather: 'Pogoda',
     blinds: 'Rolety',
     light: 'Światła',
+    appliance: 'AGD',
   },
   season: {
     spring: 'Wiosna',

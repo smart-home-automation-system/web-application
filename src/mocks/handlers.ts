@@ -1,5 +1,12 @@
 import { HttpRequest } from '@angular/common/http';
 
+import {
+  acknowledgeAppliance,
+  applianceRuns,
+  applianceSamples,
+  appliancesNow,
+  oneAppliance,
+} from './appliances.fixtures';
 import { blindsByRoom, moveBlind, moveBlindTo, moveRoom, pauseBlind } from './blinds.fixtures';
 import { calendarDays } from './calendar.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
@@ -408,6 +415,32 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/light/empty-house',
     reply: (_request, fresh) => ({ status: 200, body: emptyHouse(fresh) }),
+  },
+  // HAS-282: the appliances of appliance-service, and the acknowledgement of a finished one
+  {
+    method: 'GET',
+    path: '/home/appliance',
+    reply: (_request, fresh) => ({ status: 200, body: appliancesNow(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/appliance\/(\d+)$/,
+    reply: (_request, fresh, [id]) => oneAppliance(id, fresh),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/appliance\/(\d+)\/acknowledge$/,
+    reply: (_request, _fresh, [id]) => acknowledgeAppliance(id),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/appliance\/(\d+)\/runs$/,
+    reply: (_request, fresh, [id]) => ({ status: 200, body: fresh ? [] : applianceRuns(id) }),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/appliance\/(\d+)\/samples$/,
+    reply: (_request, fresh) => ({ status: 200, body: fresh ? [] : applianceSamples() }),
   },
   {
     // every device of the house: asked for by the administration page of the devices

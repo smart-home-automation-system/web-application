@@ -26,7 +26,7 @@ import {
   SmartDevice,
 } from '../../data-access/devices/device-registry-api';
 import {
-  DEVICE_KINDS,
+  OFFERED_KINDS,
   EATON_GATEWAYS,
   LIGHT_KINDS,
   PLACEMENTS,
@@ -190,7 +190,7 @@ export class SmartDeviceForm implements OnInit {
   protected readonly rooms = computed(() =>
     withHeld(withHeld(ROOM_NAMES, this.device()?.room), this.room()),
   );
-  protected readonly kinds = computed(() => withHeld(DEVICE_KINDS, this.device()?.kind));
+  protected readonly kinds = computed(() => withHeld(OFFERED_KINDS, this.device()?.kind));
   /** The channels on offer for the chosen kind - with the one the device has, whatever it is. */
   protected readonly channels = computed(() =>
     channelsOf(this.chosenKind(), this.device()?.shelly?.channel),

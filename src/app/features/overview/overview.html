@@ -401,5 +401,56 @@
         <app-api-error-strip [error]="emptyHouse.error()" />
       </div>
     </app-domain-tile>
+
+    <!-- HAS-282: what the appliances do - what runs, what waits to be emptied; no page of their own
+         yet (HAS-283), so no link, and nothing here acknowledges: the overview changes nothing -->
+    <app-domain-tile
+      heading="appliances.title"
+      icon="local_laundry_service"
+      domain="appliance"
+      waitingLabel="appliances.loading"
+      [resource]="appliances"
+      data-testid="tile-appliance"
+    >
+      @if (appliancesSummary(); as summary) {
+        @if (summary.total === 0) {
+          <p class="tile__detail">{{ t('appliances.none') }}</p>
+        } @else {
+          <dl class="tile__rows">
+            <div class="tile__row" data-state="running">
+              <dt>{{ t('overview.appliances.running') }}</dt>
+              <!-- the names of the registry, printed as they are: never a translation -->
+              <dd>
+                @if (summary.running) {
+                  <strong>{{ summary.running }}</strong>
+                } @else {
+                  <strong class="tile__quiet">{{ t('overview.appliances.nothing') }}</strong>
+                }
+              </dd>
+            </div>
+            <div class="tile__row" data-state="finished">
+              <dt>{{ t('overview.appliances.waiting') }}</dt>
+              <dd>
+                @if (summary.waiting) {
+                  <strong>{{ summary.waiting }}</strong>
+                } @else {
+                  <strong class="tile__quiet">{{ t('overview.appliances.nothing') }}</strong>
+                }
+              </dd>
+            </div>
+            @if (summary.unknown > 0) {
+              <div class="tile__row" data-state="unknown">
+                <dt>{{ t('overview.appliances.unknown') }}</dt>
+                <dd>
+                  <strong class="tile__quiet">{{ summary.unknown }}</strong>
+                </dd>
+              </div>
+            }
+          </dl>
+        }
+      } @else if (!appliances.error()) {
+        <p class="tile__detail">{{ t('appliances.unreadable') }}</p>
+      }
+    </app-domain-tile>
   </section>
 </ng-container>

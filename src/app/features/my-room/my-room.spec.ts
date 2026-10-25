@@ -8,6 +8,8 @@ import { Profile } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
 import { of } from 'rxjs';
 
+import { Appliance, FailedAcknowledgement } from '../../data-access/appliance/appliance-api';
+import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi, HeatingStatus, Room } from '../../data-access/heating/heating-api';
@@ -85,6 +87,9 @@ describe('MyRoom', () => {
   let rulesAsked: { name: () => string; resource: FakeResource<RoomRule | null> }[];
   /** The commands sent to the blinds, in words. */
   let sent: string[];
+  let appliances: FakeResource<readonly Appliance[] | null>;
+  let acknowledged: number[];
+  const acknowledgeFailure = signal<FailedAcknowledgement | undefined>(undefined);
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
@@ -99,6 +104,9 @@ describe('MyRoom', () => {
     lightsAsked = [];
     rulesAsked = [];
     sent = [];
+    appliances = fakeResource();
+    acknowledged = [];
+    acknowledgeFailure.set(undefined);
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -184,6 +192,17 @@ describe('MyRoom', () => {
               return of(null);
             },
           },
+        },
+        {
+          provide: ApplianceStore,
+          useFactory: () => ({
+            appliances: {
+              ...appliances,
+              acknowledging: signal(undefined),
+              acknowledgeFailure,
+              acknowledge: (id: number) => acknowledged.push(id),
+            },
+          }),
         },
         {
           provide: DeviceRegistryApi,
@@ -902,5 +921,111 @@ describe('MyRoom', () => {
     const heating = (await page()).querySelector('[data-testid="room-heating"]');
     expect(words(heating?.querySelector('[data-testid="room-window"]'))).toContain('open');
     expect(heating?.querySelector('[data-testid="room-held"]')).not.toBeNull();
+  });
+
+  // HAS-282: the appliances of the household - once, not of any room, for every member
+  describe('the appliances of the household', () => {
+    const DRYER: Appliance = {
+      id: 62,
+      name: 'Dryer',
+      state: 'finished',
+      finishedAt: '2026-10-08T14:05:00',
+      awaitingSince: '2026-10-08T14:15:00',
+    };
+    const WASHER: Appliance = {
+      id: 61,
+      name: 'Washing machine',
+      state: 'running',
+      runningSince: '2026-10-08T13:40:00',
+    };
+    const DISHWASHER: Appliance = { id: 63, name: 'Dishwasher', state: 'idle' };
+
+    const appliancesCard = async () => (await page()).querySelector('[data-testid="appliances"]');
+
+    it('lists every appliance with its state, for a member of any room', async () => {
+      await page();
+      answer(appliances, [WASHER, DRYER, DISHWASHER]);
+
+      const rows = [...(await appliancesCard())!.querySelectorAll('.appliance')].map(words);
+      expect(rows).toEqual([
+        'Washing machine Running Running since 13:40',
+        'Dryer Finished - waits to be emptied Finished at 14:05 Emptied',
+        'Dishwasher Idle',
+      ]);
+    });
+
+    it('stands once, whichever room is chosen', async () => {
+      profile.set(resident('bedroom', 'wardrobe'));
+      await page();
+      answer(appliances, [DRYER]);
+
+      expect((await page()).querySelectorAll('[data-testid="appliances"]')).toHaveLength(1);
+    });
+
+    // the one control of the page that is not a room's - and only next to a finished appliance
+    it('offers "Emptied" for the finished one only, and sends it', async () => {
+      await page();
+      answer(lastAsked().resource, BEDROOM);
+      answer(appliances, [WASHER, DRYER, DISHWASHER]);
+
+      const buttons = [...(await appliancesCard())!.querySelectorAll('button')];
+      expect(buttons.map(words)).toEqual(['Emptied']);
+      buttons[0].click();
+
+      expect(acknowledged).toEqual([62]);
+      expect((await controls()).inTheRoom).toEqual([]);
+    });
+
+    it('tells a refused acknowledgement next to the appliance', async () => {
+      await page();
+      answer(appliances, [DRYER]);
+      acknowledgeFailure.set({
+        id: 62,
+        error: new ApiError('client', 409, [
+          { message: 'Nothing to acknowledge', code: 'NOTHING_TO_ACKNOWLEDGE' },
+        ]),
+      });
+
+      expect(
+        words((await appliancesCard())!.querySelector('[data-appliance="62"] [role="alert"]')),
+      ).toContain('Nothing waits to be emptied any more.');
+    });
+
+    it('words an acknowledgement without an answer as one that may have been carried out', async () => {
+      await page();
+      answer(appliances, [DRYER]);
+      acknowledgeFailure.set({ id: 62, error: new ApiError('network', 0) });
+
+      expect(
+        words((await appliancesCard())!.querySelector('[data-appliance="62"] [role="alert"]')),
+      ).toContain('may have been marked all the same');
+    });
+
+    // an acknowledgement without an answer that was carried out: the list read again says so
+    it('lets the failure go once the list shows the appliance emptied', async () => {
+      await page();
+      answer(appliances, [DRYER]);
+      acknowledgeFailure.set({ id: 62, error: new ApiError('network', 0) });
+      answer(appliances, [{ id: 62, name: 'Dryer', state: 'idle' }]);
+
+      expect(
+        (await appliancesCard())!.querySelector('[data-appliance="62"] [role="alert"]'),
+      ).toBeNull();
+    });
+
+    it('shows no card for a household without appliances, nor while the first answer is on its way', async () => {
+      await page();
+      expect(await appliancesCard()).toBeNull();
+
+      answer(appliances, []);
+      expect(await appliancesCard()).toBeNull();
+    });
+
+    it('tells a failure before any answer', async () => {
+      await page();
+      fail(appliances, new ApiError('server', 502));
+
+      expect((await appliancesCard())!.querySelector('[role="alert"]')).not.toBeNull();
+    });
   });
 });

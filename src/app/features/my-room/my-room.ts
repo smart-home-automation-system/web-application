@@ -16,6 +16,7 @@ import { hasPermission } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
 import { ROOM_CAPABILITIES } from './capabilities';
 import { HouseHeating } from './house-heating';
+import { HouseholdAppliances } from './household-appliances';
 
 /**
  * The page of a household member - a resident's whole application, made for the phone. It shows
@@ -29,7 +30,8 @@ import { HouseHeating } from './house-heating';
  * registry granted `heating_switch` also gets the switch of the heating of the whole house,
  * the card shared with the heating dashboard (owner, 2026-10-09). Not the role decides that:
  * an administrator switches the heating on its dashboard, and has no switch here either
- * unless granted one.
+ * unless granted one. And the appliances of the household (HAS-282): a card of their own, once,
+ * after the rooms and not of any room, with "Emptied" for a finished one - for every member.
  */
 @Component({
   selector: 'app-my-room',
@@ -40,6 +42,7 @@ import { HouseHeating } from './house-heating';
     MatIconModule,
     TranslocoDirective,
     HouseHeating,
+    HouseholdAppliances,
   ],
   templateUrl: './my-room.html',
   styleUrl: './my-room.scss',
