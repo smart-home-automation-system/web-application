@@ -34,7 +34,7 @@ export function mockPushPlatform(): PushPlatform {
     },
     subscribe: async () => {
       const subscription: BrowserSubscription = {
-        endpoint: 'https://web.push.apple.com/mock-' + Math.random().toString(36).slice(2),
+        endpoint: 'https://web.push.apple.com/mock-' + crypto.randomUUID(),
         keys: { p256dh: 'B' + 'A'.repeat(86), auth: 'A'.repeat(22) },
       };
       write(SUBSCRIPTION_KEY, JSON.stringify(subscription));
