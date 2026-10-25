@@ -747,6 +747,12 @@ e2e/              # Playwright tests
     next to that appliance (`acknowledgeFailureOf`) - no answer is "may have been marked all the
     same". `NOTHING_TO_ACKNOWLEDGE` and `NOT_FOUND_APPLIANCE` have texts
     (`shared/appliances/appliance-views.ts`, whose test lists them).
+  - **What is the household's stands in a row of its own under the rooms** (`.card-row` of
+    `src/styles.scss`, owner 2026-10-25): the appliances, the notifications of this device and the switch
+    of the house. Both rows - the room's and the household's - are `.card-row`: a wrapping flex row of
+    cards 360-480 px wide, of one height per line, a line with fewer cards in the middle (a grid puts
+    its last row at the left). Its items are the cards: hosts of `display: contents`, or a block host
+    whose card is `height: 100%`.
   - **The card of My room is not a capability of a room** (`HouseholdAppliances`, rendered once
     under the rooms): the appliances are the household's, for every member, whatever their rooms.
     It is not drawn while the list is empty or not answered yet; a failure before any answer is.
@@ -944,6 +950,38 @@ its own (HAS-194). Everything about that lives in `core/pwa/`, `core/api/connect
   "new version" strip and reloads on request. It asks the server on every return into view and
   hourly - the worker itself looks only when the page is loaded, which an installed application
   hardly ever is. `SwUpdate` is injected as optional, so a unit test needs no provider.
+- **Web Push** (HAS-284, `core/push/`, the card `shared/push/device-notifications.ts` on My room
+  and the settings): what to keep:
+  - **One door to the browser, `PUSH_PLATFORM`** (`push-platform.ts`): the real one is `SwPush`
+    and `Notification`; the `mock` build puts `src/mocks/mock-push.ts` in its place through
+    `mockApiProviders` of the mock door (`core/api/mock-api.ts`) - the dev server and the mock
+    build register no worker, so `SwPush` takes nothing there. `localStorage['mock-push']` =
+    `unsupported` | `iphone-tab` | `denied` chooses another browser. A unit test without a
+    provider gets the real door with no `SwPush`: `unsupported`, no switch.
+  - **iOS gives push to the home-screen application only**: in a tab of Safari the card leads to
+    the personal link - **never "add this page"**: the icon opens the address it was added from,
+    and that has to be the personal link (see above).
+  - **The permission is asked inside the tap** (`enable()` calls `requestPermission()` before its
+    first `await`): iOS refuses a question that is not part of a gesture.
+  - **No optimistic state**: `on` only once `PUT /household/member/{name}/push-subscriptions`
+    answered; the switch does not flip itself (`disableToggleValue`). Off ends the browser's
+    subscription first (the device is silent whatever the registry says), then `DELETE`s it - a
+    failed removal leaves a row the push service answers 410 for, and notification-service removes
+    it by itself.
+  - **Remembered per member, checked at every start** (`localStorage['smart-home.push.<member>']`):
+    the subscription is the browser's, the member the profile's - the registry gives a shared
+    browser to whoever switched on last (upsert by the endpoint). At the start, while switched on and
+    the permission stands, the subscription is made anew when the browser lost it and stored again
+    either way; a permission reset on the device forgets the switch. `Notices` starts the store with
+    the appliance store, once a profile exists.
+  - **The notification itself is shown by Angular's worker** from the payload of notification-service
+    (`{"notification": {title, body, tag, data.onActionClick}}`, HAS-276) - no worker of our own;
+    a tap opens `data.onActionClick.default.url`. A push while the application is open is shown by
+    the system too (the worker always shows it) and also refreshes the appliance notice at once
+    (`messages` → `refresh()`); the task's "instead of a system notification" would need a worker
+    of our own, which was not worth it.
+  - The texts are `push.*`; `PUSH_ERROR_TEXTS` words `MEMBER_SWITCHED_OFF` and
+    `NOT_FOUND_HOUSEHOLD_MEMBER` (its test lists them).
 - **The banner**: `ConnectionStore` - any answer, 4xx / 5xx included, means within reach;
   `invalid-response` proves nothing; a call without an answer (`network`) is only a **doubt**.
   Out of reach takes **two unanswered calls in a row, with nothing answered since the first was
@@ -1266,6 +1304,10 @@ up in a production build.
   `INVALID_RULE` by `room-rule-rules.ts` against the mock registry, and a hall down on an Eaton PIR
   only (light 46) gets none; every rule at the start is one its room can have (a test writes each
   back). `resetLights()` for a unit test that changed them.
+- **And so can the push subscriptions** (`push.fixtures.ts`, HAS-284): `push-config` answers a
+  made-up key (`{}` in `no-readings`), a `PUT` is an upsert by the endpoint and refuses a member
+  switched off with `MEMBER_SWITCHED_OFF`, a `DELETE` answers 204; `resetPush()` for a unit test.
+  The browser side is `mock-push.ts` (above, Web Push).
 - **And so can the mock appliances** (`appliances.fixtures.ts`, HAS-282): the washing machine runs,
   the dryer has finished and waits, the dishwasher is idle; an acknowledgement empties the dryer
   (204) and is refused with `409 NOTHING_TO_ACKNOWLEDGE` for one that does not wait, `writes-fail`

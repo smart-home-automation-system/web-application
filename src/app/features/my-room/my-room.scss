@@ -1,15 +1,10 @@
-// Made for the phone: one column, the cards of the room first and the switch of the house under
-// them. In a window the cards stand side by side in the middle of the page, as on the other views
-// (owner, 2026-10-21, HAS-266): columns of one width, the cards of a row of one height.
+// Made for the phone: one column, the cards of the room first and those of the household under them.
+// In a window the cards stand side by side in the middle of the page, as on the other views (owner,
+// 2026-10-21, HAS-266): cards of one width, the cards of a row of one height - and a row with fewer
+// cards in the middle too (owner, 2026-10-25). Both rows are `.card-row` of src/styles.scss.
 .cards {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-
-  @media (min-width: 900px) {
-    grid-template-columns: repeat(auto-fit, minmax(360px, 480px));
-    justify-content: center;
-  }
 }
 
 // the rooms of the member, above the cards; the names wrap rather than push the page wide

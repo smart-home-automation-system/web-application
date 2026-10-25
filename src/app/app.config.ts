@@ -18,7 +18,7 @@ import {
 import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
-import { mockApiInterceptors } from './core/api/mock-api';
+import { mockApiInterceptors, mockApiProviders } from './core/api/mock-api';
 import { provideI18n } from './core/i18n/provide-i18n';
 import { LANGUAGE_OWNER, SAME_LANGUAGE_OWNER } from './core/i18n/language-store';
 import { AppTitleStrategy } from './core/layout/app-title-strategy';
@@ -74,6 +74,8 @@ export const appConfig: ApplicationConfig = {
       registrationStrategy: 'registerWhenStable:30000',
     }),
     { provide: TitleStrategy, useClass: AppTitleStrategy },
+    // the mock build fakes what it cannot have (the Web Push of a service worker); none in a real build
+    ...mockApiProviders,
     // icons are the self-hosted Material Symbols font, not the legacy Material Icons
     { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
   ],

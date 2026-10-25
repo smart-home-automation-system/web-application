@@ -7,6 +7,7 @@ import {
   appliancesNow,
   oneAppliance,
 } from './appliances.fixtures';
+import { pushConfig, removePushSubscription, storePushSubscription } from './push.fixtures';
 import { blindsByRoom, moveBlind, moveBlindTo, moveRoom, pauseBlind } from './blinds.fixtures';
 import { calendarDays } from './calendar.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
@@ -208,6 +209,25 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/household',
     reply: () => ({ status: 200, body: householdRegistry() }),
+  },
+  // HAS-284: the Web Push subscription of this browser - before the member handlers below, whose
+  // patterns would take the path too
+  {
+    method: 'GET',
+    path: '/home/household/push-config',
+    reply: (_request, fresh) => pushConfig(fresh),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/household\/member\/([^/]+)\/push-subscriptions$/,
+    reply: (request, _fresh, [name]) =>
+      storePushSubscription(decodeURIComponent(name), request.body),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/household\/member\/([^/]+)\/push-subscriptions$/,
+    reply: (request, _fresh, [name]) =>
+      removePushSubscription(decodeURIComponent(name), request.params.get('endpoint')),
   },
   { method: 'POST', path: '/home/household/member', reply: (request) => addMember(request.body) },
   {

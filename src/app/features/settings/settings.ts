@@ -7,6 +7,8 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { DeviceNotifications } from '../../shared/push/device-notifications';
+
 import { BackgroundStore } from '../../core/background/background-store';
 import { SEASONS, Season } from '../../core/theme/season';
 import { SchemeChoice, SeasonChoice, ThemeStore } from '../../core/theme/theme-store';
@@ -50,6 +52,7 @@ const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
     MatRadioModule,
     MatSlideToggleModule,
     TranslocoDirective,
+    DeviceNotifications,
   ],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',

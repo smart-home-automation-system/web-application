@@ -6,6 +6,7 @@ import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { Profile } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
+import { DevicePushState, PushSubscriptionStore } from '../../core/push/push-subscription-store';
 import { of } from 'rxjs';
 
 import { Appliance, FailedAcknowledgement } from '../../data-access/appliance/appliance-api';
@@ -72,6 +73,8 @@ const resident = (...rooms: string[]): Profile => ({ name: 'Celina', role: 'resi
 
 describe('MyRoom', () => {
   let profile: WritableSignal<Profile | undefined>;
+  // HAS-284: the notifications of this device - unsupported unless a test says otherwise
+  const pushState = signal<DevicePushState>('unsupported');
   let status: FakeResource<HeatingStatus>;
   /** A resource per room asked for, in the order the cards were made. */
   let asked: { name: () => string; resource: FakeResource<Room | null> }[];
@@ -107,10 +110,21 @@ describe('MyRoom', () => {
     appliances = fakeResource();
     acknowledged = [];
     acknowledgeFailure.set(undefined);
+    pushState.set('unsupported');
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
         { provide: ProfileStore, useValue: { profile } },
+        {
+          provide: PushSubscriptionStore,
+          useValue: {
+            state: pushState,
+            busy: signal(false),
+            failure: signal(undefined),
+            enable: () => Promise.resolve(),
+            disable: () => Promise.resolve(),
+          },
+        },
         {
           provide: HeatingApi,
           useValue: {
@@ -514,6 +528,22 @@ describe('MyRoom', () => {
       expect((await page()).querySelector('[data-testid="room-sensors"]')).not.toBeNull();
 
       expect(await controls()).toEqual({ inTheRoom: [], elsewhere: [] });
+    });
+
+    // HAS-284: the one control of the page that is about the device, not a room
+    it('adds the switch of the notifications of this device, outside the card of the room', async () => {
+      pushState.set('off');
+      await page();
+      answer(lastAsked().resource, BEDROOM);
+      answer(blindsAsked.at(-1)!.resource, { room: 'bedroom', blinds: [] });
+
+      const { inTheRoom, elsewhere } = await controls();
+      expect(inTheRoom).toEqual([]);
+      // the switch is named by its label (its button has no text of its own)
+      expect(elsewhere).toHaveLength(1);
+      expect(
+        fixture!.nativeElement.querySelector('[data-testid="push-switch"] button'),
+      ).toBeTruthy();
     });
 
     it('offers no switch of the house, and does not ask for its state', async () => {

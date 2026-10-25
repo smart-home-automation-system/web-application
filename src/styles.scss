@@ -89,6 +89,26 @@ body {
   }
 }
 
+// A row of cards of one width (360-480 px) that wraps: the cards of a line are of one height, and a
+// line with fewer cards stands in the middle (owner, 2026-10-25, My room) - which a grid cannot do
+// for its last row. Global because the cards are the items: a component whose host is
+// `display: contents` puts its child (the `mat-card`, or the component that draws it) into the
+// row, one whose host is a block is the item itself and fills it with its card (`height: 100%`).
+// On a phone a card is as wide as the page.
+.card-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+
+  > *,
+  > * > * {
+    flex: 1 1 360px;
+    max-width: 480px;
+    min-width: 0;
+  }
+}
+
 // A page that is one message: not found, error.
 .message-page {
   display: flex;

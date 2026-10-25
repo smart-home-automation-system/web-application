@@ -17,6 +17,7 @@ import { ProfileStore } from '../../core/profile/profile-store';
 import { ROOM_CAPABILITIES } from './capabilities';
 import { HouseHeating } from './house-heating';
 import { HouseholdAppliances } from './household-appliances';
+import { DeviceNotifications } from '../../shared/push/device-notifications';
 
 /**
  * The page of a household member - a resident's whole application, made for the phone. It shows
@@ -43,6 +44,7 @@ import { HouseholdAppliances } from './household-appliances';
     TranslocoDirective,
     HouseHeating,
     HouseholdAppliances,
+    DeviceNotifications,
   ],
   templateUrl: './my-room.html',
   styleUrl: './my-room.scss',

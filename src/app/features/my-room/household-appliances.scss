@@ -3,14 +3,9 @@
   display: contents;
 }
 
-// a row of its own under the cards of the rooms, in its middle (owner, 2026-10-25): a grid puts the
-// last card of an uneven row at its left edge; at most as wide as a column of the page
+// laid out by the row of the household on My room, next to the notifications of the device
 .appliances {
   --app-domain: var(--app-domain-appliance);
-
-  grid-column: 1 / -1;
-  justify-self: center;
-  width: min(100%, 480px);
 }
 
 .appliances__content {

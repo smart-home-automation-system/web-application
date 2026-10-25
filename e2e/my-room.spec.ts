@@ -31,7 +31,7 @@ test.describe('a resident with one room', () => {
   });
 
   // residents view temperatures and schedules; setting them is the administrator's alone
-  test('can press nothing about the room: no switch of the house, only "Emptied" of the appliances', async ({
+  test('can press nothing about the room: no switch of the house, only "Emptied" and the notifications', async ({
     page,
   }) => {
     await page.goto('/room');
@@ -39,8 +39,14 @@ test.describe('a resident with one room', () => {
 
     const main = page.getByRole('main');
     await expect(page.getByTestId('heating-switch')).toHaveCount(0);
-    // the one control of the page is not a room's: the finished dryer of the household (HAS-282)
-    await expect(main.locator('button, a, input, select, textarea')).toHaveText(['Emptied']);
+    // the controls of the page are not a room's: the finished dryer of the household (HAS-282) and
+    // the switch of the notifications of this device (HAS-284)
+    await expect(main.locator('button, a, input, select, textarea')).toHaveCount(2);
+    await expect(
+      page
+        .getByTestId('device-notifications')
+        .getByRole('switch', { name: 'Notify me on this device' }),
+    ).toBeVisible();
     await expect(page.getByTestId('appliances').getByRole('button')).toHaveText(['Emptied']);
     await expect(page.getByTestId('room-heating').locator('button, [tabindex]')).toHaveCount(0);
   });

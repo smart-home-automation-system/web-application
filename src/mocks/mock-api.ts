@@ -5,9 +5,12 @@ import {
   HttpRequest,
   HttpResponse,
 } from '@angular/common/http';
+import { Provider } from '@angular/core';
 import { Observable, delay, of, switchMap, throwError, timer } from 'rxjs';
 
 import { MOCK_HANDLERS, MockReply } from './handlers';
+import { PUSH_PLATFORM } from '../app/core/push/push-platform';
+import { mockPushPlatform } from './mock-push';
 
 /**
  * Mock API: answers every `/home/**` call from fixtures, without a backend. It replaces
@@ -55,6 +58,11 @@ const mockApiInterceptor: HttpInterceptorFn = (request, next) => {
 };
 
 export const mockApiInterceptors: readonly HttpInterceptorFn[] = [mockApiInterceptor];
+
+// HAS-284: no service worker in the mock build - the Web Push of the browser is faked
+export const mockApiProviders: readonly Provider[] = [
+  { provide: PUSH_PLATFORM, useFactory: mockPushPlatform },
+];
 
 function answer(
   request: HttpRequest<unknown>,

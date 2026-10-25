@@ -20,27 +20,34 @@
   }
 
   <section class="cards" [attr.aria-label]="t('myRoom.cards')">
-    @for (room of shown(); track room) {
-      @for (capability of capabilities; track capability.id) {
-        <ng-container *ngComponentOutlet="capability.component; inputs: { room }" />
+    <!-- the cards of the room on screen: rows of one height, a row with fewer cards in the middle -->
+    <div class="card-row" data-testid="room-cards">
+      @for (room of shown(); track room) {
+        @for (capability of capabilities; track capability.id) {
+          <ng-container *ngComponentOutlet="capability.component; inputs: { room }" />
+        }
+      } @empty {
+        <mat-card appearance="outlined" class="none card--domain" data-testid="no-rooms">
+          <mat-card-header>
+            <div mat-card-avatar class="domain-badge"><mat-icon>bed</mat-icon></div>
+            <mat-card-title>{{ t('myRoom.noRoomsTitle') }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p class="none__text">{{ t('myRoom.noRooms') }}</p>
+          </mat-card-content>
+        </mat-card>
       }
-    } @empty {
-      <mat-card appearance="outlined" class="none card--domain" data-testid="no-rooms">
-        <mat-card-header>
-          <div mat-card-avatar class="domain-badge"><mat-icon>bed</mat-icon></div>
-          <mat-card-title>{{ t('myRoom.noRoomsTitle') }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <p class="none__text">{{ t('myRoom.noRooms') }}</p>
-        </mat-card-content>
-      </mat-card>
-    }
+    </div>
 
-    <!-- HAS-282: the appliances are the household's - once, after the rooms, for every member -->
-    <app-household-appliances />
-
-    @if (switchesHeating()) {
-      <app-house-heating />
-    }
+    <!-- what is the household's, not a room's, in a row of its own under the rooms (owner,
+         2026-10-25): the appliances (HAS-282), the notifications of this device (HAS-284) and the
+         switch of the house for a member allowed it - side by side, of one height -->
+    <div class="card-row" data-testid="household-cards">
+      <app-household-appliances />
+      <app-device-notifications />
+      @if (switchesHeating()) {
+        <app-house-heating />
+      }
+    </div>
   </section>
 </ng-container>
