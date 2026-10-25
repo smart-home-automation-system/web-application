@@ -1,0 +1,71 @@
+// the appliances one under the other, the layout of the blinds and lights cards
+:host {
+  display: contents;
+}
+
+.appliances {
+  --app-domain: var(--app-domain-appliance);
+}
+
+.appliances__content {
+  display: grid;
+  gap: 10px;
+}
+
+.appliances__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.appliance {
+  display: grid;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  border: 1px solid var(--app-glass-edge);
+}
+
+.appliance__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.appliance__name {
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}
+
+.appliance__state {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  [data-state='finished'] & {
+    color: var(--mat-sys-on-primary-container);
+    font-weight: 600;
+  }
+}
+
+.appliance__detail {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.appliance__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.appliances__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

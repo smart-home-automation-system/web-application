@@ -21,6 +21,7 @@ export const KIND_LABELS: Readonly<Record<DeviceKind, MessageKey>> = {
   'weather station': 'devices.kind.weatherStation',
   'bthome gateway': 'devices.kind.bthomeGateway',
   'push button': 'devices.kind.pushButton',
+  appliance: 'devices.kind.appliance',
 };
 
 /** Names of Material Symbols. */
@@ -34,6 +35,7 @@ const KIND_ICONS: Readonly<Record<DeviceKind, string>> = {
   'weather station': 'partly_cloudy_day',
   'bthome gateway': 'bluetooth_connected',
   'push button': 'touch_app',
+  appliance: 'local_laundry_service',
 };
 
 export const LIGHT_KIND_LABELS: Readonly<Record<LightKind, MessageKey>> = {

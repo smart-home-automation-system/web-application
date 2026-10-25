@@ -728,8 +728,45 @@ e2e/              # Playwright tests
   tiles "Rooms" and "Temperature sensors" are gone (the first led to the heating page under the
   name of the rooms view). An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
-  the overview through the real routes lets its eight reads through with `isOverviewRead`
+  the overview through the real routes lets its eleven reads through with `isOverviewRead`
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
+- **The appliances are one resource for the whole application** (HAS-282, `ApplianceStore` in
+  `data-access/appliance/`, `GET /appliance` of `appliance-service` every 30 s): the notice of the
+  shell, the card of My room and the tile of the overview read the same `watchAppliances()`, so
+  they never tell two answers side by side. What to keep:
+  - **The notice is the shell's** (`core/layout/notices.ts`): a strip per appliance that is
+    `finished` with `awaitingSince`, for every member **with a profile** - the store is injected
+    in an effect only once `ProfileStore.profile()` exists, so the picker and the personal link
+    of nobody ask for nothing. No `role`, like the other notices (pages ask for *the* `alert`).
+    Closed, it is hidden for the visit under `id@awaitingSince`, so the next finished cycle
+    brings it back; while the call fails it says nothing - it would tell a state the service may
+    no longer have.
+  - **The acknowledgement is the pattern of the heating switch**: `acknowledge(id)` sends `POST
+    /appliance/{id}/acknowledge`, then reads the list again; only that answer moves the strip and
+    the card. One at a time (`acknowledging`); a failure is `acknowledgeFailure` of that id, told
+    next to that appliance (`acknowledgeFailureOf`) - no answer is "may have been marked all the
+    same". `NOTHING_TO_ACKNOWLEDGE` and `NOT_FOUND_APPLIANCE` have texts
+    (`shared/appliances/appliance-views.ts`, whose test lists them).
+  - **The card of My room is not a capability of a room** (`HouseholdAppliances`, rendered once
+    under the rooms): the appliances are the household's, for every member, whatever their rooms.
+    It is not drawn while the list is empty or not answered yet; a failure before any answer is.
+    Its "Emptied" is the one control of My room that is not about a room - `my-room.spec` lists it.
+  - **The tile of the overview presses nothing** (`tile-appliance`, no link - there is no page of
+    the appliances yet): running and waiting, the names **joined in TypeScript**, and how many the
+    service says nothing of.
+  - **The name of an appliance stands between two texts** (`appliances.notice.finished`, `.waits`),
+    never inside one as a parameter - it is the registry's (found in review). **A time of a cycle
+    is the time alone on the day of the house it is, with the date on another** (`cycleTimeFormat`):
+    a dishwasher that finished last night is not "since 23:40" of today.
+  - **A state this version does not know is "not known"** (`APPLIANCE_STATE_LABELS`, `stateOf`),
+    never read as idle; an appliance without an id is not shown.
+  - `watchRuns` / `watchSamples` are there for the history of HAS-283; no page calls them yet.
+  - **Until the NFC tags of HAS-343** every member acknowledges from the application; after them
+    the acknowledgement of a member is the tag, the notice names who claimed the run and its button
+    becomes the administrator's "Wycisz przypomnienia" (HAS-346).
+  - **The registry knows the kind `appliance`** (`smart-home-sdk` 1.13.0, in `DEVICE_KINDS`), but
+    the form does not offer it (`OFFERED_KINDS`): the eight settings of an appliance are written
+    through the API, device by device. `bindingsOf('appliance')` is `shelly`, as in `DeviceRules`.
 - **The weather is one resource for the whole application** (HAS-240, `CurrentWeatherStore` in
   `data-access/weather/`, polling `GET /weather/current` every minute, stale after two missed
   calls): the strip of the panel (`core/layout/weather-strip.ts`) is on every page, for everybody
@@ -968,7 +1005,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` / `-appliance` with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
@@ -1229,6 +1266,11 @@ up in a production build.
   `INVALID_RULE` by `room-rule-rules.ts` against the mock registry, and a hall down on an Eaton PIR
   only (light 46) gets none; every rule at the start is one its room can have (a test writes each
   back). `resetLights()` for a unit test that changed them.
+- **And so can the mock appliances** (`appliances.fixtures.ts`, HAS-282): the washing machine runs,
+  the dryer has finished and waits, the dishwasher is idle; an acknowledgement empties the dryer
+  (204) and is refused with `409 NOTHING_TO_ACKNOWLEDGE` for one that does not wait, `writes-fail`
+  answers it with a 500. Runs and samples are fixed pictures. `resetAppliances()` for a unit test
+  that changed them.
 - **And so can the mock device registry** (`devices.fixtures.ts`): invented devices - fourteen of
   every kind with ids 1-14, and since HAS-267 the lights and sensors the mock rules are judged by
   (ids 40-54, the same ids as the mock lights; an added device still gets id 15) -

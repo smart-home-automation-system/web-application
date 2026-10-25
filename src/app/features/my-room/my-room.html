@@ -36,6 +36,9 @@
       </mat-card>
     }
 
+    <!-- HAS-282: the appliances are the household's - once, after the rooms, for every member -->
+    <app-household-appliances />
+
     @if (switchesHeating()) {
       <app-house-heating />
     }

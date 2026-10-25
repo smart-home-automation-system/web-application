@@ -23,7 +23,17 @@ import { SEASONS } from '../src/app/core/theme/season.ts';
 const DIST = fileURLToPath(new URL('../dist/web-application/browser', import.meta.url));
 const TEXT = 4.5;
 const NON_TEXT = 3;
-const DOMAINS = ['heating', 'water', 'boiler', 'household', 'devices', 'weather', 'blinds', 'light'];
+const DOMAINS = [
+  'heating',
+  'water',
+  'boiler',
+  'household',
+  'devices',
+  'weather',
+  'blinds',
+  'light',
+  'appliance',
+];
 
 // How much of the season's primary colour the glow (`--app-glow` in _seasons.scss) lays over
 // the page: its strongest point sits under the panel, the page text next to it, the cards see
@@ -126,13 +136,17 @@ const photos = readdirSync(PHOTOS)
 for (const name of BACKGROUNDS) {
   for (const file of [`${name}-1280.webp`, `${name}-2560.webp`, `${name}.json`]) {
     if (!existsSync(join(PHOTOS, file))) {
-      fail(`BACKGROUNDS names "${name}" but public/backgrounds/${file} is missing - run make-background.mjs.`);
+      fail(
+        `BACKGROUNDS names "${name}" but public/backgrounds/${file} is missing - run make-background.mjs.`,
+      );
     }
   }
 }
 for (const { name } of photos) {
   if (!BACKGROUNDS.includes(name)) {
-    fail(`public/backgrounds/${name}.json belongs to no name in BACKGROUNDS (core/background/backgrounds.ts).`);
+    fail(
+      `public/backgrounds/${name}.json belongs to no name in BACKGROUNDS (core/background/backgrounds.ts).`,
+    );
   }
 }
 const PHOTO_PAIRS = photos.flatMap(({ name }) =>

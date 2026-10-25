@@ -60,8 +60,8 @@ for (const language of ['en', 'pl'] as const) {
       test('overview, backend unreachable', async ({ page }, testInfo) => {
         await useScenario(page, 'offline');
         await page.goto('/');
-        // every call has told its failure before the picture is taken (HAS-268: ten of them)
-        await expect(page.getByRole('alert')).toHaveCount(10, { timeout: 15_000 });
+        // every call has told its failure before the picture is taken (HAS-282: eleven of them)
+        await expect(page.getByRole('alert')).toHaveCount(11, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),

@@ -72,6 +72,7 @@ export class Settings {
     { name: 'weather', label: 'domain.weather' },
     { name: 'blinds', label: 'domain.blinds' },
     { name: 'light', label: 'domain.light' },
+    { name: 'appliance', label: 'domain.appliance' },
   ];
 
   protected chooseScheme(choice: SchemeChoice): void {

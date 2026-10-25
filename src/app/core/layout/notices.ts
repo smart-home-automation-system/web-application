@@ -3,18 +3,35 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
   computed,
   effect,
   inject,
+  signal,
+  untracked,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { AppliancesControl } from '../../data-access/appliance/appliance-api';
+import { ApplianceStore } from '../../data-access/appliance/appliance-store';
+import {
+  ApplianceView,
+  acknowledgeFailureOf,
+  awaiting,
+  cycleTimeFormat,
+  toApplianceViews,
+} from '../../shared/appliances/appliance-views';
+import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
+import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
+
 import { LocalDateTimePipe } from '../../shared/local-date-time/local-date-time.pipe';
+import { APP_CONFIG } from '../config/app-config';
 import { ConnectionStore } from '../api/connection-store';
 import { ProfileStore } from '../profile/profile-store';
 import { AppUpdate } from '../pwa/app-update';
+import { houseDay } from '../time/house-date-time';
 import { Ticker } from '../time/ticker';
 
 /** How often the house is asked again while it does not answer and the page is in view. */
@@ -25,7 +42,9 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
 
 /**
  * What concerns every page, above the open one: that the house cannot be reached - with the time
- * it last answered - and that a newer version of the application is waiting.
+ * it last answered -, that an appliance has finished and waits to be emptied (HAS-282, for a member
+ * with a profile: acknowledged here, or closed for the visit), and that a newer version of the
+ * application is waiting.
  *
  * One call that got no answer does not raise the banner - a single service that hangs looks the
  * same - so at the first doubt the household registry is asked here, at once: its answer clears
@@ -36,7 +55,14 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
  */
 @Component({
   selector: 'app-notices',
-  imports: [MatButtonModule, MatIconModule, TranslocoDirective, LocalDateTimePipe],
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    TranslocoDirective,
+    DisplayTextPipe,
+    HouseDateTimePipe,
+    LocalDateTimePipe,
+  ],
   template: `
     <ng-container *transloco="let t">
       @if (connection.offline()) {
@@ -54,6 +80,42 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
                switches off under the finger loses the focus -->
           <button matButton type="button" (click)="askAgain()">
             {{ t('connection.retry') }}
+          </button>
+        </div>
+      }
+      <!-- HAS-282: a finished appliance waits to be emptied - one strip each, for every member with
+           a profile; nothing while the call fails (the card of "My room" tells that) -->
+      @for (appliance of finished(); track appliance.id) {
+        <div class="notice notice--appliance" data-testid="appliance-notice">
+          <mat-icon class="notice__icon">local_laundry_service</mat-icon>
+          <p class="notice__text">
+            <!-- the name of the registry, printed as it is: never a translation -->
+            {{ t('appliances.notice.finished') }}&ngsp;{{ appliance.name }}&ngsp;{{
+              t('appliances.notice.waits')
+            }}
+            @if (appliance.awaitingSince; as since) {
+              <span class="notice__detail">{{
+                t('appliances.notice.since', { time: since | houseDateTime: sinceFormat(since) })
+              }}</span>
+            }
+            @if (failureFor(appliance.id); as failure) {
+              <span class="notice__detail" data-testid="appliance-notice-failure">{{
+                failure | displayText
+              }}</span>
+            }
+          </p>
+          <!-- never disabled: a press while one is on its way is ignored, and a button that switches
+               off under the finger loses the focus -->
+          <button matButton type="button" (click)="acknowledge(appliance.id)">
+            {{ t('appliances.acknowledge') }}
+          </button>
+          <button
+            matIconButton
+            type="button"
+            [attr.aria-label]="t('appliances.notice.dismiss') + ' ' + appliance.name"
+            (click)="dismiss(appliance)"
+          >
+            <mat-icon>close</mat-icon>
           </button>
         </div>
       }
@@ -113,6 +175,66 @@ export class Notices {
   protected askAgain(): void {
     void this.profiles.refresh();
   }
+
+  private readonly zone = inject(APP_CONFIG).houseTimeZone;
+  // the day of the house now: a cycle that finished on another one is told with its date
+  private readonly today = computed(() => houseDay(this.ticker.now(), this.zone));
+  private readonly injector = inject(Injector);
+  /**
+   * The appliances of the application (`ApplianceStore`), taken once a member has a profile: the
+   * pages around the profiles poll nothing for them, and the polling then lives with the store.
+   */
+  private readonly appliances = signal<AppliancesControl | undefined>(undefined);
+  /** The finished cycles somebody closed for this visit, by appliance and the time it began to wait. */
+  private readonly dismissed = signal<ReadonlySet<string>>(new Set());
+
+  /**
+   * The finished appliances to announce. Nothing while the last call failed - the strip would tell
+   * a state the service may no longer have - and nothing that was closed for this visit; a cycle
+   * that finishes later waits since another time, so it is announced again.
+   */
+  protected readonly finished = computed(() => {
+    const control = this.appliances();
+    if (
+      control === undefined ||
+      this.profiles.profile() === undefined ||
+      control.error() !== undefined
+    ) {
+      return [];
+    }
+    const closed = this.dismissed();
+    return awaiting(toApplianceViews(control.value())).filter(
+      (appliance) => !closed.has(dismissKey(appliance)),
+    );
+  });
+
+  private readonly startAppliances = effect(() => {
+    if (this.profiles.profile() !== undefined && untracked(this.appliances) === undefined) {
+      this.appliances.set(untracked(() => this.injector.get(ApplianceStore).appliances));
+    }
+  });
+
+  protected sinceFormat(since: string): Intl.DateTimeFormatOptions {
+    return cycleTimeFormat(since, this.today());
+  }
+
+  /** The failed acknowledgement of this appliance, in words. */
+  protected failureFor(id: number) {
+    const failure = this.appliances()?.acknowledgeFailure();
+    return failure?.id === id ? acknowledgeFailureOf(failure) : undefined;
+  }
+
+  protected acknowledge(id: number): void {
+    this.appliances()?.acknowledge(id);
+  }
+
+  protected dismiss(appliance: ApplianceView): void {
+    this.dismissed.update((closed) => new Set([...closed, dismissKey(appliance)]));
+  }
+}
+
+function dismissKey(appliance: ApplianceView): string {
+  return `${appliance.id}@${appliance.awaitingSince ?? ''}`;
 }
 
 function sameDay(first: number, second: number): boolean {

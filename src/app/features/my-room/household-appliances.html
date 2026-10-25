@@ -1,0 +1,79 @@
+<ng-container *transloco="let t">
+  @if (shown()) {
+    <mat-card appearance="outlined" class="appliances card--domain" data-testid="appliances">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>local_laundry_service</mat-icon></div>
+        <mat-card-title>{{ t('appliances.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness
+            [lastUpdated]="appliances.lastUpdated()"
+            [stale]="appliances.stale()"
+          />
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="appliances__content">
+        <app-api-error-strip [error]="appliances.error()" [describeWith]="describeError" />
+
+        <ul class="appliances__list">
+          @for (appliance of views(); track appliance.id) {
+            <li
+              class="appliance"
+              [attr.data-appliance]="appliance.id"
+              [attr.data-state]="appliance.state ?? 'unknown'"
+            >
+              <div class="appliance__line">
+                <!-- the name of the registry, printed as it is: never a translation -->
+                <span class="appliance__name">{{ appliance.name }}</span>
+                <span class="appliance__state">{{
+                  t(appliance.state ? STATE_LABELS[appliance.state] : 'appliances.state.unknown')
+                }}</span>
+              </div>
+              @if (appliance.state === 'finished') {
+                @if (appliance.finishedAt; as at) {
+                  <p class="appliance__detail">
+                    {{ t('appliances.finishedAt', { time: at | houseDateTime: timeFormat(at) }) }}
+                  </p>
+                }
+                <div class="appliance__actions">
+                  <!-- never disabled: a press while one is on its way is ignored, and a button that
+                       switches off under the finger loses the focus -->
+                  <button
+                    matButton="tonal"
+                    type="button"
+                    data-testid="acknowledge"
+                    (click)="acknowledge(appliance.id)"
+                  >
+                    {{ t('appliances.acknowledge') }}
+                  </button>
+                  @if (appliances.acknowledging() === appliance.id) {
+                    <span class="appliance__detail" data-testid="acknowledging">{{
+                      t('appliances.acknowledging')
+                    }}</span>
+                  }
+                </div>
+                <!-- the failure of an acknowledgement belongs to the finished cycle it was for: once
+                     the list read again shows the appliance otherwise, it goes -->
+                @if (failure(); as failed) {
+                  @if (failed.id === appliance.id) {
+                    <app-api-error-strip
+                      [error]="failed.error"
+                      [summary]="t(failed.summary)"
+                      [describeWith]="describeError"
+                    />
+                  }
+                }
+              } @else if (appliance.runningSince; as since) {
+                <p class="appliance__detail">
+                  {{
+                    t('appliances.runningSince', { time: since | houseDateTime: timeFormat(since) })
+                  }}
+                </p>
+              }
+            </li>
+          }
+        </ul>
+        <p class="appliances__note">{{ t('appliances.note') }}</p>
+      </mat-card-content>
+    </mat-card>
+  }
+</ng-container>

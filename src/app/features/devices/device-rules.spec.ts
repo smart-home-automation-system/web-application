@@ -56,6 +56,8 @@ describe('the rules of a device', () => {
     ['weather station', ['bthome']],
     ['bthome gateway', ['shelly']],
     ['push button', ['shelly', 'eaton']],
+    // HAS-282: an appliance is the plug it runs on
+    ['appliance', ['shelly']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });

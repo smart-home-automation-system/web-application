@@ -31,7 +31,7 @@ test.describe('a resident with one room', () => {
   });
 
   // residents view temperatures and schedules; setting them is the administrator's alone
-  test('can press nothing: no switch of the house, and nothing about the room', async ({
+  test('can press nothing about the room: no switch of the house, only "Emptied" of the appliances', async ({
     page,
   }) => {
     await page.goto('/room');
@@ -39,7 +39,9 @@ test.describe('a resident with one room', () => {
 
     const main = page.getByRole('main');
     await expect(page.getByTestId('heating-switch')).toHaveCount(0);
-    await expect(main.locator('button, a, input, select, textarea')).toHaveCount(0);
+    // the one control of the page is not a room's: the finished dryer of the household (HAS-282)
+    await expect(main.locator('button, a, input, select, textarea')).toHaveText(['Emptied']);
+    await expect(page.getByTestId('appliances').getByRole('button')).toHaveText(['Emptied']);
     await expect(page.getByTestId('room-heating').locator('button, [tabindex]')).toHaveCount(0);
   });
 
@@ -141,10 +143,11 @@ test.describe('a resident with two rooms', () => {
 
     await page.goto('/room');
 
-    // the switch of the house and the four cards of the room: each tells its call - the lights
-    // card two, its lights and its rule (HAS-268); the blinds, the lights and the sensors are
-    // shown for the failure - nobody knows then if the room has any
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(6);
+    // the switch of the house, the four cards of the room and the appliances: each tells its call -
+    // the lights card two, its lights and its rule (HAS-268); the blinds, the lights, the sensors and
+    // the appliances are shown for the failure - nobody knows then if there are any
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(7);
+    await expect(page.getByTestId('appliances').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('room-lights').getByRole('alert')).toHaveCount(2);
     for (const card of ['room-heating', 'room-blinds', 'room-sensors', 'room-lights']) {
       await expect(page.getByTestId(card).getByRole('alert').first()).toContainText(
@@ -184,7 +187,8 @@ test.describe('a resident without a room', () => {
     await expect(page.getByTestId('room-heating')).toHaveCount(0);
     await expect(page.getByTestId('room-switcher')).toHaveCount(0);
     await expect(page.getByTestId('heating-switch')).toHaveCount(0);
-    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
+    // the appliances are the household's, a room or none: the finished dryer is all there is to press
+    await expect(page.getByRole('main').getByRole('button')).toHaveText(['Emptied']);
   });
 });
 

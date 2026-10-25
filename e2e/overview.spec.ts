@@ -100,7 +100,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(10);
+    await expect(alerts).toHaveCount(11);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -108,7 +108,13 @@ test.describe('overview', () => {
     // the lights tile two - the lights and the empty house
     await expect(page.getByTestId('tile-heating').getByRole('alert')).toHaveCount(3);
     await expect(page.getByTestId('tile-light').getByRole('alert')).toHaveCount(2);
-    for (const tile of ['tile-water', 'tile-boiler', 'tile-weather', 'tile-blinds']) {
+    for (const tile of [
+      'tile-water',
+      'tile-boiler',
+      'tile-weather',
+      'tile-blinds',
+      'tile-appliance',
+    ]) {
       await expect(page.getByTestId(tile).getByRole('alert')).toHaveCount(1);
     }
     await expect(page.getByRole('main').getByRole('button', { name: /Switch/ })).toHaveCount(0);
@@ -138,14 +144,14 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(7);
+    expect(tops).toHaveLength(8);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(7);
+      expect(new Set(tops).size).toBe(8);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(7);
+      expect(heights).toHaveLength(8);
       expect(new Set(heights).size).toBe(1);
     }
   });
