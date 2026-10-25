@@ -10,12 +10,14 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { AppliancesControl } from '../../data-access/appliance/appliance-api';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
+import { PushSubscriptionStore } from '../push/push-subscription-store';
 import {
   ApplianceView,
   acknowledgeFailureOf,
@@ -208,9 +210,20 @@ export class Notices {
     );
   });
 
+  private readonly destroyRef = inject(DestroyRef);
+
   private readonly startAppliances = effect(() => {
     if (this.profiles.profile() !== undefined && untracked(this.appliances) === undefined) {
-      this.appliances.set(untracked(() => this.injector.get(ApplianceStore).appliances));
+      const appliances = untracked(() => this.injector.get(ApplianceStore).appliances);
+      this.appliances.set(appliances);
+      // HAS-284: the notifications of this device are checked at every start, and a push that
+      // arrives while the application is open is told by the strip at once - not at the next poll
+      untracked(() =>
+        this.injector
+          .get(PushSubscriptionStore)
+          .messages.pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => void appliances.refresh()),
+      );
     }
   });
 

@@ -167,6 +167,17 @@ dashboards:
   button that hides it for the visit - it comes back with the next finished cycle. Nothing is
   said while the call fails. (Once the NFC tags of HAS-343 claim a run, the acknowledgement of a
   member is the tag and the button becomes the administrator's.)
+- **Notifications on this device** (HAS-284): on My room for every member, and on the settings, a
+  card with one switch - when an appliance has finished, the phone tells its member while they are
+  at home, also with the application closed (Web Push of `notification-service` 0.6.0). The switch
+  asks the browser for the permission, subscribes it with the public key of the house and stores the
+  subscription for the member; switched off, the browser's subscription ends and the registry forgets
+  it. It is checked again at every start: a subscription the browser lost is made anew while the
+  permission stands. The card tells every other state in words - a tab of Safari on an iPhone is led
+  to the personal link (the application has to be on the home screen first, and added from that
+  link), a browser without push, blocked notifications, a house without a key. A tap on a
+  notification opens the page it names (My room); a push that arrives while the application is open
+  also refreshes the appliance notice at once.
 - **Household**: the administration of the household registry, the administrator's. Everybody
   the registry holds, switched off or not, with their phone, role, rooms, permissions and
   devices - and the forms to add a member (from the button by the title, in a window of its own -
@@ -422,6 +433,9 @@ Endpoints used today:
 | `PUT` / `DELETE` | `/home/light/rooms/{room}/rules` | Writes the rule of a room whole, or removes it (the editor of the rule, HAS-267); the rule is read again, the answer of the write is not used. `INVALID_RULE` names what the service refused only in `details`, which is never shown - the editor checks every rule of the service first |
 | `PUT` | `/home/light/rooms/{room}/rules/resident-enabled` | The switch of the resident (my room, the editor of the rule); the rule is read again |
 | `GET` | `/home/light/rooms/{room}/rules/runs?from=&to=` | What the rules engine sent in a room in the last 24 hours (the window of a room, the editor of the rule), every 60 s |
+| `GET` | `/home/household/push-config` | The public VAPID key of the house (HAS-284), read when the notifications of a device are switched on or made anew; `{}` when the deployment has none, and the card says the house sends none yet. Needs `database-service` 0.18.0 or later |
+| `PUT` | `/home/household/member/{name}/push-subscriptions` | Stores the Web Push subscription of this browser for the member (`endpoint`, `keys`, `userAgent`) - an upsert by the endpoint; also at every start while switched on. `409 MEMBER_SWITCHED_OFF` has a text of its own |
+| `DELETE` | `/home/household/member/{name}/push-subscriptions?endpoint=` | Removes it when the switch is turned off, after the browser ended it |
 | `GET` | `/home/appliance` | The appliances of the household with their state, `finishedAt` and `awaitingSince` (the notice of every page, my room, overview), polled every 30 s and right after an acknowledgement. Needs `appliance-service` 0.3.0 and `api-gateway-service` 0.9.0 or later |
 | `POST` | `/home/appliance/{id}/acknowledge` | Marks a finished appliance as emptied (the notice, my room); the list is read again, the answer is not used. `409 NOTHING_TO_ACKNOWLEDGE` and `404 NOT_FOUND_APPLIANCE` have texts of their own |
 | `GET` | `/home/appliance/{id}/runs?from=&to=`, `/home/appliance/{id}/samples?from=&to=` | The cycles and the power draw of one appliance - in the data-access class for the history of HAS-283, not called by a page yet |

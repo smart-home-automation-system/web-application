@@ -55,7 +55,11 @@
           [checked]="background.photos()"
           (change)="background.showPhotos($event.checked)"
         >
-          {{ t(background.photos() ? 'settings.appearance.photosOn' : 'settings.appearance.photosOff') }}
+          {{
+            t(
+              background.photos() ? 'settings.appearance.photosOn' : 'settings.appearance.photosOff'
+            )
+          }}
         </mat-slide-toggle>
         <p class="hint hint--below">{{ t('settings.appearance.photosHint') }}</p>
       </mat-card-content>
@@ -106,5 +110,8 @@
         </dl>
       </mat-card-content>
     </mat-card>
+
+    <!-- HAS-284: the notifications of this device, as on My room -->
+    <app-device-notifications />
   </div>
 </ng-container>

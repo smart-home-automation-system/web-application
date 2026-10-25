@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Subject } from 'rxjs';
 
 import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
@@ -9,6 +10,7 @@ import { ApiError } from '../api/api-error';
 import { ConnectionStore } from '../api/connection-store';
 import { ProfileStore } from '../profile/profile-store';
 import { AppUpdate } from '../pwa/app-update';
+import { PushSubscriptionStore } from '../push/push-subscription-store';
 import { ASK_AGAIN_MS, Notices } from './notices';
 
 const STORAGE_KEY = 'smart-home.last-contact';
@@ -27,6 +29,8 @@ describe('Notices', () => {
   const acknowledgeFailure = signal<FailedAcknowledgement | undefined>(undefined);
   const acknowledge = vi.fn();
   let storesMade = 0;
+  let pushes: Subject<unknown>;
+  const applianceRefresh = vi.fn(() => Promise.resolve(true));
 
   function create(): void {
     TestBed.configureTestingModule({
@@ -40,6 +44,7 @@ describe('Notices', () => {
             return {
               appliances: {
                 ...appliances,
+                refresh: applianceRefresh,
                 acknowledging: signal(undefined),
                 acknowledgeFailure,
                 acknowledge,
@@ -48,6 +53,7 @@ describe('Notices', () => {
           },
         },
         { provide: AppUpdate, useValue: { available: newVersion, reload } },
+        { provide: PushSubscriptionStore, useValue: { messages: pushes } },
       ],
     });
     connection = TestBed.inject(ConnectionStore);
@@ -85,6 +91,8 @@ describe('Notices', () => {
     acknowledgeFailure.set(undefined);
     acknowledge.mockClear();
     storesMade = 0;
+    pushes = new Subject<unknown>();
+    applianceRefresh.mockClear();
     refresh.mockClear();
     reload.mockClear();
     // the timers of the component and the clock; Angular keeps its own scheduling
@@ -375,6 +383,14 @@ describe('Notices', () => {
       answer(appliances, [{ ...DRYER, awaitingSince: '2026-10-08T15:10:00' }]);
       await fixture.whenStable();
       expect(applianceNotices()).toHaveLength(1);
+    });
+
+    // HAS-284: a push that arrives while the application is open is told by the strip at once
+    it('asks for the appliances again when a push arrives while the application is open', async () => {
+      await withProfile();
+      pushes.next({ notification: { title: 'Dryer' } });
+
+      expect(applianceRefresh).toHaveBeenCalledTimes(1);
     });
 
     // the strip would tell a state the service may no longer have

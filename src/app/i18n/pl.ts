@@ -1055,6 +1055,27 @@ export const pl: Messages = {
     },
   },
   // the names of the registry are English (Dishwasher): no word here takes the gender of a name
+  push: {
+    title: 'Powiadomienia na tym urządzeniu',
+    lead: 'Gdy sprzęt AGD skończy pracę, to urządzenie da Ci znać - także przy zamkniętej aplikacji i tylko wtedy, gdy jesteś w domu.',
+    switch: 'Powiadamiaj mnie na tym urządzeniu',
+    busy: 'Włączam powiadomienia…',
+    checking: 'Sprawdzam powiadomienia tego urządzenia',
+    install:
+      'Powiadomienia trafiają tylko do aplikacji na ekranie początkowym. Otwórz swój osobisty link i dodaj ją stamtąd do ekranu początkowego.',
+    installLink: 'Otwórz mój osobisty link',
+    unsupported: 'Ta przeglądarka nie pokazuje powiadomień aplikacji.',
+    unconfigured: 'Dom nie wysyła jeszcze powiadomień: serwer nie ma do nich klucza.',
+    denied:
+      'Powiadomienia tej aplikacji są zablokowane. Zezwól na nie w ustawieniach urządzenia i wróć tutaj.',
+    browserFailed: 'Urządzenie nie włączyło powiadomień. Spróbuj ponownie.',
+    error: {
+      memberSwitchedOff:
+        'Twój profil jest wyłączony w rejestrze domowników, więc nie dostaje powiadomień.',
+      memberNotFound: 'Rejestr domowników nie zna już Twojego profilu.',
+    },
+  },
+
   appliances: {
     title: 'AGD',
     loading: 'Wczytywanie urządzeń AGD',

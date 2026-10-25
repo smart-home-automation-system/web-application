@@ -1062,6 +1062,27 @@ export const en = {
       notFoundRule: 'The room has no rule.',
     },
   },
+  // HAS-284: the Web Push of this device - My room and the settings
+  push: {
+    title: 'Notifications on this device',
+    lead: 'When an appliance has finished, this device tells you - also while the application is closed, and only while you are at home.',
+    switch: 'Notify me on this device',
+    busy: 'Setting up the notifications…',
+    checking: 'Asking the device about its notifications',
+    install:
+      'Notifications come only to the application on the home screen. Open your personal link and add it to the home screen from there.',
+    installLink: 'Open my personal link',
+    unsupported: 'This browser cannot show notifications of the application.',
+    unconfigured: 'The house sends no notifications yet: the server has no key for them.',
+    denied:
+      'Notifications are blocked for this application. Allow them in the settings of the device, then come back here.',
+    browserFailed: 'The device did not set up the notifications. Try again.',
+    error: {
+      memberSwitchedOff:
+        'Your profile is switched off in the household, so it takes no notifications.',
+      memberNotFound: 'The household does not know your profile any more.',
+    },
+  },
   // HAS-282: the washing machine, the dryer and the dishwasher - the card of My room, the tile of the
   // overview and the notice above every page. The names are the registry's, printed as they are
   appliances: {
