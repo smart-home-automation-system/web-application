@@ -51,6 +51,14 @@ export function toApplianceViews(answer: readonly Appliance[] | null | undefined
  * The appliances whose finished cycle waits to be acknowledged - what the notice of the shell
  * announces and the card offers to acknowledge.
  */
+/**
+ * Whether "Emptied" is offered: a finished cycle, and one still finishing (HAS-348, appliance-service
+ * >= 0.5.0) - the draw fell, the end is not certain yet, and somebody may have emptied it already.
+ */
+export function canAcknowledge(view: ApplianceView): boolean {
+  return view.state === 'finished' || view.state === 'finishing';
+}
+
 export function awaiting(views: readonly ApplianceView[]): ApplianceView[] {
   return views.filter((view) => view.state === 'finished');
 }

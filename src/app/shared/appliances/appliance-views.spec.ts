@@ -4,6 +4,7 @@ import {
   APPLIANCE_ERROR_TEXTS,
   acknowledgeFailureOf,
   awaiting,
+  canAcknowledge,
   cycleTimeFormat,
   describeApplianceError,
   summariseAppliances,
@@ -69,6 +70,8 @@ describe('appliance views', () => {
     ]);
 
     expect(awaiting(views).map((view) => view.id)).toEqual([62]);
+    // HAS-348: "Emptied" also while it is finishing - never while it runs, idles or is not known
+    expect(views.filter(canAcknowledge).map((view) => view.id)).toEqual([61, 62]);
     // a pause of a cycle is still the cycle
     expect(summariseAppliances(views)).toEqual({
       running: ['Washing machine'],

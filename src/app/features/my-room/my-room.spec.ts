@@ -1007,6 +1007,21 @@ describe('MyRoom', () => {
       expect((await controls()).inTheRoom).toEqual([]);
     });
 
+    // HAS-348: also while it is finishing - emptied before the message came
+    it('offers "Emptied" for one that is finishing, and sends it', async () => {
+      await page();
+      answer(appliances, [{ ...WASHER, state: 'finishing' }, DISHWASHER]);
+
+      const rows = [...(await appliancesCard())!.querySelectorAll('.appliance')].map(words);
+      expect(rows).toEqual([
+        'Washing machine Finishing Running since 13:40 Emptied',
+        'Dishwasher Idle',
+      ]);
+      (await appliancesCard())!.querySelector<HTMLButtonElement>('button')!.click();
+
+      expect(acknowledged).toEqual(['61 by Celina']);
+    });
+
     it('tells a refused acknowledgement next to the appliance', async () => {
       await page();
       answer(appliances, [DRYER]);

@@ -34,6 +34,16 @@
                     {{ t('appliances.finishedAt', { time: at | houseDateTime: timeFormat(at) }) }}
                   </p>
                 }
+              } @else if (appliance.runningSince; as since) {
+                <p class="appliance__detail">
+                  {{
+                    t('appliances.runningSince', { time: since | houseDateTime: timeFormat(since) })
+                  }}
+                </p>
+              }
+              <!-- HAS-348: also while it is finishing - somebody heard it end and emptied it before the
+                   message; the service then ends the cycle and never announces it -->
+              @if (canAcknowledge(appliance)) {
                 <div class="appliance__actions">
                   <!-- never disabled: a press while one is on its way is ignored, and a button that
                        switches off under the finger loses the focus -->
@@ -62,12 +72,6 @@
                     />
                   }
                 }
-              } @else if (appliance.runningSince; as since) {
-                <p class="appliance__detail">
-                  {{
-                    t('appliances.runningSince', { time: since | houseDateTime: timeFormat(since) })
-                  }}
-                </p>
               }
             </li>
           }
