@@ -745,8 +745,13 @@ e2e/              # Playwright tests
     /appliance/{id}/acknowledge`, then reads the list again; only that answer moves the strip and
     the card. One at a time (`acknowledging`); a failure is `acknowledgeFailure` of that id, told
     next to that appliance (`acknowledgeFailureOf`) - no answer is "may have been marked all the
-    same". `NOTHING_TO_ACKNOWLEDGE` and `NOT_FOUND_APPLIANCE` have texts
-    (`shared/appliances/appliance-views.ts`, whose test lists them).
+    same". `NOTHING_TO_ACKNOWLEDGE`, `NOT_FOUND_APPLIANCE` and `UNKNOWN_MEMBER` have texts
+    (`shared/appliances/appliance-views.ts`, whose test lists them). **It names the member of the
+    profile in use** (HAS-347, `?member=` from `ProfileStore.profile()`, both callers - the notice and
+    the card of My room): `appliance-service` >= 0.4.0 checks the name against the profiles (`400
+    UNKNOWN_MEMBER` for one no longer there, worded as "open your personal link again") and the household
+    messages say who emptied it. Information for the message, not a proof of the chore - that is the tag
+    of HAS-343. A run of `watchRuns` carries `acknowledgedBy`.
   - **What is the household's stands in a row of its own under the rooms** (`.card-row` of
     `src/styles.scss`, owner 2026-10-25): the appliances, the notifications of this device and the switch
     of the house. Both rows - the room's and the household's - are `.card-row`: a wrapping flex row of

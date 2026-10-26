@@ -91,6 +91,7 @@ describe('appliance views', () => {
     expect(Object.keys(APPLIANCE_ERROR_TEXTS)).toEqual([
       'NOT_FOUND_APPLIANCE',
       'NOTHING_TO_ACKNOWLEDGE',
+      'UNKNOWN_MEMBER',
     ]);
     const nothing = new ApiError('client', 409, [
       { message: 'Nothing to acknowledge', code: 'NOTHING_TO_ACKNOWLEDGE' },

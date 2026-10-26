@@ -41,6 +41,8 @@ export interface ApplianceRun {
   readonly energyWh?: number;
   readonly maxWatts?: number;
   readonly acknowledgedAt?: string;
+  /** Who acknowledged it in the application (HAS-347) - left out when nobody was named. */
+  readonly acknowledgedBy?: string;
 }
 
 /** One sample of `GET /home/appliance/{id}/samples`: the draw of the plug, every 30 s. */
@@ -66,8 +68,11 @@ export interface AppliancesControl extends PollingResource<readonly Appliance[] 
   readonly acknowledging: Signal<number | undefined>;
   /** The last acknowledgement, if it failed; cleared by the next one. */
   readonly acknowledgeFailure: Signal<FailedAcknowledgement | undefined>;
-  /** `POST /home/appliance/{id}/acknowledge`. Ignored while another is on its way. */
-  acknowledge(id: number): void;
+  /**
+   * `POST /home/appliance/{id}/acknowledge`, with the member of the profile in use when there is one
+   * (HAS-347: the household messages name who acknowledged it). Ignored while another is on its way.
+   */
+  acknowledge(id: number, member?: string): void;
 }
 
 // what runs and what has finished: the notice of the shell reads it on every page
@@ -101,13 +106,14 @@ export class ApplianceApi {
       ...appliances,
       acknowledging: acknowledging.asReadonly(),
       acknowledgeFailure: acknowledgeFailure.asReadonly(),
-      acknowledge: (id) => {
+      acknowledge: (id, member) => {
         if (acknowledging() !== undefined) {
           return;
         }
         acknowledging.set(id);
         acknowledgeFailure.set(undefined);
-        this.api.post<unknown>(`/appliance/${id}/acknowledge`).subscribe({
+        const params = member === undefined ? undefined : { member };
+        this.api.post<unknown>(`/appliance/${id}/acknowledge`, undefined, params).subscribe({
           error: (failure: unknown) => {
             acknowledgeFailure.set({ id, error: toApiError(failure) });
             readAgain();

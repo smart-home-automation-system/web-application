@@ -450,7 +450,7 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
   {
     method: 'POST',
     path: /^\/home\/appliance\/(\d+)\/acknowledge$/,
-    reply: (_request, _fresh, [id]) => acknowledgeAppliance(id),
+    reply: (request, _fresh, [id]) => acknowledgeAppliance(id, request.params.get('member')),
   },
   {
     method: 'GET',

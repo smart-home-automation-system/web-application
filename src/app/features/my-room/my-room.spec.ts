@@ -91,7 +91,7 @@ describe('MyRoom', () => {
   /** The commands sent to the blinds, in words. */
   let sent: string[];
   let appliances: FakeResource<readonly Appliance[] | null>;
-  let acknowledged: number[];
+  let acknowledged: string[];
   const acknowledgeFailure = signal<FailedAcknowledgement | undefined>(undefined);
 
   beforeEach(() => {
@@ -214,7 +214,7 @@ describe('MyRoom', () => {
               ...appliances,
               acknowledging: signal(undefined),
               acknowledgeFailure,
-              acknowledge: (id: number) => acknowledged.push(id),
+              acknowledge: (id: number, member?: string) => acknowledged.push(`${id} by ${member}`),
             },
           }),
         },
@@ -1002,7 +1002,8 @@ describe('MyRoom', () => {
       expect(buttons.map(words)).toEqual(['Emptied']);
       buttons[0].click();
 
-      expect(acknowledged).toEqual([62]);
+      // HAS-347: as the member of the profile, whom the household messages then name
+      expect(acknowledged).toEqual(['62 by Celina']);
       expect((await controls()).inTheRoom).toEqual([]);
     });
 

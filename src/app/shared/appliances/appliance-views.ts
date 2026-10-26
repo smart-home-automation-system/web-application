@@ -80,6 +80,8 @@ export function summariseAppliances(views: readonly ApplianceView[]): Appliances
 export const APPLIANCE_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   NOT_FOUND_APPLIANCE: 'appliances.error.notFound',
   NOTHING_TO_ACKNOWLEDGE: 'appliances.error.nothingToAcknowledge',
+  // HAS-347: the profile in use is no switched-on member of the registry any more
+  UNKNOWN_MEMBER: 'appliances.error.unknownMember',
 };
 
 export function describeApplianceError(error: ApiError): DisplayText {

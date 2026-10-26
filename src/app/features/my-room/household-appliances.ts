@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
+import { ProfileStore } from '../../core/profile/profile-store';
 import { houseDay } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
@@ -50,6 +51,7 @@ import { MessageKey } from '../../i18n/messages';
 })
 export class HouseholdAppliances {
   protected readonly appliances = inject(ApplianceStore).appliances;
+  private readonly profiles = inject(ProfileStore);
   protected readonly STATE_LABELS = APPLIANCE_STATE_LABELS;
   private readonly ticker = inject(Ticker);
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
@@ -85,6 +87,6 @@ export class HouseholdAppliances {
   }
 
   protected acknowledge(id: number): void {
-    this.appliances.acknowledge(id);
+    this.appliances.acknowledge(id, this.profiles.profile()?.name);
   }
 }
