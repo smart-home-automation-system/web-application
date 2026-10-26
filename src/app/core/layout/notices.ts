@@ -238,7 +238,7 @@ export class Notices {
   }
 
   protected acknowledge(id: number): void {
-    this.appliances()?.acknowledge(id);
+    this.appliances()?.acknowledge(id, this.profiles.profile()?.name);
   }
 
   protected dismiss(appliance: ApplianceView): void {

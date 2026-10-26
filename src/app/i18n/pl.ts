@@ -1099,6 +1099,7 @@ export const pl: Messages = {
     error: {
       notFound: 'Usługa urządzeń AGD nie obserwuje tego urządzenia.',
       nothingToAcknowledge: 'Nic już nie czeka na opróżnienie.',
+      unknownMember: 'Twojego profilu nie ma już w rejestrze domowników - otwórz ponownie swój osobisty link.',
     },
     notice: {
       finished: 'Koniec pracy:',

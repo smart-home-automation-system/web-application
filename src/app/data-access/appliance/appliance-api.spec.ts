@@ -63,6 +63,19 @@ describe('ApplianceApi', () => {
     expect(appliances.acknowledgeFailure()).toBeUndefined();
   });
 
+  // HAS-347: the member of the profile in use goes with it, for the household messages to name
+  it('sends the member who acknowledges it', async () => {
+    appliances.acknowledge(62, 'Ola');
+    http
+      .expectOne({ method: 'POST', url: '/home/appliance/62/acknowledge?member=Ola' })
+      .flush(null, { status: 204, statusText: 'No Content' });
+
+    answerTheListWith([IDLE]);
+    await settled();
+
+    expect(appliances.value()).toEqual([IDLE]);
+  });
+
   it('ignores a second acknowledgement while one is on its way', () => {
     appliances.acknowledge(62);
     appliances.acknowledge(61);

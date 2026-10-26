@@ -349,14 +349,15 @@ describe('Notices', () => {
       expect(applianceNotices()).toHaveLength(0);
     });
 
-    it('acknowledges it on request', async () => {
+    // HAS-347: as the member of the profile, whom the household messages then name
+    it('acknowledges it on request, as the member of the profile', async () => {
       await withProfile();
       answer(appliances, [DRYER]);
       await fixture.whenStable();
 
       applianceNotices()[0].querySelector<HTMLButtonElement>('button')!.click();
 
-      expect(acknowledge).toHaveBeenCalledWith(62);
+      expect(acknowledge).toHaveBeenCalledWith(62, 'Ola');
     });
 
     it('tells an acknowledgement that got no answer as one that may have been carried out', async () => {

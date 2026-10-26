@@ -3,6 +3,7 @@ import {
   ApplianceRun,
   ApplianceSample,
 } from '../app/data-access/appliance/appliance-api';
+import { householdProfiles } from './household.fixtures';
 import { houseTime } from './house-time';
 import type { MockReply } from './handlers';
 
@@ -92,7 +93,25 @@ export function oneAppliance(id: string, fresh: boolean): MockReply {
 }
 
 /** `POST /home/appliance/{id}/acknowledge`: 204, or 409 when nothing waits. */
-export function acknowledgeAppliance(id: string): MockReply {
+export function acknowledgeAppliance(id: string, member: string | null = null): MockReply {
+  // HAS-347: a member the profiles do not have is refused before anything is acknowledged
+  if (
+    member !== null &&
+    !householdProfiles().some((profile) => profile.name.toLowerCase() === member.trim().toLowerCase())
+  ) {
+    return {
+      status: 400,
+      body: {
+        errors: [
+          {
+            message: 'Unknown household member',
+            details: `No switched-on household member is named ${member}`,
+            code: 'UNKNOWN_MEMBER',
+          },
+        ],
+      },
+    };
+  }
   const appliance = appliances.find((one) => String(one.id) === id);
   if (appliance === undefined) {
     return notFound(id);

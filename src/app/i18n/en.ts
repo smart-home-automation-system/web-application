@@ -1108,6 +1108,7 @@ export const en = {
     error: {
       notFound: 'The appliance service does not watch this appliance.',
       nothingToAcknowledge: 'Nothing waits to be emptied any more.',
+      unknownMember: 'Your profile is not in the household registry any more - open your personal link again.',
     },
     notice: {
       // the name of the appliance stands between the two, printed as it is: never a parameter
