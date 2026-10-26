@@ -1090,7 +1090,7 @@ export const en = {
     loading: 'Loading the appliances',
     none: 'The household has no appliance yet.',
     unreadable: 'The appliance service did not answer with a list.',
-    note: 'Mark a finished appliance as emptied and the reminders stop.',
+    note: 'Mark an appliance as emptied once it has finished - or while it is finishing, before the message comes - and the household is not reminded.',
     acknowledge: 'Emptied',
     acknowledging: 'Sending…',
     acknowledgeFailed: 'Not marked as emptied.',

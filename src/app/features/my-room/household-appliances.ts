@@ -12,6 +12,7 @@ import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import {
   APPLIANCE_STATE_LABELS,
+  canAcknowledge,
   cycleTimeFormat,
   describeApplianceError,
   toApplianceViews,
@@ -58,6 +59,7 @@ export class HouseholdAppliances {
   // the day of the house now: a cycle of another day is told with its date
   private readonly today = computed(() => houseDay(this.ticker.now(), this.zone));
   protected readonly describeError = describeApplianceError;
+  protected readonly canAcknowledge = canAcknowledge;
 
   protected readonly views = computed(() => toApplianceViews(this.appliances.value()));
 

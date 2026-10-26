@@ -1081,7 +1081,7 @@ export const pl: Messages = {
     loading: 'Wczytywanie urządzeń AGD',
     none: 'Domownicy nie mają jeszcze urządzeń AGD.',
     unreadable: 'Usługa urządzeń AGD nie odpowiedziała listą.',
-    note: 'Oznacz skończone urządzenie jako opróżnione, a przypomnienia ustaną.',
+    note: 'Oznacz urządzenie jako opróżnione, gdy skończyło pracę - albo już gdy ją kończy, zanim przyjdzie wiadomość - a domownicy nie dostaną przypomnień.',
     acknowledge: 'Odebrane',
     acknowledging: 'Wysyłanie…',
     acknowledgeFailed: 'Nie oznaczono jako opróżnione.',

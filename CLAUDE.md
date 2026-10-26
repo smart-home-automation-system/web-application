@@ -751,7 +751,11 @@ e2e/              # Playwright tests
     the card of My room): `appliance-service` >= 0.4.0 checks the name against the profiles (`400
     UNKNOWN_MEMBER` for one no longer there, worded as "open your personal link again") and the household
     messages say who emptied it. Information for the message, not a proof of the chore - that is the tag
-    of HAS-343. A run of `watchRuns` carries `acknowledgedBy`.
+    of HAS-343. A run of `watchRuns` carries `acknowledgedBy`. **"Emptied" is also offered while an appliance is
+    `finishing`** (HAS-348, `canAcknowledge`, appliance-service >= 0.5.0): somebody heard it end and emptied it
+    before the message - the service ends the cycle at the fall and only tells the household it was emptied. On
+    the card of My room only (the installed application opens there); the notice of the shell stays for
+    `finished` - a strip for a few minutes of finishing would come and go.
   - **What is the household's stands in a row of its own under the rooms** (`.card-row` of
     `src/styles.scss`, owner 2026-10-25): the appliances, the notifications of this device and the switch
     of the house. Both rows - the room's and the household's - are `.card-row`: a wrapping flex row of

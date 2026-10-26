@@ -116,7 +116,8 @@ export function acknowledgeAppliance(id: string, member: string | null = null): 
   if (appliance === undefined) {
     return notFound(id);
   }
-  if (appliance.state !== 'finished') {
+  // HAS-348: a cycle still finishing is acknowledged too
+  if (appliance.state !== 'finished' && appliance.state !== 'finishing') {
     return {
       status: 409,
       body: {
