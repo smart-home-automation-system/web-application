@@ -80,7 +80,40 @@ test.describe('the administrator', () => {
       /Running\s+Washing machine/,
       /Waits to be emptied\s+Dryer/,
     ]);
-    await expect(tile.locator('button, a')).toHaveCount(0);
+    // the title leads to the appliances page (HAS-283); nothing else to press
+    await expect(tile.locator('button')).toHaveCount(0);
+    await expect(tile.locator('a')).toHaveAttribute('href', '/appliances');
+  });
+});
+
+// HAS-283: the appliances page of the administrator - the counters, the cycles of 7 or 30 days, the draw
+test.describe('the appliances page', () => {
+  test('lists the cycles of 7 or 30 days and draws the last 24 or 48 hours', async ({ page }) => {
+    await page.goto('/appliances');
+
+    const washer = page.getByTestId('appliance-61');
+    await expect(washer.getByTestId('counters')).toContainText('30 days');
+    const week = await washer.getByTestId('run').count();
+    expect(week).toBeGreaterThan(0);
+
+    await page.getByTestId('runs-period').getByRole('radio', { name: '30 days' }).click();
+    await expect(async () => expect(await washer.getByTestId('run').count()).toBeGreaterThan(week)).toPass();
+
+    const power = page.getByTestId('power-61');
+    await expect(power.getByTestId('power-facts')).toContainText('Running above 20 W');
+    await power.getByRole('radio', { name: '48 hours' }).click();
+    await expect(power.getByRole('radio', { name: '48 hours' })).toBeChecked();
+    await expect(power.getByTestId('power-facts')).toContainText('Drawn');
+  });
+
+  test.describe('for a resident', () => {
+    test.use({ profile: 'resident' });
+
+    // the administrator's page: a resident is led to their room
+    test('is not open', async ({ page }) => {
+      await page.goto('/appliances');
+      await expect(page).toHaveURL(/\/room$/);
+    });
   });
 });
 

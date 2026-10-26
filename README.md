@@ -101,6 +101,14 @@ dashboards:
   green / blue (and white) of an rgbw light, the sensors of the room, the rule as stored and what
   the rules engine sent in the last 24 hours. A resident stops the rules of their own room on My
   room (HAS-268).
+- **Appliances** (HAS-283, the administrator's, `/appliances`): the washing machine, the dryer and the
+  dishwasher of `appliance-service`, to tune their thresholds. At the top **the whole house** - the cycles
+  and the energy of 24 hours, 7 and 30 days, every appliance added up. Then per appliance its card - its
+  state, the same counters (a cycle whose energy is not known is named, never counted as 0 Wh; one that
+  still runs is counted and adds no energy yet), its settings as the device registry holds them (read
+  only, changed on the devices page) and its cycles of 7 or 30 days (start, duration, energy, emptied
+  after how long and by whom) - and next to it **the draw of its plug** over the last 24 or 48 hours with
+  its two thresholds drawn across it, where a washing pause or the turns of a dryer can be seen.
 - **The rule of a room** (HAS-267, the administrator's, `/lights/rooms/{room}/rules`, from "Change
   the rule" / "Write a rule" in the window of a room): what the rule can rely on - the lights of the
   room (switching, dimming, colour) and its presence and motion sensors as the device registry has
@@ -438,7 +446,9 @@ Endpoints used today:
 | `DELETE` | `/home/household/member/{name}/push-subscriptions?endpoint=` | Removes it when the switch is turned off, after the browser ended it |
 | `GET` | `/home/appliance` | The appliances of the household with their state, `finishedAt` and `awaitingSince` (the notice of every page, my room, overview), polled every 30 s and right after an acknowledgement. Needs `appliance-service` 0.3.0 and `api-gateway-service` 0.9.0 or later |
 | `POST` | `/home/appliance/{id}/acknowledge?member=` | Marks a finished appliance as emptied (the notice, my room) - on my room also one still finishing (HAS-348, `appliance-service` 0.5.0: the cycle is then never announced) by the member of the profile in use, whom the household messages then name (HAS-347, `appliance-service` 0.4.0); the list is read again, the answer is not used. `409 NOTHING_TO_ACKNOWLEDGE`, `404 NOT_FOUND_APPLIANCE` and `400 UNKNOWN_MEMBER` have texts of their own |
-| `GET` | `/home/appliance/{id}/runs?from=&to=`, `/home/appliance/{id}/samples?from=&to=` | The cycles and the power draw of one appliance - in the data-access class for the history of HAS-283, not called by a page yet |
+| `GET` | `/home/appliance/{id}/runs?from=&to=` | The cycles of one appliance that started in the range (appliances: the last 30 days of every appliance, one after the other, every 60 s - the counters and the lists read that one answer) |
+| `GET` | `/home/appliance/{id}/samples?from=&to=` | The draw of the plug, a sample every 30 s (appliances: the last 24 or 48 hours of each appliance, every 60 s) |
+| `GET` | `/home/device/registry?kind=appliance&enabled=true` | The appliances with their settings (appliances, read only, every 60 s) |
 | `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |

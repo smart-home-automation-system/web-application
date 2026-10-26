@@ -1,8 +1,10 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
+import { Observable, catchError, concatMap, from, map, of, toArray } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { ApiError, toApiError } from '../../core/api/api-error';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
+import { QueryResource, queryResource } from '../../core/api/query-resource';
 import { HistoryRange } from '../../core/time/history-range';
 
 /**
@@ -49,6 +51,23 @@ export interface ApplianceRun {
 export interface ApplianceSample {
   readonly at?: string;
   readonly watts?: number;
+}
+
+/**
+ * The cycles of one appliance in a range (HAS-283), as one entry of the history of every appliance: the
+ * runs it answered, or the failure of its own call - the others are told all the same. `runs` is
+ * `undefined` when the call failed, and also when the service answered without a list.
+ */
+export interface RunsOf {
+  readonly id: number;
+  readonly runs?: readonly ApplianceRun[];
+  readonly error?: ApiError;
+}
+
+/** What the history of every appliance is asked for: which appliances, over which range. */
+export interface RunsQuery {
+  readonly ids: readonly number[];
+  readonly range: HistoryRange;
 }
 
 /** An acknowledgement the service did not carry out. */
@@ -122,6 +141,50 @@ export class ApplianceApi {
         });
       },
     };
+  }
+
+  /**
+   * The cycles of every appliance in one range (HAS-283, the appliances page): `GET /appliance/{id}/runs`
+   * of each, one after the other, as **one resource** - the counters of the whole house and of each
+   * appliance read the same answer. A call that fails is the `error` of its appliance, never the end of
+   * the others. Asked again at once when the appliances or the range change. Call in an injection
+   * context.
+   */
+  watchRunsOf(query: () => RunsQuery): QueryResource<RunsQuery, readonly RunsOf[]> {
+    return queryResource(
+      query,
+      (asked) =>
+        from(asked.ids).pipe(
+          concatMap((id) => this.runsOf(id, asked.range)),
+          toArray(),
+        ),
+      { intervalMs: POLL_HISTORY_EVERY_MS },
+    );
+  }
+
+  /**
+   * The samples of one appliance in a range of the house (at most 2 days) - the chart of the appliances
+   * page, tagged with the range it answers (HAS-283). The id is read when a call is made - an input of the
+   * card, set before the first call; the card is made anew for another appliance. Call in an injection
+   * context.
+   */
+  watchSampleHistory(
+    id: () => number,
+    range: () => HistoryRange,
+  ): QueryResource<HistoryRange, readonly ApplianceSample[] | null> {
+    return queryResource(
+      range,
+      (asked) =>
+        this.api.get<readonly ApplianceSample[] | null>(`/appliance/${id()}/samples`, { ...asked }),
+      { intervalMs: POLL_HISTORY_EVERY_MS },
+    );
+  }
+
+  private runsOf(id: number, range: HistoryRange): Observable<RunsOf> {
+    return this.api.get<readonly ApplianceRun[] | null>(`/appliance/${id}/runs`, { ...range }).pipe(
+      map((runs): RunsOf => ({ id, runs: Array.isArray(runs) ? runs : undefined })),
+      catchError((failure: unknown) => of<RunsOf>({ id, error: toApiError(failure) })),
+    );
   }
 
   /**

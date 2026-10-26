@@ -72,6 +72,12 @@ const pages: Page[] = [
     loadComponent: () => import('./features/lights/lights').then((m) => m.Lights),
   },
   {
+    // the appliances (HAS-283, the administrator's): cycles, counters and the draw of the plugs
+    path: 'appliances',
+    title: 'nav.appliances',
+    loadComponent: () => import('./features/appliances/appliances').then((m) => m.Appliances),
+  },
+  {
     // the editor of the rule of a room (HAS-267): one page per room, the room named by the address
     path: 'lights/rooms/:room/rules',
     title: 'lights.editor.title',

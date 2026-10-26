@@ -455,12 +455,18 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
   {
     method: 'GET',
     path: /^\/home\/appliance\/(\d+)\/runs$/,
-    reply: (_request, fresh, [id]) => ({ status: 200, body: fresh ? [] : applianceRuns(id) }),
+    reply: (request, fresh, [id]) => ({
+      status: 200,
+      body: fresh ? [] : applianceRuns(id, request.params.get('from'), request.params.get('to')),
+    }),
   },
   {
     method: 'GET',
     path: /^\/home\/appliance\/(\d+)\/samples$/,
-    reply: (_request, fresh) => ({ status: 200, body: fresh ? [] : applianceSamples() }),
+    reply: (request, fresh, [id]) => ({
+      status: 200,
+      body: fresh ? [] : applianceSamples(id, request.params.get('from'), request.params.get('to')),
+    }),
   },
   {
     // every device of the house: asked for by the administration page of the devices

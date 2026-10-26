@@ -1,0 +1,59 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.house {
+  --app-domain: var(--app-domain-appliance);
+
+  align-self: center;
+  width: min(100%, 960px);
+  box-sizing: border-box;
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+.house__content {
+  padding: 8px 12px 12px;
+}
+
+.period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+}
+
+.period__label {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-background);
+}
+
+.note {
+  margin: 8px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.note--page {
+  align-self: center;
+}
+
+// an appliance: its card and its chart side by side, of one height; one under the other on a narrow screen
+.appliance-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 16px;
+  align-self: center;
+  width: min(100%, 1600px);
+}
+
+@media (max-width: 1100px) {
+  .appliance-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

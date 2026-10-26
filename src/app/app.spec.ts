@@ -77,6 +77,7 @@ describe('application routing', () => {
         'Rooms',
         'Blinds',
         'Lights',
+        'Appliances',
         'Heating',
         'Hot water',
         'Boiler room',
@@ -105,6 +106,7 @@ describe('application routing', () => {
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
       '/blinds',
       '/lights',
+      '/appliances',
       '/heating',
       '/water',
       '/boiler',
@@ -119,6 +121,7 @@ describe('application routing', () => {
     ).toEqual([
       'Blinds',
       'Lights',
+      'Appliances',
       'Heating',
       'Hot water',
       'Boiler room',
@@ -214,6 +217,7 @@ describe('application routing', () => {
           'Pokoje',
           'Rolety',
           'Światła',
+          'AGD',
           'Ogrzewanie',
           'Ciepła woda',
           'Kotłownia',

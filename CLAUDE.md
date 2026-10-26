@@ -766,8 +766,8 @@ e2e/              # Playwright tests
     under the rooms): the appliances are the household's, for every member, whatever their rooms.
     It is not drawn while the list is empty or not answered yet; a failure before any answer is.
     Its "Emptied" is the one control of My room that is not about a room - `my-room.spec` lists it.
-  - **The tile of the overview presses nothing** (`tile-appliance`, no link - there is no page of
-    the appliances yet): running and waiting, the names **joined in TypeScript**, and how many the
+  - **The tile of the overview presses nothing** (`tile-appliance`; its title leads to the appliances page
+    since HAS-283): running and waiting, the names **joined in TypeScript**, and how many the
     service says nothing of.
   - **The name of an appliance stands between two texts** (`appliances.notice.finished`, `.waits`),
     never inside one as a parameter - it is the registry's (found in review). **A time of a cycle
@@ -775,13 +775,37 @@ e2e/              # Playwright tests
     a dishwasher that finished last night is not "since 23:40" of today.
   - **A state this version does not know is "not known"** (`APPLIANCE_STATE_LABELS`, `stateOf`),
     never read as idle; an appliance without an id is not shown.
-  - `watchRuns` / `watchSamples` are there for the history of HAS-283; no page calls them yet.
   - **Until the NFC tags of HAS-343** every member acknowledges from the application; after them
     the acknowledgement of a member is the tag, the notice names who claimed the run and its button
     becomes the administrator's "Wycisz przypomnienia" (HAS-346).
   - **The registry knows the kind `appliance`** (`smart-home-sdk` 1.13.0, in `DEVICE_KINDS`), but
     the form does not offer it (`OFFERED_KINDS`): the eight settings of an appliance are written
     through the API, device by device. `bindingsOf('appliance')` is `shelly`, as in `DeviceRules`.
+- **The appliances page** (HAS-283, `features/appliances/`, the administrator's; route `/appliances`, after the
+  lights in the menu, domain colour `appliance`): to tune the thresholds of the appliances. What to keep:
+  - **Three calls, told once** in `SourcesStrip`: the appliances (the `ApplianceStore` of the whole
+    application), their settings (`DeviceRegistryApi.watchKind('appliance')`, read only - written through the
+    API, never by the devices form, so `appliance` is in `SmartDevice` but not in `KNOWN_FIELDS`) and **the
+    cycles of 30 days of every appliance as one resource** (`ApplianceApi.watchRunsOf`, a `queryResource` of
+    the ids and the range, the calls one after the other; a failed call is the `error` of its appliance, told
+    on its card, and the house line then says it is not the whole house). The counters of the house and of
+    each appliance and the lists read that one answer.
+  - **The counters** (`appliance-history.ts`, pure, pinned by its spec): the cycles of 24 hours, 7 and 30 days
+    **by their start**, with the ranges of `historyRange`; the energy is the sum of the finished cycles with an
+    `energyWh` - **one without it is named ("Energy not known"), never added as 0 Wh**, one still running is
+    counted and adds nothing; a period without a single finished cycle of known energy shows "–".
+  - **The draw of a plug is a chart card of each appliance** (`AppliancePower`, `watchSampleHistory` - its own
+    call, freshness and failure on the card): the last 24 or **48 hours** (`HistoryPreset` `twoDays`, offered
+    only where a page names it - `HistoryFrame.presets`; the samples endpoint takes at most two days), the
+    period shared by every chart of the page; the two thresholds of the settings as dashed lines; a gap of
+    three missed reads (90 s) breaks the line. `shownHistory` takes the period as a function too, read
+    lazily, because the card gets it as an input.
+  - The mock registry holds the three appliances (ids 61-63, the ids of the mock of appliance-service): the
+    devices page counts them (25 devices). The mock answers 30 days of cycles in a rhythm per appliance (one of
+    the dishwasher without its energy) and a power curve every 30 s with a washing pause and the turns of a
+    dryer after its end.
+  - **A photo of its own is still to come** (the owner generates it from the prompt in
+    `public/backgrounds/README.md`); until then the page has the plain glow.
 - **The weather is one resource for the whole application** (HAS-240, `CurrentWeatherStore` in
   `data-access/weather/`, polling `GET /weather/current` every minute, stale after two missed
   calls): the strip of the panel (`core/layout/weather-strip.ts`) is on every page, for everybody

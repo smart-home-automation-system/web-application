@@ -1,0 +1,67 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('appliances.page.title') }}</h1>
+  </header>
+
+  <!-- the calls the page is made of, each with its freshness and its failure, told once -->
+  <app-sources-strip [sources]="sources" domain="appliance" loadingLabel="appliances.loading" />
+
+  <!-- the whole house: every appliance whose cycles are known, added up -->
+  <mat-card appearance="outlined" class="house card--domain" data-testid="house-counters">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>home</mat-icon></div>
+      <mat-card-title>{{ t('appliances.page.house.title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('appliances.page.house.subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content class="house__content">
+      @if (house(); as counted) {
+        <app-counter-row [counters]="counted" />
+        @if (houseIncomplete()) {
+          <p class="note" data-testid="house-incomplete">{{ t('appliances.page.house.incomplete') }}</p>
+        }
+      } @else if (!runs.loading()) {
+        <p class="note">{{ t('appliances.page.notKnown') }}</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <div class="period">
+    <span class="period__label">{{ t('appliances.page.runs.period') }}</span>
+    <mat-button-toggle-group
+      hideSingleSelectionIndicator
+      data-testid="runs-period"
+      [attr.aria-label]="t('appliances.page.runs.period')"
+      [value]="listPreset()"
+      (change)="listPreset.set($event.value)"
+    >
+      @for (option of listPresets; track option) {
+        <mat-button-toggle [value]="option">{{ t(listLabels[option]) }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </div>
+
+  @if (rows().length === 0 && !appliances.loading()) {
+    <p class="note note--page">
+      {{ appliances.value() === null ? t('appliances.unreadable') : t('appliances.none') }}
+    </p>
+  }
+
+  <!-- every appliance: its card and the draw of its plug, side by side and of one height -->
+  @for (row of rows(); track row.view.id) {
+    <div class="appliance-row">
+      <app-appliance-card
+        [appliance]="row.view"
+        [settings]="row.settings"
+        [counters]="row.counters"
+        [runs]="row.runs"
+        [runsError]="row.error"
+      />
+      <app-appliance-power
+        [id]="row.view.id"
+        [name]="row.view.name"
+        [settings]="row.settings"
+        [period]="power"
+      />
+    </div>
+  }
+</ng-container>

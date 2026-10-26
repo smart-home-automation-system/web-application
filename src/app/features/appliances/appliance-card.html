@@ -1,0 +1,141 @@
+<ng-container *transloco="let t">
+  @let view = appliance();
+  <mat-card appearance="outlined" class="appliance card--domain" [attr.data-testid]="'appliance-' + view.id">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>local_laundry_service</mat-icon></div>
+      <!-- the name of the registry, printed as it is -->
+      <mat-card-title>{{ view.name }}</mat-card-title>
+      <mat-card-subtitle data-testid="appliance-state">{{
+        t(view.state ? STATE_LABELS[view.state] : 'appliances.state.unknown')
+      }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content class="appliance__content">
+      <section>
+        <h3 class="appliance__heading">{{ t('appliances.page.counters') }}</h3>
+        @if (counters(); as counted) {
+          <app-counter-row [counters]="counted" />
+        } @else if (!runsError()) {
+          <p class="appliance__note">{{ t('appliances.page.notKnown') }}</p>
+        }
+        <app-api-error-strip [error]="runsError()" />
+      </section>
+
+      <section data-testid="appliance-settings">
+        <h3 class="appliance__heading">{{ t('appliances.page.settings.title') }}</h3>
+        @if (settings(); as set) {
+          <dl class="facts">
+            <div>
+              <dt>{{ t('appliances.page.settings.runningAbove') }}</dt>
+              <dd>
+                @if (set.runningAboveWatts !== undefined) {
+                  {{ set.runningAboveWatts | localNumber: WHOLE }} W
+                } @else {
+                  {{ t('appliances.page.notKnown') }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>{{ t('appliances.page.settings.idleBelow') }}</dt>
+              <dd>
+                @if (set.idleBelowWatts !== undefined) {
+                  {{ set.idleBelowWatts | localNumber: WHOLE }} W
+                } @else {
+                  {{ t('appliances.page.notKnown') }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>{{ t('appliances.page.settings.minRun') }}</dt>
+              <dd>
+                @if (set.minRunMinutes !== undefined) {
+                  {{ t('appliances.page.minutes', { minutes: set.minRunMinutes }) }}
+                } @else {
+                  {{ t('appliances.page.notKnown') }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>{{ t('appliances.page.settings.finishedAfter') }}</dt>
+              <dd>
+                @if (set.finishedAfterMinutes !== undefined) {
+                  {{ t('appliances.page.minutes', { minutes: set.finishedAfterMinutes }) }}
+                } @else {
+                  {{ t('appliances.page.notKnown') }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>{{ t('appliances.page.settings.reminders') }}</dt>
+              <dd>
+                @if (set.reminderEveryMinutes !== undefined && set.maxReminders !== undefined) {
+                  {{
+                    t('appliances.page.settings.remindersEvery', {
+                      minutes: set.reminderEveryMinutes,
+                      count: set.maxReminders,
+                    })
+                  }}
+                } @else {
+                  {{ t('appliances.page.notKnown') }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>{{ t('appliances.page.settings.quiet') }}</dt>
+              <!-- HH:mm of the registry, printed as it is -->
+              <dd>{{ quietHours() ?? t('appliances.page.notKnown') }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <p class="appliance__note">{{ t('appliances.page.settings.notKnown') }}</p>
+        }
+        <a matButton routerLink="/devices" class="appliance__link">{{ t('appliances.page.settings.change') }}</a>
+      </section>
+
+      <section data-testid="appliance-runs">
+        <h3 class="appliance__heading">{{ t('appliances.page.runs.title') }}</h3>
+        @if (runs(); as list) {
+          @if (list.length === 0) {
+            <p class="appliance__note">{{ t('appliances.page.runs.none') }}</p>
+          } @else {
+            <ul class="runs">
+              @for (run of list; track run.key) {
+                <li class="run" data-testid="run">
+                  <span class="run__start">{{ run.startedAt | houseDateTime: TIME }}</span>
+                  <span class="run__duration">
+                    @if (run.durationMinutes !== undefined) {
+                      @let length = hoursOf(run.durationMinutes);
+                      {{ t('appliances.page.runs.duration', { hours: length.hours, minutes: length.minutes }) }}
+                    } @else {
+                      {{ t('appliances.page.runs.running') }}
+                    }
+                  </span>
+                  <span class="run__energy">
+                    @if (run.energyWh !== undefined) {
+                      @let energy = energyParts(run.energyWh);
+                      {{ energy.value | localNumber: (energy.unit === 'Wh' ? WHOLE : KWH) }} {{ energy.unit }}
+                    } @else if (run.finishedAt !== undefined) {
+                      {{ t('appliances.page.runs.energyUnknown') }}
+                    }
+                  </span>
+                  <span class="run__acknowledged">
+                    @if (run.acknowledgedAfterMinutes !== undefined) {
+                      {{ t('appliances.page.runs.acknowledgedAfter', { minutes: run.acknowledgedAfterMinutes }) }}
+                      @if (run.acknowledgedBy) {
+                        <!-- a member's name, printed as it is -->
+                        · {{ run.acknowledgedBy }}
+                      }
+                    } @else if (run.finishedAt !== undefined) {
+                      {{ t('appliances.page.runs.notAcknowledged') }}
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        } @else if (!runsError()) {
+          <p class="appliance__note">{{ t('appliances.page.notKnown') }}</p>
+        }
+      </section>
+    </mat-card-content>
+  </mat-card>
+</ng-container>
