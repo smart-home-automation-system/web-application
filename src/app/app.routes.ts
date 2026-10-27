@@ -75,6 +75,7 @@ const pages: Page[] = [
     // the appliances (HAS-283, the administrator's): cycles, counters and the draw of the plugs
     path: 'appliances',
     title: 'nav.appliances',
+    data: { background: 'appliances' },
     loadComponent: () => import('./features/appliances/appliances').then((m) => m.Appliances),
   },
   {

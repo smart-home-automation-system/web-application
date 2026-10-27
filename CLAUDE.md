@@ -804,8 +804,8 @@ e2e/              # Playwright tests
     devices page counts them (25 devices). The mock answers 30 days of cycles in a rhythm per appliance (one of
     the dishwasher without its energy) and a power curve every 30 s with a washing pause and the turns of a
     dryer after its end.
-  - **A photo of its own is still to come** (the owner generates it from the prompt in
-    `public/backgrounds/README.md`); until then the page has the plain glow.
+  - The photo `appliances` (a laundry room with the washing machine, the dryer, a smart plug and a dishwasher,
+    from ChatGPT) has its tones narrowed to `35-235`.
 - **The weather is one resource for the whole application** (HAS-240, `CurrentWeatherStore` in
   `data-access/weather/`, polling `GET /weather/current` every minute, stale after two missed
   calls): the strip of the panel (`core/layout/weather-strip.ts`) is on every page, for everybody

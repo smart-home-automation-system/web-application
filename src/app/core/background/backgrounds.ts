@@ -15,6 +15,7 @@ export const BACKGROUNDS = [
   'weather',
   'blinds',
   'lights',
+  'appliances',
   'rooms',
   'settings',
   'about',
