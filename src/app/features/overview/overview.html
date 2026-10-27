@@ -402,12 +402,13 @@
       </div>
     </app-domain-tile>
 
-    <!-- HAS-282: what the appliances do - what runs, what waits to be emptied; no page of their own
-         yet (HAS-283), so no link, and nothing here acknowledges: the overview changes nothing -->
+    <!-- HAS-282: what the appliances do - what runs, what waits to be emptied; the title leads to their page
+         (HAS-283), and nothing here acknowledges: the overview changes nothing -->
     <app-domain-tile
       heading="appliances.title"
       icon="local_laundry_service"
       domain="appliance"
+      link="/appliances"
       waitingLabel="appliances.loading"
       [resource]="appliances"
       data-testid="tile-appliance"

@@ -68,9 +68,12 @@ export interface ShownHistory<T> {
  */
 export function shownHistory<T>(
   resource: QueryResource<HistoryRange, T>,
-  period: HistoryPeriod,
+  periodOrInput: HistoryPeriod | (() => HistoryPeriod),
 ): ShownHistory<T> {
+  // a component given the period as an input reads it lazily: the input is set after its fields
+  const periodOf = typeof periodOrInput === 'function' ? periodOrInput : () => periodOrInput;
   const shown = computed(() => {
+    const period = periodOf();
     const answered = resource.value();
     return answered !== undefined && period.presetOf(answered.query) === period.preset()
       ? answered
@@ -78,6 +81,7 @@ export function shownHistory<T>(
   });
   return {
     waiting: computed(() => {
+      const period = periodOf();
       const settled = resource.settledFor();
       return (
         shown() === undefined &&

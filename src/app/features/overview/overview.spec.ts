@@ -493,10 +493,13 @@ describe('Overview', () => {
       expect(await rows()).toEqual(['Running None', 'Waits to be emptied None', 'Not known 1']);
     });
 
-    it('offers nothing to press and leads nowhere - the appliances have no page yet', async () => {
+    // HAS-283: the title leads to the appliances page; nothing on the tile acknowledges
+    it('offers nothing to press and leads to the appliances page', async () => {
       answer(appliances, [{ id: 62, name: 'Dryer', state: 'finished' }]);
 
-      expect((await tile('appliance')).querySelectorAll('button, a')).toHaveLength(0);
+      const shown = await tile('appliance');
+      expect(shown.querySelectorAll('button')).toHaveLength(0);
+      expect([...shown.querySelectorAll('a')].map((link) => link.getAttribute('href'))).toEqual(['/appliances']);
     });
 
     it('says when the household has no appliance', async () => {

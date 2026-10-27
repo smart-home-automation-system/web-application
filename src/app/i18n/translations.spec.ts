@@ -57,6 +57,7 @@ describe('translations', () => {
       'about.commit',
       'profiles.role.admin',
       'presence.duration.minutes',
+      'appliances.page.minutes',
       // names of products and of a technology, and an abbreviation both languages use
       'devices.device.generation',
       'devices.device.bluetooth',

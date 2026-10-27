@@ -1,0 +1,96 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.appliance {
+  --app-domain: var(--app-domain-appliance);
+
+  height: 100%;
+  box-sizing: border-box;
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+.appliance__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 12px 12px;
+}
+
+.appliance__heading {
+  margin: 0 0 6px;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}
+
+.appliance__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.appliance__link {
+  margin-top: 4px;
+}
+
+// the settings as the registry holds them: a name and its value per line, two columns where there is room
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+}
+
+// the cycles of the period, the newest first; a long month scrolls inside the card
+.runs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.run {
+  display: grid;
+  grid-template-columns: minmax(110px, 1.2fr) minmax(70px, 0.8fr) minmax(70px, 0.8fr) minmax(0, 1.4fr);
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--app-glass-edge);
+  font: var(--mat-sys-body-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.run__acknowledged {
+  color: var(--mat-sys-on-surface-variant);
+  overflow-wrap: anywhere;
+}
+
+// a phone: the start and the duration on one line, the energy and the acknowledgement under them
+@media (max-width: 480px) {
+  .run {
+    grid-template-columns: 1fr auto;
+  }
+}

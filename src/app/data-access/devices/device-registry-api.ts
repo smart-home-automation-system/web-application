@@ -40,6 +40,23 @@ export interface BthomeBinding {
  * The values of `room`, `kind` and `vendor` are plain text: the registry may hold one this
  * version does not know, which is shown as it comes.
  */
+/**
+ * How `appliance-service` reads the cycle of an appliance from its plug and reminds the household
+ * (`smart-home-sdk` 1.13.0, HAS-271) - written through the API, device by device, never by the form of
+ * the devices page; shown read only on the appliances page (HAS-283). Every field may be missing.
+ */
+export interface ApplianceSettings {
+  readonly runningAboveWatts?: number;
+  readonly idleBelowWatts?: number;
+  readonly minRunMinutes?: number;
+  readonly finishedAfterMinutes?: number;
+  readonly reminderEveryMinutes?: number;
+  readonly maxReminders?: number;
+  /** `HH:mm`. */
+  readonly quietFrom?: string;
+  readonly quietTo?: string;
+}
+
 export interface SmartDevice {
   /** Given by the registry; what a device is addressed by. */
   readonly id?: number;
@@ -63,6 +80,11 @@ export interface SmartDevice {
    * missing means none - a window without a sensor, which the blinds service takes as closed.
    */
   readonly openingSensors?: readonly number[];
+  /**
+   * An appliance only (HAS-271). Not in `KNOWN_FIELDS`: the form never sets it, so a `PUT` sends it back
+   * as the registry had it.
+   */
+  readonly appliance?: ApplianceSettings;
 }
 
 /** A device that can be addressed: one the registry gave an id. */
@@ -166,6 +188,17 @@ export class DeviceRegistryApi {
           room: room(),
           enabled: 'true',
         }),
+      { intervalMs: POLL_REGISTRY_EVERY_MS },
+    );
+  }
+
+  /**
+   * The switched-on devices of one kind, read only - the appliances with their settings for the appliances
+   * page (HAS-283, the administrator's). Call in an injection context.
+   */
+  watchKind(kind: string): PollingResource<readonly SmartDevice[] | null> {
+    return pollingResource(
+      () => this.api.get<readonly SmartDevice[] | null>('/device/registry', { kind, enabled: 'true' }),
       { intervalMs: POLL_REGISTRY_EVERY_MS },
     );
   }

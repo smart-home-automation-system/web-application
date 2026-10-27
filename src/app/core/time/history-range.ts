@@ -10,15 +10,21 @@ export interface HistoryRange {
   readonly to: string;
 }
 
-/** How far back a chart looks. */
-export type HistoryPreset = 'day' | 'week' | 'month';
+/**
+ * How far back a chart looks. `twoDays` (HAS-283) is the 48 hours of the samples of an appliance - the
+ * longest range their endpoint takes; it is offered only where a page names it, never in `HISTORY_PRESETS`.
+ */
+export type HistoryPreset = 'day' | 'twoDays' | 'week' | 'month';
 
 export const HISTORY_PRESETS: readonly HistoryPreset[] = ['day', 'week', 'month'];
 
 const HOUR_MS = 60 * 60 * 1_000;
 const DAY_MS = 24 * HOUR_MS;
 
-const DAYS_OF: Readonly<Record<Exclude<HistoryPreset, 'day'>, number>> = { week: 7, month: 30 };
+const DAYS_OF: Readonly<Record<Exclude<HistoryPreset, 'day' | 'twoDays'>, number>> = { week: 7, month: 30 };
+
+/** The presets that end with the running hour, and how many hours they look back. */
+const HOURS_OF: Readonly<Partial<Record<HistoryPreset, number>>> = { day: 24, twoDays: 48 };
 
 /** Milliseconds on the wall-clock timeline as the local date-time the services read. */
 function localDateTime(wallClock: number): string {
@@ -44,13 +50,17 @@ export function historyRange(
   timeZone: string,
 ): HistoryRange {
   const midnight = Date.parse(`${houseDay(instant, timeZone)}T00:00:00Z`);
-  if (preset === 'day') {
+  const hours = HOURS_OF[preset];
+  if (hours !== undefined) {
     const hour = Math.floor(houseWeekMinute(instant, timeZone).minute / 60);
     const end = midnight + (hour + 1) * HOUR_MS;
-    return { from: localDateTime(end - DAY_MS), to: localDateTime(end) };
+    return { from: localDateTime(end - hours * HOUR_MS), to: localDateTime(end) };
   }
   const end = midnight + DAY_MS;
-  return { from: localDateTime(end - DAYS_OF[preset] * DAY_MS), to: localDateTime(end) };
+  return {
+    from: localDateTime(end - DAYS_OF[preset as 'week' | 'month'] * DAY_MS),
+    to: localDateTime(end),
+  };
 }
 
 /** The same question is the same range: for the `equal` of a signal that holds one. */

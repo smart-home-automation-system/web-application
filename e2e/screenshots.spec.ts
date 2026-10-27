@@ -460,6 +460,14 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the appliances (HAS-283): the whole house, the card of each appliance and the draw of its plug
+      test('appliances', async ({ page }, testInfo) => {
+        await page.goto('/appliances');
+        await expect(page.getByTestId('appliance-61')).toBeVisible();
+        await expect(page.getByTestId('power-61').locator('.chart__plot')).toBeVisible();
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'appliances') });
+      });
+
       // the editor of the rule of a room (HAS-267): what the rule can rely on, auto-off, motion-on
       // with its periods and their colour, the hold, the switch of the resident and the runs
       test('lights rule editor', async ({ page }, testInfo) => {

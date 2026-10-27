@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 2560,
+    "height": 1440
+  },
+  "tones": {
+    "black": 35,
+    "white": 235
+  },
+  "files": {
+    "appliances-2560.webp": {
+      "bytes": 209728,
+      "quality": 82
+    },
+    "appliances-1280.webp": {
+      "bytes": 96940,
+      "quality": 82
+    }
+  },
+  "darkest": "#2d2b2a",
+  "lightest": "#d9d6d2",
+  "top": {
+    "darkest": "#4b3723",
+    "lightest": "#d3d7bf"
+  }
+}

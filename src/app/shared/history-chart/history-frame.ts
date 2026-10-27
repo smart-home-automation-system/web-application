@@ -19,6 +19,7 @@ import { DataFreshness } from '../data-freshness/data-freshness';
 
 const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
   day: 'history.preset.day',
+  twoDays: 'history.preset.twoDays',
   week: 'history.preset.week',
   month: 'history.preset.month',
 };
@@ -53,7 +54,7 @@ const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
           [value]="preset()"
           (change)="preset.set($event.value)"
         >
-          @for (option of presets; track option) {
+          @for (option of presets(); track option) {
             <mat-button-toggle [value]="option">{{ t(labels[option]) }}</mat-button-toggle>
           }
         </mat-button-toggle-group>
@@ -94,6 +95,7 @@ export class HistoryFrame {
   /** What is shown once there is something to draw; made then, and removed when there is not. */
   protected readonly content = contentChild.required(TemplateRef);
 
-  protected readonly presets = HISTORY_PRESETS;
+  /** The periods offered, in their order; the three of a history by default. */
+  readonly presets = input<readonly HistoryPreset[]>(HISTORY_PRESETS);
   protected readonly labels = PRESET_LABELS;
 }
