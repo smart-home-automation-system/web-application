@@ -1,0 +1,99 @@
+// The tag page has no shell (no navigation, HAS-346), so it paints the glow of the season itself, the
+// way the shell does: on a layer fixed to the screen and as tall as the viewport with the toolbar of a
+// phone hidden, kept inside this stacking context.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto;
+    height: 100vh;
+    height: 100lvh;
+    z-index: -1;
+    background-image: var(--app-glow);
+  }
+}
+
+.tag-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--app-glass-panel);
+  border-bottom: 1px solid var(--app-glass-edge);
+  color: var(--mat-sys-on-surface);
+}
+
+.tag-bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--mat-sys-title-medium);
+}
+
+.tag-page {
+  flex: 1;
+  padding: 0 16px 32px;
+}
+
+// the outcome is told on the whole screen: read at arm's length, next to the appliance
+.tag-page__done h1 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tag-page__appliance {
+  font: var(--mat-sys-display-small);
+  letter-spacing: var(--mat-sys-display-small-tracking);
+}
+
+.mat-icon.tag-page__ok {
+  width: 96px;
+  height: 96px;
+  font-size: 96px;
+  color: var(--mat-sys-on-primary-container);
+}
+
+.tag-page__who {
+  font: var(--mat-sys-body-large);
+}
+
+.tag-page__warning {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.members__button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.members__button--current {
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+mat-progress-bar {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 8px;
+}

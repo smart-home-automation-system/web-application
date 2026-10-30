@@ -52,6 +52,66 @@ let appliances: StoredAppliance[] = AT_THE_START.map((one) => ({ ...one }));
 
 export function resetAppliances(): void {
   appliances = AT_THE_START.map((one) => ({ ...one }));
+  takenReads.clear();
+}
+
+/**
+ * The NFC tags of the mock appliances (HAS-346): a made-up `picc_data` per appliance, any well-formed
+ * `cmac`. The mock cannot check a SUN read, so it stands in for the key with `MOCK_BAD_CMAC`, the one
+ * MAC "the key does not give". A read is good once, as in the service.
+ */
+export const MOCK_TAGS: Readonly<Record<string, number>> = {
+  '61000000000000000000000000000061': 61,
+  '62000000000000000000000000000062': 62,
+  '63000000000000000000000000000063': 63,
+};
+export const MOCK_BAD_CMAC = '0000000000000000';
+const takenReads = new Set<string>();
+
+function refused(status: number, code: string, message: string): MockReply {
+  return { status, body: { errors: [{ message, details: message, code }] } };
+}
+
+/**
+ * `POST /home/appliance/claims` (appliance-service 0.7.0): the order of its checks - the tag, the
+ * member, the counter (the read spent from here), then a cycle waiting is acknowledged and the claim
+ * attaches. A running appliance has nothing to claim; an idle one finished within the window.
+ */
+export function claimAppliance(body: unknown): MockReply {
+  const read = (body ?? {}) as { piccData?: string; cmac?: string; member?: string };
+  const id = MOCK_TAGS[(read.piccData ?? '').toUpperCase()];
+  if (id === undefined || read.cmac === undefined || read.cmac === MOCK_BAD_CMAC) {
+    return refused(400, 'INVALID_TAG', 'Invalid tag');
+  }
+  const member = householdProfiles().find(
+    (profile) => profile.name.toLowerCase() === (read.member ?? '').trim().toLowerCase(),
+  );
+  if (member === undefined) {
+    return refused(400, 'UNKNOWN_MEMBER', 'Unknown household member');
+  }
+  const key = `${read.piccData}:${read.cmac}`.toUpperCase();
+  if (takenReads.has(key)) {
+    return refused(409, 'REPLAYED_TAG', 'Replayed tag read');
+  }
+  takenReads.add(key);
+  const appliance = appliances.find((one) => one.id === id);
+  if (appliance === undefined || appliance.state === 'running') {
+    return refused(409, 'NOTHING_TO_CLAIM', 'Nothing to claim');
+  }
+  if (appliance.state === 'finished' || appliance.state === 'finishing') {
+    appliance.state = 'idle';
+  }
+  return {
+    status: 200,
+    body: {
+      applianceId: appliance.id,
+      name: appliance.name,
+      state: appliance.state,
+      member: member.name,
+      runId: 900 + appliance.id,
+      claimedAt: houseTime(new Date(), 1),
+    },
+  };
 }
 
 function view(appliance: StoredAppliance, now: Date): Appliance {
@@ -97,7 +157,9 @@ export function acknowledgeAppliance(id: string, member: string | null = null): 
   // HAS-347: a member the profiles do not have is refused before anything is acknowledged
   if (
     member !== null &&
-    !householdProfiles().some((profile) => profile.name.toLowerCase() === member.trim().toLowerCase())
+    !householdProfiles().some(
+      (profile) => profile.name.toLowerCase() === member.trim().toLowerCase(),
+    )
   ) {
     return {
       status: 400,
@@ -153,7 +215,9 @@ const DAY = 24 * HOUR;
 const MEMBERS = ['Aurelia', 'Borys', 'Celina'];
 
 /** The rhythm of each appliance: every how many hours a cycle starts, how long it takes, what it uses. */
-const RHYTHM: Readonly<Record<string, { every: number; minutes: number; energyWh: number; maxWatts: number }>> = {
+const RHYTHM: Readonly<
+  Record<string, { every: number; minutes: number; energyWh: number; maxWatts: number }>
+> = {
   '61': { every: 31, minutes: 85, energyWh: 760, maxWatts: 2180 },
   '62': { every: 43, minutes: 125, energyWh: 640, maxWatts: 520 },
   '63': { every: 26, minutes: 150, energyWh: 1180, maxWatts: 2050 },
@@ -196,7 +260,12 @@ function mockRuns(id: string): readonly MockRun[] {
 }
 
 /** `GET /home/appliance/{id}/runs?from=&to=` - the cycles that started in the range. */
-export function applianceRuns(id: string, from: string | null, to: string | null, now = new Date()): readonly ApplianceRun[] {
+export function applianceRuns(
+  id: string,
+  from: string | null,
+  to: string | null,
+  now = new Date(),
+): readonly ApplianceRun[] {
   return mockRuns(id)
     .map((run, index): ApplianceRun => ({
       id: Number(id) * 1_000 + index,
@@ -220,24 +289,37 @@ function drawAt(id: string, secondsAgo: number): number {
   const tick = Math.floor(secondsAgo / 30);
   if (run === undefined) {
     // the dryer turns its drum now and then after a cycle while it waits (the turns of 2026-10-26)
-    const after = mockRuns(id).find((one) => one.end !== undefined && secondsAgo <= one.end && one.end - secondsAgo < 40 * 60);
-    return id === '62' && after !== undefined && tick % 2 === 0 ? 170 + (tick % 5) * 8 : 0.4 + (tick % 3) * 0.1;
+    const after = mockRuns(id).find(
+      (one) => one.end !== undefined && secondsAgo <= one.end && one.end - secondsAgo < 40 * 60,
+    );
+    return id === '62' && after !== undefined && tick % 2 === 0
+      ? 170 + (tick % 5) * 8
+      : 0.4 + (tick % 3) * 0.1;
   }
   const into = run.start - secondsAgo;
   if (id === '61') {
     // heating, washing with a pause of three minutes - below idleBelowWatts - and the spin
     if (into < 15 * 60) return 2_050 + (tick % 4) * 30;
     if (into >= 40 * 60 && into < 43 * 60) return 1.8;
-    return into > (run.start - (run.end ?? 0)) - 10 * 60 ? 420 + (tick % 6) * 25 : 140 + (tick % 7) * 20;
+    return into > run.start - (run.end ?? 0) - 10 * 60
+      ? 420 + (tick % 6) * 25
+      : 140 + (tick % 7) * 20;
   }
   if (id === '62') {
     return 470 + (tick % 5) * 12;
   }
-  return into < 25 * 60 || (into > 80 * 60 && into < 100 * 60) ? 1_980 + (tick % 3) * 25 : 35 + (tick % 4) * 5;
+  return into < 25 * 60 || (into > 80 * 60 && into < 100 * 60)
+    ? 1_980 + (tick % 3) * 25
+    : 35 + (tick % 4) * 5;
 }
 
 /** `GET /home/appliance/{id}/samples?from=&to=` - a sample every 30 s of the last 48 hours. */
-export function applianceSamples(id: string, from: string | null, to: string | null, now = new Date()): readonly ApplianceSample[] {
+export function applianceSamples(
+  id: string,
+  from: string | null,
+  to: string | null,
+  now = new Date(),
+): readonly ApplianceSample[] {
   // the wall clock of the house as a timeline: one formatting, then arithmetic - 5760 samples of two days
   const nowWall = Date.parse(`${houseTime(now, 0).slice(0, 19)}Z`);
   const samples: ApplianceSample[] = [];

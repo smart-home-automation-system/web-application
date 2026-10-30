@@ -465,7 +465,29 @@ for (const language of ['en', 'pl'] as const) {
         await page.goto('/appliances');
         await expect(page.getByTestId('appliance-61')).toBeVisible();
         await expect(page.getByTestId('power-61').locator('.chart__plot')).toBeVisible();
-        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'appliances') });
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'appliances'),
+        });
+      });
+
+      // the page an NFC tag opens (HAS-346): the claim recorded, and the question of a browser that
+      // knows nobody (its own context, no remembered profile)
+      test('tag page', async ({ page, browser }, testInfo) => {
+        await page.goto('/t?picc_data=62000000000000000000000000000062&cmac=1111111111111111');
+        await expect(page.getByTestId('tag-done')).toBeVisible();
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'tag-done') });
+
+        const stranger = await browser.newPage({
+          colorScheme: scheme,
+          viewport: page.viewportSize(),
+        });
+        await startIn(stranger, language);
+        await stranger.goto('/t?picc_data=62000000000000000000000000000062&cmac=1111111111111111');
+        await expect(stranger.getByTestId('tag-choose').getByRole('button').first()).toBeVisible();
+        await stranger.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'tag-choose'),
+        });
+        await stranger.close();
       });
 
       // the editor of the rule of a room (HAS-267): what the rule can rely on, auto-off, motion-on

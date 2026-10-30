@@ -392,6 +392,41 @@ export const en = {
     unavailableTitle: 'The profile could not be opened',
     continue: 'Go to the application',
   },
+  // the page an NFC tag on an appliance opens (HAS-346); names of people and appliances stand beside
+  // these texts, never inside them
+  tagClaim: {
+    title: 'Appliance tag',
+    invalidTitle: 'This is not a read of a tag',
+    invalidText: 'This page is opened by holding a phone to the tag on an appliance.',
+    chooseTitle: 'Who is holding the phone?',
+    chooseLead: 'Choose yourself - this browser will remember you next time.',
+    members: 'Household members',
+    loading: 'Reading the household',
+    householdUnavailable: 'The household could not be read. Check the connection to the house.',
+    opening: 'Remembering you',
+    sending: 'Recording',
+    recordingAs: 'Recording as',
+    emptied: 'emptied',
+    recordedFor: 'Recorded for',
+    notMe: 'Not you?',
+    failedTitle: 'Not recorded',
+    retry: 'Try again',
+    againTitle: 'Hold the phone to the tag once more',
+    nowAs: 'From now on as',
+    againNote:
+      'A read of the tag counts once: the one before stays recorded for the person chosen then.',
+    error: {
+      invalidTag: 'This read cannot be checked. Hold the phone to the tag again.',
+      replayed: 'This read has already been used. Hold the phone to the tag again.',
+      nothingToClaim:
+        'Nothing waits: this appliance has not finished a cycle in the last 12 hours.',
+      notFound: 'The appliance of this tag is not watched.',
+      unknownMember:
+        'The person this browser remembered is not a household member any more. Choose who is holding the phone.',
+      noAnswer:
+        'No answer from the house. It may have been recorded all the same - trying again is safe.',
+    },
+  },
   // adding the application to the home screen of an iPhone; the quoted names are the ones iOS shows
   install: {
     title: 'Add to the Home Screen',
@@ -1110,7 +1145,8 @@ export const en = {
     error: {
       notFound: 'The appliance service does not watch this appliance.',
       nothingToAcknowledge: 'Nothing waits to be emptied any more.',
-      unknownMember: 'Your profile is not in the household registry any more - open your personal link again.',
+      unknownMember:
+        'Your profile is not in the household registry any more - open your personal link again.',
     },
     notice: {
       // the name of the appliance stands between the two, printed as it is: never a parameter

@@ -11,6 +11,9 @@ function allPaths(list: readonly Route[], prefix = ''): string[] {
   });
 }
 
+// every page of the application is a child of the shell; the tag page alone stands beside it
+const shell: Route = routes.find((route) => route.canActivateChild !== undefined) ?? {};
+
 describe('routes', () => {
   // the ingress sends /home to the API gateway: a page under it would never reach the application
   it('keep clear of the /home prefix, which belongs to the backend', () => {
@@ -28,7 +31,7 @@ describe('routes', () => {
   });
 
   it('end with the catch-all, so an unknown address shows the not-found page', () => {
-    const children = routes[0].children ?? [];
+    const children = shell.children ?? [];
 
     expect(children.at(-1)?.path).toBe('**');
   });
@@ -36,7 +39,7 @@ describe('routes', () => {
   // the error page is where a navigation ends when a lazy chunk cannot be downloaded any more -
   // it would be unreachable exactly then if it were a lazy chunk itself
   it('load the error page with the application, not on demand', () => {
-    const error = (routes[0].children ?? []).find((route) => route.path === 'error');
+    const error = (shell.children ?? []).find((route) => route.path === 'error');
 
     expect(error?.component).toBeDefined();
     expect(error?.loadComponent).toBeUndefined();
@@ -54,20 +57,23 @@ describe('routes', () => {
     ['household', 'household'],
     ['devices', 'devices'],
   ])('name the photo of /%s under the key the background layer reads', (path, photo) => {
-    const page = (routes[0].children ?? []).find((route) => route.path === path);
+    const page = (shell.children ?? []).find((route) => route.path === path);
 
     expect(page?.data).toEqual({ background: photo });
   });
 
-  it('put every page behind the guard of the profiles', () => {
-    expect(routes).toHaveLength(1);
-    expect(routes[0].canActivateChild).toEqual([profileGuard]);
+  // The tag page (HAS-346) is opened by a phone held to an appliance, in a browser that may know
+  // nobody: it asks who holds the phone itself. It is the one page outside the shell and its guard -
+  // adding another is a decision, written down here.
+  it('put every page behind the guard of the profiles but the tag page', () => {
+    expect(shell.canActivateChild).toEqual([profileGuard]);
+    expect(routes.filter((route) => route !== shell).map((route) => route.path)).toEqual(['t']);
   });
 
   // A page that says nothing is the administrator's. This list is everything somebody else can
   // open: adding to it is a decision, and the test is where it is written down.
   it('open to others than the administrator exactly the pages meant for them', () => {
-    const open = (routes[0].children ?? [])
+    const open = (shell.children ?? [])
       .filter((route) => route.data?.['access'] !== undefined)
       .map((route) => [route.path, route.data?.['access']]);
 
@@ -81,7 +87,7 @@ describe('routes', () => {
 
   // the navigation must not offer what the guard turns away, nor hide what it lets through
   it('offer every navigation entry to exactly those who may open its page', () => {
-    const children = routes[0].children ?? [];
+    const children = shell.children ?? [];
 
     for (const item of NAV_ITEMS) {
       const route = children.find((candidate) => `/${candidate.path}` === item.path);
@@ -91,7 +97,7 @@ describe('routes', () => {
   });
 
   it('give every page a title', () => {
-    const untitled = (routes[0].children ?? []).filter(
+    const untitled = (shell.children ?? []).filter(
       (route) => !route.redirectTo && route.title === undefined,
     );
 
