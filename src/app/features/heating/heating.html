@@ -123,5 +123,5 @@
     </mat-card>
   </section>
 
-  <app-heating-rooms class="rooms" />
+  <app-heating-rooms class="rooms" [systemOn]="heating.value()?.isHeatingEnabled" />
 </ng-container>

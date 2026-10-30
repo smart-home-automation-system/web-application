@@ -67,6 +67,119 @@ mat-card-content {
   }
 }
 
+// HAS-353: the state of the heating of a room - an edge and an icon in its colour, the word beside it in the
+// colour of the text (colour is never the only sign). A neutral state keeps the plain line; outside its
+// schedule, or with the heating of the house off, the tile is dimmed.
+.room--heating {
+  --room-state: var(--app-room-heating);
+}
+
+.room--waiting {
+  --room-state: var(--app-room-waiting);
+}
+
+.room--reached {
+  --room-state: var(--app-room-reached);
+}
+
+.room--held {
+  --room-state: var(--app-room-held);
+}
+
+.room.room--heating,
+.room.room--waiting,
+.room.room--reached,
+.room.room--held {
+  border-color: var(--room-state);
+  box-shadow: inset 4px 0 0 var(--room-state);
+}
+
+.room.room--outside,
+.room.room--systemOff {
+  border-style: dashed;
+}
+
+.room__state {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface);
+}
+
+.room__state-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--room-state, var(--mat-sys-on-surface-variant));
+}
+
+// the light of the schedule by the name: lit while a schedule covers the room, hollow while none does,
+// dashed while it is not known
+.led {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.led[data-led='on'] {
+  background: var(--app-room-reached);
+  box-shadow: 0 0 6px var(--app-room-reached);
+}
+
+.led[data-led='off'] {
+  border: 2px solid var(--mat-sys-outline);
+  box-sizing: border-box;
+}
+
+.led[data-led='unknown'] {
+  border: 2px dashed var(--mat-sys-outline);
+  box-sizing: border-box;
+}
+
+// the temperature by its distance to the target: a mark under the figure, never the colour of its text
+.room__temperature[data-distance='below'] {
+  text-decoration: underline 3px var(--app-room-waiting);
+  text-underline-offset: 4px;
+}
+
+.room__temperature[data-distance='near'],
+.room__temperature[data-distance='above'] {
+  text-decoration: underline 3px var(--app-room-reached);
+  text-underline-offset: 4px;
+}
+
+.rooms__off {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.rooms__states {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.legend-state {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 // an identifier of the backend ("living room"), shown as a name; one line whatever the name
 .room__name {
   margin: 0 0 2px;
@@ -90,6 +203,11 @@ mat-card-content {
 
 .room__temperature-line {
   min-height: 2rem;
+}
+
+// the height of its icon, also where there is none (a room without a heater): every tile of one size
+.room__line.room__state {
+  min-height: 18px;
 }
 
 .room__temperature {
@@ -122,8 +240,11 @@ mat-card-content {
 // the room of two heaters, whether the room has one, two or none
 .room__heaters {
   display: grid;
-  // a grid item may be narrower than its text, so the ellipsis of a line can work
-  grid-template-columns: minmax(0, 1fr);
+  // the kind, the mark of a heater that calls for heat, the name, the state - one set of columns for
+  // every heater of the tile, so the names and the states stand in line (owner, HAS-353); a grid
+  // item may be narrower than its text, so the ellipsis of a line can work
+  grid-template-columns: 16px 16px minmax(0, max-content) minmax(0, 1fr);
+  column-gap: 6px;
   align-content: start;
   gap: 2px;
   // 1.3rem a line, for as many heaters as the room with the most has (rooms.ts)
@@ -132,9 +253,10 @@ mat-card-content {
 }
 
 .heater {
-  display: flex;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: 4px;
   min-width: 0;
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-surface-variant);
@@ -159,6 +281,15 @@ mat-card-content {
   width: 16px;
   height: 16px;
   font-size: 16px;
+}
+
+.heater__mark {
+  display: flex;
+}
+
+// the state stands in a column of its own, a little apart from the name
+.heater__state {
+  padding-left: 6px;
 }
 
 .mat-icon.heater__calls {
@@ -223,4 +354,9 @@ mat-card-content {
 .rooms__legend {
   margin-top: 12px;
   text-align: center;
+}
+
+// a sentence instead of the heaters ("No heater") spans the four columns
+.room__heaters > :not(.heater) {
+  grid-column: 1 / -1;
 }

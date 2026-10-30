@@ -126,6 +126,34 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // HAS-353: the state of every room at a glance on a Thursday afternoon of the house, then
+      // with the heating of the house switched off - every room with a heater neutral
+      test('heating, the states of the rooms', async ({ page }, testInfo) => {
+        await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+        await page.goto('/heating');
+        const rooms = page.getByTestId('rooms');
+        await expect(rooms.locator('[data-heating-state="waiting"]')).toHaveCount(1);
+        await photoIsShown(page);
+        // a phone scrolls inside the shell: the rooms are brought into its view, not the page
+        await rooms.locator('[data-room="tobi"]').scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'heating-room-states'),
+          fullPage: testInfo.project.name === 'desktop',
+        });
+
+        const card = page.getByTestId('heating-switch');
+        await card.getByRole('button', { name: TEXTS[language].switchOff }).click();
+        await card.getByRole('group').getByRole('button').last().click();
+        await expect(page.getByTestId('heating-off')).toBeVisible();
+        await photoIsShown(page);
+        // a phone scrolls inside the shell: the rooms are brought into its view, not the page
+        await rooms.locator('[data-room="tobi"]').scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'heating-room-states-off'),
+          fullPage: testInfo.project.name === 'desktop',
+        });
+      });
+
       // the history of the hot water over a week: the hour the sensor of the mock house was
       // silent is a break in both lines
       test('hot water, the history of 7 days', async ({ page }, testInfo) => {

@@ -197,6 +197,25 @@ e2e/              # Playwright tests
   read-only**: `heating-service` has no endpoint that writes a schedule, and the window says so -
   editing needs that endpoint first. In a browser test scope a room to the card
   (`getByTestId('rooms')`): the sensor table in its window carries `data-room` too.
+- **The state of the heating of a room** (HAS-353, `shared/room-heating/room-state.ts`, pinned by its
+  spec): `roomState(room, systemOn)` - the first that holds of `systemOff`, `held`, `heating`,
+  `unknown`, `waiting`, `reached`, `outside`; `noHeater` apart. What to keep:
+  - **"A schedule covers the room" is `target` (`scheduledTemperature`) being there**, never
+    `inSchedule` - the service sets that only below the target, so it cannot tell "warm enough" from
+    "no schedule now"; never worked out from the schedules either. The light by the name says the
+    same (`scheduleLed`); the period in its tooltip (`currentWindow`) is the clock of the house, for
+    the tooltip only.
+  - **The colour is never the only sign**: a word and an icon per state, the edge and the icon in
+    `--app-room-<state>` (`$room-states` in `_seasons.scss`), the word in the text colour. The
+    distance to the target is a line under the figure (`data-distance`, `near` within 0.5 °C), not
+    the colour of the text.
+  - **The switch of the house comes first**: the heating page passes it (`systemOn` of `Rooms`);
+    My room does not read it (only `HouseHeating` may), so it passes `undefined` and a room tells
+    its own state. Missing is never off: `undefined` is not `false`.
+  - **The heaters of a tile are a subgrid of four columns** (owner, HAS-353): the kind, the flame of a
+    heater that calls for heat (an empty cell otherwise), the name, the state - so names and states
+    stand in line; a sentence instead of the heaters spans the four.
+  - The mock house has a room per state at Thursday 14:30 (`cinema` warm enough, `tobi` waiting).
 - **"My room" is a list of capability cards** (HAS-202, `features/my-room/`). The page renders
   `ROOM_CAPABILITIES` (`capabilities.ts`) for the room on screen and knows none of the cards by
   name; heating (`RoomHeating`) is the first. **A new thing a room can show or do is an entry

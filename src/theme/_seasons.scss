@@ -68,6 +68,28 @@ $seasons: (
 // What a page shows before `ThemeStore` has set the attribute (and in unit tests).
 $default-season: winter;
 
+// The states of the heating of a room (HAS-353), the same in every season: the edge of a tile and the icon
+// of its state - never text; the word is written in on-surface beside the icon, so colour is never the only
+// sign. (light scheme, dark scheme)
+$room-states: (
+  heating: (
+    #c2410c,
+    #ff9a62,
+  ),
+  waiting: (
+    #a16207,
+    #fcd34d,
+  ),
+  reached: (
+    #15803d,
+    #6ee7a1,
+  ),
+  held: (
+    #1d5fc4,
+    #6fb6ff,
+  ),
+);
+
 // The colours of the house's domains, the same in every season: a card about hot water is blue
 // in July and in January. (light scheme, dark scheme) - the dark shade is the lighter one again.
 $domains: (
@@ -332,6 +354,11 @@ $_neutral: (
     --app-domain-#{$name}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
   }
   --app-on-domain: light-dark(#{$_white}, #{$_ink});
+
+  // The states of the heating of a room (HAS-353), the same in every season.
+  @each $name, $pair in $room-states {
+    --app-room-#{$name}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
+  }
 
   // The status bar of a phone continues the page. Both shades are also given on their own:
   // `ThemeStore` copies the one in use into <meta name="theme-color">, where `light-dark()` is

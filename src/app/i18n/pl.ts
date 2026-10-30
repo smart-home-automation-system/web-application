@@ -122,6 +122,21 @@ export const pl: Messages = {
     held: 'Grzanie wstrzymane - otwarte okno',
   },
   heating: {
+    state: {
+      systemOff: 'Ogrzewanie wyłączone',
+      held: 'Otwarte okno',
+      heating: 'Grzeje',
+      unknown: 'Nieznany stan',
+      waiting: 'Czeka na ciepło',
+      reached: 'Wystarczająco ciepło',
+      outside: 'Teraz bez harmonogramu',
+      noHeater: 'Bez ogrzewania',
+    },
+    led: {
+      on: 'Pokój jest teraz w harmonogramie',
+      off: 'Pokój jest teraz poza harmonogramem',
+      unknown: 'Nie wiadomo, czy pokój jest w harmonogramie',
+    },
     title: 'Ogrzewanie',
     cards: 'Ogrzewanie domu',
     activity: {
@@ -172,7 +187,9 @@ export const pl: Messages = {
       heatersUnknown: 'Serwis nie podaje ogrzewania tego pokoju.',
       heatersNotListed: 'Grzejniki nieznane',
       legend:
-        'Cel: temperatura, której harmonogram wymaga w tej chwili. Wymaga grzania: w pokoju jest chłodniej. Grzejnik bez stanu nie odpowiedział od startu serwisu ogrzewania.',
+        'Cel: temperatura, której harmonogram wymaga w tej chwili. Lampka przy nazwie: pokój jest teraz w harmonogramie.',
+      legendStates: 'Stany pokoju',
+      systemOff: 'Ogrzewanie domu jest wyłączone - żaden pokój nie jest ogrzewany.',
       heater: {
         radiator: 'Grzejnik',
         floor: 'Podłoga',

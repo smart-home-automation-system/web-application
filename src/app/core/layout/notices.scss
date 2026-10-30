@@ -74,4 +74,15 @@
   color: var(--mat-sys-on-primary-container);
 
   --mat-icon-button-icon-color: var(--mat-sys-on-primary-container);
+
+  // on a phone the sentence keeps its line and the buttons go under it: with the mute of the
+  // administrator (HAS-346) three buttons squeezed it to a word per line, the last running into them
+  @media (max-width: 599.98px) {
+    flex-wrap: wrap;
+    row-gap: 0;
+
+    .notice__text {
+      flex-basis: calc(100% - 36px);
+    }
+  }
 }
