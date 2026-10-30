@@ -157,3 +157,56 @@ mat-card-content {
   color: var(--mat-sys-error);
   white-space: normal;
 }
+
+// HAS-353: the state of the heating of the room, as on the heating page - an icon in its colour, the word in
+// the colour of the text, the light of the schedule after it
+.room--heating {
+  --room-state: var(--app-room-heating);
+}
+
+.room--waiting {
+  --room-state: var(--app-room-waiting);
+}
+
+.room--reached {
+  --room-state: var(--app-room-reached);
+}
+
+.room--held {
+  --room-state: var(--app-room-held);
+}
+
+.room__state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface);
+}
+
+.room__state-icon {
+  color: var(--room-state, var(--mat-sys-on-surface-variant));
+}
+
+.led {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.led[data-led='on'] {
+  background: var(--app-room-reached);
+  box-shadow: 0 0 6px var(--app-room-reached);
+}
+
+.led[data-led='off'] {
+  border: 2px solid var(--mat-sys-outline);
+  box-sizing: border-box;
+}
+
+.led[data-led='unknown'] {
+  border: 2px dashed var(--mat-sys-outline);
+  box-sizing: border-box;
+}

@@ -220,6 +220,13 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
       heater('radiator', allDay, { working: true, secondsAgo: 4 * MINUTE }, temperature),
       heater('floor', livingRoom, { working: false, secondsAgo: 4 * MINUTE }, 30),
     ]),
+    // HAS-353: in its schedule all day - warm enough, and colder than asked with the relay not yet on
+    room('cinema', { value: 22.0, secondsAgo: 2 * MINUTE }, () => [
+      heater('radiator', allDay, { working: false, secondsAgo: 2 * MINUTE }, 22.0),
+    ]),
+    room('tobi', { value: 19.8, secondsAgo: MINUTE }, () => [
+      heater('radiator', allDay, { working: false, secondsAgo: MINUTE }, 19.8),
+    ]),
     // a heater the service has no schedule for
     room('bathroom down', { value: 18.4, secondsAgo: 3 * DAY }, () => [
       heater('radiator', [], { working: false, secondsAgo: 3 * DAY }, 18.4),

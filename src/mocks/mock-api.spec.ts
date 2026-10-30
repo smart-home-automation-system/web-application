@@ -115,6 +115,8 @@ describe('mock API', () => {
         'bathroom up',
         'loft',
         'living room',
+        'cinema',
+        'tobi',
         'bathroom down',
         'sauna',
         'garden',
@@ -516,7 +518,7 @@ describe('mock API', () => {
       >;
       const heaters = rooms.flatMap((room) => room.heaters ?? []);
 
-      expect(rooms).toHaveLength(9);
+      expect(rooms).toHaveLength(11);
       expect(rooms.filter((room) => room.temperature || 'heatingEnabled' in room)).toEqual([]);
       expect(heaters.filter((heater) => 'working' in heater || 'inSchedule' in heater)).toEqual([]);
       expect(heaters.filter((heater) => heater.schedules!.length > 0)).not.toEqual([]);

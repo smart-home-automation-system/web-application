@@ -15,6 +15,29 @@
       } @else {
         @let shown = view();
         @if (shown !== undefined) {
+          <!-- HAS-353: the state of the heating of the room as on the heating page, and the light of its schedule -->
+          @let heatingState = stateOf(shown);
+          @if (heatingState !== 'noHeater') {
+            <p
+              class="room__state"
+              data-testid="room-state"
+              [attr.data-heating-state]="heatingState"
+              [class]="'room__state room--' + heatingState"
+            >
+              <mat-icon class="room__state-icon" aria-hidden="true">{{
+                stateIcons[heatingState]
+              }}</mat-icon>
+              {{ t(stateLabels[heatingState]) }}
+              <span
+                class="led"
+                data-testid="schedule-led"
+                [attr.data-led]="ledOf(shown)"
+                [matTooltip]="t(ledLabels[ledOf(shown)])"
+                matTooltipTouchGestures="off"
+              ></span>
+              <span class="visually-hidden">{{ t(ledLabels[ledOf(shown)]) }}</span>
+            </p>
+          }
           @if (shown.temperature !== undefined) {
             <p class="room__temperature" data-testid="room-temperature">
               {{ shown.temperature | localNumber: ONE_DECIMAL }}&nbsp;°C

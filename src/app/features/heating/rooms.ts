@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,6 +8,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { APP_CONFIG } from '../../core/config/app-config';
+import { houseWeekMinute } from '../../core/time/house-date-time';
+import { Ticker } from '../../core/time/ticker';
 import { HeatingApi } from '../../data-access/heating/heating-api';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
@@ -19,7 +23,18 @@ import {
   heaterState,
   heaterStateLabel,
 } from '../../shared/room-heating/heater-labels';
-import { toRoomViews } from '../../shared/room-heating/room-views';
+import {
+  LEGEND_STATES,
+  ROOM_STATE_ICONS,
+  ROOM_STATE_LABELS,
+  ScheduleLed,
+  currentWindow,
+  roomState,
+  scheduleLed,
+  targetDistance,
+  windowTimes,
+} from '../../shared/room-heating/room-state';
+import { RoomView, SchedulePeriod, toRoomViews } from '../../shared/room-heating/room-views';
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
 import { groupByFloor } from './floors';
 import {
@@ -42,6 +57,7 @@ import {
 @Component({
   selector: 'app-heating-rooms',
   imports: [
+    NgTemplateOutlet,
     MatButtonModule,
     MatCardModule,
     MatIconModule,
@@ -61,7 +77,15 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Rooms {
+  /**
+   * Whether the heating of the house is switched on (`GET /heating`, the switch of the page): off, every tile is
+   * neutral (HAS-353); `undefined` while it is not known - the rooms then tell their own state.
+   */
+  readonly systemOn = input<boolean | undefined>(undefined);
+
   protected readonly rooms = inject(HeatingApi).watchRooms();
+  private readonly ticker = inject(Ticker);
+  private readonly zone = inject(APP_CONFIG).houseTimeZone;
   private readonly dialog = inject(MatDialog);
 
   private readonly views = computed(() => toRoomViews(this.rooms.value()));
@@ -90,6 +114,29 @@ export class Rooms {
   protected readonly stateLabel = heaterStateLabel;
   protected readonly windowIcon = windowStateIcon;
   protected readonly windowLabel = windowStateLabel;
+
+  protected readonly stateIcons = ROOM_STATE_ICONS;
+  protected readonly stateLabels = ROOM_STATE_LABELS;
+  protected readonly legendStates = LEGEND_STATES;
+  protected readonly ledLabels: Readonly<Record<ScheduleLed, MessageKey>> = {
+    on: 'heating.led.on',
+    off: 'heating.led.off',
+    unknown: 'heating.led.unknown',
+  };
+  protected readonly ledOf = scheduleLed;
+  protected readonly distance = targetDistance;
+  protected readonly times = windowTimes;
+
+  protected stateOf(room: RoomView) {
+    return roomState(room, this.systemOn());
+  }
+
+  /** The period on now, by the clock of the house - only for the tooltip; the light is the service's word. */
+  protected windowOf(room: RoomView): SchedulePeriod | undefined {
+    return room.target === undefined
+      ? undefined
+      : currentWindow(room, houseWeekMinute(this.ticker.now(), this.zone));
+  }
 
   /** The schedule of a room, in a window that follows the polled rooms. */
   protected openSchedule(name: string, floor: MessageKey): void {

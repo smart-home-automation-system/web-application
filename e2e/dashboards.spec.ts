@@ -128,8 +128,8 @@ test.describe('heating', () => {
         'Attic',
         'Outside',
       ]);
-      await expect(rooms.locator('[data-room]')).toHaveCount(9);
-      await expect(rooms.locator('[data-floor="upper"] [data-room]')).toHaveCount(4);
+      await expect(rooms.locator('[data-room]')).toHaveCount(11);
+      await expect(rooms.locator('[data-floor="upper"] [data-room]')).toHaveCount(5);
 
       const livingRoom = rooms.locator('[data-room="living room"]');
       await expect(livingRoom).toContainText('20.4 °C');
@@ -155,6 +155,73 @@ test.describe('heating', () => {
       await expect(page.getByTestId('floor-pump')).toContainText('Running');
       await expect(page.getByTestId('floor-pump')).toContainText('Reported 2 min ago');
       await expect(page.getByRole('alert')).toHaveCount(0);
+    });
+
+    // HAS-353: the state of every room at a glance - the word, its icon and the edge in its colour
+    test('tells the state of the heating of every room, and the light of its schedule', async ({
+      page,
+    }) => {
+      await page.goto('/heating');
+      const rooms = page.getByTestId('rooms');
+      const state = (room: string) => rooms.locator(`[data-room="${room}"]`);
+
+      const expected: Record<string, [string, string]> = {
+        'living room': ['heating', 'Heating'],
+        'bathroom up': ['heating', 'Heating'],
+        tobi: ['waiting', 'Waiting for heat'],
+        cinema: ['reached', 'Warm enough'],
+        office: ['reached', 'Warm enough'],
+        bedroom: ['held', 'Window open'],
+        wardrobe: ['unknown', 'Not known'],
+        'bathroom down': ['outside', 'No schedule now'],
+        loft: ['noHeater', ''],
+        sauna: ['noHeater', ''],
+        garden: ['noHeater', ''],
+      };
+      for (const [room, [value, words]] of Object.entries(expected)) {
+        await expect(state(room)).toHaveAttribute('data-heating-state', value);
+        // the word follows the ligature of its icon; a room without a heater keeps the line empty
+        await expect(state(room).getByTestId('room-state')).toHaveText(
+          words === '' ? '' : new RegExp(`\\s${words}\\s*$`),
+        );
+      }
+
+      // the light: a schedule covers the room now, none does, or nothing to tell without heaters
+      await expect(state('office').getByTestId('schedule-led')).toHaveAttribute('data-led', 'on');
+      await expect(state('bedroom').getByTestId('schedule-led')).toHaveAttribute('data-led', 'off');
+      // the temperature marked by its distance to the target, never by the colour of its text
+      await expect(state('tobi').getByTestId('room-temperature')).toHaveAttribute(
+        'data-distance',
+        'below',
+      );
+      await expect(state('office').getByTestId('room-temperature')).toHaveAttribute(
+        'data-distance',
+        'above',
+      );
+      await expect(page.getByTestId('heating-off')).toHaveCount(0);
+
+      await state('office').getByTestId('schedule-led').hover();
+      await expect(page.locator('.mat-mdc-tooltip-surface')).toHaveText(
+        'A schedule covers the room now · 07:00–17:00 · 20.5 °C',
+      );
+    });
+
+    // the switch of the house comes first: off, no room is heated whatever its schedule says
+    test('makes every room with a heater neutral while the heating of the house is off', async ({
+      page,
+    }) => {
+      await page.goto('/heating');
+      const card = page.getByTestId('heating-switch');
+      await card.getByRole('button', { name: 'Switch off' }).click();
+      await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
+
+      const rooms = page.getByTestId('rooms');
+      await expect(page.getByTestId('heating-off')).toContainText(
+        'The heating of the house is switched off',
+      );
+      await expect(rooms.locator('[data-heating-state="systemOff"]')).toHaveCount(8);
+      await expect(rooms.locator('[data-heating-state="noHeater"]')).toHaveCount(3);
+      await expect(rooms.locator('[data-distance]')).toHaveCount(0);
     });
 
     test('opens the schedule of a room in a window, and closes it again', async ({ page }) => {
@@ -213,7 +280,7 @@ test.describe('heating', () => {
     test('gives every room a tile of one size', async ({ page }) => {
       await page.goto('/heating');
       const tiles = page.getByTestId('room-tile');
-      await expect(tiles).toHaveCount(9);
+      await expect(tiles).toHaveCount(11);
 
       const sizes = await tiles.evaluateAll((all) =>
         all.map((tile) => {
@@ -232,10 +299,10 @@ test.describe('heating', () => {
       await page.goto('/heating');
       const rooms = page.getByTestId('rooms');
 
-      await expect(rooms.locator('[data-room]')).toHaveCount(9);
-      await expect(rooms.getByText('No reading yet')).toHaveCount(9);
+      await expect(rooms.locator('[data-room]')).toHaveCount(11);
+      await expect(rooms.getByText('No reading yet')).toHaveCount(11);
       await expect(rooms.getByTestId('room-temperature')).toHaveCount(0);
-      await expect(rooms.locator('.heater[data-state="unknown"]')).toHaveCount(8);
+      await expect(rooms.locator('.heater[data-state="unknown"]')).toHaveCount(10);
       await expect(rooms.locator('.heater:not([data-state="unknown"])')).toHaveCount(0);
       await expect(rooms.locator('.heater .badge')).toHaveCount(0);
       // the one thing the service works out when asked

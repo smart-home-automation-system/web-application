@@ -17,6 +17,13 @@
       @if (rooms.loading()) {
         <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('heating.rooms.loading')" />
       } @else {
+        <!-- HAS-353: switched off, every tile is neutral and this says why, once -->
+        @if (systemOn() === false && floors().length > 0) {
+          <p class="rooms__off" data-testid="heating-off">
+            <mat-icon aria-hidden="true">mode_heat_off</mat-icon>
+            {{ t('heating.rooms.systemOff') }}
+          </p>
+        }
         <!-- a floor is a row of tiles in the order of the house; a row that does not fill the
              card stands in its middle, as on the devices page -->
         @for (floor of floors(); track floor.id) {
@@ -25,14 +32,38 @@
             <ul class="floor__rooms">
               <!-- by position: nothing promises that a room is listed once -->
               @for (room of floor.rooms; track $index) {
-                <li class="room" data-testid="room-tile" [attr.data-room]="room.name">
+                @let heatingState = stateOf(room);
+                <li
+                  class="room"
+                  data-testid="room-tile"
+                  [attr.data-room]="room.name"
+                  [attr.data-heating-state]="heatingState"
+                  [class]="'room room--' + heatingState"
+                >
                   <!-- the identifier of the backend, printed as it is: never a translation -->
-                  <h4 class="room__name">{{ room.name }}</h4>
+                  <h4 class="room__name">
+                    <ng-container
+                      *ngTemplateOutlet="led; context: { $implicit: room }"
+                    />{{ room.name }}
+                  </h4>
+
+                  <!-- HAS-353: the state in one word with its icon - colour never alone -->
+                  <p class="room__line room__state" data-testid="room-state">
+                    @if (heatingState !== 'noHeater') {
+                      <mat-icon class="room__state-icon" aria-hidden="true">{{
+                        stateIcons[heatingState]
+                      }}</mat-icon>
+                      {{ t(stateLabels[heatingState]) }}
+                    }
+                  </p>
 
                   <!-- Every line is always there, empty or not: so every tile has one height -->
                   <p class="room__line room__temperature-line">
                     @if (room.temperature !== undefined) {
-                      <span class="room__temperature" data-testid="room-temperature"
+                      <span
+                        class="room__temperature"
+                        data-testid="room-temperature"
+                        [attr.data-distance]="systemOn() === false ? null : distance(room)"
                         >{{ room.temperature | localNumber: ONE_DECIMAL }}&nbsp;°C</span
                       >
                     } @else {
@@ -70,29 +101,38 @@
                           [class.heater--on]="heater.working === true"
                           [attr.data-state]="state(heater)"
                         >
+                          <!-- four columns shared by every heater of the tile (owner, HAS-353): the kind,
+                               the mark of a heater that calls for heat, the name, the state -->
                           <mat-icon class="heater__icon" aria-hidden="true">{{
                             kindIcon(heater)
                           }}</mat-icon>
+                          <span class="heater__mark">
+                            @if (heater.callsForHeat === true) {
+                              <!-- a mark, not a word: the line of a heater stays one line -->
+                              <mat-icon
+                                class="heater__calls"
+                                data-testid="calls-for-heat"
+                                aria-hidden="true"
+                                [matTooltip]="t('heating.rooms.heater.callsForHeat')"
+                                matTooltipTouchGestures="off"
+                                >local_fire_department</mat-icon
+                              >
+                            }
+                          </span>
                           <!-- the whole line in a tooltip, should a language not fit the tile -->
                           <span
                             class="heater__text"
                             [attr.title]="t(kindLabel(heater)) + ': ' + t(stateLabel(heater))"
-                            >{{ t(kindLabel(heater)) }}:&ngsp;{{ t(stateLabel(heater)) }}</span
+                            >{{ t(kindLabel(heater)) }}<span class="visually-hidden">:&ngsp;</span></span
                           >
-                          @if (heater.callsForHeat === true) {
-                            <!-- a mark, not a word: the line of a heater stays one line -->
-                            <mat-icon
-                              class="heater__calls"
-                              data-testid="calls-for-heat"
-                              aria-hidden="true"
-                              [matTooltip]="t('heating.rooms.heater.callsForHeat')"
-                              matTooltipTouchGestures="off"
-                              >local_fire_department</mat-icon
-                            >
-                            <span class="visually-hidden">{{
-                              t('heating.rooms.heater.callsForHeat')
-                            }}</span>
-                          }
+                          <span class="heater__text heater__state"
+                            >{{ t(stateLabel(heater)) }}
+                            @if (heater.callsForHeat === true) {
+                              <span class="visually-hidden">{{
+                                t('heating.rooms.heater.callsForHeat')
+                              }}</span>
+                            }
+                          </span>
                         </span>
                       } @empty {
                         <span class="room__detail">{{ t('heating.rooms.noHeater') }}</span>
@@ -151,10 +191,38 @@
           }
         }
         @if (floors().length > 0) {
+          <!-- HAS-353: the states of a tile, with their icons, and what the target and the light mean -->
+          <ul class="rooms__states" [attr.aria-label]="t('heating.rooms.legendStates')">
+            @for (state of legendStates; track state) {
+              <li [class]="'legend-state room--' + state">
+                <mat-icon class="room__state-icon" aria-hidden="true">{{ stateIcons[state] }}</mat-icon>
+                {{ t(stateLabels[state]) }}
+              </li>
+            }
+          </ul>
           <p class="room__note rooms__legend">{{ t('heating.rooms.legend') }}</p>
         }
         <app-api-error-strip [error]="rooms.error()" />
       }
     </mat-card-content>
   </mat-card>
+
+  <!-- the light of the schedule by the name of a room: the word is in the tooltip and for a screen reader -->
+  <ng-template #led let-room>
+    @let shown = ledOf(room);
+    @let window = windowOf(room);
+    <span
+      class="led"
+      data-testid="schedule-led"
+      [attr.data-led]="shown"
+      matTooltipTouchGestures="off"
+      [matTooltip]="
+        t(ledLabels[shown]) +
+        (window
+          ? ' · ' + times(window) + ' · ' + (window.temperature | localNumber: TARGET) + ' °C'
+          : '')
+      "
+    ></span>
+    <span class="visually-hidden">{{ t(ledLabels[shown]) }}&ngsp;</span>
+  </ng-template>
 </ng-container>

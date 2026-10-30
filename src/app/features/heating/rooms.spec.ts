@@ -130,7 +130,7 @@ describe('Rooms', () => {
     expect(summary).toContain('19.4 °C');
     expect(summary).toContain('Measured 3 min ago');
     expect(summary).toContain('Target 21.5 °C');
-    expect(summary).toContain('Radiator: heating local_fire_department Calls for heat');
+    expect(summary).toContain('local_fire_department Radiator: heating Calls for heat');
     expect(summary).toContain('Floor heating: off');
   });
 
@@ -430,7 +430,7 @@ describe('Rooms', () => {
     expect(shown).toContain('19,4 °C');
     expect(shown).toContain('Pomiar 3 min temu');
     expect(shown).toContain('Cel 21,5 °C');
-    expect(shown).toContain('Grzejnik: grzeje local_fire_department Wymaga grzania');
+    expect(shown).toContain('local_fire_department Grzejnik: grzeje Wymaga grzania');
     expect(shown).toContain('Podłoga: nie grzeje');
     expect(shown).toContain('Grzejnik: brak stanu');
     expect(shown).toContain('Brak odczytu');

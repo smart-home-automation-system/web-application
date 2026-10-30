@@ -98,6 +98,10 @@ test.describe('a resident with two rooms', () => {
     // 14:30: between the two periods of the bedroom
     await expect(room.getByTestId('room-target')).toContainText('No schedule right now');
     await expect(room).toContainText('Radiator: off');
+    // HAS-353: the open door holds the heating, and no schedule covers the room now
+    await expect(room.getByTestId('room-state')).toHaveAttribute('data-heating-state', 'held');
+    await expect(room.getByTestId('room-state')).toContainText('Window open');
+    await expect(room.getByTestId('schedule-led')).toHaveAttribute('data-led', 'off');
     await expect(room.locator('.week__day')).toHaveText([
       /Thu\s+\(today\)\s+05:30–07:00\s·\s19\s°C\s+21:00–23:00\s·\s18\s°C/,
     ]);
@@ -112,6 +116,9 @@ test.describe('a resident with two rooms', () => {
     await expect(room.getByTestId('room-target')).toContainText('21.5 °C');
     // a relay that has not answered is not "off"
     await expect(room).toContainText('Floor heating: no status yet');
+    // so the state of the room is not known either, while its schedule covers it
+    await expect(room.getByTestId('room-state')).toHaveAttribute('data-heating-state', 'unknown');
+    await expect(room.getByTestId('schedule-led')).toHaveAttribute('data-led', 'on');
   });
 
   // the one member of the mock household the registry lets switch the heating

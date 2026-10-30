@@ -127,7 +127,13 @@ dashboards:
   per room, floor by floor as on the devices page: the temperature with the age of its reading,
   the temperature its schedule asks for right now, each heater with what its relay last reported
   (a flame where it calls for heat), and the windows of the room with the hold of its heating.
-  "Schedule" on a tile opens a window with the week of each heater and **the history of the
+  **Each tile tells the state of its heating at a glance** (HAS-353): a word with its icon and the
+  edge of the tile in its colour - heating, waiting for heat, warm enough, window open, not known,
+  no schedule now (a dashed, quiet tile) - a light by the name of the room while a schedule covers
+  it (the period and its temperature in the tooltip), and a line under the temperature by its
+  distance to the target. With the heating of the house switched off every tile says so and the
+  page says it once above the rooms. The heaters of a tile stand in columns - the kind, the flame,
+  the name, the state. "Schedule" on a tile opens a window with the week of each heater and **the history of the
   temperature of the room** - the last 24 hours, 7 or 30 days, with the schedule the room has
   today as a dashed line. The schedules are read-only: `heating-service` has no way to change
   one yet. The switch is the one control of the page that changes the house: it asks before it
@@ -153,7 +159,8 @@ dashboards:
   several chooses among them, a member with none is told so. Per room: the temperature with
   the age of its reading, the humidity when the heating service reports one, the temperature
   the schedule asks for right now, each heater with what its relay last reported, the schedule
-  of today, and the windows of the room with the hold of its heating. Since HAS-254 also **the
+  of today, and the windows of the room with the hold of its heating, with the state of its
+  heating in one word as on the heating page (HAS-353). Since HAS-254 also **the
   blinds of the room** - each with its position, open / stop / close, a position for one that can
   go to one, and the pause of its schedules until their next run (no card for a room without
   blinds; the schedules themselves stay the administrator's) - and **the motion and presence
@@ -525,6 +532,13 @@ What the application relies on, in every call:
   switched off a heater can call for heat and stay off. The week of a heater is placed by the
   clock of the house, also on a phone abroad. A period the page cannot draw - an unknown day, a
   cooling period - is counted under the week, not dropped in silence.
+- **The state of a room is the first of these that holds** (HAS-353, `roomState`): the heating of
+  the house switched off; a window or a door holding the room; a heater working; not known (no
+  temperature, or a heater whose relay has not answered - missing is never "off"); waiting (a
+  schedule covers the room and it is colder than asked); warm enough; no schedule now. "A schedule
+  covers the room" is `scheduledTemperature` being there, not `inSchedule` (which the service sets
+  only below the target). My room does not read the switch of the house - only a member allowed to
+  switch it asks for it - so there a room tells its own state.
 - **Which room is on which floor is a list in this application** (`FLOORS`,
   `features/heating/floors.ts`), by the room identifiers of `smart-home-sdk`; the service
   knows no floors. A room the list does not name is shown all the same, under "Other".

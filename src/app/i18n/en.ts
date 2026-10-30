@@ -123,6 +123,22 @@ export const en = {
     held: 'Heating held - window open',
   },
   heating: {
+    // the heating of a room in one word (HAS-353)
+    state: {
+      systemOff: 'Heating off',
+      held: 'Window open',
+      heating: 'Heating',
+      unknown: 'Not known',
+      waiting: 'Waiting for heat',
+      reached: 'Warm enough',
+      outside: 'No schedule now',
+      noHeater: 'No heater',
+    },
+    led: {
+      on: 'A schedule covers the room now',
+      off: 'No schedule covers the room now',
+      unknown: 'Not known whether a schedule covers the room',
+    },
     title: 'Heating',
     cards: 'Heating of the house',
     activity: {
@@ -173,7 +189,9 @@ export const en = {
       heatersUnknown: 'The service does not list the heaters.',
       heatersNotListed: 'Heaters not listed',
       legend:
-        'Target: what the schedule asks for now. Calls for heat: the room is colder. No status: the relay has not answered since the service started.',
+        'Target: what the schedule asks for now. The light by the name: a schedule covers the room now.',
+      legendStates: 'States of a room',
+      systemOff: 'The heating of the house is switched off - no room is heated.',
       heater: {
         radiator: 'Radiator',
         floor: 'Floor heating',

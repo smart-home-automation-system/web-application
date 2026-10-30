@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { HeatingApi } from '../../data-access/heating/heating-api';
@@ -17,7 +18,15 @@ import {
 } from '../../shared/room-heating/heater-labels';
 import { windowStateIcon, windowStateLabel } from '../../shared/room-heating/window-labels';
 import { HeaterWeek } from '../../shared/room-heating/heater-week';
-import { toRoomViews } from '../../shared/room-heating/room-views';
+import {
+  ROOM_STATE_ICONS,
+  ROOM_STATE_LABELS,
+  ScheduleLed,
+  roomState,
+  scheduleLed,
+} from '../../shared/room-heating/room-state';
+import { RoomView, toRoomViews } from '../../shared/room-heating/room-views';
+import { MessageKey } from '../../i18n/messages';
 
 /**
  * The temperature and the heating of one room, strictly read-only: the temperature with the age
@@ -43,6 +52,7 @@ import { toRoomViews } from '../../shared/room-heating/room-views';
     HouseAgePipe,
     LocalNumberPipe,
     HeaterWeek,
+    MatTooltipModule,
   ],
   templateUrl: './room-heating.html',
   styleUrl: './room-heating.scss',
@@ -70,6 +80,21 @@ export class RoomHeating {
   protected readonly view = computed(() =>
     this.unknownRoom() ? undefined : toRoomViews([this.answer.value()]).at(0),
   );
+
+  // HAS-353: the state of the room as the heating page tells it. The switch of the house is not read here - it
+  // is asked for only by a member allowed to switch it (HouseHeating) - so a room tells its own state
+  protected readonly stateIcons = ROOM_STATE_ICONS;
+  protected readonly stateLabels = ROOM_STATE_LABELS;
+  protected readonly ledOf = scheduleLed;
+  protected readonly ledLabels: Readonly<Record<ScheduleLed, MessageKey>> = {
+    on: 'heating.led.on',
+    off: 'heating.led.off',
+    unknown: 'heating.led.unknown',
+  };
+
+  protected stateOf(room: RoomView) {
+    return roomState(room, undefined);
+  }
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
