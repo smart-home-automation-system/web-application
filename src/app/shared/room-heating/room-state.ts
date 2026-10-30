@@ -27,7 +27,7 @@ export type RoomState =
   | 'noHeater';
 
 export function roomState(room: RoomView, systemOn: boolean | undefined): RoomState {
-  if (room.heaters !== undefined && room.heaters.length === 0) {
+  if (room.heaters?.length === 0) {
     return 'noHeater';
   }
   if (systemOn === false) {

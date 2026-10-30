@@ -244,9 +244,8 @@ mat-card-content {
   // every heater of the tile, so the names and the states stand in line (owner, HAS-353); a grid
   // item may be narrower than its text, so the ellipsis of a line can work
   grid-template-columns: 16px 16px minmax(0, max-content) minmax(0, 1fr);
-  column-gap: 6px;
   align-content: start;
-  gap: 2px;
+  gap: 2px 6px;
   // 1.3rem a line, for as many heaters as the room with the most has (rooms.ts)
   min-height: calc(var(--heater-lines, 2) * 1.3rem);
   margin-top: 4px;
