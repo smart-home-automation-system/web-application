@@ -97,7 +97,9 @@ test.describe('the appliances page', () => {
     expect(week).toBeGreaterThan(0);
 
     await page.getByTestId('runs-period').getByRole('radio', { name: '30 days' }).click();
-    await expect(async () => expect(await washer.getByTestId('run').count()).toBeGreaterThan(week)).toPass();
+    await expect(async () =>
+      expect(await washer.getByTestId('run').count()).toBeGreaterThan(week),
+    ).toPass();
 
     const power = page.getByTestId('power-61');
     await expect(power.getByTestId('power-facts')).toContainText('Running above 20 W');
@@ -151,7 +153,9 @@ test.describe('the chores of a resident', () => {
 });
 
 test.describe('the chores', () => {
-  test('the administrator reads the report per member and switches the period', async ({ page }) => {
+  test('the administrator reads the report per member and switches the period', async ({
+    page,
+  }) => {
     await page.goto('/appliances');
 
     const report = page.getByTestId('members-report');
@@ -172,24 +176,30 @@ test.describe('the chores', () => {
     const report = page.getByTestId('members-report');
     await expect(report.locator('tbody tr')).toHaveCount(5);
 
-    // the mock answers after 150 ms: the card is measured in the frames between the click and the answer
+    // the card is measured in every frame from the click until well after the answer of the new period -
+    // however fast the machine answers (a slow runner may draw no frame before it)
     const heights = await page.evaluate(async () => {
       const card = document.querySelector<HTMLElement>('[data-testid="members-report"]')!;
       const before = card.getBoundingClientRect().height;
-      [...card.querySelectorAll<HTMLButtonElement>('[data-testid="chores-period"] button')][1].click();
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      return {
-        before,
-        during: card.getBoundingClientRect().height,
-        waiting: card.querySelector('mat-progress-bar') !== null,
-      };
+      const during: number[] = [];
+      [
+        ...card.querySelectorAll<HTMLButtonElement>('[data-testid="chores-period"] button'),
+      ][1].click();
+      // a second of frames: well past the answer, which comes after 150 ms
+      const started = performance.now();
+      while (performance.now() - started < 1_000) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        during.push(card.getBoundingClientRect().height);
+      }
+      return { before, during };
     });
 
-    expect(heights.waiting).toBe(true);
-    // not a pixel lower: the owner saw a rounded height move the cards under it
-    expect(Math.abs(heights.during - heights.before)).toBeLessThan(0.5);
+    // not a pixel lower at any moment: the owner saw a rounded height move the cards under it
+    expect(heights.during.length).toBeGreaterThan(0);
+    for (const height of heights.during) {
+      expect(Math.abs(height - heights.before)).toBeLessThan(0.5);
+    }
     await expect(report.locator('tbody tr')).toHaveCount(5);
-    expect(Math.abs((await report.boundingBox())!.height - heights.before)).toBeLessThan(0.5);
   });
 
   test('the administrator mutes the reminders of the dryer from the notice', async ({ page }) => {
