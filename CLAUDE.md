@@ -781,6 +781,29 @@ e2e/              # Playwright tests
   - **The registry knows the kind `appliance`** (`smart-home-sdk` 1.13.0, in `DEVICE_KINDS`), but
     the form does not offer it (`OFFERED_KINDS`): the eight settings of an appliance are written
     through the API, device by device. `bindingsOf('appliance')` is `shelly`, as in `DeviceRules`.
+- **The tag page** (HAS-346, `features/tag/`, route `/t`): what a phone held to the NFC tag of an
+  appliance opens - `?picc_data=<32 hex>&cmac=<16 hex>`, SUN encrypted as NFC.cool Tools programs it
+  (HAS-343; the URL in the task, `?uid=&c=&m=`, is not what the tags carry). What to keep:
+  - **The one page outside the shell and its guard** (`app.routes.ts`, pinned by `app.routes.spec`): no
+    navigation, no notices; it paints the glow itself and has the language menu. The tag opens the
+    **default browser** of the phone (Safari, Brave...), never the installed application, so it may know
+    nobody: the page asks "who is holding the phone" and makes the choice the profile of that browser
+    with `ProfileStore.open` - the door of the personal link, checked against the registry. "Not you?"
+    is the same list.
+  - **A read counts once** (the service takes its counter): the read is kept in memory and the address
+    replaced by `/t` at once (`Location.replaceState`), so a reload or a restored tab sends nothing. The
+    page never sends a read twice by itself; "Try again" (no answer, a 5xx) is safe - a read already
+    taken answers `REPLAYED_TAG`. `UNKNOWN_MEMBER` is checked before the read is spent: the page goes to
+    the list and sends the same read for the one chosen. After a recorded claim "Not you?" changes the
+    member and asks for the next read of the tag (`again`) - the wrong claim stays recorded.
+  - The codes of a claim have texts in `tag-read.ts` (`CLAIM_ERROR_TEXTS`, its test lists them); the name
+    of a member or an appliance stands beside a text, never inside one.
+  - The mock tags (`MOCK_TAGS` in `appliances.fixtures.ts`): `picc_data` `61…61`, `62…62`, `63…63` for the
+    three mock appliances, any `cmac` but `MOCK_BAD_CMAC` (`0000000000000000`, "the key does not give");
+    a read is good once within one load of the page.
+  - **Not yet** (they wait for HAS-344 / HAS-345 of appliance-service): the members report on
+    `/appliances` and the card "mine this month" of My room, the notice naming who claimed a run, and its
+    button turned into the administrator's "mute reminders".
 - **The appliances page** (HAS-283, `features/appliances/`, the administrator's; route `/appliances`, after the
   lights in the menu, domain colour `appliance`): to tune the thresholds of the appliances. What to keep:
   - **Three calls, told once** in `SourcesStrip`: the appliances (the `ApplianceStore` of the whole

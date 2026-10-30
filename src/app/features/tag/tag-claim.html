@@ -1,0 +1,129 @@
+<ng-container *transloco="let t">
+  <header class="tag-bar">
+    <span class="tag-bar__brand">
+      <mat-icon>local_laundry_service</mat-icon>
+      {{ t('tagClaim.title') }}
+    </span>
+    <app-language-menu />
+  </header>
+
+  <main class="tag-page">
+    @switch (phase()) {
+      @case ('invalid') {
+        <section class="message-page" data-testid="tag-invalid">
+          <mat-icon class="message-page__icon">nfc</mat-icon>
+          <h1>{{ t('tagClaim.invalidTitle') }}</h1>
+          <p>{{ t('tagClaim.invalidText') }}</p>
+        </section>
+      }
+
+      @case ('choose') {
+        <section class="message-page" data-testid="tag-choose">
+          <mat-icon class="message-page__icon">touch_app</mat-icon>
+          <h1>{{ t('tagClaim.chooseTitle') }}</h1>
+          <p>{{ t('tagClaim.chooseLead') }}</p>
+          @if (failure()?.hasCode('UNKNOWN_MEMBER')) {
+            <p class="tag-page__warning" role="alert">{{ t('tagClaim.error.unknownMember') }}</p>
+          }
+          @if (profiles.members(); as members) {
+            <ul class="members" [attr.aria-label]="t('tagClaim.members')">
+              @for (one of members; track one.name) {
+                <li>
+                  <!-- the name is the member's own: printed as it is, never a translation -->
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    class="members__button"
+                    [class.members__button--current]="one.name === member()"
+                    (click)="chosen(one.name)"
+                  >
+                    <mat-icon>person</mat-icon>
+                    {{ one.name }}
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else if (profiles.loading()) {
+            <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('tagClaim.loading')" />
+          }
+          @if (openFailed() || (profiles.error() && !profiles.loading())) {
+            <p class="tag-page__warning" role="alert">{{ t('tagClaim.householdUnavailable') }}</p>
+            <button matButton="filled" type="button" (click)="choose()">
+              {{ t('tagClaim.retry') }}
+            </button>
+          }
+        </section>
+      }
+
+      @case ('opening') {
+        <section class="message-page">
+          <mat-icon class="message-page__icon">account_circle</mat-icon>
+          <h1>{{ t('tagClaim.opening') }}</h1>
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('tagClaim.opening')" />
+        </section>
+      }
+
+      @case ('sending') {
+        <section class="message-page" data-testid="tag-sending">
+          <mat-icon class="message-page__icon">nfc</mat-icon>
+          <h1>{{ t('tagClaim.sending') }}</h1>
+          <p class="tag-page__who">
+            {{ t('tagClaim.recordingAs') }}&ngsp;<strong>{{ sentFor() }}</strong>
+          </p>
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('tagClaim.sending')" />
+        </section>
+      }
+
+      @case ('done') {
+        <section class="message-page tag-page__done" data-testid="tag-done" role="status">
+          <mat-icon class="message-page__icon tag-page__ok">check_circle</mat-icon>
+          <h1>
+            @if (reply()?.name; as name) {
+              <!-- the name of the registry, printed as it is -->
+              <span class="tag-page__appliance">{{ name }}</span>
+            }
+            <span>{{ t('tagClaim.emptied') }}</span>
+          </h1>
+          <p class="tag-page__who">
+            {{ t('tagClaim.recordedFor') }}&ngsp;<strong>{{ reply()?.member ?? sentFor() }}</strong>
+          </p>
+          <button matButton type="button" class="tag-page__not-me" (click)="choose()">
+            {{ t('tagClaim.notMe') }}
+          </button>
+        </section>
+      }
+
+      @case ('failed') {
+        <section class="message-page" data-testid="tag-failed">
+          <mat-icon class="message-page__icon">error</mat-icon>
+          <h1>{{ t('tagClaim.failedTitle') }}</h1>
+          @if (failureText(); as text) {
+            <p class="tag-page__warning" role="alert">{{ text | displayText }}</p>
+          }
+          @if (retryable()) {
+            <button matButton="filled" type="button" (click)="retry()">
+              {{ t('tagClaim.retry') }}
+            </button>
+          }
+          <p class="tag-page__who">
+            {{ t('tagClaim.recordingAs') }}&ngsp;<strong>{{ sentFor() }}</strong>
+          </p>
+          <button matButton type="button" class="tag-page__not-me" (click)="choose()">
+            {{ t('tagClaim.notMe') }}
+          </button>
+        </section>
+      }
+
+      @case ('again') {
+        <section class="message-page" data-testid="tag-again" role="status">
+          <mat-icon class="message-page__icon">nfc</mat-icon>
+          <h1>{{ t('tagClaim.againTitle') }}</h1>
+          <p class="tag-page__who">
+            {{ t('tagClaim.nowAs') }}&ngsp;<strong>{{ member() }}</strong>
+          </p>
+          <p>{{ t('tagClaim.againNote') }}</p>
+        </section>
+      }
+    }
+  </main>
+</ng-container>

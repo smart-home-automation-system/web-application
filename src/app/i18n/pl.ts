@@ -390,6 +390,38 @@ export const pl: Messages = {
     unavailableTitle: 'Nie udało się otworzyć profilu',
     continue: 'Przejdź do aplikacji',
   },
+  tagClaim: {
+    title: 'Tag urządzenia',
+    invalidTitle: 'To nie jest odczyt tagu',
+    invalidText: 'Tę stronę otwiera się, przykładając telefon do tagu na urządzeniu.',
+    chooseTitle: 'Kto przykłada telefon?',
+    chooseLead: 'Wybierz siebie - ta przeglądarka zapamięta cię na następny raz.',
+    members: 'Domownicy',
+    loading: 'Wczytywanie domowników',
+    householdUnavailable: 'Nie udało się wczytać domowników. Sprawdź połączenie z domem.',
+    opening: 'Zapamiętywanie',
+    sending: 'Zapisywanie',
+    recordingAs: 'Zapisuję jako',
+    emptied: 'opróżnione',
+    recordedFor: 'Zapisano dla',
+    notMe: 'To nie ja',
+    failedTitle: 'Nie zapisano',
+    retry: 'Spróbuj ponownie',
+    againTitle: 'Przyłóż telefon do tagu jeszcze raz',
+    nowAs: 'Od teraz jako',
+    againNote:
+      'Odczyt tagu liczy się raz: poprzedni zostaje zapisany dla osoby wybranej wcześniej.',
+    error: {
+      invalidTag: 'Tego odczytu nie da się sprawdzić. Przyłóż telefon do tagu jeszcze raz.',
+      replayed: 'Ten odczyt już był. Przyłóż telefon do tagu jeszcze raz.',
+      nothingToClaim: 'Nic nie czeka: to urządzenie nie skończyło cyklu w ostatnich 12 godzinach.',
+      notFound: 'Urządzenie tego tagu nie jest obserwowane.',
+      unknownMember:
+        'Osoba zapamiętana w tej przeglądarce nie jest już domownikiem. Wybierz, kto przykłada telefon.',
+      noAnswer:
+        'Brak odpowiedzi z domu. Mogło zostać zapisane mimo to - ponowna próba jest bezpieczna.',
+    },
+  },
   install: {
     title: 'Dodaj do ekranu początkowego',
     lead: 'Ikona dodana z tej strony otwiera aplikację od razu w Twoim profilu.',
@@ -1101,7 +1133,8 @@ export const pl: Messages = {
     error: {
       notFound: 'Usługa urządzeń AGD nie obserwuje tego urządzenia.',
       nothingToAcknowledge: 'Nic już nie czeka na opróżnienie.',
-      unknownMember: 'Twojego profilu nie ma już w rejestrze domowników - otwórz ponownie swój osobisty link.',
+      unknownMember:
+        'Twojego profilu nie ma już w rejestrze domowników - otwórz ponownie swój osobisty link.',
     },
     notice: {
       finished: 'Koniec pracy:',

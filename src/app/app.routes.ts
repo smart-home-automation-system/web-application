@@ -170,5 +170,13 @@ const pages: Page[] = [
  * `api-gateway-service`, so such a page would never reach this application.
  */
 export const routes: Routes = [
+  {
+    // The page an NFC tag on an appliance opens (HAS-346): a phone held to the tag, the outcome on the
+    // whole screen. Outside the shell - no navigation - and outside the guard of the profiles: it is
+    // opened in a browser that may know nobody, and asks who holds the phone itself.
+    path: 't',
+    title: 'tagClaim.title',
+    loadComponent: () => import('./features/tag/tag-claim').then((m) => m.TagClaim),
+  },
   { path: '', component: Shell, canActivateChild: [profileGuard], children: pages },
 ];

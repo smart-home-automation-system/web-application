@@ -175,6 +175,17 @@ dashboards:
   button that hides it for the visit - it comes back with the next finished cycle. Nothing is
   said while the call fails. (Once the NFC tags of HAS-343 claim a run, the acknowledgement of a
   member is the tag and the button becomes the administrator's.)
+- **The tag page** (HAS-346, `/t`): what a phone held to the NFC tag on an appliance opens -
+  `/t?picc_data=…&cmac=…`, the read of an NTAG 424 DNA (HAS-343, programmed per
+  `docs/nfc-tag-programming.pdf` of deployment-tools). It claims the chore of that appliance at once for
+  the member the browser remembers and says on the whole screen how it ended - "Dryer emptied, recorded
+  for Borys", or in words why not: the read cannot be checked, it was used before, nothing has finished
+  in the last 12 hours. The tag opens the **default browser** of the phone, never the installed
+  application, and that browser keeps its own profile: when it knows nobody the page asks "Who is
+  holding the phone?" once and remembers the choice as the profile of that browser, as a personal link
+  does; "Not you?" changes it. A read counts once: the address loses it the moment it is taken (a
+  reload sends nothing), and after a claim recorded for the wrong person the next read of the tag is
+  the one for the right one. No navigation on this page, and no guard of the profiles.
 - **Notifications on this device** (HAS-284): on My room for every member, and on the settings, a
   card with one switch - when an appliance has finished, the phone tells its member while they are
   at home, also with the application closed (Web Push of `notification-service` 0.6.0). The switch
@@ -446,6 +457,7 @@ Endpoints used today:
 | `DELETE` | `/home/household/member/{name}/push-subscriptions?endpoint=` | Removes it when the switch is turned off, after the browser ended it |
 | `GET` | `/home/appliance` | The appliances of the household with their state, `finishedAt` and `awaitingSince` (the notice of every page, my room, overview), polled every 30 s and right after an acknowledgement. Needs `appliance-service` 0.3.0 and `api-gateway-service` 0.9.0 or later |
 | `POST` | `/home/appliance/{id}/acknowledge?member=` | Marks a finished appliance as emptied (the notice, my room) - on my room also one still finishing (HAS-348, `appliance-service` 0.5.0: the cycle is then never announced) by the member of the profile in use, whom the household messages then name (HAS-347, `appliance-service` 0.4.0); the list is read again, the answer is not used. `409 NOTHING_TO_ACKNOWLEDGE`, `404 NOT_FOUND_APPLIANCE` and `400 UNKNOWN_MEMBER` have texts of their own |
+| `POST` | `/home/appliance/claims` | The chore of the appliance a tag is on, claimed by the member of the browser (the tag page, HAS-346): body `{piccData, cmac, member}`, sent once per read; the answer names the appliance and the member. `INVALID_TAG`, `REPLAYED_TAG`, `NOTHING_TO_CLAIM`, `NOT_FOUND_APPLIANCE` and `UNKNOWN_MEMBER` have texts of their own. Needs `appliance-service` 0.7.0 |
 | `GET` | `/home/appliance/{id}/runs?from=&to=` | The cycles of one appliance that started in the range (appliances: the last 30 days of every appliance, one after the other, every 60 s - the counters and the lists read that one answer) |
 | `GET` | `/home/appliance/{id}/samples?from=&to=` | The draw of the plug, a sample every 30 s (appliances: the last 24 or 48 hours of each appliance, every 60 s) |
 | `GET` | `/home/device/registry?kind=appliance&enabled=true` | The appliances with their settings (appliances, read only, every 60 s) |

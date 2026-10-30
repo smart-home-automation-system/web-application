@@ -3,6 +3,7 @@ import { HttpRequest } from '@angular/common/http';
 import {
   acknowledgeAppliance,
   applianceRuns,
+  claimAppliance,
   applianceSamples,
   appliancesNow,
   oneAppliance,
@@ -451,6 +452,12 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'POST',
     path: /^\/home\/appliance\/(\d+)\/acknowledge$/,
     reply: (request, _fresh, [id]) => acknowledgeAppliance(id, request.params.get('member')),
+  },
+  // HAS-346: a chore claimed with the NFC tag of an appliance
+  {
+    method: 'POST',
+    path: '/home/appliance/claims',
+    reply: (request) => claimAppliance(request.body),
   },
   {
     method: 'GET',

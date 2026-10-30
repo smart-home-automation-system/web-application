@@ -70,6 +70,31 @@ export interface RunsQuery {
   readonly range: HistoryRange;
 }
 
+/**
+ * What the NFC tag of an appliance put into its URL (HAS-343, HAS-346): `picc_data` (the UID and the
+ * read counter, encrypted, 32 hex characters) and `cmac` (16). Each read is good for one claim.
+ */
+export interface TagRead {
+  readonly piccData: string;
+  readonly cmac: string;
+}
+
+/**
+ * The answer of `POST /home/appliance/claims` (`appliance-service` >= 0.7.0): the appliance of the tag,
+ * its state after the claim, the member as the registry spells them and the cycle the claim attached to.
+ * A field the answer leaves out is not known.
+ */
+export interface ClaimReply {
+  readonly applianceId?: number;
+  /** The name of the registry, printed as it is - never a translation. */
+  readonly name?: string;
+  readonly state?: string;
+  readonly member?: string;
+  readonly runId?: number;
+  /** A house wall-clock time. */
+  readonly claimedAt?: string;
+}
+
 /** An acknowledgement the service did not carry out. */
 export interface FailedAcknowledgement {
   /** The appliance it was for. */
@@ -141,6 +166,16 @@ export class ApplianceApi {
         });
       },
     };
+  }
+
+  /**
+   * `POST /home/appliance/claims` (HAS-343): the chore of the appliance a tag is on, claimed by a member.
+   * One call, never repeated by itself - a read is spent once the service took its counter, so a second
+   * attempt of the same read answers `REPLAYED_TAG`. The service checks the member against the
+   * household profiles (`UNKNOWN_MEMBER`).
+   */
+  claim(read: TagRead, member: string): Observable<ClaimReply | null> {
+    return this.api.post<ClaimReply | null>('/appliance/claims', { ...read, member });
   }
 
   /**
