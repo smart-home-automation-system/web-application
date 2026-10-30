@@ -1,0 +1,128 @@
+<ng-container *transloco="let t">
+  <mat-card
+    appearance="outlined"
+    class="report card--domain"
+    data-testid="members-report"
+    [style.min-height.px]="heldHeight()"
+  >
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>groups</mat-icon></div>
+      <mat-card-title>{{ t('chores.report.title') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="report.lastUpdated()" [stale]="report.stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content class="report__content">
+      <mat-button-toggle-group
+        hideSingleSelectionIndicator
+        data-testid="chores-period"
+        [attr.aria-label]="t('chores.period.label')"
+        [value]="period()"
+        (change)="choose($event.value)"
+      >
+        @for (option of periods; track option) {
+          <mat-button-toggle [value]="option">{{ t(periodLabels[option]) }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+
+      <app-api-error-strip [error]="failure()" [describeWith]="describeError" />
+
+      @if (waiting()) {
+        <!-- laid over the top of the content, out of the flow: a bar in the flow added its height and the page
+             under the card moved (owner, 2026-10-30) -->
+        <mat-progress-bar
+          class="report__loading"
+          mode="indeterminate"
+          [attr.aria-label]="t('chores.report.loading')"
+        />
+      }
+
+      @if (table(); as shown) {
+        @if (shown.rows.length === 0) {
+          <p class="note">{{ t('chores.report.nobody') }}</p>
+        } @else {
+          <div class="report__scroll">
+            <table class="report__table">
+              <caption class="visually-hidden">
+                {{
+                  t('chores.report.caption')
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ t('chores.report.member') }}</th>
+                  @for (column of shown.columns; track column.id) {
+                    <!-- the name of the registry, printed as it is -->
+                    <th scope="col">{{ column.name ?? t('chores.report.applianceGone') }}</th>
+                  }
+                  <th scope="col">{{ t('chores.report.total') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of shown.rows; track row.member) {
+                  <tr [class.report__former]="row.former" [attr.data-member]="row.member">
+                    <th scope="row">
+                      {{ row.member }}
+                      @if (row.former) {
+                        <span class="report__tag">{{ t('chores.report.former') }}</span>
+                      }
+                    </th>
+                    @for (cell of row.cells; track $index) {
+                      <td>
+                        <ng-container *ngTemplateOutlet="figures; context: { $implicit: cell }" />
+                      </td>
+                    }
+                    <td class="report__total">
+                      <ng-container
+                        *ngTemplateOutlet="figures; context: { $implicit: row.total }"
+                      />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- the two counts are told also when they are 0: a line that came and went with the period moved the page -->
+          <p class="note" data-testid="chores-legend">{{ t('chores.report.legend') }}</p>
+          @if (shown.unattributed !== undefined) {
+            <p class="note" data-testid="chores-unattributed">
+              {{ t('chores.report.unattributed', { count: shown.unattributed }) }}
+            </p>
+          }
+          @if (shown.unknownPresence !== undefined) {
+            <p class="note" data-testid="chores-unknown">
+              {{ t('chores.report.unknownPresence', { count: shown.unknownPresence }) }}
+            </p>
+          }
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- "done / opportunities", the share, and what was done away from home; a figure not known is "-" -->
+  <ng-template #figures let-cell>
+    @if (cell === undefined) {
+      <span class="figures figures--unknown">-</span>
+    } @else {
+      <span class="figures">
+        <span class="figures__main">
+          {{ cell.done | localNumber: ONE_DECIMAL }} / {{ cell.opportunities | localNumber }}
+        </span>
+        <!-- 0 % is a share: tested against undefined, never by truthiness -->
+        @if (percent(cell) !== undefined) {
+          <span class="figures__share">{{ percent(cell) }}%</span>
+        }
+        @if (cell.doneAway !== undefined && cell.doneAway > 0) {
+          <span
+            class="figures__away"
+            matTooltipTouchGestures="off"
+            [matTooltip]="t('chores.report.awayHint')"
+          >
+            {{ t('chores.report.away', { count: cell.doneAway }) }}
+          </span>
+        }
+      </span>
+    }
+  </ng-template>
+</ng-container>

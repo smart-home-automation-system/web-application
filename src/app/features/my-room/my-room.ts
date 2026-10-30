@@ -17,6 +17,7 @@ import { ProfileStore } from '../../core/profile/profile-store';
 import { ROOM_CAPABILITIES } from './capabilities';
 import { HouseHeating } from './house-heating';
 import { HouseholdAppliances } from './household-appliances';
+import { MyChores } from './my-chores';
 import { DeviceNotifications } from '../../shared/push/device-notifications';
 
 /**
@@ -44,6 +45,7 @@ import { DeviceNotifications } from '../../shared/push/device-notifications';
     TranslocoDirective,
     HouseHeating,
     HouseholdAppliances,
+    MyChores,
     DeviceNotifications,
   ],
   templateUrl: './my-room.html',

@@ -17,6 +17,7 @@ import { Source, SourcesStrip } from '../../shared/sources-strip/sources-strip';
 import { ApplianceCard } from './appliance-card';
 import { AppliancePower } from './appliance-power';
 import { CounterRow } from './counter-row';
+import { MembersReport } from './members-report';
 import { LIST_PRESETS, ListPreset, addedUp, countersOf, runsIn } from './appliance-history';
 
 const LIST_LABELS: Readonly<Record<ListPreset, MessageKey>> = {
@@ -43,6 +44,7 @@ const LIST_LABELS: Readonly<Record<ListPreset, MessageKey>> = {
     ApplianceCard,
     AppliancePower,
     CounterRow,
+    MembersReport,
   ],
   templateUrl: './appliances.html',
   styleUrl: './appliances.scss',

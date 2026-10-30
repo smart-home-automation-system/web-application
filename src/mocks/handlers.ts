@@ -1,3 +1,4 @@
+import { membersReport } from './chores.fixtures';
 import { HttpRequest } from '@angular/common/http';
 
 import {
@@ -458,6 +459,13 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'POST',
     path: '/home/appliance/claims',
     reply: (request) => claimAppliance(request.body),
+  },
+  // HAS-346: the chores report per member (appliance-service HAS-345)
+  {
+    method: 'GET',
+    path: '/home/appliance/reports/members',
+    reply: (request, fresh) =>
+      membersReport(request.params.get('from'), request.params.get('to'), fresh),
   },
   {
     method: 'GET',

@@ -775,9 +775,10 @@ e2e/              # Playwright tests
     a dishwasher that finished last night is not "since 23:40" of today.
   - **A state this version does not know is "not known"** (`APPLIANCE_STATE_LABELS`, `stateOf`),
     never read as idle; an appliance without an id is not shown.
-  - **Until the NFC tags of HAS-343** every member acknowledges from the application; after them
-    the acknowledgement of a member is the tag, the notice names who claimed the run and its button
-    becomes the administrator's "Wycisz przypomnienia" (HAS-346).
+  - **"Emptied" counts as the chore** (owner 2026-10-30, appliance-service 0.8.0, HAS-344): the
+    application with the member and the tag of HAS-343 are equal confirmations, so the button stays for
+    every member. **The administrator also gets "Mute the reminders"** on the notice (HAS-346,
+    `isAdmin` of `Notices`): the acknowledgement without a member - the cycle is nobody's chore.
   - **The registry knows the kind `appliance`** (`smart-home-sdk` 1.13.0, in `DEVICE_KINDS`), but
     the form does not offer it (`OFFERED_KINDS`): the eight settings of an appliance are written
     through the API, device by device. `bindingsOf('appliance')` is `shelly`, as in `DeviceRules`.
@@ -801,9 +802,22 @@ e2e/              # Playwright tests
   - The mock tags (`MOCK_TAGS` in `appliances.fixtures.ts`): `picc_data` `61…61`, `62…62`, `63…63` for the
     three mock appliances, any `cmac` but `MOCK_BAD_CMAC` (`0000000000000000`, "the key does not give");
     a read is good once within one load of the page.
-  - **Not yet** (they wait for HAS-344 / HAS-345 of appliance-service): the members report on
-    `/appliances` and the card "mine this month" of My room, the notice naming who claimed a run, and its
-    button turned into the administrator's "mute reminders".
+- **The chores per member** (HAS-346, the report of appliance-service HAS-345, >= 0.9.0): the table of
+  `MembersReport` on `/appliances` and the card `MyChores` ("Mine this month") on My room, both from
+  `ApplianceApi.watchMembersReport` - a `queryResource` tagged with its range, so a period never shows the
+  numbers of another (a progress bar until its answer). What to keep:
+  - **Whole calendar months of the house** (`choresRange` in `shared/appliances/chores-period.ts`): this
+    month, the one before, the last three - the end of this month lies in the future, so the numbers of a
+    month never move with the day it is looked at.
+  - **A cell is "done / opportunities" with the share**: the opportunities are the cycles that finished while
+    the member was at home, so the count is fair to whoever was away; what was confirmed while away is told
+    apart ("away: n") and is not in the share; former members are rows of their own; the muted cycles and
+    those whose presence is not known are counted under the table. **Missing is never 0** (`toChoresTable`):
+    a figure the answer leaves out is "-", a share is tested against `undefined` (0 % is a share).
+  - The member of My room is found whatever the case of the name (`choresOf`), never among the former;
+    the card is drawn once the report names an appliance, or for a failure before any answer.
+  - `INVALID_RANGE` has a text (`CHORES_ERROR_TEXTS`, its test lists it). `profile-pages.spec` lets the
+    read of the report through. The mock report (`chores.fixtures.ts`) grows with the number of months.
 - **The appliances page** (HAS-283, `features/appliances/`, the administrator's; route `/appliances`, after the
   lights in the menu, domain colour `appliance`): to tune the thresholds of the appliances. What to keep:
   - **Three calls, told once** in `SourcesStrip`: the appliances (the `ApplianceStore` of the whole

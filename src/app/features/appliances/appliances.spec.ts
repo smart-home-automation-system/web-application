@@ -18,6 +18,7 @@ import {
   Appliance,
   ApplianceApi,
   ApplianceSample,
+  MembersReport,
   RunsOf,
   RunsQuery,
 } from '../../data-access/appliance/appliance-api';
@@ -73,12 +74,15 @@ describe('Appliances', () => {
   let samples: Map<number, FakeQueryResource<HistoryRange, readonly ApplianceSample[] | null>>;
   let ranges: Map<number, () => HistoryRange>;
   let charts: RecordedCharts;
+  let report: FakeQueryResource<HistoryRange, MembersReport | null>;
+  let reportRange: () => HistoryRange;
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
     appliances = fakeResource();
     registry = fakeResource();
     runs = fakeQueryResource();
+    report = fakeQueryResource();
     samples = new Map();
     ranges = new Map();
     charts = new RecordedCharts();
@@ -94,6 +98,10 @@ describe('Appliances', () => {
           provide: ApplianceApi,
           useValue: {
             watchRunsOf: () => runs,
+            watchMembersReport: (range: () => HistoryRange) => {
+              reportRange = range;
+              return report;
+            },
             watchSampleHistory: (id: () => number, range: () => HistoryRange) => {
               const resource = fakeQueryResource<HistoryRange, readonly ApplianceSample[] | null>();
               // the id is an input of the card: read once the card is made, as the real call does
@@ -211,5 +219,70 @@ describe('Appliances', () => {
     await fixture.whenStable();
 
     expect(ranges.get(131)!()).toEqual({ from: '2026-10-24T22:00:00', to: '2026-10-26T22:00:00' });
+  });
+
+  // HAS-346: the chores per member - the report of appliance-service HAS-345
+  describe('the chores per member', () => {
+    const REPORT: MembersReport = {
+      from: '2026-10-01T00:00:00',
+      to: '2026-11-01T00:00:00',
+      members: [
+        {
+          member: 'Aurelia',
+          appliances: [
+            { applianceId: 131, name: 'Washing machine', opportunities: 3, done: 2.5, doneAway: 0, share: 0.833 },
+            { applianceId: 132, name: 'Dryer', opportunities: 0, done: 0, doneAway: 0 },
+          ],
+          total: { opportunities: 3, done: 2.5, doneAway: 0, share: 0.833 },
+        },
+        {
+          member: 'Borys',
+          appliances: [
+            { applianceId: 131, name: 'Washing machine', opportunities: 3, done: 0.5, doneAway: 1, share: 0.167 },
+            { applianceId: 132, name: 'Dryer', opportunities: 2, done: 0, doneAway: 0, share: 0 },
+          ],
+          total: { opportunities: 5, done: 0.5, doneAway: 1, share: 0.1 },
+        },
+      ],
+      former: [{ member: 'Zenon', appliances: [{ applianceId: 132, name: 'Dryer', opportunities: 1, done: 1, doneAway: 0, share: 1 }], total: { opportunities: 1, done: 1, doneAway: 0, share: 1 } }],
+      unattributed: [{ applianceId: 131, name: 'Washing machine', count: 2 }],
+      unknownPresence: 23,
+    };
+
+    function table(): string[][] {
+      return [...page().querySelectorAll('[data-testid="members-report"] tbody tr')].map((row) =>
+        [...row.querySelectorAll('th, td')].map((cell) => words(cell)),
+      );
+    }
+
+    it('asks for this calendar month of the house', () => {
+      expect(reportRange()).toEqual({ from: '2026-10-01T00:00:00', to: '2026-11-01T00:00:00' });
+    });
+
+    it('shows done out of the opportunities of every member, the former apart, and what is not counted', async () => {
+      answerQuery(report, reportRange(), REPORT);
+      await fixture.whenStable();
+
+      expect(table()).toEqual([
+        ['Aurelia', '2.5 / 3 83%', '0 / 0', '2.5 / 3 83%'],
+        ['Borys', '0.5 / 3 17% away: 1', '0 / 2 0%', '0.5 / 5 10% away: 1'],
+        ['Zenon former member', '-', '1 / 1 100%', '1 / 1 100%'],
+      ]);
+      expect(words(page().querySelector('[data-testid="chores-unattributed"]'))).toBe('Cycles muted without anybody: 2');
+      expect(words(page().querySelector('[data-testid="chores-unknown"]'))).toContain('23');
+    });
+
+    // the answer of another period never stands under the one on screen
+    it('asks for the month before when it is chosen, and shows nothing of this one meanwhile', async () => {
+      answerQuery(report, reportRange(), REPORT);
+      await fixture.whenStable();
+      const lastMonth = [...page().querySelectorAll('[data-testid="chores-period"] button')][1] as HTMLButtonElement;
+      lastMonth.click();
+      await fixture.whenStable();
+
+      expect(reportRange()).toEqual({ from: '2026-09-01T00:00:00', to: '2026-10-01T00:00:00' });
+      expect(table()).toEqual([]);
+      expect(page().querySelector('[data-testid="members-report"] mat-progress-bar')).not.toBeNull();
+    });
   });
 });

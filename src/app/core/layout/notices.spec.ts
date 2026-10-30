@@ -360,6 +360,21 @@ describe('Notices', () => {
       expect(acknowledge).toHaveBeenCalledWith(62, 'Ola');
     });
 
+    // HAS-346: the administrator stops the reminders without claiming the chore; nobody else sees it
+    it('offers the administrator alone to mute the reminders, without a member', async () => {
+      await withProfile();
+      answer(appliances, [DRYER]);
+      await fixture.whenStable();
+
+      expect(applianceNotices()[0].querySelector('[data-testid="appliance-notice-mute"]')).toBeNull();
+
+      member.set({ name: 'Ola', role: 'admin' } as { name: string });
+      await fixture.whenStable();
+      applianceNotices()[0].querySelector<HTMLButtonElement>('[data-testid="appliance-notice-mute"]')!.click();
+
+      expect(acknowledge).toHaveBeenCalledWith(62);
+    });
+
     it('tells an acknowledgement that got no answer as one that may have been carried out', async () => {
       await withProfile();
       answer(appliances, [DRYER]);

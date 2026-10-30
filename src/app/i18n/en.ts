@@ -1122,6 +1122,38 @@ export const en = {
   },
   // HAS-282: the washing machine, the dryer and the dishwasher - the card of My room, the tile of the
   // overview and the notice above every page. The names are the registry's, printed as they are
+  // the chores per member (HAS-346, the report of appliance-service HAS-345); names stand beside these texts
+  chores: {
+    period: {
+      label: 'Period of the chores',
+      thisMonth: 'This month',
+      lastMonth: 'Last month',
+      threeMonths: '3 months',
+    },
+    report: {
+      title: 'Chores per member',
+      loading: 'Loading the chores',
+      nobody: 'The report names no member.',
+      caption: 'Emptied out of the cycles that finished while each member was at home',
+      member: 'Member',
+      applianceGone: 'Appliance no longer watched',
+      total: 'Together',
+      former: 'former member',
+      legend:
+        'Emptied / cycles that finished while the member was at home. A cycle emptied by two people counts half for each.',
+      unattributed: 'Cycles muted without anybody: {{ count }}',
+      unknownPresence: 'Cycles from before the presence was recorded, or without it: {{ count }}',
+      away: 'away: {{ count }}',
+      awayHint: 'Confirmed while not at home - counted apart, not in the share.',
+    },
+    mine: {
+      title: 'Mine this month',
+      notInReport: 'The report does not name you.',
+    },
+    error: {
+      invalidRange: 'The appliance service refused this period.',
+    },
+  },
   appliances: {
     title: 'Appliances',
     loading: 'Loading the appliances',
@@ -1129,6 +1161,8 @@ export const en = {
     unreadable: 'The appliance service did not answer with a list.',
     note: 'Mark an appliance as emptied once it has finished - or while it is finishing, before the message comes - and the household is not reminded.',
     acknowledge: 'Emptied',
+    // the administrator's (HAS-346): the reminders stop, the cycle is nobody's chore
+    mute: 'Mute the reminders',
     acknowledging: 'Sending…',
     acknowledgeFailed: 'Not marked as emptied.',
     acknowledgeNoAnswer:

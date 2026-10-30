@@ -135,3 +135,68 @@ test.describe('nobody chosen yet', () => {
     expect(asked).toEqual([]);
   });
 });
+
+// HAS-346: the chores per member (the report of appliance-service HAS-345) and the mute of the administrator
+test.describe('the chores of a resident', () => {
+  test.use({ profile: 'resident' });
+
+  test('are their own this month on My room, with no mute offered', async ({ page }) => {
+    await page.goto('/room');
+
+    const card = page.getByTestId('my-chores');
+    await expect(card).toContainText('Mine this month');
+    await expect(card.locator('[data-appliance="61"]')).toContainText(/2\s*\/\s*8\s*25%/);
+    await expect(page.getByTestId('appliance-notice-mute')).toHaveCount(0);
+  });
+});
+
+test.describe('the chores', () => {
+  test('the administrator reads the report per member and switches the period', async ({ page }) => {
+    await page.goto('/appliances');
+
+    const report = page.getByTestId('members-report');
+    const first = report.locator('tbody tr').first();
+    await expect(first).toContainText('Aurelia');
+    await expect(first).toContainText(/6\s*\/\s*9\s*67%/);
+    await expect(report.locator('tr', { hasText: 'Zenon' })).toContainText('former member');
+    await expect(report.getByTestId('chores-unknown')).toBeVisible();
+
+    await report.getByTestId('chores-period').getByRole('radio', { name: '3 months' }).click();
+    await expect(first).toContainText(/18\s*\/\s*27\s*67%/);
+  });
+
+  // owner, 2026-10-30: the card shrank to its progress bar while another period was on its way, and the
+  // page jumped - it keeps its height, never shorter than before, while the answer comes
+  test('the report keeps its height while another period is on its way', async ({ page }) => {
+    await page.goto('/appliances');
+    const report = page.getByTestId('members-report');
+    await expect(report.locator('tbody tr')).toHaveCount(5);
+
+    // the mock answers after 150 ms: the card is measured in the frames between the click and the answer
+    const heights = await page.evaluate(async () => {
+      const card = document.querySelector<HTMLElement>('[data-testid="members-report"]')!;
+      const before = card.getBoundingClientRect().height;
+      [...card.querySelectorAll<HTMLButtonElement>('[data-testid="chores-period"] button')][1].click();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return {
+        before,
+        during: card.getBoundingClientRect().height,
+        waiting: card.querySelector('mat-progress-bar') !== null,
+      };
+    });
+
+    expect(heights.waiting).toBe(true);
+    // not a pixel lower: the owner saw a rounded height move the cards under it
+    expect(Math.abs(heights.during - heights.before)).toBeLessThan(0.5);
+    await expect(report.locator('tbody tr')).toHaveCount(5);
+    expect(Math.abs((await report.boundingBox())!.height - heights.before)).toBeLessThan(0.5);
+  });
+
+  test('the administrator mutes the reminders of the dryer from the notice', async ({ page }) => {
+    await page.goto('/appliances');
+
+    await page.getByTestId('appliance-notice-mute').click();
+
+    await expect(page.getByTestId('appliance-notice')).toHaveCount(0);
+  });
+});
