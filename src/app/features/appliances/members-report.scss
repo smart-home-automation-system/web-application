@@ -1,0 +1,105 @@
+// the card as wide as the house line above it; its table scrolls inside on a phone, never the page
+:host {
+  display: block;
+  align-self: center;
+  width: min(100%, 960px);
+}
+
+.report {
+  --app-domain: var(--app-domain-appliance);
+
+  box-sizing: border-box;
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+.report__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 12px;
+}
+
+// over the top edge of the content, taking no room (see the template)
+.report__loading {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+mat-button-toggle-group {
+  align-self: flex-start;
+}
+
+.report__scroll {
+  overflow-x: auto;
+}
+
+.report__table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+
+  th,
+  td {
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--app-glass-edge);
+    white-space: nowrap;
+  }
+
+  thead th {
+    font: var(--mat-sys-label-large);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  tbody th {
+    font: var(--mat-sys-title-small);
+  }
+}
+
+.report__total {
+  font-weight: 600;
+}
+
+.report__former th,
+.report__former td {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.report__tag {
+  margin-left: 6px;
+  font: var(--mat-sys-label-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.figures {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.figures__share {
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.figures__away {
+  font: var(--mat-sys-label-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.figures--unknown {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

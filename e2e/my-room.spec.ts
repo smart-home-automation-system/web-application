@@ -151,8 +151,10 @@ test.describe('a resident with two rooms', () => {
 
     // the switch of the house, the four cards of the room and the appliances: each tells its call -
     // the lights card two, its lights and its rule (HAS-268); the blinds, the lights, the sensors and
-    // the appliances are shown for the failure - nobody knows then if there are any
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(7);
+    // the appliances are shown for the failure - nobody knows then if there are any; so is the card of the
+    // chores of the member (HAS-346)
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(8);
+    await expect(page.getByTestId('my-chores').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('appliances').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('room-lights').getByRole('alert')).toHaveCount(2);
     for (const card of ['room-heating', 'room-blinds', 'room-sensors', 'room-lights']) {

@@ -95,6 +95,45 @@ export interface ClaimReply {
   readonly claimedAt?: string;
 }
 
+/**
+ * A count of the chores report (`appliance-service` >= 0.9.0, HAS-345): `opportunities` - the cycles that
+ * finished while the member was at home; `done` - the cycles attributed to them while at home at the
+ * completion or not known, a shared one counting half; `doneAway` - attributed while known to be away;
+ * `share` - done / opportunities, left out without an opportunity (it may pass 1).
+ */
+export interface ChoresCount {
+  readonly opportunities?: number;
+  readonly done?: number;
+  readonly doneAway?: number;
+  readonly share?: number;
+}
+
+/** One appliance of a member: its name is the registry's, left out for one no longer watched. */
+export interface ApplianceChores extends ChoresCount {
+  readonly applianceId?: number;
+  readonly name?: string;
+}
+
+export interface MemberChores {
+  /** The name as the registry spells it - text from outside, printed as it is. */
+  readonly member?: string;
+  readonly appliances?: readonly ApplianceChores[];
+  readonly total?: ChoresCount;
+}
+
+/**
+ * `GET /home/appliance/reports/members?from=&to=` (HAS-345): every member of the registry, the names no
+ * longer members (`former`), the muted cycles per appliance and the cycles whose presence is not known.
+ */
+export interface MembersReport {
+  readonly from?: string;
+  readonly to?: string;
+  readonly members?: readonly MemberChores[];
+  readonly former?: readonly MemberChores[];
+  readonly unattributed?: readonly { readonly applianceId?: number; readonly name?: string; readonly count?: number }[];
+  readonly unknownPresence?: number;
+}
+
 /** An acknowledgement the service did not carry out. */
 export interface FailedAcknowledgement {
   /** The appliance it was for. */
@@ -176,6 +215,18 @@ export class ApplianceApi {
    */
   claim(read: TagRead, member: string): Observable<ClaimReply | null> {
     return this.api.post<ClaimReply | null>('/appliance/claims', { ...read, member });
+  }
+
+  /**
+   * The chores report of a range of the house (HAS-345, at most 366 days), tagged with the range it answers -
+   * the period on screen can change while a call is on its way. Call in an injection context.
+   */
+  watchMembersReport(range: () => HistoryRange): QueryResource<HistoryRange, MembersReport | null> {
+    return queryResource(
+      range,
+      (asked) => this.api.get<MembersReport | null>('/appliance/reports/members', { ...asked }),
+      { intervalMs: POLL_HISTORY_EVERY_MS },
+    );
   }
 
   /**

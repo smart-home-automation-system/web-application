@@ -111,6 +111,13 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
           <button matButton type="button" (click)="acknowledge(appliance.id)">
             {{ t('appliances.acknowledge') }}
           </button>
+          <!-- HAS-346: the administrator stops the reminders without claiming the chore - the cycle stays
+               unattributed (owner 2026-10-30: "Emptied" with the member counts as the chore, for everybody) -->
+          @if (isAdmin()) {
+            <button matButton type="button" data-testid="appliance-notice-mute" (click)="mute(appliance.id)">
+              {{ t('appliances.mute') }}
+            </button>
+          }
           <button
             matIconButton
             type="button"
@@ -141,6 +148,8 @@ export class Notices {
   protected readonly connection = inject(ConnectionStore);
   protected readonly update = inject(AppUpdate);
   private readonly profiles = inject(ProfileStore);
+  // the administrator's "mute the reminders" (HAS-346): nobody else sees it
+  protected readonly isAdmin = computed(() => this.profiles.profile()?.role === 'admin');
   private readonly document = inject(DOCUMENT);
   private readonly ticker = inject(Ticker);
 
@@ -239,6 +248,11 @@ export class Notices {
 
   protected acknowledge(id: number): void {
     this.appliances()?.acknowledge(id, this.profiles.profile()?.name);
+  }
+
+  /** Without a member: the reminders stop and the cycle is nobody's chore (appliance-service >= 0.8.0). */
+  protected mute(id: number): void {
+    this.appliances()?.acknowledge(id);
   }
 
   protected dismiss(appliance: ApplianceView): void {

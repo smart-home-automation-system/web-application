@@ -25,8 +25,8 @@ import { MessageKey } from '../../i18n/messages';
  * The appliances of the household on "My room" (HAS-282): the washing machine, the dryer and the
  * dishwasher with their state - running since, finished at - and **"Emptied"** for a finished one,
  * for every member and not by room: the appliances are the household's, so the card stands once,
- * after the cards of the rooms. Until the tags of HAS-343 every member acknowledges here (owner,
- * 2026-10-25); then the button becomes the administrator's "Mute the reminders" (HAS-346).
+ * after the cards of the rooms. "Emptied" with the member of the profile counts as the chore just as
+ * the tag on the appliance does (owner 2026-10-30, appliance-service 0.8.0) - it stays for everybody.
  *
  * It reads the resource of the whole application (`ApplianceStore`), which the notice of the shell
  * reads too, so the two never disagree. Nothing optimistic: after an acknowledgement the list is

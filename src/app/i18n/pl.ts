@@ -1110,6 +1110,37 @@ export const pl: Messages = {
     },
   },
 
+  chores: {
+    period: {
+      label: 'Okres obowiązków',
+      thisMonth: 'Ten miesiąc',
+      lastMonth: 'Poprzedni miesiąc',
+      threeMonths: '3 miesiące',
+    },
+    report: {
+      title: 'Obowiązki domowników',
+      loading: 'Wczytywanie obowiązków',
+      nobody: 'Raport nie wymienia żadnego domownika.',
+      caption: 'Opróżnione z cykli zakończonych, gdy domownik był w domu',
+      member: 'Domownik',
+      applianceGone: 'Urządzenie już nieobserwowane',
+      total: 'Razem',
+      former: 'były domownik',
+      legend:
+        'Opróżnione / cykle zakończone, gdy domownik był w domu. Cykl opróżniony przez dwie osoby liczy się każdej po połowie.',
+      unattributed: 'Cykle wyciszone bez wskazania osoby: {{ count }}',
+      unknownPresence: 'Cykle sprzed zapisywania obecności albo bez niej: {{ count }}',
+      away: 'poza domem: {{ count }}',
+      awayHint: 'Potwierdzone, gdy nie było go w domu - liczone osobno, nie wchodzi do udziału.',
+    },
+    mine: {
+      title: 'Moje w tym miesiącu',
+      notInReport: 'Raport cię nie wymienia.',
+    },
+    error: {
+      invalidRange: 'Usługa urządzeń AGD odrzuciła ten okres.',
+    },
+  },
   appliances: {
     title: 'AGD',
     loading: 'Wczytywanie urządzeń AGD',
@@ -1117,6 +1148,7 @@ export const pl: Messages = {
     unreadable: 'Usługa urządzeń AGD nie odpowiedziała listą.',
     note: 'Oznacz urządzenie jako opróżnione, gdy skończyło pracę - albo już gdy ją kończy, zanim przyjdzie wiadomość - a domownicy nie dostaną przypomnień.',
     acknowledge: 'Odebrane',
+    mute: 'Wycisz przypomnienia',
     acknowledging: 'Wysyłanie…',
     acknowledgeFailed: 'Nie oznaczono jako opróżnione.',
     acknowledgeNoAnswer:

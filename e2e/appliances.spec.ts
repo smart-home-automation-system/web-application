@@ -97,7 +97,9 @@ test.describe('the appliances page', () => {
     expect(week).toBeGreaterThan(0);
 
     await page.getByTestId('runs-period').getByRole('radio', { name: '30 days' }).click();
-    await expect(async () => expect(await washer.getByTestId('run').count()).toBeGreaterThan(week)).toPass();
+    await expect(async () =>
+      expect(await washer.getByTestId('run').count()).toBeGreaterThan(week),
+    ).toPass();
 
     const power = page.getByTestId('power-61');
     await expect(power.getByTestId('power-facts')).toContainText('Running above 20 W');
@@ -133,5 +135,78 @@ test.describe('nobody chosen yet', () => {
 
     await expect(page.getByTestId('appliance-notice')).toHaveCount(0);
     expect(asked).toEqual([]);
+  });
+});
+
+// HAS-346: the chores per member (the report of appliance-service HAS-345) and the mute of the administrator
+test.describe('the chores of a resident', () => {
+  test.use({ profile: 'resident' });
+
+  test('are their own this month on My room, with no mute offered', async ({ page }) => {
+    await page.goto('/room');
+
+    const card = page.getByTestId('my-chores');
+    await expect(card).toContainText('Mine this month');
+    await expect(card.locator('[data-appliance="61"]')).toContainText(/2\s*\/\s*8\s*25%/);
+    await expect(page.getByTestId('appliance-notice-mute')).toHaveCount(0);
+  });
+});
+
+test.describe('the chores', () => {
+  test('the administrator reads the report per member and switches the period', async ({
+    page,
+  }) => {
+    await page.goto('/appliances');
+
+    const report = page.getByTestId('members-report');
+    const first = report.locator('tbody tr').first();
+    await expect(first).toContainText('Aurelia');
+    await expect(first).toContainText(/6\s*\/\s*9\s*67%/);
+    await expect(report.locator('tr', { hasText: 'Zenon' })).toContainText('former member');
+    await expect(report.getByTestId('chores-unknown')).toBeVisible();
+
+    await report.getByTestId('chores-period').getByRole('radio', { name: '3 months' }).click();
+    await expect(first).toContainText(/18\s*\/\s*27\s*67%/);
+  });
+
+  // owner, 2026-10-30: the card shrank to its progress bar while another period was on its way, and the
+  // page jumped - it keeps its height, never shorter than before, while the answer comes
+  test('the report keeps its height while another period is on its way', async ({ page }) => {
+    await page.goto('/appliances');
+    const report = page.getByTestId('members-report');
+    await expect(report.locator('tbody tr')).toHaveCount(5);
+
+    // the card is measured in every frame from the click until well after the answer of the new period -
+    // however fast the machine answers (a slow runner may draw no frame before it)
+    const heights = await page.evaluate(async () => {
+      const card = document.querySelector<HTMLElement>('[data-testid="members-report"]')!;
+      const before = card.getBoundingClientRect().height;
+      const during: number[] = [];
+      [
+        ...card.querySelectorAll<HTMLButtonElement>('[data-testid="chores-period"] button'),
+      ][1].click();
+      // a second of frames: well past the answer, which comes after 150 ms
+      const started = performance.now();
+      while (performance.now() - started < 1_000) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        during.push(card.getBoundingClientRect().height);
+      }
+      return { before, during };
+    });
+
+    // not a pixel lower at any moment: the owner saw a rounded height move the cards under it
+    expect(heights.during.length).toBeGreaterThan(0);
+    for (const height of heights.during) {
+      expect(Math.abs(height - heights.before)).toBeLessThan(0.5);
+    }
+    await expect(report.locator('tbody tr')).toHaveCount(5);
+  });
+
+  test('the administrator mutes the reminders of the dryer from the notice', async ({ page }) => {
+    await page.goto('/appliances');
+
+    await page.getByTestId('appliance-notice-mute').click();
+
+    await expect(page.getByTestId('appliance-notice')).toHaveCount(0);
   });
 });
