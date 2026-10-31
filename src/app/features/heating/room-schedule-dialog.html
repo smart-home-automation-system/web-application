@@ -13,8 +13,8 @@
 
   <mat-dialog-content class="dialog__content">
     <app-api-error-strip [error]="data.rooms.error()" />
-    <p class="dialog__note" data-testid="schedule-read-only">
-      {{ t('heating.rooms.schedule.readOnly') }}
+    <p class="dialog__note" data-testid="schedule-editable">
+      {{ t('heating.rooms.schedule.editable') }}
     </p>
 
     @let room = data.room();
@@ -46,6 +46,16 @@
               <p class="dialog__note">
                 {{ t('heating.rooms.schedule.unreadable', { count: heater.unreadablePeriods }) }}
               </p>
+            }
+            <!-- the periods of a radiator or a floor heater are written here (HAS-357); a heater of
+                 a kind this version does not know, or a list the service did not send, is not -->
+            @if (heater.kind !== 'other' && heater.entries !== undefined) {
+              <app-heater-schedule-editor
+                [room]="data.name"
+                [heater]="heater.kind"
+                [entries]="heater.entries"
+                [readBack]="readBack"
+              />
             }
           </section>
         } @empty {

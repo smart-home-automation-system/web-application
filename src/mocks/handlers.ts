@@ -21,10 +21,14 @@ import {
   setDeviceEnabled,
 } from './devices.fixtures';
 import {
+  createHeatingSchedule,
+  enableHeatingSchedule,
   floorPump,
   heatingActivity,
   heatingRooms,
   heatingStatus,
+  removeHeatingSchedule,
+  replaceHeatingSchedule,
   temperatureSensors,
   turnHeating,
 } from './heating.fixtures';
@@ -194,6 +198,28 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
             },
           };
     },
+  },
+  // the writes of the periods of a heater (HAS-357): what the next read of the rooms answers
+  {
+    method: 'POST',
+    path: /^\/home\/heating\/rooms\/([^/]+)\/heaters\/([^/]+)\/schedules$/,
+    reply: (request, _fresh, [room, heater]) =>
+      createHeatingSchedule(decodeURIComponent(room), decodeURIComponent(heater), request.body),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/heating\/schedules\/(\d+)$/,
+    reply: (request, _fresh, [id]) => replaceHeatingSchedule(id, request.body),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/heating\/schedules\/(\d+)\/enabled$/,
+    reply: (request, _fresh, [id]) => enableHeatingSchedule(id, request.params.get('value')),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/heating\/schedules\/(\d+)$/,
+    reply: (_request, _fresh, [id]) => removeHeatingSchedule(id),
   },
   {
     method: 'GET',

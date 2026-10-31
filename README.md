@@ -135,10 +135,14 @@ dashboards:
   page says it once above the rooms. The heaters of a tile stand in columns - the kind, the flame,
   the name, the state. "Schedule" on a tile opens a window with the week of each heater and **the history of the
   temperature of the room** - the last 24 hours, 7 or 30 days, with the schedule the room has
-  today as a dashed line. The schedules are read-only: `heating-service` has no way to change
-  one yet. The switch is the one control of the page that changes the house: it asks before it
-  acts, and what it shows afterwards is what the house answers when asked again, never what was
-  clicked.
+  today as a dashed line. **The periods of each heater are written in that window** (HAS-357,
+  `heating-service` 1.14.0): added, changed, switched off and on, and removed after a question -
+  the days, from, to and a temperature of 5 to 30 °C in steps of 0.5. Every rule of the service is
+  checked before anything is sent (a period ends before midnight and never overlaps another of the
+  same heater, a switched-off one included); a period switched off stays on the list, struck
+  through, and is not in the week - it never heats. After every write the rooms are read again and
+  only that answer moves the list. The switch of the house asks before it acts, and what it shows
+  afterwards is what the house answers when asked again, never what was clicked.
 - **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
   circulation, **when the sensors were read** - a reading older than 6 minutes is marked out of
@@ -453,6 +457,9 @@ Endpoints used today:
 | `GET` | `/home/blinds` | Every blind by room with its state, position, window and `schedulePausedSince` (rooms, blinds), polled every 10 s and right after every command; once a minute by the tile of the overview. Needs `blinds-service` 0.8.0 for the pause |
 | `GET` | `/home/blinds/rooms/{room}` | The blinds of one room (my room), polled every 10 s and right after every command; an empty list for a room without blinds - then no card |
 | `GET` | `/home/device/registry?room={room}&enabled=true` | The switched-on devices of one room (my room: its motion and presence sensors), every 60 s - the one read of the device registry outside the administration; only names and kinds are shown |
+| `POST` | `/home/heating/rooms/{room}/heaters/{heater}/schedules` | A new period of a heater (the window of a room on the heating page, HAS-357): body `{days, startTime, endTime, temperature}`, the times `HH:mm`; the rooms are read again, the answer is not used. Needs `heating-service` 1.14.0 |
+| `PUT` / `DELETE` | `/home/heating/schedules/{id}` | Changes a period whole (whether it is on stays) or removes it - `NOT_FOUND_SCHEDULE` on a removal counts as removed; the rooms are read again |
+| `PUT` | `/home/heating/schedules/{id}/enabled?value=true\|false` | Switches a period on or off; the rooms are read again. `INVALID_SCHEDULE` (its reason only in `details`, never shown - every rule is checked first), `NOT_FOUND_SCHEDULE`, `NOT_FOUND_HEATER` and `NOT_FOUND_ROOM` have texts of their own |
 | `POST` | `/home/blinds/{id}?command=open\|close\|stop&source=dashboard`, `/home/blinds/{id}/position?value=` | Moves a blind (rooms). No question first; its answer is not used: the blinds are read again |
 | `PUT` / `DELETE` | `/home/blinds/{id}/schedule-pause` | Pauses the schedules of a blind until their next run, or ends the pause (rooms, blinds) |
 | `POST` | `/home/blinds/rooms/{room}?command=open|close|stop&source=dashboard` | Moves every blind of a room (blinds); the whole house is every room with blinds, one after the other. The blinds it skipped are told |

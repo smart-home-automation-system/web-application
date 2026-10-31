@@ -193,9 +193,8 @@ e2e/              # Playwright tests
   page: every line is always rendered, empty or not, and a heater that calls for heat is a mark
   with the words for a screen reader - a line that wraps would make its tile taller. The button
   of a tile opens the schedule of the room in a window (`RoomScheduleDialog`: the week of each
-  heater and the history of the room, the room as a signal over the polled rooms). **It is
-  read-only**: `heating-service` has no endpoint that writes a schedule, and the window says so -
-  editing needs that endpoint first. In a browser test scope a room to the card
+  heater and the history of the room, the room as a signal over the polled rooms), **and the editor
+  of the periods of each heater** (HAS-357, below). In a browser test scope a room to the card
   (`getByTestId('rooms')`): the sensor table in its window carries `data-room` too.
 - **The state of the heating of a room** (HAS-353, `shared/room-heating/room-state.ts`, pinned by its
   spec): `roomState(room, systemOn)` - the first that holds of `systemOff`, `held`, `heating`,
@@ -216,6 +215,30 @@ e2e/              # Playwright tests
     heater that calls for heat (an empty cell otherwise), the name, the state - so names and states
     stand in line; a sentence instead of the heaters spans the four.
   - The mock house has a room per state at Thursday 14:30 (`cinema` warm enough, `tobi` waiting).
+- **The editor of the periods of a heater** (HAS-357, `features/heating/schedule-editor/`, in the
+  window of a room on the heating page - the administrator's; `heating-service` 1.14.0, HAS-356):
+  `HeaterScheduleEditor` per radiator or floor heater whose answer has a list. What to keep:
+  - **`heating-schedule-rules.ts` is a copy of `ScheduleRules` of `heating-service`** - at least one
+    day, `HH:mm`, the start before the end (never across midnight), 5-30 °C in steps of 0.5, no overlap
+    with another period of the same heater on a day in common, **a switched-off one included**, touching
+    allowed. Its test runs the cases of the service's test; **a rule changed there is changed here**.
+    `scheduleProblem` checks a whole body for the mock API. A temperature takes a comma.
+  - **The heater view carries two lists** (`toRoomViews`): `periods` - only the periods that are on,
+    what the week, the history line and the tooltip draw (a switched-off one never heats) - and
+    `entries` - every readable one with its `id` and `enabled`, the list of the editor. Missing
+    `enabled` is on (a service before 1.13.0 could not switch one off); a period without an `id` is
+    listed and offers no change.
+  - **No optimistic state**: a write, then `rooms.refresh()` (the dialog's `readBack`), and only that
+    answer moves the list; the switch of a period does not flip itself (`disableToggleValue`). One write
+    at a time, one form or question open at a time; a write is never aborted with the window. A write
+    without an answer "may have been made"; `NOT_FOUND_SCHEDULE` on a removal counts as removed; a
+    period gone with the read-back takes its form and its question with it (an effect, not a computed).
+  - The codes `INVALID_SCHEDULE`, `NOT_FOUND_SCHEDULE`, `NOT_FOUND_HEATER`, `NOT_FOUND_ROOM` have texts
+    in `heating-errors.ts` (its test lists them); the English reason of `INVALID_SCHEDULE` never
+    reaches the screen.
+  - The mock periods (`heating.fixtures.ts`) are a store with ids - the office has a Saturday period
+    switched off - written by the four mock endpoints and refused with the service's codes;
+    `resetHeating()` resets them too.
 - **"My room" is a list of capability cards** (HAS-202, `features/my-room/`). The page renders
   `ROOM_CAPABILITIES` (`capabilities.ts`) for the room on screen and knows none of the cards by
   name; heating (`RoomHeating`) is the first. **A new thing a room can show or do is an entry
@@ -487,8 +510,9 @@ e2e/              # Playwright tests
     since when, closed, a sensor not heard of - and the hold of its heating as a badge. A room
     without a sensor says nothing; a state this version does not know is "not heard of", never
     closed. The values are those of the window of a blind, the same words in both places.
-  - **The dashboard writes to the house in five places now**: the heating switch, the two
-    registries, and - from this view - the blinds and the lights (through `light-service` since HAS-292). (The blinds page adds the
+  - **The dashboard writes to the house in six places now**: the heating switch, the two
+    registries, and - from this view - the blinds and the lights (through `light-service` since HAS-292);
+    the sixth is the periods of the heaters (HAS-357, the window of a room on the heating page). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the

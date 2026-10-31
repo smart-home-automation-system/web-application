@@ -232,7 +232,7 @@ test.describe('heating', () => {
 
       const window = page.getByRole('dialog');
       await expect(window).toContainText('living room');
-      await expect(window.getByTestId('schedule-read-only')).toBeVisible();
+      await expect(window.getByTestId('schedule-editable')).toBeVisible();
       // the week of each heater, then the history of the room
       await expect(window.getByRole('heading', { level: 3 })).toHaveText([
         'Radiator',
@@ -262,6 +262,73 @@ test.describe('heating', () => {
         .getByRole('button', { name: /Schedule/ })
         .click();
       await expect(page.getByRole('dialog')).toContainText('No schedule.');
+    });
+
+    // HAS-357: the periods of a heater written in the window, each write read back
+    test('adds, switches, changes and removes a period of a heater', async ({ page }) => {
+      await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+      await page.goto('/heating');
+      await page
+        .getByTestId('rooms')
+        .locator('[data-room="office"]')
+        .getByRole('button', { name: /Schedule/ })
+        .click();
+      const window = page.getByRole('dialog');
+      const periods = window.getByTestId('schedule-period');
+      // the weekdays, and a Saturday switched off - listed, not in the week
+      await expect(periods).toHaveCount(2);
+      await expect(periods.nth(1)).toHaveClass(/period--off/);
+      await expect(window.locator('.week__day').nth(5)).toContainText('no heating');
+
+      // a rule is checked before anything is sent
+      await window.getByTestId('period-add').click();
+      await window.getByTestId('period-days').getByRole('button', { name: 'Sun' }).click();
+      await window.getByTestId('period-start').fill('10:00');
+      await window.getByTestId('period-end').fill('09:00');
+      await window.getByTestId('period-temperature').fill('21,5');
+      await window.getByTestId('period-save').click();
+      await expect(window.getByTestId('period-problems')).toContainText(
+        'The period has to end after it starts, before midnight.',
+      );
+
+      await window.getByTestId('period-end').fill('14:00');
+      await window.getByTestId('period-save').click();
+      await expect(window.getByTestId('period-form')).toHaveCount(0);
+      await expect(periods).toHaveCount(3);
+      await expect(periods.nth(2)).toContainText(/Sun\s+10:00–14:00\s+21\.5\s°C/);
+      await expect(window.locator('.week__day').nth(6)).toContainText('10:00–14:00 · 21.5 °C');
+
+      // switched off: the switch moves with the read-back, and the week loses it
+      await periods.nth(2).getByTestId('period-switch').getByRole('switch').click();
+      await expect(periods.nth(2)).toHaveClass(/period--off/);
+      await expect(window.locator('.week__day').nth(6)).toContainText('no heating');
+
+      // changed: what it was itself is no overlap
+      await periods.nth(2).getByTestId('period-edit').click();
+      await window.getByTestId('period-start').fill('09:30');
+      await window.getByTestId('period-save').click();
+      await expect(periods.nth(2)).toContainText('09:30–14:00');
+
+      // removed after the question, "Cancel" focused
+      await periods.nth(2).getByTestId('period-remove').click();
+      await expect(window.getByTestId('period-remove-cancel')).toBeFocused();
+      await window.getByTestId('period-remove-confirm').click();
+      await expect(periods).toHaveCount(2);
+    });
+
+    test('tells a write the service refused, with the period left as stored', async ({ page }) => {
+      await useScenario(page, 'writes-fail');
+      await page.goto('/heating');
+      await page
+        .getByTestId('rooms')
+        .locator('[data-room="office"]')
+        .getByRole('button', { name: /Schedule/ })
+        .click();
+      const window = page.getByRole('dialog');
+      await window.getByTestId('period-switch').first().getByRole('switch').click();
+
+      await expect(window.getByRole('alert')).toContainText('The period was not switched.');
+      await expect(window.getByTestId('schedule-period').first()).not.toHaveClass(/period--off/);
     });
 
     test('can be opened from the keyboard', async ({ page }) => {

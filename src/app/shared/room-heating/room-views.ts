@@ -9,6 +9,16 @@ export interface SchedulePeriod {
   readonly temperature: number;
 }
 
+/**
+ * A stored period of a heater, as the editor lists it (HAS-357): with the id a change names and
+ * whether it is switched on. One without an id (a service before 1.13.0) is shown and cannot be
+ * changed.
+ */
+export interface ScheduleEntry extends SchedulePeriod {
+  readonly id?: number;
+  readonly enabled: boolean;
+}
+
 export type HeaterKind = 'radiator' | 'floor' | 'other';
 
 /** A heater of a room as its card shows it. */
@@ -24,10 +34,13 @@ export interface HeaterView {
    */
   readonly callsForHeat: boolean | undefined;
   /**
-   * The periods of its week; `undefined` when the answer carries no list - which is not the same
-   * as a heater without a schedule, an empty list.
+   * The periods of its week that are on - what it heats by; `undefined` when the answer carries no
+   * list - which is not the same as a heater without a schedule, an empty list. A period switched
+   * off is not in it: it never heats.
    */
   readonly periods: readonly SchedulePeriod[] | undefined;
+  /** Every period that could be read, switched off or not - the list of the editor (HAS-357). */
+  readonly entries?: readonly ScheduleEntry[];
   /** Entries of the list that are not a period this application can draw. */
   readonly unreadablePeriods: number;
 }
@@ -103,7 +116,7 @@ function minutes(value: unknown): number | undefined {
   return hour < 24 && minute < 60 ? hour * 60 + minute : undefined;
 }
 
-function toPeriod(entry: unknown): SchedulePeriod | undefined {
+function toPeriod(entry: unknown): ScheduleEntry | undefined {
   if (!isRecord(entry) || !Array.isArray(entry['days'])) {
     return undefined;
   }
@@ -126,21 +139,34 @@ function toPeriod(entry: unknown): SchedulePeriod | undefined {
   ) {
     return undefined;
   }
-  return { days: days.sort((a, b) => a - b), start, end, temperature };
+  const id = finite(entry['id']);
+  return {
+    ...(id !== undefined ? { id } : {}),
+    days: days.sort((a, b) => a - b),
+    start,
+    end,
+    temperature,
+    // an older service could not switch a period off: every one was on
+    enabled: entry['enabled'] !== false,
+  };
 }
 
 function toHeater(entry: unknown): HeaterView {
   const heater = isRecord(entry) ? entry : {};
   const type = heater['type'];
   const list = heater['schedules'];
-  const periods = Array.isArray(list) ? list.map(toPeriod) : undefined;
+  const read = Array.isArray(list) ? list.map(toPeriod) : undefined;
+  const entries = read?.filter((period) => period !== undefined);
   return {
     kind: type === 'radiator' || type === 'floor' ? type : 'other',
     working: typeof heater['working'] === 'boolean' ? heater['working'] : undefined,
     reportedAt: text(heater['updatedAt']),
     callsForHeat: typeof heater['inSchedule'] === 'boolean' ? heater['inSchedule'] : undefined,
-    periods: periods?.filter((period) => period !== undefined),
-    unreadablePeriods: periods?.filter((period) => period === undefined).length ?? 0,
+    periods: entries
+      ?.filter((period) => period.enabled)
+      .map(({ days, start, end, temperature }) => ({ days, start, end, temperature })),
+    entries,
+    unreadablePeriods: read?.filter((period) => period === undefined).length ?? 0,
   };
 }
 

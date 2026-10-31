@@ -126,6 +126,26 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // HAS-357: the periods of a heater with the form of one open, a rule broken
+      test('heating, a period being changed', async ({ page }, testInfo) => {
+        await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+        await page.goto('/heating');
+        await page
+          .getByTestId('rooms')
+          .locator('[data-room="office"]')
+          .getByTestId('room-schedule')
+          .click();
+        const window = page.getByRole('dialog');
+        await window.getByTestId('period-edit').first().click();
+        await window.getByTestId('period-temperature').fill('20,3');
+        await window.getByTestId('period-save').click();
+        await expect(window.getByTestId('period-problems')).toBeVisible();
+        await window.getByTestId('period-form').scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'heating-period-editor'),
+        });
+      });
+
       // HAS-353: the state of every room at a glance on a Thursday afternoon of the house, then
       // with the heating of the house switched off - every room with a heater neutral
       test('heating, the states of the rooms', async ({ page }, testInfo) => {

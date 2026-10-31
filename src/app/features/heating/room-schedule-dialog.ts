@@ -14,6 +14,7 @@ import { heaterKindLabel, heaterStateLabel } from '../../shared/room-heating/hea
 import { HeaterWeek } from '../../shared/room-heating/heater-week';
 import { RoomView, SchedulePeriod } from '../../shared/room-heating/room-views';
 import { RoomHistory } from './room-history';
+import { HeaterScheduleEditor } from './schedule-editor/heater-schedule-editor';
 
 /** What the window of a room is opened with: signals, so that it follows the polled rooms. */
 export interface RoomScheduleDialogData {
@@ -34,8 +35,9 @@ export const ROOM_SCHEDULE_DIALOG_SIZE = {
 
 /**
  * The schedule of one room (owner, 2026-10-21, HAS-266): the week of each of its heaters and the
- * history of its temperature with the schedule laid over it. Read-only - `heating-service` takes
- * no change to a schedule yet, and the window says so.
+ * history of its temperature with the schedule laid over it. Since HAS-357 the periods of each
+ * heater are written here too (`heating-service` 1.14.0): the page is the administrator's, and every
+ * write is followed by a read of the rooms, which this window follows.
  */
 @Component({
   selector: 'app-room-schedule-dialog',
@@ -48,6 +50,7 @@ export const ROOM_SCHEDULE_DIALOG_SIZE = {
     DataFreshness,
     HouseAgePipe,
     HeaterWeek,
+    HeaterScheduleEditor,
     RoomHistory,
   ],
   templateUrl: './room-schedule-dialog.html',
@@ -69,6 +72,9 @@ export class RoomScheduleDialog {
     () => (this.data.room()?.heaters ?? []).map((heater) => heater.periods ?? []),
     { equal: (a, b) => JSON.stringify(a) === JSON.stringify(b) },
   );
+
+  /** The rooms read again - what a write of a period waits for before it is over. */
+  protected readonly readBack = () => this.data.rooms.refresh();
 
   protected readonly kindLabel = heaterKindLabel;
   protected readonly stateLabel = heaterStateLabel;

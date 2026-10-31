@@ -1,0 +1,200 @@
+<ng-container *transloco="let t">
+  <ul class="periods" data-testid="schedule-periods">
+    @for (entry of sorted(); track entry.id ?? $index) {
+      <li
+        class="period"
+        data-testid="schedule-period"
+        [attr.data-id]="entry.id"
+        [class.period--off]="!entry.enabled"
+      >
+        <span class="period__days">{{ daysText(entry) }}</span
+        >&ngsp; <span class="period__time">{{ time(entry.start) }}–{{ time(entry.end) }}</span
+        >&ngsp;
+        <span class="period__temperature"
+          >{{ entry.temperature | localNumber: ONE_DECIMAL }}&nbsp;°C</span
+        >
+        @if (entry.id !== undefined) {
+          <mat-slide-toggle
+            class="period__switch"
+            data-testid="period-switch"
+            [checked]="entry.enabled"
+            [disabled]="busy() || panel().kind !== 'list'"
+            (toggleChange)="toggle(entry)"
+          >
+            <span class="visually-hidden">{{
+              t(entry.enabled ? 'heating.editor.switchOff' : 'heating.editor.switchOn')
+            }}</span>
+          </mat-slide-toggle>
+          @if (askRemove() === entry.id) {
+            <span class="question" role="alert" data-testid="period-remove-question">
+              {{ t('heating.editor.removeQuestion') }}
+              <button
+                matButton
+                type="button"
+                data-testid="period-remove-cancel"
+                #keep
+                (click)="askRemove.set(undefined)"
+              >
+                {{ t('heating.editor.cancel') }}
+              </button>
+              <button
+                matButton="outlined"
+                type="button"
+                data-testid="period-remove-confirm"
+                [disabled]="busy()"
+                (click)="remove(entry.id)"
+              >
+                {{ t('heating.editor.remove') }}
+              </button>
+            </span>
+          } @else {
+            <span class="period__actions">
+              <button
+                matIconButton
+                type="button"
+                data-testid="period-edit"
+                [disabled]="busy() || panel().kind !== 'list'"
+                [matTooltip]="t('heating.editor.change')"
+                matTooltipTouchGestures="off"
+                [attr.aria-label]="t('heating.editor.change')"
+                (click)="openEdit(entry)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                matIconButton
+                type="button"
+                data-testid="period-remove"
+                [disabled]="busy() || panel().kind !== 'list'"
+                [matTooltip]="t('heating.editor.remove')"
+                matTooltipTouchGestures="off"
+                [attr.aria-label]="t('heating.editor.remove')"
+                (click)="askRemove.set(entry.id)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </span>
+          }
+        } @else {
+          <!-- a period of a service before 1.13.0 has no id to name in a change -->
+          <span class="period__note">{{ t('heating.editor.noId') }}</span>
+        }
+      </li>
+    }
+  </ul>
+
+  @if (panel().kind === 'list') {
+    <button
+      matButton
+      type="button"
+      class="add"
+      data-testid="period-add"
+      [disabled]="busy()"
+      (click)="openNew()"
+    >
+      <mat-icon>add</mat-icon>{{ t('heating.editor.add') }}
+    </button>
+  } @else {
+    <form class="form" data-testid="period-form" (submit)="$event.preventDefault(); save()">
+      <p class="form__title">
+        {{ t(panel().kind === 'new' ? 'heating.editor.titleNew' : 'heating.editor.titleEdit') }}
+      </p>
+      <mat-button-toggle-group
+        multiple
+        class="form__days"
+        data-testid="period-days"
+        [attr.aria-label]="t('heating.editor.days')"
+        [value]="days()"
+        (change)="setDays($event.value)"
+      >
+        @for (day of weekdays; track day) {
+          <mat-button-toggle [value]="day">{{ dayNames()[day] }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <div class="form__row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ t('heating.editor.start') }}</mat-label>
+          <input
+            matInput
+            type="time"
+            data-testid="period-start"
+            [value]="start()"
+            (input)="start.set(textOf($event))"
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ t('heating.editor.end') }}</mat-label>
+          <input
+            matInput
+            type="time"
+            data-testid="period-end"
+            [value]="end()"
+            (input)="end.set(textOf($event))"
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ t('heating.editor.temperature') }}</mat-label>
+          <input
+            matInput
+            inputmode="decimal"
+            data-testid="period-temperature"
+            [value]="temperature()"
+            (input)="temperature.set(textOf($event))"
+          />
+          <span matTextSuffix>°C</span>
+        </mat-form-field>
+      </div>
+      <p class="form__hint">{{ t('heating.editor.hint', { min: MIN, max: MAX }) }}</p>
+
+      @if (tried()) {
+        @let problem = problems();
+        <ul class="form__problems" data-testid="period-problems">
+          @if (problem.days; as key) {
+            <li>{{ t(key) }}</li>
+          }
+          @if (problem.start; as key) {
+            <li>{{ t('heating.editor.start') }}: {{ t(key) }}</li>
+          }
+          @if (problem.end; as key) {
+            <li>{{ t('heating.editor.end') }}: {{ t(key) }}</li>
+          }
+          @if (problem.order; as key) {
+            <li>{{ t(key) }}</li>
+          }
+          @if (problem.temperature; as key) {
+            <li>{{ t(key, { min: MIN, max: MAX }) }}</li>
+          }
+          @if (overlap(); as other) {
+            <li>
+              {{ t('heating.editor.rule.overlap') }}&nbsp;{{ daysText(other) }}
+              {{ time(other.start) }}–{{ time(other.end) }}
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="form__actions">
+        <button matButton="filled" type="submit" data-testid="period-save" [disabled]="busy()">
+          {{ t('heating.editor.save') }}
+        </button>
+        <button
+          matButton
+          type="button"
+          data-testid="period-cancel"
+          [disabled]="busy()"
+          (click)="close()"
+        >
+          {{ t('heating.editor.cancel') }}
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (failure(); as failed) {
+    <app-api-error-strip
+      [error]="failed.error"
+      [summary]="t(failed.summary)"
+      [describeWith]="describe"
+    />
+  }
+</ng-container>

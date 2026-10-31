@@ -64,6 +64,12 @@ describe('toRoomViews', () => {
               { days: [0, 1, 2, 3, 4], start: 900, end: 1320, temperature: 21 },
               { days: [5, 6], start: 480, end: 1320, temperature: 21 },
             ],
+            // an answer without ids and switches: a service before 1.13.0, every period on
+            entries: [
+              { days: [0, 1, 2, 3, 4], start: 360, end: 480, temperature: 21, enabled: true },
+              { days: [0, 1, 2, 3, 4], start: 900, end: 1320, temperature: 21, enabled: true },
+              { days: [5, 6], start: 480, end: 1320, temperature: 21, enabled: true },
+            ],
             unreadablePeriods: 0,
           },
           {
@@ -72,6 +78,7 @@ describe('toRoomViews', () => {
             reportedAt: undefined,
             callsForHeat: undefined,
             periods: [],
+            entries: [],
             unreadablePeriods: 0,
           },
         ],
@@ -97,9 +104,58 @@ describe('toRoomViews', () => {
         reportedAt: undefined,
         callsForHeat: undefined,
         periods: [],
+        entries: [],
         unreadablePeriods: 0,
       },
     ]);
+  });
+
+  // HAS-357: the editor names a period by its id; one switched off is listed and never heats
+  it('keeps the id and the switch of a period, and leaves a switched-off one out of the week', () => {
+    const [room] = toRoomViews([
+      {
+        name: 'office',
+        heaters: [
+          {
+            type: 'radiator',
+            schedules: [
+              {
+                id: 7,
+                type: 'HEATING',
+                days: ['MONDAY'],
+                startTime: '07:00:00',
+                endTime: '17:00:00',
+                temperature: 20.5,
+                enabled: true,
+              },
+              {
+                id: 8,
+                type: 'HEATING',
+                days: ['SATURDAY'],
+                startTime: '09:00:00',
+                endTime: '13:00:00',
+                temperature: 19,
+                enabled: false,
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const [heater] = room.heaters!;
+    expect(heater.entries).toEqual([
+      { id: 7, days: [0], start: 420, end: 1020, temperature: 20.5, enabled: true },
+      { id: 8, days: [5], start: 540, end: 780, temperature: 19, enabled: false },
+    ]);
+    expect(heater.periods).toEqual([{ days: [0], start: 420, end: 1020, temperature: 20.5 }]);
+  });
+
+  it('has no entries for a heater whose answer carries no list', () => {
+    const [room] = toRoomViews([{ name: 'office', heaters: [{ type: 'radiator' }] }]);
+
+    expect(room.heaters?.[0].entries).toBeUndefined();
+    expect(room.heaters?.[0].periods).toBeUndefined();
   });
 
   it('reads a room that never reported: no temperature and no time of one', () => {

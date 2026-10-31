@@ -1,0 +1,122 @@
+:host {
+  display: grid;
+  gap: 8px;
+}
+
+.periods {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// days, window, temperature, then the switch and the buttons: the columns stand in line
+.period {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 40px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+// switched off: listed, and plainly not heating
+.period--off .period__days,
+.period--off .period__time,
+.period--off .period__temperature {
+  color: var(--mat-sys-on-surface-variant);
+  text-decoration: line-through;
+}
+
+.period__days {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.period__time,
+.period__temperature {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.period__actions {
+  display: flex;
+}
+
+.period__note {
+  grid-column: span 2;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  grid-column: span 2;
+  font: var(--mat-sys-body-medium);
+}
+
+.add {
+  justify-self: start;
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+.form__title {
+  margin: 0;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}
+
+.form__days {
+  flex-wrap: wrap;
+  justify-self: start;
+}
+
+.form__row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.form__hint {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.form__problems {
+  margin: 0;
+  padding: 8px 12px 8px 28px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-error-container);
+}
+
+.form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+// on a phone the switch and the buttons go under the days
+@media (max-width: 599px) {
+  .period {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .period__days,
+  .question {
+    grid-column: 1 / -1;
+  }
+}
