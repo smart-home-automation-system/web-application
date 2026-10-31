@@ -218,10 +218,50 @@ export const en = {
         unreadable: 'Periods that could not be read: {{ count }}.',
         open: 'Schedule',
         close: 'Close',
-        readOnly:
-          'The heating service does not take changes to the schedules yet: they are shown as stored.',
+        editable:
+          'A change takes effect within a minute. A period switched off is listed and never heats.',
         gone: 'The heating service no longer lists this room.',
       },
+    },
+    // the editor of the periods of a heater (HAS-357)
+    editor: {
+      add: 'Add a period',
+      titleNew: 'New period',
+      titleEdit: 'Change the period',
+      days: 'Days',
+      start: 'From',
+      end: 'To',
+      temperature: 'Temperature',
+      hint: '{{ min }} to {{ max }} °C in steps of 0.5; a period ends before midnight.',
+      save: 'Save',
+      cancel: 'Cancel',
+      change: 'Change',
+      remove: 'Remove',
+      removeQuestion: 'Remove this period?',
+      switchOn: 'Switch the period on',
+      switchOff: 'Switch the period off',
+      noId: 'This version of the heating service cannot change it.',
+      saveFailed: 'The period was not saved.',
+      switchFailed: 'The period was not switched.',
+      removeFailed: 'The period was not removed.',
+      noAnswer:
+        'The heating service did not answer - the change may have been made all the same; the list shows what it has now.',
+      rule: {
+        noDays: 'Choose at least one day.',
+        time: 'a time as HH:mm.',
+        order: 'The period has to end after it starts, before midnight.',
+        temperatureMissing: 'Give a temperature.',
+        temperatureRange: 'The temperature has to be from {{ min }} to {{ max }} °C.',
+        temperatureStep: 'The temperature goes in steps of 0.5 °C.',
+        overlap: 'It overlaps another period of this heater:',
+      },
+    },
+    // the refusals of heating-service, by their code
+    error: {
+      invalidSchedule: 'The heating service refused the period for a reason this page could not check.',
+      scheduleNotFound: 'The heating service no longer has this period.',
+      heaterNotFound: 'The heating service does not drive this heater.',
+      roomNotFound: 'The heating service does not know this room.',
     },
   },
   // the switch of the heating system: a card shared by the views that show it

@@ -248,9 +248,9 @@ describe('Rooms', () => {
       const shown = await open('living room');
 
       expect(words(shown)).toContain('living room Ground floor · Schedule');
-      // heating-service takes no change to a schedule yet
-      expect(words(shown.querySelector('[data-testid="schedule-read-only"]'))).toContain(
-        'does not take changes to the schedules yet',
+      // heating-service 1.14.0 takes changes to the schedules (HAS-357)
+      expect(words(shown.querySelector('[data-testid="schedule-editable"]'))).toContain(
+        'A change takes effect within a minute',
       );
     });
 

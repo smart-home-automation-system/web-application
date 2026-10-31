@@ -1,5 +1,5 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
-import { throwError } from 'rxjs';
+import { Observable, map, throwError } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { ApiError, toApiError } from '../../core/api/api-error';
@@ -46,6 +46,8 @@ export interface RoomReading {
 
 /** One period of a heater's week: on its days, between the two times, heat up to the temperature. */
 export interface HeaterSchedule {
+  /** The stored row (`heating-service` 1.13.0, HAS-355) - what a change names; missing from an older service. */
+  readonly id?: number;
   readonly type?: string;
   /** `MONDAY` ... `SUNDAY`. */
   readonly days?: readonly string[];
@@ -53,6 +55,22 @@ export interface HeaterSchedule {
   readonly startTime?: string;
   readonly endTime?: string;
   readonly temperature?: number;
+  /**
+   * A switched-off period is listed and never on (1.13.0). Missing from an older service, whose
+   * periods could not be switched off - every one of them was on.
+   */
+  readonly enabled?: boolean;
+}
+
+/**
+ * A period as the editor writes it (`heating-service` 1.14.0, HAS-356): every field required -
+ * the days by their constant names, the times `HH:mm`, the temperature in degrees Celsius.
+ */
+export interface HeaterScheduleBody {
+  readonly days: readonly string[];
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly temperature: number;
 }
 
 /** A heater of a room - a radiator or the floor - as the service last knew it. */
@@ -287,6 +305,41 @@ export class HeatingApi {
       },
       { intervalMs: POLL_HISTORY_EVERY_MS },
     );
+  }
+
+  /**
+   * A new period of a heater of a room, switched on (HAS-356). The answer repeats the stored
+   * period and is not used: the editor reads the rooms again. A room is a path segment - encoded,
+   * and one of dots alone is never asked for, as in `watchRoom`.
+   */
+  createSchedule(room: string, heater: string, body: HeaterScheduleBody): Observable<void> {
+    if (/^\.+$/.test(room)) {
+      return throwError(
+        () => new ApiError('unexpected', 0, [], new Error('A name of dots is not a path')),
+      );
+    }
+    return this.api
+      .post<unknown>(
+        `/heating/rooms/${encodeURIComponent(room)}/heaters/${encodeURIComponent(heater)}/schedules`,
+        body,
+      )
+      .pipe(map(() => undefined));
+  }
+
+  /** Replaces the days, the window and the temperature of a period; whether it is on stays. */
+  replaceSchedule(id: number, body: HeaterScheduleBody): Observable<void> {
+    return this.api.put<unknown>(`/heating/schedules/${id}`, body).pipe(map(() => undefined));
+  }
+
+  /** Switches a period on or off; the rest of it stays as stored. */
+  setScheduleEnabled(id: number, enabled: boolean): Observable<void> {
+    return this.api
+      .put<unknown>(`/heating/schedules/${id}/enabled`, undefined, { value: String(enabled) })
+      .pipe(map(() => undefined));
+  }
+
+  deleteSchedule(id: number): Observable<void> {
+    return this.api.delete<unknown>(`/heating/schedules/${id}`).pipe(map(() => undefined));
   }
 
   /** Call in an injection context: the polling lives as long as the caller. */

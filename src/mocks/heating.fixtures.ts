@@ -1,5 +1,11 @@
 import { houseWeekMinute } from '../app/core/time/house-date-time';
 import {
+  DAY_NAMES as RULE_DAYS,
+  minutesOf,
+  scheduleProblem,
+} from '../app/features/heating/schedule-editor/heating-schedule-rules';
+import type { MockReply } from './handlers';
+import {
   FloorPump,
   HeaterSchedule,
   HeatingActivity,
@@ -34,6 +40,7 @@ export function turnHeating(turn: string | null, now: Date = new Date()): Heatin
 /** Back to the house as it starts - for a test that switched. */
 export function resetHeating(): void {
   status = HEATING_STATUS;
+  resetHeatingSchedules();
 }
 
 /**
@@ -87,7 +94,210 @@ const period = (
   startTime: string,
   endTime: string,
   temperature: number,
-): HeaterSchedule => ({ type: 'HEATING', days, startTime, endTime, temperature });
+): HeaterSchedule => ({ type: 'HEATING', days, startTime, endTime, temperature, enabled: true });
+
+const allDay = [period(DAY_NAMES, '00:01:00', '23:59:00', 21.5)];
+const livingRoom = [
+  period(WEEKDAYS, '06:00:00', '08:00:00', 21),
+  period(WEEKDAYS, '15:00:00', '22:00:00', 21.5),
+  period(WEEKEND, '08:00:00', '22:30:00', 21.5),
+];
+const office = [period(WEEKDAYS, '07:00:00', '17:00:00', 20.5)];
+const bedroom = [
+  period(DAY_NAMES, '05:30:00', '07:00:00', 19),
+  period(DAY_NAMES, '21:00:00', '23:00:00', 18),
+];
+const bathroom = [period(DAY_NAMES, '05:00:00', '23:00:00', 23)];
+
+/** A period of the mock heating-service as it stores it: of a heater of a room, with its id. */
+interface StoredPeriod extends HeaterSchedule {
+  readonly id: number;
+  readonly room: string;
+  readonly heater: string;
+}
+
+/**
+ * The periods of the mock house at the start (`heating-service` 1.14.0, HAS-357): a write changes
+ * what the next read answers, in the memory of the page - a reload is the house as it started. The
+ * office has a period switched off on Saturdays, to show one.
+ */
+const AT_THE_START: readonly StoredPeriod[] = (
+  [
+    [
+      'office',
+      'radiator',
+      [...office, { ...period(['SATURDAY'], '09:00:00', '13:00:00', 19), enabled: false }],
+    ],
+    ['bedroom', 'radiator', bedroom],
+    ['wardrobe', 'floor', allDay],
+    ['bathroom up', 'radiator', bathroom],
+    ['bathroom up', 'floor', bathroom],
+    ['living room', 'radiator', allDay],
+    ['living room', 'floor', livingRoom],
+    ['cinema', 'radiator', allDay],
+    ['tobi', 'radiator', allDay],
+  ] as const
+)
+  .flatMap(([room, heater, periods]) => periods.map((one) => ({ ...one, room, heater })))
+  .map((one, index) => ({ ...one, id: index + 1 }));
+
+let stored: readonly StoredPeriod[] = AT_THE_START;
+
+/** Back to the periods of the start - for a test that wrote. */
+export function resetHeatingSchedules(): void {
+  stored = AT_THE_START;
+}
+
+/** The periods of a heater, as `GET /rooms` lists them. */
+function periodsOf(room: string, heater: string): HeaterSchedule[] {
+  return stored
+    .filter((one) => one.room === room && one.heater === heater)
+    .map((one) => ({
+      id: one.id,
+      type: one.type,
+      days: one.days,
+      startTime: one.startTime,
+      endTime: one.endTime,
+      temperature: one.temperature,
+      enabled: one.enabled,
+    }));
+}
+
+/** Which heaters the service drives in which room - the rooms of `heatingRooms`. */
+const HEATERS: Readonly<Record<string, readonly string[]>> = {
+  office: ['radiator'],
+  bedroom: ['radiator'],
+  wardrobe: ['floor'],
+  'bathroom up': ['radiator', 'floor'],
+  'living room': ['radiator', 'floor'],
+  cinema: ['radiator'],
+  tobi: ['radiator'],
+  'bathroom down': ['radiator'],
+};
+
+const refusal = (status: number, code: string, message: string, details: string): MockReply => ({
+  status,
+  body: { errors: [{ code, message, details }] },
+});
+
+const asWindow = (one: StoredPeriod) => ({
+  id: one.id,
+  days: (one.days ?? []).map((day) => RULE_DAYS.indexOf(day as (typeof RULE_DAYS)[number])),
+  start: minutesOf((one.startTime ?? '').slice(0, 5)) ?? 0,
+  end: minutesOf((one.endTime ?? '').slice(0, 5)) ?? 0,
+});
+
+/** What a written body is stored as: the times with seconds, as the service answers them. */
+function fromBody(
+  body: unknown,
+): Pick<HeaterSchedule, 'days' | 'startTime' | 'endTime' | 'temperature'> {
+  const value = body as { days: string[]; startTime: string; endTime: string; temperature: number };
+  return {
+    days: RULE_DAYS.filter((day) => value.days.includes(day)),
+    startTime: `${value.startTime}:00`,
+    endTime: `${value.endTime}:00`,
+    temperature: value.temperature,
+  };
+}
+
+const answer = (one: StoredPeriod) => ({
+  id: one.id,
+  room: one.room,
+  heater: one.heater,
+  days: one.days,
+  startTime: one.startTime,
+  endTime: one.endTime,
+  temperature: one.temperature,
+  enabled: one.enabled,
+});
+
+/** `POST /home/heating/rooms/{room}/heaters/{heater}/schedules`, refused as the service refuses it. */
+export function createHeatingSchedule(room: string, heater: string, body: unknown): MockReply {
+  const named = Object.keys(HEATERS).find((one) => one.toLowerCase() === room.toLowerCase());
+  if (named === undefined) {
+    return refusal(
+      404,
+      'NOT_FOUND_ROOM',
+      'Room with provided name is not a part of home',
+      `Room name: ${room}`,
+    );
+  }
+  const kind = HEATERS[named].find((one) => one === heater.toLowerCase());
+  if (kind === undefined) {
+    return refusal(
+      404,
+      'NOT_FOUND_HEATER',
+      'Heater not found',
+      `room ${named} has no ${heater} this service drives`,
+    );
+  }
+  const problem = scheduleProblem(
+    body,
+    stored.filter((one) => one.room === named && one.heater === kind).map(asWindow),
+  );
+  if (problem !== undefined) {
+    return refusal(400, 'INVALID_SCHEDULE', 'Invalid schedule', problem);
+  }
+  const created: StoredPeriod = {
+    id: Math.max(0, ...stored.map((one) => one.id)) + 1,
+    room: named,
+    heater: kind,
+    type: 'HEATING',
+    enabled: true,
+    ...fromBody(body),
+  };
+  stored = [...stored, created];
+  return { status: 201, body: answer(created) };
+}
+
+const notFound = (id: string) =>
+  refusal(404, 'NOT_FOUND_SCHEDULE', 'Schedule not found', `no schedule with id ${id}`);
+
+/** `PUT /home/heating/schedules/{id}`: the days, the window and the temperature; `enabled` stays. */
+export function replaceHeatingSchedule(id: string, body: unknown): MockReply {
+  const current = stored.find((one) => String(one.id) === id);
+  if (current === undefined) {
+    return notFound(id);
+  }
+  const problem = scheduleProblem(
+    body,
+    stored
+      .filter(
+        (one) =>
+          one.room === current.room && one.heater === current.heater && one.id !== current.id,
+      )
+      .map(asWindow),
+  );
+  if (problem !== undefined) {
+    return refusal(400, 'INVALID_SCHEDULE', 'Invalid schedule', problem);
+  }
+  const replaced = { ...current, ...fromBody(body) };
+  stored = stored.map((one) => (one.id === current.id ? replaced : one));
+  return { status: 200, body: answer(replaced) };
+}
+
+/** `PUT /home/heating/schedules/{id}/enabled?value=`. */
+export function enableHeatingSchedule(id: string, value: string | null): MockReply {
+  if (value !== 'true' && value !== 'false') {
+    return { status: 400, body: { errors: [{ message: 'Required parameter value is missing' }] } };
+  }
+  if (!stored.some((one) => String(one.id) === id)) {
+    return notFound(id);
+  }
+  stored = stored.map((one) =>
+    String(one.id) === id ? { ...one, enabled: value === 'true' } : one,
+  );
+  return { status: 204, body: null };
+}
+
+/** `DELETE /home/heating/schedules/{id}`. */
+export function removeHeatingSchedule(id: string): MockReply {
+  if (!stored.some((one) => String(one.id) === id)) {
+    return notFound(id);
+  }
+  stored = stored.filter((one) => String(one.id) !== id);
+  return { status: 204, body: null };
+}
 
 const toMinutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
 
@@ -99,6 +309,7 @@ function scheduledNow(schedules: readonly HeaterSchedule[], now: Date): number |
   const { day, minute } = houseWeekMinute(now.getTime(), 'Europe/Warsaw');
   const on = schedules.filter(
     (schedule) =>
+      schedule.enabled !== false &&
       schedule.days!.includes(DAY_NAMES[day]) &&
       toMinutes(schedule.startTime!) < minute &&
       minute < toMinutes(schedule.endTime!),
@@ -175,19 +386,6 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
     };
   };
 
-  const allDay = [period(DAY_NAMES, '00:01:00', '23:59:00', 21.5)];
-  const livingRoom = [
-    period(WEEKDAYS, '06:00:00', '08:00:00', 21),
-    period(WEEKDAYS, '15:00:00', '22:00:00', 21.5),
-    period(WEEKEND, '08:00:00', '22:30:00', 21.5),
-  ];
-  const office = [period(WEEKDAYS, '07:00:00', '17:00:00', 20.5)];
-  const bedroom = [
-    period(DAY_NAMES, '05:30:00', '07:00:00', 19),
-    period(DAY_NAMES, '21:00:00', '23:00:00', 18),
-  ];
-  const bathroom = [period(DAY_NAMES, '05:00:00', '23:00:00', 23)];
-
   // HAS-232: the windows of a room - the bedroom held by a door open for twelve minutes, the
   // living room with a sensor not heard of, the office closed; every other room without a sensor
   const windows: Readonly<Record<string, RoomWindow>> = fresh
@@ -204,32 +402,79 @@ export function heatingRooms(now: Date = new Date(), fresh = false): Room[] {
 
   return [
     room('office', { value: 21.3, secondsAgo: 2 * MINUTE }, () => [
-      heater('radiator', office, { working: false, secondsAgo: 2 * MINUTE }, 21.3),
+      heater(
+        'radiator',
+        periodsOf('office', 'radiator'),
+        { working: false, secondsAgo: 2 * MINUTE },
+        21.3,
+      ),
     ]),
     room('bedroom', { value: 19.6, secondsAgo: MINUTE, humidity: 46 }, () => [
-      heater('radiator', bedroom, { working: false, secondsAgo: MINUTE }, 19.6),
+      heater(
+        'radiator',
+        periodsOf('bedroom', 'radiator'),
+        { working: false, secondsAgo: MINUTE },
+        19.6,
+      ),
     ]),
     // a relay that has not answered since the start of the service: no status, nothing decided
-    room('wardrobe', { value: 20.9, secondsAgo: 3 * MINUTE }, () => [heater('floor', allDay)]),
+    room('wardrobe', { value: 20.9, secondsAgo: 3 * MINUTE }, () => [
+      heater('floor', periodsOf('wardrobe', 'floor')),
+    ]),
     room('bathroom up', { value: 22.1, secondsAgo: 5 * MINUTE }, (temperature) => [
-      heater('radiator', bathroom, { working: true, secondsAgo: 5 * MINUTE }, temperature),
-      heater('floor', bathroom, { working: true, secondsAgo: 5 * MINUTE }, temperature),
+      heater(
+        'radiator',
+        periodsOf('bathroom up', 'radiator'),
+        { working: true, secondsAgo: 5 * MINUTE },
+        temperature,
+      ),
+      heater(
+        'floor',
+        periodsOf('bathroom up', 'floor'),
+        { working: true, secondsAgo: 5 * MINUTE },
+        temperature,
+      ),
     ]),
     room('loft', { value: 20.2, secondsAgo: 6 * MINUTE }, () => []),
     room('living room', { value: 20.4, secondsAgo: 4 * MINUTE }, (temperature) => [
-      heater('radiator', allDay, { working: true, secondsAgo: 4 * MINUTE }, temperature),
-      heater('floor', livingRoom, { working: false, secondsAgo: 4 * MINUTE }, 30),
+      heater(
+        'radiator',
+        periodsOf('living room', 'radiator'),
+        { working: true, secondsAgo: 4 * MINUTE },
+        temperature,
+      ),
+      heater(
+        'floor',
+        periodsOf('living room', 'floor'),
+        { working: false, secondsAgo: 4 * MINUTE },
+        30,
+      ),
     ]),
     // HAS-353: in its schedule all day - warm enough, and colder than asked with the relay not yet on
     room('cinema', { value: 22.0, secondsAgo: 2 * MINUTE }, () => [
-      heater('radiator', allDay, { working: false, secondsAgo: 2 * MINUTE }, 22.0),
+      heater(
+        'radiator',
+        periodsOf('cinema', 'radiator'),
+        { working: false, secondsAgo: 2 * MINUTE },
+        22.0,
+      ),
     ]),
     room('tobi', { value: 19.8, secondsAgo: MINUTE }, () => [
-      heater('radiator', allDay, { working: false, secondsAgo: MINUTE }, 19.8),
+      heater(
+        'radiator',
+        periodsOf('tobi', 'radiator'),
+        { working: false, secondsAgo: MINUTE },
+        19.8,
+      ),
     ]),
     // a heater the service has no schedule for
     room('bathroom down', { value: 18.4, secondsAgo: 3 * DAY }, () => [
-      heater('radiator', [], { working: false, secondsAgo: 3 * DAY }, 18.4),
+      heater(
+        'radiator',
+        periodsOf('bathroom down', 'radiator'),
+        { working: false, secondsAgo: 3 * DAY },
+        18.4,
+      ),
     ]),
     room('sauna', undefined, () => []),
     room('garden', { value: 7.5, secondsAgo: 47 * DAY }, () => []),
