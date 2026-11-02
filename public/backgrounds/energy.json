@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 2560,
+    "height": 1440
+  },
+  "tones": {
+    "black": 0,
+    "white": 240
+  },
+  "files": {
+    "energy-2560.webp": {
+      "bytes": 262720,
+      "quality": 82
+    },
+    "energy-1280.webp": {
+      "bytes": 112096,
+      "quality": 82
+    }
+  },
+  "darkest": "#252617",
+  "lightest": "#d1e4f0",
+  "top": {
+    "darkest": "#3c3932",
+    "lightest": "#d1e4f0"
+  }
+}

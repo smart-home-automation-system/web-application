@@ -55,6 +55,7 @@ const pages: Page[] = [
     // the history, the net-metering, the alarms and the outages of the grid
     path: 'energy',
     title: 'nav.energy',
+    data: { background: 'energy' },
     loadComponent: () => import('./features/energy/energy').then((m) => m.Energy),
   },
   {

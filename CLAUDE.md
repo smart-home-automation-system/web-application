@@ -938,7 +938,8 @@ e2e/              # Playwright tests
     cards 6 / 3 / 2 / 1 columns and the charts 3 / 2 / 1 - never a row of four with two under it.
   - The photo `weather` (a garden with the station, from ChatGPT since HAS-266) has its tones narrowed to `35-230`.
 - **The energy page** (HAS-341, `features/energy/`, the administrator's; route `/energy` after the weather in the
-  menu - on a phone the rooms move behind "More" -, domain colour `energy`, the indigo of a spark): the
+  menu - on a phone the rooms move behind "More" -, domain colour `energy`, the indigo of a spark; photo `energy` - a technical room with the inverters, the battery,
+  the distribution cabinet and the panels behind the window, from ChatGPT, tones `0-240`): the
   answers of `energy-service` (`EnergyApi` in `data-access/energy/`). What to keep:
   - **A card per call, the rule of the weather page**: every card is a `DomainTile` with the freshness and the
     failure of its call; the SOLAX and the SOFAR come from `/inverters` and have a card each. The codes of the
