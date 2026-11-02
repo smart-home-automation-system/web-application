@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -66,6 +67,7 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
 @Component({
   selector: 'app-energy',
   imports: [
+    NgTemplateOutlet,
     MatIconModule,
     MatProgressBarModule,
     TranslocoDirective,

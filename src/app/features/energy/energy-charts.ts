@@ -1,12 +1,16 @@
 import { Signal, computed, inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 
-import { ApiError } from '../../core/api/api-error';
 import { LanguageStore } from '../../core/i18n/language-store';
 import { EnergyApi, EnergyMetric } from '../../data-access/energy/energy-api';
 import { MessageKey } from '../../i18n/messages';
 import { ChartLine, summarise, toLine } from '../../shared/history-chart/chart-data';
-import { HistoryPeriod, shownHistory } from '../../shared/history-chart/history-period';
+import {
+  CombinedHistory,
+  HistoryPeriod,
+  combinedHistory,
+  shownHistory,
+} from '../../shared/history-chart/history-period';
 
 interface LineSpec {
   readonly metric: EnergyMetric;
@@ -71,13 +75,8 @@ export interface EnergyChartFact {
 }
 
 /** A chart of the page as its card shows it - the view of a weather chart. */
-export interface EnergyChartView {
+export interface EnergyChartView extends CombinedHistory {
   readonly spec: EnergyChartSpec;
-  readonly waiting: Signal<boolean>;
-  readonly error: Signal<ApiError | undefined>;
-  readonly lastUpdated: Signal<number | undefined>;
-  readonly stale: Signal<boolean>;
-  readonly axis: Signal<{ readonly from: number; readonly to: number } | undefined>;
   readonly lines: Signal<readonly ChartLine[]>;
   readonly facts: Signal<readonly EnergyChartFact[]>;
 }
@@ -107,28 +106,7 @@ export function energyChart(spec: EnergyChartSpec, period: HistoryPeriod): Energ
 
   return {
     spec,
-    waiting: computed(() => histories.some(({ shown }) => shown.waiting())),
-    error: computed(() =>
-      histories.map(({ resource }) => resource.error()).find((error) => error !== undefined),
-    ),
-    lastUpdated: computed(() => {
-      const times = histories
-        .map(({ resource }) => resource.lastUpdated())
-        .filter((time): time is number => time !== undefined);
-      return times.length === 0 ? undefined : Math.min(...times);
-    }),
-    stale: computed(() => histories.some(({ resource }) => resource.stale())),
-    axis: computed(() => {
-      const axes = histories
-        .map(({ shown }) => shown.axis())
-        .filter((axis): axis is { from: number; to: number } => axis !== undefined);
-      return axes.length === 0
-        ? undefined
-        : {
-            from: Math.min(...axes.map((axis) => axis.from)),
-            to: Math.max(...axes.map((axis) => axis.to)),
-          };
-    }),
+    ...combinedHistory(histories),
     lines: computed(() =>
       measured().map(({ line, name, points }): ChartLine => ({
         key: line.metric,

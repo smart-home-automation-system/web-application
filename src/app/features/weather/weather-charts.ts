@@ -1,7 +1,6 @@
 import { Signal, computed, inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 
-import { ApiError } from '../../core/api/api-error';
 import { LanguageStore } from '../../core/i18n/language-store';
 import { WeatherApi, WeatherMetric } from '../../data-access/weather/weather-api';
 import { MessageKey } from '../../i18n/messages';
@@ -12,7 +11,12 @@ import {
   toLine,
   wallClockOf,
 } from '../../shared/history-chart/chart-data';
-import { HistoryPeriod, shownHistory } from '../../shared/history-chart/history-period';
+import {
+  CombinedHistory,
+  HistoryPeriod,
+  combinedHistory,
+  shownHistory,
+} from '../../shared/history-chart/history-period';
 
 /** What of a bucket a line draws. */
 type Drawn =
@@ -136,16 +140,8 @@ export type ChartFact =
   | { readonly key: string; readonly name: string; readonly kind: 'total'; readonly total: number };
 
 /** A chart of the page as its card shows it. */
-export interface WeatherChartView {
+export interface WeatherChartView extends CombinedHistory {
   readonly spec: WeatherChartSpec;
-  /** The answer of some line for the period on screen has not arrived, one way or the other. */
-  readonly waiting: Signal<boolean>;
-  /** The failure of the first of its calls that failed. */
-  readonly error: Signal<ApiError | undefined>;
-  /** The oldest of the answers: the chart is as fresh as its stalest line. */
-  readonly lastUpdated: Signal<number | undefined>;
-  readonly stale: Signal<boolean>;
-  readonly axis: Signal<{ readonly from: number; readonly to: number } | undefined>;
   /** The lines that have anything to draw. */
   readonly lines: Signal<readonly ChartLine[]>;
   readonly facts: Signal<readonly ChartFact[]>;
@@ -222,31 +218,7 @@ export function weatherChart(spec: WeatherChartSpec, period: HistoryPeriod): Wea
 
   return {
     spec,
-    waiting: computed(() => histories.some(({ shown }) => shown.waiting())),
-    error: computed(() =>
-      histories.map(({ resource }) => resource.error()).find((error) => error !== undefined),
-    ),
-    // the oldest of the answers there are; a line that never answered is told by its failure
-    lastUpdated: computed(() => {
-      const times = histories
-        .map(({ resource }) => resource.lastUpdated())
-        .filter((time): time is number => time !== undefined);
-      return times.length === 0 ? undefined : Math.min(...times);
-    }),
-    stale: computed(() => histories.some(({ resource }) => resource.stale())),
-    // When the hour turns one line may already have the new range while the other still shows
-    // the old one: the axis spans both, so neither is cut at an end.
-    axis: computed(() => {
-      const axes = histories
-        .map(({ shown }) => shown.axis())
-        .filter((axis): axis is { from: number; to: number } => axis !== undefined);
-      return axes.length === 0
-        ? undefined
-        : {
-            from: Math.min(...axes.map((axis) => axis.from)),
-            to: Math.max(...axes.map((axis) => axis.to)),
-          };
-    }),
+    ...combinedHistory(histories),
     lines: computed(() =>
       measured().map(({ line, name, points }): ChartLine => ({
         key: line.metric,

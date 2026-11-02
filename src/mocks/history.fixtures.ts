@@ -266,11 +266,29 @@ export function weatherHistory(
   fresh: boolean,
   now: Date = new Date(),
 ): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
-  const known = WEATHER_METRICS.find((name) => name === metric);
+  return metricHistory(WEATHER_METRICS, weatherBucket, { metric, from, to, fresh, now });
+}
+
+/**
+ * The history of one metric of a service with the rules of the weather history: an unknown metric is
+ * `UNKNOWN_METRIC`, the range read as the hot water reads it, a bucket per reading of `bucketOf`.
+ */
+function metricHistory<M extends string>(
+  metrics: readonly M[],
+  bucketOf: (metric: M, at: number, width: number) => { avg: number; min?: number; max?: number },
+  asked: {
+    metric: string | null;
+    from: string | null;
+    to: string | null;
+    fresh: boolean;
+    now: Date;
+  },
+): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
+  const known = metrics.find((name) => name === asked.metric);
   if (known === undefined) {
     return { status: 400, message: 'Unknown metric', code: 'UNKNOWN_METRIC' };
   }
-  const range = readRange(from, to, WATER_BUCKETS);
+  const range = readRange(asked.from, asked.to, WATER_BUCKETS);
   if (isHistoryRefusal(range)) {
     return range;
   }
@@ -279,11 +297,11 @@ export function weatherHistory(
     from: localDateTime(range.from),
     to: localDateTime(range.to),
     bucketSeconds: range.bucket,
-    points: fresh
+    points: asked.fresh
       ? []
-      : buckets(range, now).map((at) => ({
+      : buckets(range, asked.now).map((at) => ({
           at: localDateTime(at),
-          ...weatherBucket(known, at, range.bucket),
+          ...bucketOf(known, at, range.bucket),
         })),
   };
 }
@@ -353,24 +371,5 @@ export function energyHistory(
   fresh: boolean,
   now: Date = new Date(),
 ): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
-  const known = ENERGY_METRICS.find((name) => name === metric);
-  if (known === undefined) {
-    return { status: 400, message: 'Unknown metric', code: 'UNKNOWN_METRIC' };
-  }
-  const range = readRange(from, to, WATER_BUCKETS);
-  if (isHistoryRefusal(range)) {
-    return range;
-  }
-  return {
-    metric: known,
-    from: localDateTime(range.from),
-    to: localDateTime(range.to),
-    bucketSeconds: range.bucket,
-    points: fresh
-      ? []
-      : buckets(range, now).map((at) => ({
-          at: localDateTime(at),
-          ...energyBucket(known, at, range.bucket),
-        })),
-  };
+  return metricHistory(ENERGY_METRICS, energyBucket, { metric, from, to, fresh, now });
 }

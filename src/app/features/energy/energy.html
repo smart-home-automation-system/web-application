@@ -169,95 +169,12 @@
 
   <section class="cards" [attr.aria-label]="t('energy.page.devices')">
     <!-- the SOLAX -->
-    <app-domain-tile
-      heading="energy.cards.solax"
-      icon="solar_power"
-      domain="energy"
-      waitingLabel="energy.page.loading"
-      [describeWith]="describe"
-      [resource]="inverters"
-      data-testid="card-solax"
-    >
-      @if (solax(); as inverter) {
-        <dl class="tile__rows">
-          <div class="tile__row tile__row--lead" data-field="pvPower">
-            <dt>{{ t('energy.inverter.pvPower') }}</dt>
-            <dd>
-              <strong><app-power-value [watts]="inverter.pvPower" /></strong>
-            </dd>
-          </div>
-          @for (one of strings; track one) {
-            @if (inverter.pv?.[one]; as string) {
-              <div class="tile__row" [attr.data-string]="one">
-                <dt>{{ t(stringLabels[one]) }}</dt>
-                <dd>
-                  @if (numberOf(string.voltage) !== undefined) {
-                    <span>{{ string.voltage | localNumber: ONE }} V</span>
-                  }
-                  <strong><app-power-value [watts]="string.power" /></strong>
-                </dd>
-              </div>
-            }
-          }
-          <div class="tile__row" data-field="acPower">
-            <dt>{{ t('energy.inverter.acPower') }}</dt>
-            <dd>
-              <strong><app-power-value [watts]="inverter.acPower" /></strong>
-            </dd>
-          </div>
-          <div class="tile__row" data-field="runMode">
-            <dt>{{ t('energy.inverter.runMode') }}</dt>
-            <dd>
-              @if (runModeAlarming(inverter.runMode)) {
-                <span class="tile__tag tile__tag--alert">!</span>
-              }
-              <strong>{{
-                inverter.runMode === undefined
-                  ? t('energy.notKnown')
-                  : runModeLabel(inverter.runMode)
-                    ? t(runModeLabel(inverter.runMode)!)
-                    : inverter.runMode
-              }}</strong>
-            </dd>
-          </div>
-          <div class="tile__row" data-field="temperature">
-            <dt>{{ t('energy.inverter.temperature') }}</dt>
-            <dd>
-              <strong>{{
-                numberOf(inverter.temperature) === undefined
-                  ? t('energy.notKnown')
-                  : (inverter.temperature | localNumber: WHOLE) + ' °C'
-              }}</strong>
-            </dd>
-          </div>
-          <div class="tile__row" data-field="dailyYield">
-            <dt>{{ t('energy.inverter.dailyYield') }}</dt>
-            <dd>
-              <strong>{{
-                numberOf(inverter.dailyYield) === undefined
-                  ? t('energy.notKnown')
-                  : (inverter.dailyYield | localNumber: ONE) + ' kWh'
-              }}</strong>
-            </dd>
-          </div>
-        </dl>
-        <p class="tile__detail" data-field="reading">
-          @if (inverter.stale) {
-            <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
-          }
-          {{
-            readingSourceLabel(inverter.source)
-              ? t(readingSourceLabel(inverter.source)!)
-              : (inverter.source ?? '')
-          }}
-          @if (inverter.measuredAt; as at) {
-            · {{ at | houseAge }}
-          }
-        </p>
-      } @else if (!inverters.error()) {
-        <p class="tile__detail">{{ t('energy.cards.noInverter') }}</p>
-      }
-    </app-domain-tile>
+    <ng-container
+      *ngTemplateOutlet="
+        inverterCard;
+        context: { id: 'solax', heading: 'energy.cards.solax', inverter: solax() }
+      "
+    />
 
     <!-- the battery of the SOLAX -->
     <app-domain-tile
@@ -331,103 +248,19 @@
             </div>
           }
         </dl>
-        <p class="tile__detail" data-field="reading">
-          @if (b.stale) {
-            <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
-          }
-          {{ readingSourceLabel(b.source) ? t(readingSourceLabel(b.source)!) : (b.source ?? '') }}
-          @if (b.measuredAt; as at) {
-            · {{ at | houseAge }}
-          }
-        </p>
+        <ng-container *ngTemplateOutlet="reading; context: { $implicit: b }" />
       } @else if (!battery.error()) {
         <p class="tile__detail">{{ t('energy.cards.none') }}</p>
       }
     </app-domain-tile>
 
     <!-- the SOFAR -->
-    <app-domain-tile
-      heading="energy.cards.sofar"
-      icon="solar_power"
-      domain="energy"
-      waitingLabel="energy.page.loading"
-      [describeWith]="describe"
-      [resource]="inverters"
-      data-testid="card-sofar"
-    >
-      @if (sofar(); as inverter) {
-        <dl class="tile__rows">
-          <div class="tile__row tile__row--lead" data-field="pvPower">
-            <dt>{{ t('energy.inverter.pvPower') }}</dt>
-            <dd>
-              <strong><app-power-value [watts]="inverter.pvPower" /></strong>
-            </dd>
-          </div>
-          <div class="tile__row" data-field="acPower">
-            <dt>{{ t('energy.inverter.acPower') }}</dt>
-            <dd>
-              <strong><app-power-value [watts]="inverter.acPower" /></strong>
-            </dd>
-          </div>
-          <div class="tile__row" data-field="state">
-            <dt>{{ t('energy.inverter.state') }}</dt>
-            <!-- the words of the Solarman cloud, printed as they come -->
-            <dd>
-              <strong>{{ inverter.state ?? t('energy.notKnown') }}</strong>
-            </dd>
-          </div>
-          <div class="tile__row" data-field="faults">
-            <dt>{{ t('energy.inverter.faults') }}</dt>
-            <dd>
-              @let faults = faultsOf(inverter);
-              @if (faults === undefined) {
-                <strong>{{ t('energy.notKnown') }}</strong>
-              } @else if (faults.length === 0) {
-                <strong>{{ t('energy.inverter.noFaults') }}</strong>
-              } @else {
-                <span class="tile__tag tile__tag--alert">{{ faults.length }}</span>
-                <strong>{{ faults.join(', ') }}</strong>
-              }
-            </dd>
-          </div>
-          <div class="tile__row" data-field="temperature">
-            <dt>{{ t('energy.inverter.temperature') }}</dt>
-            <dd>
-              <strong>{{
-                numberOf(inverter.temperature) === undefined
-                  ? t('energy.notKnown')
-                  : (inverter.temperature | localNumber: WHOLE) + ' °C'
-              }}</strong>
-            </dd>
-          </div>
-          <div class="tile__row" data-field="dailyYield">
-            <dt>{{ t('energy.inverter.dailyYield') }}</dt>
-            <dd>
-              <strong>{{
-                numberOf(inverter.dailyYield) === undefined
-                  ? t('energy.notKnown')
-                  : (inverter.dailyYield | localNumber: ONE) + ' kWh'
-              }}</strong>
-            </dd>
-          </div>
-        </dl>
-        <p class="tile__detail" data-field="reading">
-          @if (inverter.stale) {
-            <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
-          }
-          {{
-            readingSourceLabel(inverter.source)
-              ? t(readingSourceLabel(inverter.source)!)
-              : (inverter.source ?? '')
-          }}
-          @if (inverter.measuredAt; as at) {
-            · {{ at | houseAge }}
-          }
-        </p>
-      } @else if (!inverters.error()) {
-        <p class="tile__detail">{{ t('energy.cards.noInverter') }}</p>
-      }
-    </app-domain-tile>
+    <ng-container
+      *ngTemplateOutlet="
+        inverterCard;
+        context: { id: 'sofar', heading: 'energy.cards.sofar', inverter: sofar() }
+      "
+    />
 
     <!-- the grid meter -->
     <app-domain-tile
@@ -624,4 +457,123 @@
     <app-energy-days />
     <app-energy-settlement />
   </section>
+  <!-- an inverter from the one call of both (HAS-341): the rows they share, and those of its brand -->
+  <ng-template #inverterCard let-id="id" let-heading="heading" let-inverter="inverter">
+    <app-domain-tile
+      [heading]="heading"
+      icon="solar_power"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="inverters"
+      [attr.data-testid]="'card-' + id"
+    >
+      @if (inverter) {
+        <dl class="tile__rows">
+          <div class="tile__row tile__row--lead" data-field="pvPower">
+            <dt>{{ t('energy.inverter.pvPower') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="inverter.pvPower" /></strong>
+            </dd>
+          </div>
+          @for (one of strings; track one) {
+            @if (inverter.pv?.[one]; as string) {
+              <div class="tile__row" [attr.data-string]="one">
+                <dt>{{ t(stringLabels[one]) }}</dt>
+                <dd>
+                  @if (numberOf(string.voltage) !== undefined) {
+                    <span>{{ string.voltage | localNumber: ONE }} V</span>
+                  }
+                  <strong><app-power-value [watts]="string.power" /></strong>
+                </dd>
+              </div>
+            }
+          }
+          <div class="tile__row" data-field="acPower">
+            <dt>{{ t('energy.inverter.acPower') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="inverter.acPower" /></strong>
+            </dd>
+          </div>
+          @if (id === 'solax') {
+            <div class="tile__row" data-field="runMode">
+              <dt>{{ t('energy.inverter.runMode') }}</dt>
+              <dd>
+                @if (runModeAlarming(inverter.runMode)) {
+                  <span class="tile__tag tile__tag--alert">!</span>
+                }
+                <strong>{{
+                  inverter.runMode === undefined
+                    ? t('energy.notKnown')
+                    : runModeLabel(inverter.runMode)
+                      ? t(runModeLabel(inverter.runMode)!)
+                      : inverter.runMode
+                }}</strong>
+              </dd>
+            </div>
+          } @else {
+            <div class="tile__row" data-field="state">
+              <dt>{{ t('energy.inverter.state') }}</dt>
+              <!-- the words of the Solarman cloud, printed as they come -->
+              <dd>
+                <strong>{{ inverter.state ?? t('energy.notKnown') }}</strong>
+              </dd>
+            </div>
+            <div class="tile__row" data-field="faults">
+              <dt>{{ t('energy.inverter.faults') }}</dt>
+              <dd>
+                @let faults = faultsOf(inverter);
+                @if (faults === undefined) {
+                  <strong>{{ t('energy.notKnown') }}</strong>
+                } @else if (faults.length === 0) {
+                  <strong>{{ t('energy.inverter.noFaults') }}</strong>
+                } @else {
+                  <span class="tile__tag tile__tag--alert">{{ faults.length }}</span>
+                  <strong>{{ faults.join(', ') }}</strong>
+                }
+              </dd>
+            </div>
+          }
+          <div class="tile__row" data-field="temperature">
+            <dt>{{ t('energy.inverter.temperature') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(inverter.temperature) === undefined
+                  ? t('energy.notKnown')
+                  : (inverter.temperature | localNumber: WHOLE) + ' °C'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="dailyYield">
+            <dt>{{ t('energy.inverter.dailyYield') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(inverter.dailyYield) === undefined
+                  ? t('energy.notKnown')
+                  : (inverter.dailyYield | localNumber: ONE) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+        </dl>
+        <ng-container *ngTemplateOutlet="reading; context: { $implicit: inverter }" />
+      } @else if (!inverters.error()) {
+        <p class="tile__detail">{{ t('energy.cards.noInverter') }}</p>
+      }
+    </app-domain-tile>
+  </ng-template>
+
+  <!-- where a reading came from and how old it is: the inverters and the battery -->
+  <ng-template #reading let-read>
+    <p class="tile__detail" data-field="reading">
+      @if (read.stale) {
+        <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
+      }
+      {{
+        readingSourceLabel(read.source) ? t(readingSourceLabel(read.source)!) : (read.source ?? '')
+      }}
+      @if (read.measuredAt; as at) {
+        · {{ at | houseAge }}
+      }
+    </p>
+  </ng-template>
 </ng-container>

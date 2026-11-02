@@ -1,24 +1,17 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
-  afterRenderEffect,
   inject,
   input,
-  signal,
-  untracked,
   viewChild,
 } from '@angular/core';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
-import { ThemeStore } from '../../core/theme/theme-store';
 import { ChartLine } from './chart-data';
-import { ChartEngine, DrawnChart } from './chart-engine';
-import { ChartBand, ChartColors, chartOption } from './chart-option';
-
-const LINE_COLORS = [1, 2, 3, 4, 5].map((index) => `var(--app-chart-${index})`);
+import { drawChart } from './chart-drawing';
+import { ChartBand, chartOption } from './chart-option';
 
 /**
  * Lines over time - the history of a temperature. It draws what it is given and knows nothing
@@ -77,97 +70,22 @@ export class HistoryChart {
   /** What the value can never go past; the axis never steps over it. */
   readonly bounds = input<{ readonly min?: number; readonly max?: number }>();
 
-  private readonly engine = inject(ChartEngine);
-  private readonly theme = inject(ThemeStore);
   private readonly locale = inject(LanguageStore).locale;
   private readonly plot = viewChild.required<ElementRef<HTMLElement>>('plot');
-  private readonly chart = signal<DrawnChart | undefined>(undefined);
   /** The library could not be downloaded; cleared by the attempt that succeeds. */
-  protected readonly failed = signal(false);
-
-  constructor() {
-    const destroyRef = inject(DestroyRef);
-    let gone = false;
-    let observer: ResizeObserver | undefined;
-    destroyRef.onDestroy(() => {
-      gone = true;
-      observer?.disconnect();
-      this.chart()?.dispose();
-    });
-
-    // After the first render there is an element to draw into; the library arrives a moment
-    // later. Asked for once at a time, and again with new lines after an attempt that failed.
-    let asking = false;
-    afterRenderEffect(() => {
-      const host = this.plot().nativeElement;
-      this.lines();
-      if (asking || untracked(this.chart) !== undefined) {
-        return;
-      }
-      asking = true;
-      this.engine
-        .create(host)
-        .then((chart) => {
-          if (gone) {
-            chart.dispose();
-            return;
-          }
-          if (typeof ResizeObserver !== 'undefined') {
-            observer = new ResizeObserver(() => chart.resize());
-            observer.observe(host);
-          }
-          this.failed.set(false);
-          this.chart.set(chart);
-        })
-        .catch(() => this.failed.set(true))
-        .finally(() => (asking = false));
-    });
-
-    // After the render, so that the attributes of the theme are on the page when the colours
-    // are read back from it.
-    afterRenderEffect(() => {
-      const chart = this.chart();
-      // read here, so that a change of either draws the chart again
-      this.theme.season();
-      this.theme.scheme();
-      const option = {
-        lines: this.lines(),
-        from: this.from(),
-        to: this.to(),
-        band: this.band(),
-        unit: this.unit(),
-        locale: this.locale(),
-        logarithmic: this.logarithmic(),
-        decimals: this.decimals(),
-        bounds: this.bounds(),
-      };
-      chart?.draw(chartOption(option, readColors(this.plot().nativeElement)));
-    });
-  }
-}
-
-/**
- * The colours of the theme as values. They are CSS variables written with `light-dark()`, which
- * only the browser can resolve - so each is given to an element as its colour and read back.
- */
-export function readColors(host: HTMLElement): ChartColors {
-  const probe = host.ownerDocument.createElement('span');
-  probe.hidden = true;
-  host.appendChild(probe);
-  const resolve = (color: string) => {
-    probe.style.color = color;
-    return getComputedStyle(probe).color;
-  };
-  try {
-    return {
-      lines: LINE_COLORS.map(resolve),
-      text: resolve('var(--mat-sys-on-surface-variant)'),
-      strongText: resolve('var(--mat-sys-on-surface)'),
-      grid: resolve('var(--mat-sys-outline)'),
-      surface: resolve('var(--mat-sys-surface-container-high)'),
-      fontFamily: getComputedStyle(host).fontFamily,
-    };
-  } finally {
-    probe.remove();
-  }
+  protected readonly failed = drawChart(
+    () => this.plot().nativeElement,
+    () => ({
+      lines: this.lines(),
+      from: this.from(),
+      to: this.to(),
+      band: this.band(),
+      unit: this.unit(),
+      locale: this.locale(),
+      logarithmic: this.logarithmic(),
+      decimals: this.decimals(),
+      bounds: this.bounds(),
+    }),
+    chartOption,
+  );
 }

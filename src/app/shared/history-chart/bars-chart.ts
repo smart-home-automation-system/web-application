@@ -1,13 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
-  afterRenderEffect,
   inject,
   input,
-  signal,
-  untracked,
   viewChild,
 } from '@angular/core';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -15,10 +11,8 @@ import type { EChartsCoreOption } from 'echarts/core';
 
 import { numberFormat } from '../../core/i18n/intl-formats';
 import { LanguageStore } from '../../core/i18n/language-store';
-import { ThemeStore } from '../../core/theme/theme-store';
-import { ChartEngine, DrawnChart } from './chart-engine';
-import { ChartColors } from './chart-option';
-import { readColors } from './history-chart';
+import { drawChart } from './chart-drawing';
+import { ChartColors, escapeHtml } from './chart-option';
 
 /** One row of bars: a value per category, `null` where it is not known - no bar, never 0. */
 export interface BarSeries {
@@ -38,13 +32,6 @@ export interface BarsInput {
   readonly decimals: number;
   readonly locale: string;
 }
-
-const escapeHtml = (text: string) =>
-  text.replace(
-    /[&<>"']/g,
-    (character) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] ?? '',
-  );
 
 /**
  * What ECharts is asked to draw for bars by category - the closed days of the energy (HAS-341): an
@@ -162,61 +149,17 @@ export class BarsChart {
   /** What the picture shows, for whoever cannot see it. */
   readonly label = input.required<string>();
 
-  private readonly engine = inject(ChartEngine);
-  private readonly theme = inject(ThemeStore);
   private readonly locale = inject(LanguageStore).locale;
   private readonly plot = viewChild.required<ElementRef<HTMLElement>>('plot');
-  private readonly chart = signal<DrawnChart | undefined>(undefined);
-  protected readonly failed = signal(false);
-
-  constructor() {
-    const destroyRef = inject(DestroyRef);
-    let gone = false;
-    let observer: ResizeObserver | undefined;
-    destroyRef.onDestroy(() => {
-      gone = true;
-      observer?.disconnect();
-      this.chart()?.dispose();
-    });
-
-    let asking = false;
-    afterRenderEffect(() => {
-      const host = this.plot().nativeElement;
-      this.series();
-      if (asking || untracked(this.chart) !== undefined) {
-        return;
-      }
-      asking = true;
-      this.engine
-        .create(host)
-        .then((chart) => {
-          if (gone) {
-            chart.dispose();
-            return;
-          }
-          if (typeof ResizeObserver !== 'undefined') {
-            observer = new ResizeObserver(() => chart.resize());
-            observer.observe(host);
-          }
-          this.failed.set(false);
-          this.chart.set(chart);
-        })
-        .catch(() => this.failed.set(true))
-        .finally(() => (asking = false));
-    });
-
-    afterRenderEffect(() => {
-      const chart = this.chart();
-      this.theme.season();
-      this.theme.scheme();
-      const option = {
-        categories: this.categories(),
-        series: this.series(),
-        unit: this.unit(),
-        decimals: this.decimals(),
-        locale: this.locale(),
-      };
-      chart?.draw(barsOption(option, readColors(this.plot().nativeElement)));
-    });
-  }
+  protected readonly failed = drawChart(
+    () => this.plot().nativeElement,
+    () => ({
+      categories: this.categories(),
+      series: this.series(),
+      unit: this.unit(),
+      decimals: this.decimals(),
+      locale: this.locale(),
+    }),
+    barsOption,
+  );
 }
