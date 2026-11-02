@@ -1,0 +1,153 @@
+@use '../../shared/domain-tile/tile-content';
+
+$gap: 12px;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+// The page stands in the middle of a wide screen, like the weather page, and its rows are full:
+// the flow beside the sources, the four devices in a row (two of two, one column), the alarms
+// beside the outages, the charts in rows of two. Cards side by side end on one line.
+.live,
+.cards,
+.lists,
+.charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $gap;
+  align-items: stretch;
+  max-width: 1600px;
+  margin-inline: auto;
+}
+
+.cards,
+.lists,
+.charts {
+  margin-top: $gap;
+}
+
+@container (min-width: 600px) {
+  .cards,
+  .lists {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 900px) {
+  .live {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  .charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1180px) {
+  .cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+// the value a card is looked at for
+.tile__row--lead strong {
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+}
+
+.tile__subhead {
+  margin: 12px 0 0;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}
+
+// the day so far: two columns of facts beside the diagram where there is room
+.tile__rows--two {
+  @container (min-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+  }
+}
+
+// what somebody should look at, beside a value: in the shade made for text on a tinted strip
+.tile__tag--alert {
+  padding: 0 6px;
+  border-radius: var(--mat-sys-corner-extra-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+// a phase above the warning current: its row on the error strip, and its words beside it
+.phase--overloaded {
+  padding: 2px 6px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  strong {
+    color: var(--mat-sys-on-error-container);
+  }
+}
+
+// the state of charge: the figure and a gauge under it
+.soc {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.soc__value {
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.soc__bar {
+  border-radius: var(--mat-sys-corner-full);
+}
+
+// the alarms and the outages: one line each, what and since when
+.events {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--app-glass-edge);
+  border-radius: var(--mat-sys-corner-small);
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.event--alert {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  border-color: transparent;
+
+  .event__when,
+  .event__detail {
+    color: var(--mat-sys-on-error-container);
+  }
+}
+
+.event__what {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+
+.event__detail,
+.event__when {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

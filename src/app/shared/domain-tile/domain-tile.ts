@@ -5,9 +5,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { ApiError } from '../../core/api/api-error';
 import { PollingResource } from '../../core/api/polling-resource';
-import { MessageKey } from '../../i18n/messages';
+import { DisplayText, MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../api-error/api-error-strip';
+import { describeApiError } from '../api-error/describe-api-error';
 import { DataFreshness } from '../data-freshness/data-freshness';
 import { SignalLight } from '../signal-light/signal-light';
 
@@ -20,7 +22,8 @@ export type TileDomain =
   | 'weather'
   | 'blinds'
   | 'light'
-  | 'appliance';
+  | 'appliance'
+  | 'energy';
 
 /**
  * A card about one call of one domain of the house - a tile of the overview, whose title leads to
@@ -78,7 +81,7 @@ export type TileDomain =
             <mat-progress-bar mode="indeterminate" [attr.aria-label]="t(waitingLabel())" />
           } @else {
             <ng-content />
-            <app-api-error-strip [error]="resource().error()" />
+            <app-api-error-strip [error]="resource().error()" [describeWith]="describeWith()" />
           }
           <!-- the failures of the other calls of a tile (the heating: its rooms and sensors) are
                told while its own call still loads too -->
@@ -107,4 +110,6 @@ export class DomainTile {
   readonly resource = input.required<PollingResource<unknown>>();
   /** Key of what a screen reader hears for the bar. */
   readonly waitingLabel = input.required<MessageKey>();
+  /** How a failure of the call is worded - a service whose refusals have codes of its own words them. */
+  readonly describeWith = input<(error: ApiError) => DisplayText>(describeApiError);
 }

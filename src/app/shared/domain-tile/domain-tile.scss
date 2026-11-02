@@ -84,3 +84,7 @@ mat-card-content {
 .tile[data-domain='appliance'] {
   --app-domain: var(--app-domain-appliance);
 }
+
+.tile[data-domain='energy'] {
+  --app-domain: var(--app-domain-energy);
+}

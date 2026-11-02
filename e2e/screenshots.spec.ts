@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(11, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(14, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -526,6 +526,20 @@ for (const language of ['en', 'pl'] as const) {
         await expect(page.getByTestId('power-61').locator('.chart__plot')).toBeVisible();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'appliances'),
+        });
+      });
+
+      // the energy of the house (HAS-341): the flow, the devices, the alarms, the charts and the settlement
+      test('energy', async ({ page }, testInfo) => {
+        await page.goto('/energy');
+        await expect(
+          page.getByRole('main').locator('mat-progress-bar[mode="indeterminate"]'),
+        ).toHaveCount(0);
+        // the two charts of the history and the bars of the days are drawn before the picture
+        await expect(page.locator('.chart__plot svg')).toHaveCount(3);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy'),
+          fullPage: true,
         });
       });
 

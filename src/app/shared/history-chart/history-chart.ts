@@ -150,7 +150,7 @@ export class HistoryChart {
  * The colours of the theme as values. They are CSS variables written with `light-dark()`, which
  * only the browser can resolve - so each is given to an element as its colour and read back.
  */
-function readColors(host: HTMLElement): ChartColors {
+export function readColors(host: HTMLElement): ChartColors {
   const probe = host.ownerDocument.createElement('span');
   probe.hidden = true;
   host.appendChild(probe);

@@ -75,6 +75,12 @@ describe('translations', () => {
       // a number of minutes and a sign
       'blinds.schedule.end.after',
       'blinds.schedule.end.before',
+      // the names of the two inverters, and a word both languages use (HAS-341)
+      'energy.cards.solax',
+      'energy.cards.sofar',
+      'energy.source.solax',
+      'energy.source.sofar',
+      'energy.alerts.kind.alarm',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

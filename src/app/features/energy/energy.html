@@ -1,0 +1,627 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('energy.page.title') }}</h1>
+  </header>
+
+  <section class="live" [attr.aria-label]="t('energy.page.now')">
+    <!-- where the energy goes now, and the day so far -->
+    <app-domain-tile
+      class="live__flow"
+      heading="energy.cards.flow"
+      icon="bolt"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="flows"
+      data-testid="card-flow"
+    >
+      @if (flows.value()) {
+        <app-energy-flow [flow]="flow()" />
+        @let d = today();
+        <h3 class="tile__subhead">{{ t('energy.today.title') }}</h3>
+        <dl class="tile__rows tile__rows--two">
+          <div class="tile__row" data-today="production">
+            <dt>{{ t('energy.today.production') }}</dt>
+            <dd>
+              <strong>{{
+                d.production === undefined
+                  ? t('energy.notKnown')
+                  : (d.production | localNumber: TWO) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-today="houseLoad">
+            <dt>{{ t('energy.today.houseLoad') }}</dt>
+            <dd>
+              <strong>{{
+                d.houseLoad === undefined
+                  ? t('energy.notKnown')
+                  : (d.houseLoad | localNumber: TWO) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-today="imported">
+            <dt>{{ t('energy.today.imported') }}</dt>
+            <dd>
+              <strong>{{
+                d.imported === undefined
+                  ? t('energy.notKnown')
+                  : (d.imported | localNumber: TWO) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-today="exported">
+            <dt>{{ t('energy.today.exported') }}</dt>
+            <dd>
+              <strong>{{
+                d.exported === undefined
+                  ? t('energy.notKnown')
+                  : (d.exported | localNumber: TWO) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-today="charged">
+            <dt>{{ t('energy.today.charged') }}</dt>
+            <dd>
+              <strong>{{
+                d.charged === undefined
+                  ? t('energy.notKnown')
+                  : (d.charged | localNumber: TWO) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-today="discharged">
+            <dt>{{ t('energy.today.discharged') }}</dt>
+            <dd>
+              <strong>{{
+                d.discharged === undefined
+                  ? t('energy.notKnown')
+                  : (d.discharged | localNumber: TWO) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-today="selfConsumption">
+            <dt>{{ t('energy.today.selfConsumption') }}</dt>
+            <dd>
+              <strong>{{
+                d.selfConsumption === undefined
+                  ? t('energy.notKnown')
+                  : (d.selfConsumption * 100 | localNumber: WHOLE) + ' %'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-today="gridShare">
+            <dt>{{ t('energy.today.gridShare') }}</dt>
+            <dd>
+              <strong>{{
+                d.gridShare === undefined
+                  ? t('energy.notKnown')
+                  : (d.gridShare * 100 | localNumber: WHOLE) + ' %'
+              }}</strong>
+            </dd>
+          </div>
+        </dl>
+      } @else if (!flows.error()) {
+        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- the grid as the SOLAX sees it, and whether each source answers -->
+    <app-domain-tile
+      heading="energy.cards.sources"
+      icon="sensors"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="status"
+      data-testid="card-sources"
+    >
+      @if (status.value()) {
+        @switch (gridState()) {
+          @case ('lost') {
+            <p class="tile__lead tile__lead--alert" data-testid="grid-state" data-state="lost">
+              <mat-icon aria-hidden="true">power_off</mat-icon>
+              <span>{{ t('energy.gridState.lost') }}</span>
+            </p>
+          }
+          @case ('present') {
+            <p class="tile__lead tile__lead--ok" data-testid="grid-state" data-state="present">
+              <mat-icon aria-hidden="true">power</mat-icon>
+              <span>{{ t('energy.gridState.present') }}</span>
+            </p>
+          }
+          @default {
+            <p class="tile__lead" data-testid="grid-state" data-state="unknown">
+              <mat-icon aria-hidden="true">help</mat-icon>
+              <span>{{ t('energy.gridState.unknown') }}</span>
+            </p>
+          }
+        }
+        @if (gridState() !== undefined && gridSince(); as since) {
+          <p class="tile__detail">{{ t('energy.gridState.since') }} {{ since | houseDateTime }}</p>
+        }
+        <dl class="tile__rows">
+          @for (source of sources(); track source.id) {
+            <div class="tile__row" [attr.data-source]="source.id">
+              <dt>{{ source.label ? t(source.label) : source.id }}</dt>
+              <dd>
+                @if (source.lastReadingAt; as at) {
+                  <span>{{ at | houseAge }}</span>
+                }
+                @if (source.reachable === false) {
+                  <span class="tile__tag tile__tag--alert">{{ t('energy.reachable.no') }}</span>
+                } @else {
+                  <strong>{{
+                    source.reachable === undefined
+                      ? t('energy.reachable.unknown')
+                      : t('energy.reachable.yes')
+                  }}</strong>
+                }
+              </dd>
+            </div>
+          }
+        </dl>
+      } @else if (!status.error()) {
+        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+      }
+    </app-domain-tile>
+  </section>
+
+  <section class="cards" [attr.aria-label]="t('energy.page.devices')">
+    <!-- the SOLAX -->
+    <app-domain-tile
+      heading="energy.cards.solax"
+      icon="solar_power"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="inverters"
+      data-testid="card-solax"
+    >
+      @if (solax(); as inverter) {
+        <dl class="tile__rows">
+          <div class="tile__row tile__row--lead" data-field="pvPower">
+            <dt>{{ t('energy.inverter.pvPower') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="inverter.pvPower" /></strong>
+            </dd>
+          </div>
+          @for (one of strings; track one) {
+            @if (inverter.pv?.[one]; as string) {
+              <div class="tile__row" [attr.data-string]="one">
+                <dt>{{ t(stringLabels[one]) }}</dt>
+                <dd>
+                  @if (numberOf(string.voltage) !== undefined) {
+                    <span>{{ string.voltage | localNumber: ONE }} V</span>
+                  }
+                  <strong><app-power-value [watts]="string.power" /></strong>
+                </dd>
+              </div>
+            }
+          }
+          <div class="tile__row" data-field="acPower">
+            <dt>{{ t('energy.inverter.acPower') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="inverter.acPower" /></strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="runMode">
+            <dt>{{ t('energy.inverter.runMode') }}</dt>
+            <dd>
+              @if (runModeAlarming(inverter.runMode)) {
+                <span class="tile__tag tile__tag--alert">!</span>
+              }
+              <strong>{{
+                inverter.runMode === undefined
+                  ? t('energy.notKnown')
+                  : runModeLabel(inverter.runMode)
+                    ? t(runModeLabel(inverter.runMode)!)
+                    : inverter.runMode
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="temperature">
+            <dt>{{ t('energy.inverter.temperature') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(inverter.temperature) === undefined
+                  ? t('energy.notKnown')
+                  : (inverter.temperature | localNumber: WHOLE) + ' °C'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="dailyYield">
+            <dt>{{ t('energy.inverter.dailyYield') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(inverter.dailyYield) === undefined
+                  ? t('energy.notKnown')
+                  : (inverter.dailyYield | localNumber: ONE) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+        </dl>
+        <p class="tile__detail" data-field="reading">
+          @if (inverter.stale) {
+            <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
+          }
+          {{
+            readingSourceLabel(inverter.source)
+              ? t(readingSourceLabel(inverter.source)!)
+              : (inverter.source ?? '')
+          }}
+          @if (inverter.measuredAt; as at) {
+            · {{ at | houseAge }}
+          }
+        </p>
+      } @else if (!inverters.error()) {
+        <p class="tile__detail">{{ t('energy.cards.noInverter') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- the battery of the SOLAX -->
+    <app-domain-tile
+      heading="energy.cards.battery"
+      icon="battery_charging_full"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="battery"
+      data-testid="card-battery"
+    >
+      @if (battery.value(); as b) {
+        <div class="soc" data-field="soc">
+          <span class="soc__value">{{
+            soc() === undefined ? t('energy.notKnown') : (soc()! | localNumber: WHOLE) + ' %'
+          }}</span>
+          @if (soc() !== undefined) {
+            <mat-progress-bar
+              class="soc__bar"
+              mode="determinate"
+              [value]="soc()!"
+              [attr.aria-label]="t('energy.battery.soc')"
+            />
+          }
+        </div>
+        <dl class="tile__rows">
+          <div class="tile__row" data-field="power">
+            <dt>
+              {{
+                batteryDirectionLabel(b.direction)
+                  ? t(batteryDirectionLabel(b.direction)!)
+                  : t('energy.battery.power')
+              }}
+            </dt>
+            <dd>
+              <strong><app-power-value [watts]="b.power" /></strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="remaining">
+            <dt>{{ t('energy.battery.remaining') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(b.remainingKwh) === undefined
+                  ? t('energy.notKnown')
+                  : (b.remainingKwh | localNumber: TWO) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          @if (numberOf(b.cycles) !== undefined) {
+            <div class="tile__row" data-field="cycles">
+              <dt>{{ t('energy.battery.cycles') }}</dt>
+              <dd>
+                <strong>{{ b.cycles | localNumber: WHOLE }}</strong>
+              </dd>
+            </div>
+          }
+          @if (numberOf(b.health) !== undefined) {
+            <div class="tile__row" data-field="health">
+              <dt>{{ t('energy.battery.health') }}</dt>
+              <dd>
+                <strong>{{ b.health | localNumber: WHOLE }} %</strong>
+              </dd>
+            </div>
+          }
+          @if (numberOf(b.temperature) !== undefined) {
+            <div class="tile__row" data-field="temperature">
+              <dt>{{ t('energy.inverter.temperature') }}</dt>
+              <dd>
+                <strong>{{ b.temperature | localNumber: WHOLE }} °C</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+        <p class="tile__detail" data-field="reading">
+          @if (b.stale) {
+            <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
+          }
+          {{ readingSourceLabel(b.source) ? t(readingSourceLabel(b.source)!) : (b.source ?? '') }}
+          @if (b.measuredAt; as at) {
+            · {{ at | houseAge }}
+          }
+        </p>
+      } @else if (!battery.error()) {
+        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- the SOFAR -->
+    <app-domain-tile
+      heading="energy.cards.sofar"
+      icon="solar_power"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="inverters"
+      data-testid="card-sofar"
+    >
+      @if (sofar(); as inverter) {
+        <dl class="tile__rows">
+          <div class="tile__row tile__row--lead" data-field="pvPower">
+            <dt>{{ t('energy.inverter.pvPower') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="inverter.pvPower" /></strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="acPower">
+            <dt>{{ t('energy.inverter.acPower') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="inverter.acPower" /></strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="state">
+            <dt>{{ t('energy.inverter.state') }}</dt>
+            <!-- the words of the Solarman cloud, printed as they come -->
+            <dd>
+              <strong>{{ inverter.state ?? t('energy.notKnown') }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="faults">
+            <dt>{{ t('energy.inverter.faults') }}</dt>
+            <dd>
+              @let faults = faultsOf(inverter);
+              @if (faults === undefined) {
+                <strong>{{ t('energy.notKnown') }}</strong>
+              } @else if (faults.length === 0) {
+                <strong>{{ t('energy.inverter.noFaults') }}</strong>
+              } @else {
+                <span class="tile__tag tile__tag--alert">{{ faults.length }}</span>
+                <strong>{{ faults.join(', ') }}</strong>
+              }
+            </dd>
+          </div>
+          <div class="tile__row" data-field="temperature">
+            <dt>{{ t('energy.inverter.temperature') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(inverter.temperature) === undefined
+                  ? t('energy.notKnown')
+                  : (inverter.temperature | localNumber: WHOLE) + ' °C'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="dailyYield">
+            <dt>{{ t('energy.inverter.dailyYield') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(inverter.dailyYield) === undefined
+                  ? t('energy.notKnown')
+                  : (inverter.dailyYield | localNumber: ONE) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+        </dl>
+        <p class="tile__detail" data-field="reading">
+          @if (inverter.stale) {
+            <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
+          }
+          {{
+            readingSourceLabel(inverter.source)
+              ? t(readingSourceLabel(inverter.source)!)
+              : (inverter.source ?? '')
+          }}
+          @if (inverter.measuredAt; as at) {
+            · {{ at | houseAge }}
+          }
+        </p>
+      } @else if (!inverters.error()) {
+        <p class="tile__detail">{{ t('energy.cards.noInverter') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- the grid meter -->
+    <app-domain-tile
+      heading="energy.cards.grid"
+      icon="electric_meter"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="grid"
+      data-testid="card-grid"
+    >
+      @if (grid.value(); as g) {
+        <dl class="tile__rows">
+          <div class="tile__row tile__row--lead" data-field="total">
+            <dt>
+              {{
+                gridDirectionLabel(g.direction)
+                  ? t(gridDirectionLabel(g.direction)!)
+                  : t('energy.grid.power')
+              }}
+            </dt>
+            <dd>
+              <strong><app-power-value [watts]="g.totalActivePower" /></strong>
+            </dd>
+          </div>
+          @for (one of phases; track one) {
+            @let phase = g.phases?.[one];
+            <div
+              class="tile__row"
+              [attr.data-phase]="one"
+              [class.phase--overloaded]="overloaded(phase)"
+            >
+              <dt>{{ t('energy.grid.phase', { phase: one.toUpperCase() }) }}</dt>
+              <dd>
+                @if (overloaded(phase)) {
+                  <span class="tile__tag tile__tag--alert">{{ t('energy.grid.overloaded') }}</span>
+                }
+                @if (numberOf(phase?.voltage) !== undefined) {
+                  <span>{{ phase!.voltage | localNumber: ONE }} V</span>
+                }
+                <strong>{{
+                  numberOf(phase?.current) === undefined
+                    ? t('energy.notKnown')
+                    : (phase!.current | localNumber: ONE) + ' A'
+                }}</strong>
+              </dd>
+            </div>
+          }
+          <div class="tile__row" data-field="importEnergy">
+            <dt>{{ t('energy.grid.importEnergy') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(g.importEnergy) === undefined
+                  ? t('energy.notKnown')
+                  : (g.importEnergy | localNumber: ONE) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-field="exportEnergy">
+            <dt>{{ t('energy.grid.exportEnergy') }}</dt>
+            <dd>
+              <strong>{{
+                numberOf(g.exportEnergy) === undefined
+                  ? t('energy.notKnown')
+                  : (g.exportEnergy | localNumber: ONE) + ' kWh'
+              }}</strong>
+            </dd>
+          </div>
+        </dl>
+        <p class="tile__detail" data-field="reading">
+          @if (g.stale) {
+            <span class="tile__tag">{{ t('energy.outOfDate') }}</span>
+          }
+          {{ t('energy.grid.warnAt', { amperes: warnAmperes }) }}
+          @if (g.measuredAt; as at) {
+            · {{ at | houseAge }}
+          }
+        </p>
+      } @else if (!grid.error()) {
+        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+      }
+    </app-domain-tile>
+  </section>
+
+  <section class="lists" [attr.aria-label]="t('energy.page.events')">
+    <!-- the open alarms -->
+    <app-domain-tile
+      heading="energy.cards.alerts"
+      icon="notifications_active"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="alerts"
+      data-testid="card-alerts"
+    >
+      @if (alerts.value() !== undefined && alerts.value() !== null) {
+        @if (openAlerts().length === 0) {
+          <p class="tile__lead tile__lead--ok" data-testid="no-alerts">
+            <mat-icon aria-hidden="true">check_circle</mat-icon>
+            <span>{{ t('energy.alerts.none') }}</span>
+          </p>
+        } @else {
+          <ul class="events">
+            @for (alert of openAlerts(); track $index) {
+              <li class="event event--alert" [attr.data-alert]="alert.kind">
+                <span class="event__what">
+                  <strong>{{
+                    alertKindLabel(alert.kind) ? t(alertKindLabel(alert.kind)!) : alert.kind
+                  }}</strong>
+                  <span>{{
+                    sourceLabel(alert.source) ? t(sourceLabel(alert.source)!) : alert.source
+                  }}</span>
+                  @if (alert.detail; as detail) {
+                    <!-- the name of the alarm as the inverter words it -->
+                    <span class="event__detail">{{ detail }}</span>
+                  }
+                </span>
+                @if (alert.openedAt; as at) {
+                  <span class="event__when"
+                    >{{ t('energy.alerts.since') }} {{ at | houseDateTime }}</span
+                  >
+                }
+              </li>
+            }
+          </ul>
+        }
+      } @else if (!alerts.error()) {
+        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+      }
+    </app-domain-tile>
+
+    <!-- the outages of the grid of the last year -->
+    <app-domain-tile
+      heading="energy.cards.outages"
+      icon="power_off"
+      domain="energy"
+      waitingLabel="energy.page.loading"
+      [describeWith]="describe"
+      [resource]="outages"
+      data-testid="card-outages"
+    >
+      @if (outageList(); as list) {
+        @if (list.length === 0) {
+          <p class="tile__lead tile__lead--ok" data-testid="no-outages">
+            <mat-icon aria-hidden="true">check_circle</mat-icon>
+            <span>{{ t('energy.outages.none') }}</span>
+          </p>
+        } @else {
+          <ul class="events">
+            @for (outage of list; track $index) {
+              <li class="event" [class.event--alert]="!outage.endedAt" data-testid="outage">
+                <span class="event__what">
+                  <strong>{{ outage.startedAt | houseDateTime }}</strong>
+                  @if (outage.endedAt; as ended) {
+                    <span>– {{ ended | houseDateTime }}</span>
+                  } @else {
+                    <span>{{ t('energy.outages.lasts') }}</span>
+                  }
+                </span>
+                <span class="event__when">
+                  {{ t('energy.outages.soc') }}
+                  {{
+                    numberOf(outage.socAtStart) === undefined
+                      ? '–'
+                      : (outage.socAtStart | localNumber: WHOLE) + ' %'
+                  }}
+                  →
+                  {{
+                    numberOf(outage.socAtEnd) === undefined
+                      ? '–'
+                      : (outage.socAtEnd | localNumber: WHOLE) + ' %'
+                  }}
+                  @if (numberOf(outage.lowestSoc) !== undefined) {
+                    · {{ t('energy.outages.lowest') }} {{ outage.lowestSoc | localNumber: WHOLE }} %
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        }
+        <p class="tile__detail">
+          {{ t('energy.outages.since') }} {{ outagesSince() | houseDateTime }}
+        </p>
+      } @else if (!outages.error()) {
+        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+      }
+    </app-domain-tile>
+  </section>
+
+  <section class="charts" [attr.aria-label]="t('energy.page.history')">
+    @for (chart of charts; track chart.spec.key) {
+      <app-energy-chart-card [chart]="chart" [(preset)]="period.preset" />
+    }
+    <app-energy-days />
+    <app-energy-settlement />
+  </section>
+</ng-container>

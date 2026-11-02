@@ -287,3 +287,90 @@ export function weatherHistory(
         })),
   };
 }
+
+/** The metrics of energy-service (HAS-341). */
+const ENERGY_METRICS = [
+  'grid-power',
+  'pv-solax',
+  'pv-sofar',
+  'pv-power',
+  'house-load',
+  'battery-power',
+  'battery-soc',
+] as const;
+
+/** What the panels give at a moment of the day: nothing at night, a bell around 12:30. */
+function sun(seconds: number, peak: number): number {
+  const hour = (seconds % DAY) / HOUR;
+  return hour < 7 || hour > 17 ? 0 : Math.max(0, peak * Math.sin(((hour - 7) / 10) * Math.PI));
+}
+
+/** The house: a base, a morning and an evening, invented. */
+function houseLoad(seconds: number): number {
+  const hour = (seconds % DAY) / HOUR;
+  return 450 + (hour >= 6 && hour < 9 ? 900 : 0) + (hour >= 17 && hour < 22 ? 1400 : 0);
+}
+
+function energyBucket(metric: (typeof ENERGY_METRICS)[number], at: number, width: number) {
+  const middle = at + width / 2;
+  const solax = sun(middle, 4200);
+  const sofar = sun(middle, 2600);
+  const house = houseLoad(middle);
+  // the battery takes the surplus of the day and gives it back in the evening
+  const battery = Math.max(-2000, Math.min(3000, solax + sofar - house));
+  const soc = 20 + 60 * Math.max(0, Math.min(1, ((middle % DAY) / HOUR - 9) / 6));
+  const spread = (avg: number, by: number) => ({
+    avg: round(avg),
+    min: round(avg - by),
+    max: round(avg + by),
+  });
+  switch (metric) {
+    case 'pv-solax':
+      return spread(solax, solax * 0.05);
+    case 'pv-sofar':
+      return spread(sofar, sofar * 0.05);
+    case 'pv-power':
+      return { avg: round(solax + sofar) };
+    case 'house-load':
+      return { avg: round(house) };
+    case 'battery-power':
+      return spread(battery, 40);
+    case 'battery-soc':
+      return spread(soc, 0.5);
+    case 'grid-power':
+      return spread(house - solax - sofar + battery, 60);
+  }
+}
+
+/**
+ * `GET /home/energy/history` (HAS-341), the rules of the weather history: a sunny day of the panels,
+ * a house with a morning and an evening, a battery that takes the surplus. Invented values.
+ */
+export function energyHistory(
+  metric: string | null,
+  from: string | null,
+  to: string | null,
+  fresh: boolean,
+  now: Date = new Date(),
+): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
+  const known = ENERGY_METRICS.find((name) => name === metric);
+  if (known === undefined) {
+    return { status: 400, message: 'Unknown metric', code: 'UNKNOWN_METRIC' };
+  }
+  const range = readRange(from, to, WATER_BUCKETS);
+  if (isHistoryRefusal(range)) {
+    return range;
+  }
+  return {
+    metric: known,
+    from: localDateTime(range.from),
+    to: localDateTime(range.to),
+    bucketSeconds: range.bucket,
+    points: fresh
+      ? []
+      : buckets(range, now).map((at) => ({
+          at: localDateTime(at),
+          ...energyBucket(known, at, range.bucket),
+        })),
+  };
+}

@@ -7,6 +7,7 @@ import { ApiError } from '../../core/api/api-error';
 import { Appliance } from '../../data-access/appliance/appliance-api';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
+import { Battery, EnergyApi, EnergyFlows, EnergyStatus } from '../../data-access/energy/energy-api';
 import { EmptyHouse, LightApi, RoomLights } from '../../data-access/light/light-api';
 import { BoilerApi, BoilerStatus } from '../../data-access/boiler/boiler-api';
 import {
@@ -67,7 +68,15 @@ const WEATHER: CurrentWeather = {
 };
 
 type Tile =
-  'heating' | 'water' | 'boiler' | 'presence' | 'weather' | 'blinds' | 'light' | 'appliance';
+  | 'heating'
+  | 'water'
+  | 'boiler'
+  | 'presence'
+  | 'weather'
+  | 'blinds'
+  | 'light'
+  | 'appliance'
+  | 'energy';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -81,6 +90,9 @@ describe('Overview', () => {
   let lights: FakeResource<readonly RoomLights[] | null>;
   let emptyHouse: FakeResource<EmptyHouse | null>;
   let appliances: FakeResource<readonly Appliance[] | null>;
+  let energyFlows: FakeResource<EnergyFlows | null>;
+  let energyBattery: FakeResource<Battery | null>;
+  let energyStatus: FakeResource<EnergyStatus | null>;
   let fixture: ComponentFixture<Overview>;
 
   beforeEach(() => {
@@ -96,6 +108,9 @@ describe('Overview', () => {
     lights = fakeResource();
     emptyHouse = fakeResource();
     appliances = fakeResource();
+    energyFlows = fakeResource();
+    energyBattery = fakeResource();
+    energyStatus = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -116,6 +131,14 @@ describe('Overview', () => {
         {
           provide: LightApi,
           useValue: { watchLights: () => lights, watchEmptyHouse: () => emptyHouse },
+        },
+        {
+          provide: EnergyApi,
+          useValue: {
+            watchFlows: () => energyFlows,
+            watchBattery: () => energyBattery,
+            watchStatus: () => energyStatus,
+          },
         },
         {
           provide: ApplianceStore,
@@ -499,13 +522,58 @@ describe('Overview', () => {
 
       const shown = await tile('appliance');
       expect(shown.querySelectorAll('button')).toHaveLength(0);
-      expect([...shown.querySelectorAll('a')].map((link) => link.getAttribute('href'))).toEqual(['/appliances']);
+      expect([...shown.querySelectorAll('a')].map((link) => link.getAttribute('href'))).toEqual([
+        '/appliances',
+      ]);
     });
 
     it('says when the household has no appliance', async () => {
       answer(appliances, []);
 
       expect(words(await tile('appliance'))).toContain('The household has no appliance yet.');
+    });
+  });
+
+  // HAS-341: the energy now - three calls of one tile, the flows its own; the grid lost in red
+  describe('the energy', () => {
+    const row = async (of: string) =>
+      words((await tile('energy')).querySelector(`[data-energy="${of}"]`));
+
+    it('tells the panels, the house, the grid and the battery now, and leads to the energy page', async () => {
+      answer(energyFlows, { production: 5320, houseLoad: 1690, gridPower: -1480 });
+      answer(energyBattery, { soc: 68, direction: 'charging', stale: false });
+      answer(energyStatus, { sources: [], grid: { state: 'present' } });
+
+      expect(await row('production')).toBe('Panels now 5.32 kW');
+      expect(await row('house')).toBe('House now 1.69 kW');
+      expect(await row('grid')).toBe('Returning to the grid 1.48 kW');
+      expect(await row('battery')).toBe('Charging 68 %');
+      expect((await tile('energy')).querySelector('[data-testid="energy-grid-lost"]')).toBeNull();
+      expect((await tile('energy')).querySelector('a.tile__link')?.getAttribute('href')).toBe(
+        '/energy',
+      );
+    });
+
+    it('says the grid is lost in red, and what is not known as not known', async () => {
+      answer(energyFlows, { production: 0 });
+      answer(energyBattery, { stale: true });
+      answer(energyStatus, { grid: { state: 'lost' } });
+
+      expect(
+        words((await tile('energy')).querySelector('[data-testid="energy-grid-lost"]')),
+      ).toContain('The grid is lost');
+      expect(await row('grid')).toBe('Grid not known');
+      expect(await row('battery')).toBe('Battery not known');
+    });
+
+    it('tells a failure of the battery or the grid in the tile, apart from the flows', async () => {
+      answer(energyFlows, { production: 0 });
+      fail(energyStatus, new ApiError('server', 502));
+
+      expect(
+        (await tile('energy')).querySelector('app-api-error-strip:not(:empty)'),
+      ).not.toBeNull();
+      expect(await row('production')).toBe('Panels now 0 W');
     });
   });
 

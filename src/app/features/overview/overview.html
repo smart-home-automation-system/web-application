@@ -453,5 +453,68 @@
         <p class="tile__detail">{{ t('appliances.unreadable') }}</p>
       }
     </app-domain-tile>
+
+    <!-- HAS-341: the energy now - the panels, the house, the battery, the grid; the grid lost in red -->
+    <app-domain-tile
+      heading="energy.page.title"
+      icon="solar_power"
+      domain="energy"
+      link="/energy"
+      waitingLabel="energy.page.loading"
+      [resource]="energyFlows"
+      data-testid="tile-energy"
+    >
+      @if (gridLost()) {
+        <p class="tile__lead tile__lead--alert" data-testid="energy-grid-lost">
+          <mat-icon aria-hidden="true">power_off</mat-icon>
+          <span>{{ t('energy.gridState.lost') }}</span>
+        </p>
+      }
+      @if (energyFlows.value()) {
+        @let f = energyFlow();
+        <dl class="tile__rows">
+          <div class="tile__row" data-energy="production">
+            <dt>{{ t('overview.energy.production') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="f.production" /></strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-energy="house">
+            <dt>{{ t('overview.energy.house') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="f.house" /></strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-energy="grid">
+            <dt>{{ energyGridLabel() ? t(energyGridLabel()!) : t('overview.energy.grid') }}</dt>
+            <dd>
+              <strong><app-power-value [watts]="f.grid" /></strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-energy="battery">
+            <dt>
+              {{
+                energyBatteryDirection()
+                  ? t(energyBatteryDirection()!)
+                  : t('overview.energy.battery')
+              }}
+            </dt>
+            <dd>
+              <strong>{{
+                energySoc() === undefined
+                  ? t('energy.notKnown')
+                  : (energySoc()! | localNumber: WHOLE) + ' %'
+              }}</strong>
+            </dd>
+          </div>
+        </dl>
+      } @else if (!energyFlows.error()) {
+        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+      }
+      <div tileFailures>
+        <app-api-error-strip [error]="energyBattery.error()" />
+        <app-api-error-strip [error]="energyStatus.error()" />
+      </div>
+    </app-domain-tile>
   </section>
 </ng-container>

@@ -56,11 +56,12 @@ test.describe('without a profile', () => {
     // "More" for the rest
     expect(await destinations(page, testInfo.project.name)).toEqual(
       testInfo.project.name === 'phone'
-        ? ['Overview', 'My room', 'Weather', 'Rooms', 'More']
+        ? ['Overview', 'My room', 'Weather', 'Energy', 'More']
         : [
             'Overview',
             'My room',
             'Weather',
+            'Energy',
             'Rooms',
             'Blinds',
             'Lights',

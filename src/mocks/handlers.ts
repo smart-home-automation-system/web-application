@@ -48,7 +48,24 @@ import {
   turnLight,
   turnRoom,
 } from './lights.fixtures';
-import { isHistoryRefusal, roomHistory, waterHistory, weatherHistory } from './history.fixtures';
+import {
+  energyHistory,
+  isHistoryRefusal,
+  roomHistory,
+  waterHistory,
+  weatherHistory,
+} from './history.fixtures';
+import {
+  battery,
+  energyAlerts,
+  energyDays,
+  energyFlows,
+  energyMonths,
+  energyStatus,
+  gridOutages,
+  gridReading,
+  inverters,
+} from './energy.fixtures';
 import {
   addDevice,
   addMember,
@@ -609,6 +626,58 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: '/home/weather/history',
     reply: (request, fresh) =>
       history(weatherHistory(request.params.get('metric'), from(request), to(request), fresh)),
+  },
+  // the energy of the house (HAS-341)
+  {
+    method: 'GET',
+    path: '/home/energy/status',
+    reply: (_, fresh) => ({ status: 200, body: energyStatus(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/flows',
+    reply: (_, fresh) => ({ status: 200, body: energyFlows(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/grid',
+    reply: (_, fresh) => ({ status: 200, body: gridReading(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/inverters',
+    reply: (_, fresh) => ({ status: 200, body: inverters(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/battery',
+    reply: (_, fresh) => ({ status: 200, body: battery(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/alerts',
+    reply: (_, fresh) => ({ status: 200, body: energyAlerts(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/outages',
+    reply: (_, fresh) => ({ status: 200, body: gridOutages(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/history',
+    reply: (request, fresh) =>
+      history(energyHistory(request.params.get('metric'), from(request), to(request), fresh)),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/days',
+    reply: (request, fresh) => energyDays(from(request), to(request), fresh),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/months',
+    reply: (request, fresh) => energyMonths(request.params.get('year'), fresh),
   },
   {
     method: 'GET',
