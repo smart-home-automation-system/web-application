@@ -50,7 +50,8 @@ const DAY_MS = 24 * 60 * 60 * 1_000;
 /** In a tooltip a value has two decimals at most - what the services round to. */
 const VALUE: Intl.NumberFormatOptions = { minimumFractionDigits: 1, maximumFractionDigits: 2 };
 
-const escapeHtml = (text: string) =>
+/** Text for the HTML of a tooltip: every name that goes in is escaped. */
+export const escapeHtml = (text: string) =>
   text.replace(
     /[&<>"']/g,
     (character) =>

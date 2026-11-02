@@ -1,4 +1,4 @@
-import { DEVICE_KINDS, OFFERED_KINDS, ROOM_NAMES } from './registry-values';
+import { DEVICE_KINDS, INVERTER_BRANDS, OFFERED_KINDS, ROOM_NAMES } from './registry-values';
 
 describe('ROOM_NAMES', () => {
   // HAS-289: the corridor upstairs was the one room written hall_up; RoomName of
@@ -10,6 +10,30 @@ describe('ROOM_NAMES', () => {
 
   it('offers each room once', () => {
     expect(new Set(ROOM_NAMES).size).toBe(ROOM_NAMES.length);
+  });
+});
+
+// The values of smart-home-sdk 1.15.0 written out (DeviceKind, InverterBrand - HAS-326): a value added
+// to the SDK is added here and to the copy together, so that it is offered
+describe('the copies of the SDK', () => {
+  it('know every kind of DeviceKind', () => {
+    expect(DEVICE_KINDS).toEqual([
+      'blinds',
+      'light',
+      'opening sensor',
+      'motion sensor',
+      'presence sensor',
+      'temperature sensor',
+      'weather station',
+      'bthome gateway',
+      'push button',
+      'appliance',
+      'inverter',
+    ]);
+  });
+
+  it('know every brand of InverterBrand', () => {
+    expect(INVERTER_BRANDS).toEqual(['solax', 'sofar']);
   });
 });
 

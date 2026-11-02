@@ -7,6 +7,7 @@ import { Ticker } from '../../core/time/ticker';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
+import { EnergyApi } from '../../data-access/energy/energy-api';
 import { HeatingApi } from '../../data-access/heating/heating-api';
 import {
   PRESENCE_CHECK_IS_LATE_AFTER_MS,
@@ -29,6 +30,14 @@ import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { blindsOf } from '../../shared/blinds/addressed-blind';
 import { summariseAppliances, toApplianceViews } from '../../shared/appliances/appliance-views';
 import { LightApi } from '../../data-access/light/light-api';
+import {
+  batteryDirectionLabel,
+  gridDirectionLabel,
+  gridStateOf,
+  numberOf,
+  toFlowView,
+} from '../energy/energy-views';
+import { PowerValue } from '../energy/power-value';
 import { stateOf } from '../../shared/lights/light-labels';
 import { countStates, lightRoomsOf } from '../lights/light-rooms';
 import {
@@ -49,12 +58,15 @@ interface DeviceLine {
   readonly working: boolean | undefined;
 }
 
+/** The way the grid flows in the words of `GridDirection` of energy-service. */
+const GRID_WORDS = { in: 'import', out: 'export', idle: 'idle' } as const;
+
 /**
  * The landing page of the administrator: the house at a glance - a tile per dashboard with the few
  * facts somebody looks for first, each leading to the page that has the rest. Nothing here changes
  * the house: the switch of the heating is on the heating page only (owner, 2026-10-21, HAS-266).
  *
- * Eleven calls feed the page (the appliances since HAS-282), each with its own failure: the page
+ * Fourteen calls feed the page (the appliances since HAS-282, the energy since HAS-341), each with its own failure: the page
  * is whole when one service is down, and says which. Every tile is one call - but the heating tile, which tells the state of
  * the system, its rooms and its silent sensors (three calls, owner's choice of HAS-266): it tells
  * the freshness of the state and the failure of each of the three. The tiles claim what their
@@ -70,6 +82,7 @@ interface DeviceLine {
     HouseAgePipe,
     LocalNumberPipe,
     DomainTile,
+    PowerValue,
   ],
   templateUrl: './overview.html',
   styleUrl: './overview.scss',
@@ -100,6 +113,12 @@ export class Overview {
   protected readonly emptyHouse = this.lightApi.watchEmptyHouse();
   // HAS-282: the resource of the notice of the shell - one poller, so the two never disagree
   protected readonly appliances = inject(ApplianceStore).appliances;
+  // HAS-341: the energy at a glance, once a minute - the flows, the battery and the grid as the
+  // SOLAX sees it, three calls of one tile like the heating; the flows are its own
+  private readonly energyApi = inject(EnergyApi);
+  protected readonly energyFlows = this.energyApi.watchFlows(60_000);
+  protected readonly energyBattery = this.energyApi.watchBattery(60_000);
+  protected readonly energyStatus = this.energyApi.watchStatus(60_000);
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
@@ -265,4 +284,19 @@ export class Overview {
   /** For the red light of the heating tile; its words are put in the template, which follows a
    * language whose texts arrive later (review of HAS-266). */
   protected readonly sensorSummary = computed(() => summarise(this.sensorRows()));
+
+  // ---- energy (HAS-341) ----
+
+  protected readonly energyFlow = computed(() => toFlowView(this.energyFlows.value()));
+  protected readonly energySoc = computed(() => numberOf(this.energyBattery.value()?.soc));
+  protected readonly energyBatteryDirection = computed(() =>
+    batteryDirectionLabel(this.energyBattery.value()?.direction),
+  );
+  /** The grid lost is the one thing of the tile in red; not known is never lost. */
+  protected readonly gridLost = computed(() => gridStateOf(this.energyStatus.value()) === 'lost');
+  /** The way the grid flows, by the dead band of the service the diagram uses too; none while not known. */
+  protected readonly energyGridLabel = computed(() => {
+    const flow = this.energyFlow().gridFlow;
+    return flow === 'unknown' ? undefined : gridDirectionLabel(GRID_WORDS[flow]);
+  });
 }

@@ -779,7 +779,7 @@ e2e/              # Playwright tests
   tiles "Rooms" and "Temperature sensors" are gone (the first led to the heating page under the
   name of the rooms view). An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
-  the overview through the real routes lets its eleven reads through with `isOverviewRead`
+  the overview through the real routes lets its fourteen reads through with `isOverviewRead` (the energy tile three of them, HAS-341)
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
 - **The appliances are one resource for the whole application** (HAS-282, `ApplianceStore` in
   `data-access/appliance/`, `GET /appliance` of `appliance-service` every 30 s): the notice of the
@@ -889,7 +889,7 @@ e2e/              # Playwright tests
     three missed reads (90 s) breaks the line. `shownHistory` takes the period as a function too, read
     lazily, because the card gets it as an input.
   - The mock registry holds the three appliances (ids 61-63, the ids of the mock of appliance-service): the
-    devices page counts them (25 devices). The mock answers 30 days of cycles in a rhythm per appliance (one of
+    devices page counts them (27 devices with the two inverters of HAS-341). The mock answers 30 days of cycles in a rhythm per appliance (one of
     the dishwasher without its energy) and a power curve every 30 s with a washing pause and the turns of a
     dryer after its end.
   - The photo `appliances` (a laundry room with the washing machine, the dryer, a smart plug and a dishwasher,
@@ -937,6 +937,39 @@ e2e/              # Playwright tests
   - **The rows are always full** (owner, 2026-10-16, the overview): container queries give the
     cards 6 / 3 / 2 / 1 columns and the charts 3 / 2 / 1 - never a row of four with two under it.
   - The photo `weather` (a garden with the station, from ChatGPT since HAS-266) has its tones narrowed to `35-230`.
+- **The energy page** (HAS-341, `features/energy/`, the administrator's; route `/energy` after the weather in the
+  menu - on a phone the rooms move behind "More" -, domain colour `energy`, the indigo of a spark; photo `energy` - a technical room with the inverters, the battery,
+  the distribution cabinet and the panels behind the window, from ChatGPT, tones `0-240`): the
+  answers of `energy-service` (`EnergyApi` in `data-access/energy/`). What to keep:
+  - **A card per call, the rule of the weather page**: every card is a `DomainTile` with the freshness and the
+    failure of its call; the SOLAX and the SOFAR come from `/inverters` and have a card each. The codes of the
+    service (`NOT_FOUND_INVERTER`, `REGISTRY_UNAVAILABLE`, `INVALID_RANGE`, `UNKNOWN_METRIC`) are worded in
+    `energy-errors.ts` (its test lists them), passed as `describeWith` of `DomainTile` and `HistoryFrame`.
+  - **The sign convention of the house**: the grid positive while the house takes, the battery while it charges,
+    PV never negative; within 20 W of nothing a line is idle (`directionOf`, the dead band of the service). The
+    diagram (`EnergyFlow`) has an arrow per line - an `img` with its words on the wrapper (the icon of Material is
+    `aria-hidden` by itself) - and a question mark where the power is not known. A power is written by
+    `PowerValue`: W below a kilowatt, kW from one on, its size only, "not known" for none.
+  - **Copied facts**: `PHASE_CURRENT_WARN_AMPERES` (22 A, `phase-current-warn`), `BILLING_YEAR_STARTS` (9,
+    `settlement.period-start`), the words of `RunMode`, `BatteryDirection`, `GridDirection` and the kinds of
+    `source_alert` (`energy-views.ts`) - a value this version does not know is printed as it came.
+  - **A grid not known is never lost** (`gridStateOf`); the overview tile shows the lost grid in red only. The
+    tile is three calls (flows, battery, status) like the heating tile, the flows its own, the other two told in
+    `tileFailures`.
+  - **The days are bars by category** (`BarsChart` of `shared/history-chart/`, the counterpart of `HistoryChart`
+    through the same `ChartEngine`): the closed days up to yesterday, the yield of each inverter apart (the
+    service leaves `production` out when one of them is not known - the days before the SOFAR was read), a value
+    not known no bar, the sums under
+    the chart count only the known days and say how many. **The settlement is kWh, never money** (the owner
+    settles by "opusty"); a month without a closed day has no figures; "in the grid now" is `stored` of the
+    last month with a day (`storedNow`).
+  - The mock house is a bright afternoon (`energy.fixtures.ts`): phase B overloaded, one SOFAR fault, the SolaX
+    cloud silent; the mock registry holds the two inverters (ids 64, 65 - the devices page counts 27).
+  - **The registry knows the kind `inverter`** (`smart-home-sdk` 1.15.0): `bindingsOf('inverter')` is the
+    `inverter` binding alone, of the vendor `other`; the form asks for the brand and the serial, offers the
+    registration number of the dongle on a SOLAX only and the logger serial on a SOFAR only, the number of the
+    other brand never sent; one inverter per serial (`bindingTaken`). `registry-values.spec` writes out the
+    values of `DeviceKind` and `InverterBrand` of the SDK.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

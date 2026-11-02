@@ -125,6 +125,13 @@
                       <span>{{ t('devices.device.bluetooth') }}</span>
                       <span class="code">{{ device.bthome?.address }}</span>
                     }
+                    @case ('inverter') {
+                      <span class="code">{{ device.inverter?.brand?.toUpperCase() }}</span>
+                      <span class="code device__id">{{ device.inverter?.serialNumber }}</span>
+                      @if (device.inverter?.address; as address) {
+                        <span class="code">{{ address }}</span>
+                      }
+                    }
                     @default {
                       <span>{{ t('devices.device.noBinding') }}</span>
                     }

@@ -51,6 +51,14 @@ const pages: Page[] = [
     loadComponent: () => import('./features/weather/weather').then((m) => m.Weather),
   },
   {
+    // the energy of the house (HAS-341, the administrator's): the flows now, the inverters, the battery,
+    // the history, the net-metering, the alarms and the outages of the grid
+    path: 'energy',
+    title: 'nav.energy',
+    data: { background: 'energy' },
+    loadComponent: () => import('./features/energy/energy').then((m) => m.Energy),
+  },
+  {
     // every room of the house, its devices, and the lights and blinds controlled from it (HAS-232)
     path: 'rooms',
     title: 'nav.rooms',

@@ -24,9 +24,21 @@ export const FIRST_ZONE = 200;
 export const POINT_MIN = 1;
 export const POINT_MAX = 99;
 
-/** The three ways a device is reached; a device has exactly one. */
-export const BINDINGS = ['shelly', 'eaton', 'bthome'] as const;
+/**
+ * The four ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
+ * the part of the kind inverter and of no other kind.
+ */
+export const BINDINGS = ['shelly', 'eaton', 'bthome', 'inverter'] as const;
 export type Binding = (typeof BINDINGS)[number];
+
+/** The ways a device of a kind this version does not know can be reached: the registry decides. */
+const ANY_BUT_INVERTER: readonly Binding[] = ['shelly', 'eaton', 'bthome'];
+
+/** The bounds of `InverterBinding`: capitals and digits, and how long each text is. */
+const INVERTER_TEXT = /^[A-Z0-9]+$/;
+export const SERIAL_LENGTH = { min: 5, max: 40 } as const;
+export const REGISTRATION_LENGTH = { min: 5, max: 20 } as const;
+export const LOGGER_SERIAL_MAX = 4_294_967_295;
 
 const IPV4 =
   /^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$/;
@@ -38,7 +50,8 @@ const DEVICE_ID = /^[A-Za-z0-9_-]{3,50}$/;
  * only reports: a wall transmitter of the AMX system or an input of a Shelly. A sensor is
  * whatever reports it; the weather station is read through a Bluetooth gateway, and such a
  * gateway is itself a Shelly.
- * A kind this version does not know is offered all three: the registry decides.
+ * An inverter is reached by its inverter binding alone, and no other kind by that one (HAS-326).
+ * A sensor, and a kind this version does not know, are offered the other three: the registry decides.
  */
 export function bindingsOf(kind: string): readonly Binding[] {
   switch (kind) {
@@ -52,8 +65,10 @@ export function bindingsOf(kind: string): readonly Binding[] {
     case 'bthome gateway':
     case 'appliance':
       return ['shelly'];
+    case 'inverter':
+      return ['inverter'];
     default:
-      return BINDINGS;
+      return ANY_BUT_INVERTER;
   }
 }
 
@@ -86,7 +101,8 @@ export function bindingOf(device: SmartDevice): Binding | undefined {
 /**
  * The vendors a device reached through a binding can have: an Eaton device is reached through
  * a gateway of the AMX system and nothing else is, the binding of a Shelly is a Shelly's, and
- * a Bluetooth sensor is of any vendor but Eaton.
+ * a Bluetooth sensor is of any vendor but Eaton; an inverter is of none of the vendors the
+ * registry names.
  */
 export function vendorsOf(binding: Binding): readonly string[] {
   switch (binding) {
@@ -96,7 +112,59 @@ export function vendorsOf(binding: Binding): readonly string[] {
       return ['eaton'];
     case 'bthome':
       return ['shelly', 'other'];
+    case 'inverter':
+      return ['other'];
   }
+}
+
+/** The serial number of an inverter, or of its battery: capitals and digits, 5 to 40. */
+export function serialProblem(text: string): MessageKey | undefined {
+  const serial = text.trim();
+  return INVERTER_TEXT.test(serial) &&
+    serial.length >= SERIAL_LENGTH.min &&
+    serial.length <= SERIAL_LENGTH.max
+    ? undefined
+    : 'devices.problem.serial';
+}
+
+/** The battery serial is not asked for: empty, or a serial. */
+export function batterySerialProblem(text: string): MessageKey | undefined {
+  return text.trim() === '' ? undefined : serialProblem(text);
+}
+
+/** The address of the dongle is not asked for: empty, or an IPv4 address. */
+export function optionalAddressProblem(text: string): MessageKey | undefined {
+  return text.trim() === '' ? undefined : addressProblem(text);
+}
+
+/** The registration number of a SolaX dongle - not asked for: capitals and digits, 5 to 20. */
+export function registrationProblem(text: string): MessageKey | undefined {
+  const registration = text.trim();
+  if (registration === '') {
+    return undefined;
+  }
+  return INVERTER_TEXT.test(registration) &&
+    registration.length >= REGISTRATION_LENGTH.min &&
+    registration.length <= REGISTRATION_LENGTH.max
+    ? undefined
+    : 'devices.problem.registration';
+}
+
+/** The serial of the Solarman logger of a SOFAR - not asked for: a whole number, 1 to 4 294 967 295. */
+export function loggerSerialProblem(text: string): MessageKey | undefined {
+  if (text.trim() === '') {
+    return undefined;
+  }
+  return loggerSerialOf(text) === undefined ? 'devices.problem.loggerSerial' : undefined;
+}
+
+export function loggerSerialOf(text: string): number | undefined {
+  const digits = text.trim();
+  if (!/^\d{1,10}$/.test(digits)) {
+    return undefined;
+  }
+  const serial = Number(digits);
+  return serial >= 1 && serial <= LOGGER_SERIAL_MAX ? serial : undefined;
 }
 
 /** A name as it is sent: without the spaces around it. */
@@ -165,10 +233,17 @@ export function bluetoothAddressProblem(text: string): MessageKey | undefined {
  * `others`: every other device of the registry - without the one being changed.
  */
 export function bindingTaken(
-  device: Pick<DeviceDetails, 'shelly' | 'eaton' | 'bthome'>,
+  device: Pick<DeviceDetails, 'shelly' | 'eaton' | 'bthome' | 'inverter'>,
   others: readonly SmartDevice[],
 ): MessageKey | undefined {
-  const { shelly, eaton, bthome } = device;
+  const { shelly, eaton, bthome, inverter } = device;
+  // one device per serial number (devices_inverter_serial_number_uq)
+  if (
+    inverter !== undefined &&
+    others.some((other) => other.inverter?.serialNumber === inverter.serialNumber)
+  ) {
+    return 'devices.problem.serialTaken';
+  }
   if (shelly !== undefined) {
     const sameChannel = others.filter(
       (other) => other.shelly !== undefined && other.shelly.channel === shelly.channel,
@@ -237,6 +312,12 @@ export function sameDevice(before: SmartDevice, details: DeviceDetails): boolean
       device.eaton?.gateway,
       device.eaton?.point,
       device.bthome?.address,
+      device.inverter?.brand,
+      device.inverter?.serialNumber,
+      device.inverter?.address,
+      device.inverter?.registrationNumber,
+      device.inverter?.loggerSerial,
+      device.inverter?.batterySerialNumber,
       device.lightKind,
       device.placement,
       device.positioning,

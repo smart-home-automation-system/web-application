@@ -1,5 +1,6 @@
 import { Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 
+import { ApiError } from '../../core/api/api-error';
 import { QueryResource } from '../../core/api/query-resource';
 import { APP_CONFIG } from '../../core/config/app-config';
 import {
@@ -92,6 +93,57 @@ export function shownHistory<T>(
     axis: computed(() => {
       const answered = shown();
       return answered === undefined ? undefined : axisOf(answered.query);
+    }),
+  };
+}
+
+/** The calls of the lines of one chart, as `combinedHistory` reads them. */
+export interface LineHistory {
+  readonly resource: QueryResource<HistoryRange, unknown>;
+  readonly shown: ShownHistory<unknown>;
+}
+
+/** What a chart of several lines tells of its calls together. */
+export interface CombinedHistory {
+  /** The answer of some line for the period on screen has not arrived, one way or the other. */
+  readonly waiting: Signal<boolean>;
+  /** The failure of the first of its calls that failed. */
+  readonly error: Signal<ApiError | undefined>;
+  /** The oldest of the answers: the chart is as fresh as its stalest line. */
+  readonly lastUpdated: Signal<number | undefined>;
+  readonly stale: Signal<boolean>;
+  /**
+   * When the hour turns one line may already have the new range while another still shows the old
+   * one: the axis spans both, so neither is cut at an end.
+   */
+  readonly axis: Signal<{ readonly from: number; readonly to: number } | undefined>;
+}
+
+/** The calls of the lines of one chart told as one - the weather and the energy charts. */
+export function combinedHistory(histories: readonly LineHistory[]): CombinedHistory {
+  return {
+    waiting: computed(() => histories.some(({ shown }) => shown.waiting())),
+    error: computed(() =>
+      histories.map(({ resource }) => resource.error()).find((error) => error !== undefined),
+    ),
+    // the oldest of the answers there are; a line that never answered is told by its failure
+    lastUpdated: computed(() => {
+      const times = histories
+        .map(({ resource }) => resource.lastUpdated())
+        .filter((time): time is number => time !== undefined);
+      return times.length === 0 ? undefined : Math.min(...times);
+    }),
+    stale: computed(() => histories.some(({ resource }) => resource.stale())),
+    axis: computed(() => {
+      const axes = histories
+        .map(({ shown }) => shown.axis())
+        .filter((axis): axis is { from: number; to: number } => axis !== undefined);
+      return axes.length === 0
+        ? undefined
+        : {
+            from: Math.min(...axes.map((axis) => axis.from)),
+            to: Math.max(...axes.map((axis) => axis.to)),
+          };
     }),
   };
 }

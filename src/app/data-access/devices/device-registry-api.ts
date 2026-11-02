@@ -31,6 +31,24 @@ export interface BthomeBinding {
 }
 
 /**
+ * A photovoltaic inverter (`InverterBinding` of `smart-home-sdk` 1.15.0, HAS-326): read by
+ * `energy-service` through its dongle, its logger or a cloud, and known by its serial number.
+ * `registrationNumber` is the SolaX dongle's (the password of its local API), `loggerSerial` the
+ * Solarman logger's of a SOFAR - each only of its brand.
+ */
+export interface InverterBinding {
+  /** `solax` or `sofar`. */
+  readonly brand?: string;
+  /** Capitals and digits, 5 to 40. */
+  readonly serialNumber?: string;
+  /** The IPv4 address of its dongle on the home network; not asked for. */
+  readonly address?: string;
+  readonly registrationNumber?: string;
+  readonly loggerSerial?: number;
+  readonly batterySerialNumber?: string;
+}
+
+/**
  * A device as the registry holds it (`GET /home/device/registry`, `SmartDevice` of
  * `smart-home-sdk` 1.8.0 - `openingSensors` since 1.11.0 - served by `database-service` and
  * routed by the gateway from 0.5.0).
@@ -69,6 +87,8 @@ export interface SmartDevice {
   readonly shelly?: ShellyBinding;
   readonly eaton?: EatonBinding;
   readonly bthome?: BthomeBinding;
+  /** An inverter only (HAS-326) - its binding. */
+  readonly inverter?: InverterBinding;
   /** A light only: `relay`, `dimmer` or `rgbw`. */
   readonly lightKind?: string;
   /** Blinds only: `external` or `internal`. */
@@ -103,6 +123,7 @@ export interface DeviceDetails {
   readonly shelly?: ShellyBinding;
   readonly eaton?: EatonBinding;
   readonly bthome?: BthomeBinding;
+  readonly inverter?: InverterBinding;
   readonly lightKind?: string;
   readonly placement?: string;
   readonly positioning?: boolean;
@@ -149,6 +170,7 @@ const KNOWN_FIELDS: readonly string[] = [
   'shelly',
   'eaton',
   'bthome',
+  'inverter',
   'lightKind',
   'placement',
   'positioning',
@@ -240,6 +262,14 @@ const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ] satisfies readonly (keyof ShellyBinding)[],
   eaton: ['gateway', 'point'] satisfies readonly (keyof EatonBinding)[],
   bthome: ['address'] satisfies readonly (keyof BthomeBinding)[],
+  inverter: [
+    'brand',
+    'serialNumber',
+    'address',
+    'registrationNumber',
+    'loggerSerial',
+    'batterySerialNumber',
+  ] satisfies readonly (keyof InverterBinding)[],
 };
 
 /**

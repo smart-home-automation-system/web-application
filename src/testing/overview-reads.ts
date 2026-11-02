@@ -30,6 +30,10 @@ export const OVERVIEW_READS: readonly string[] = [
   '/home/light/empty-house',
   // HAS-282: the appliance tile - the resource of the notice of the shell
   '/home/appliance',
+  // HAS-341: the energy tile, three calls
+  '/home/energy/flows',
+  '/home/energy/battery',
+  '/home/energy/status',
 ];
 
 export function isShellRead(request: HttpRequest<unknown>): boolean {

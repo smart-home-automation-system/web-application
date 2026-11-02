@@ -19,12 +19,14 @@ export interface NavItem {
  * shown; from the sixth on the bar shows the first four and a "More" button that lists the rest
  * (`splitForBottomBar`). So what is looked at most goes first, and what is opened once in a
  * while - the settings, the build - last. The owner's order (2026-10-17, HAS-232): the overview,
- * my room, the weather and the rooms of the house first, the rest as it was.
+ * my room, the weather and the rooms of the house first, the rest as it was; the energy after the
+ * weather since HAS-341 (the task's order), which moves the rooms behind "More" on a phone.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/overview', label: 'nav.overview', icon: 'dashboard', access: 'admin' },
   { path: '/room', label: 'nav.myRoom', icon: 'bed', access: 'member' },
   { path: '/weather', label: 'nav.weather', icon: 'partly_cloudy_day', access: 'admin' },
+  { path: '/energy', label: 'nav.energy', icon: 'solar_power', access: 'admin' },
   { path: '/rooms', label: 'nav.rooms', icon: 'meeting_room', access: 'admin' },
   { path: '/blinds', label: 'nav.blinds', icon: 'blinds', access: 'admin' },
   { path: '/lights', label: 'nav.lights', icon: 'lightbulb', access: 'admin' },

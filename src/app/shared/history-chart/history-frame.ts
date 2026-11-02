@@ -13,8 +13,9 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { ApiError } from '../../core/api/api-error';
 import { HISTORY_PRESETS, HistoryPreset } from '../../core/time/history-range';
-import { MessageKey } from '../../i18n/messages';
+import { DisplayText, MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../api-error/api-error-strip';
+import { describeApiError } from '../api-error/describe-api-error';
 import { DataFreshness } from '../data-freshness/data-freshness';
 
 const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
@@ -75,7 +76,7 @@ const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
         } @else if (!error()) {
           <p class="frame__note" data-testid="history-empty">{{ t('history.empty') }}</p>
         }
-        <app-api-error-strip [error]="error()" />
+        <app-api-error-strip [error]="error()" [describeWith]="describeWith()" />
       }
     </ng-container>
   `,
@@ -91,6 +92,8 @@ export class HistoryFrame {
   readonly error = input.required<ApiError | undefined>();
   readonly lastUpdated = input.required<number | undefined>();
   readonly stale = input.required<boolean>();
+  /** How a failure of the call is worded - a service whose refusals have codes of its own words them. */
+  readonly describeWith = input<(error: ApiError) => DisplayText>(describeApiError);
 
   /** What is shown once there is something to draw; made then, and removed when there is not. */
   protected readonly content = contentChild.required(TemplateRef);
