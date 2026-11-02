@@ -257,8 +257,16 @@ e2e/              # Playwright tests
   lists every control there is, the blind controls and their pause switch by name, and a new one
   fails that test on purpose. The cards: heating (with the windows of the room and the hold of its
   heating, as on the heating page), **lights** (`RoomLights`, HAS-268 - below), **blinds**
-  (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, the motion and
-  presence sensors of `GET /device/registry?room=`, their state "not known yet"). **A card of a
+  (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, HAS-369: the motion and
+  presence sensors of `GET /device/registry?room=` and what they sense from
+  `GET /light/rooms/{room}/occupancy` of `light-service` every 10 s - answered for every room of the
+  house, one without lights too). The registry says which sensors the room has, the occupancy the
+  room (occupied / empty / not known, since, motion now or the last one, lux or the word of the light)
+  and per sensor, joined by id, when it was last heard and `reachable: false`; a sensor the answer
+  does not name is "not reported by the lights service", never silent, and every sensor is "not
+  known yet" until the first answer. Two calls on one card, each with its freshness and its failure
+  (an error strip only while there is one - an empty strip took a gap of the grid). The service
+  reports motion per room, not per sensor, so "motion now" is on the room line. **A card of a
   room without such devices is not drawn** - neither while the first answer is on its way; a
   failure before any answer is drawn, since nobody knows then whether the room has any. The
   sensors card is **the one read of the device registry outside the administration**: the answer

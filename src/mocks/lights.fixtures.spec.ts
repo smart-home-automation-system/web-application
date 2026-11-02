@@ -4,6 +4,7 @@ import {
   removeRule,
   replaceRule,
   resetLights,
+  roomOccupancy,
   setColor,
   turnLight,
   turnRoom,
@@ -56,6 +57,24 @@ describe('mock lights', () => {
   it('knows the occupancy of nobody just after a start', () => {
     expect(lightsByRoom(true).every((room) => room.occupancy?.occupied === undefined)).toBe(true);
     expect(lightsByRoom().find((room) => room.room === 'office')?.occupancy?.occupied).toBe(true);
+  });
+
+  // HAS-369: the occupancy of one room, for every room of the house
+  it('answers the occupancy of any room of the house, and refuses a name that is none', () => {
+    expect(roomOccupancy('office').body).toMatchObject({
+      room: 'office',
+      occupied: true,
+      motion: true,
+    });
+    expect(roomOccupancy('loft')).toEqual({ status: 200, body: { room: 'loft', sensors: [] } });
+    expect(roomOccupancy('office', true).body).toEqual({
+      room: 'office',
+      sensors: [
+        { id: 50, name: 'Office presence', kind: 'presence sensor' },
+        { id: 51, name: 'Office motion sensor', kind: 'motion sensor' },
+      ],
+    });
+    expect(roomOccupancy('cellar').status).toBe(400);
   });
 
   // HAS-267: the rules are written whole and refused as light-service refuses them

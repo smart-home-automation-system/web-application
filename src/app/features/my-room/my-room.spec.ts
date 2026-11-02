@@ -14,7 +14,7 @@ import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi, HeatingStatus, Room } from '../../data-access/heating/heating-api';
-import { LightApi, RoomLights, RoomRule } from '../../data-access/light/light-api';
+import { LightApi, Occupancy, RoomLights, RoomRule } from '../../data-access/light/light-api';
 import { MyRoom } from './my-room';
 
 /** Thursday 8 October 2026, 14:30:00 on the clocks of the house (Europe/Warsaw, summer time). */
@@ -88,6 +88,8 @@ describe('MyRoom', () => {
   /** The lights of the room and its rule (HAS-268) asked for, per room, in order. */
   let lightsAsked: { name: () => string; resource: FakeResource<RoomLights | null> }[];
   let rulesAsked: { name: () => string; resource: FakeResource<RoomRule | null> }[];
+  /** The occupancy of the room (HAS-369, the sensors card) asked for, per room, in order. */
+  let occupancyAsked: { name: () => string; resource: FakeResource<Occupancy | null> }[];
   /** The commands sent to the blinds, in words. */
   let sent: string[];
   let appliances: FakeResource<readonly Appliance[] | null>;
@@ -106,6 +108,7 @@ describe('MyRoom', () => {
     sensorsAsked = [];
     lightsAsked = [];
     rulesAsked = [];
+    occupancyAsked = [];
     sent = [];
     appliances = fakeResource();
     acknowledged = [];
@@ -181,6 +184,11 @@ describe('MyRoom', () => {
             watchRoomRule: (name: () => string) => {
               const resource = fakeResource<RoomRule | null>();
               rulesAsked.push({ name, resource });
+              return resource;
+            },
+            watchOccupancy: (name: () => string) => {
+              const resource = fakeResource<Occupancy | null>();
+              occupancyAsked.push({ name, resource });
               return resource;
             },
             turn: (id: number, on: boolean) => {
@@ -912,6 +920,113 @@ describe('MyRoom', () => {
   describe('the sensors of the room', () => {
     const sensors = async () => (await page()).querySelector('[data-testid="room-sensors"]');
     const lastSensors = () => sensorsAsked.at(-1)!;
+
+    const lastOccupancy = () => occupancyAsked.at(-1)!;
+    const BEDROOM_SENSORS: SmartDevice[] = [
+      { id: 1, name: 'Bedroom motion', room: 'bedroom', kind: 'motion sensor' },
+      { id: 2, name: 'Bedroom radar', room: 'bedroom', kind: 'presence sensor' },
+    ];
+
+    // HAS-369: what the sensors sense, from the occupancy of light-service
+    it('tells the room and each sensor as the lights service hears them', async () => {
+      await page();
+      expect(lastOccupancy().name()).toBe('bedroom');
+      answer(lastSensors().resource, BEDROOM_SENSORS);
+      answer(lastOccupancy().resource, {
+        room: 'bedroom',
+        occupied: true,
+        since: '2026-10-08T14:00:00',
+        lastMotionAt: '2026-10-08T14:29:00',
+        motion: true,
+        lux: 0,
+        sensors: [
+          {
+            id: 1,
+            name: 'Bedroom motion',
+            kind: 'motion sensor',
+            lastReportAt: '2026-10-08T14:27:00',
+            reachable: false,
+          },
+          {
+            id: 2,
+            name: 'Bedroom radar',
+            kind: 'presence sensor',
+            lastReportAt: '2026-10-08T14:29:30',
+            reachable: true,
+          },
+        ],
+      });
+
+      const card = await sensors();
+      const room = card?.querySelector('[data-testid="sensors-occupancy"]');
+      expect(room?.getAttribute('data-occupancy')).toBe('occupied');
+      // motion still going on wins over the age of the last one; 0 lx is a reading
+      expect(words(room)).toBe('person Occupied · since 30 min ago · motion now · 0 lx');
+      const rows = [...card!.querySelectorAll('[data-testid="sensor"]')].map(words);
+      expect(rows).toEqual([
+        'Bedroom motion heard 3 min ago · not reachable',
+        'Bedroom radar heard 30 sec ago',
+      ]);
+    });
+
+    it('says the last motion when none is going on, and the word of the light without lux', async () => {
+      await page();
+      answer(lastSensors().resource, BEDROOM_SENSORS);
+      answer(lastOccupancy().resource, {
+        room: 'bedroom',
+        occupied: false,
+        lastMotionAt: '2026-10-08T14:25:00',
+        motion: false,
+        illumination: 'dark',
+        sensors: [{ id: 2, kind: 'presence sensor' }],
+      });
+
+      const card = await sensors();
+      expect(words(card?.querySelector('[data-testid="sensors-occupancy"]'))).toBe(
+        'person_off Empty · motion 5 min ago · dark',
+      );
+      const rows = [...card!.querySelectorAll('[data-testid="sensor"]')].map(words);
+      // a sensor the service does not name is not reported - never silent; one named without a
+      // report is not heard since the start of the service
+      expect(rows).toEqual([
+        'Bedroom motion not reported by the lights service',
+        'Bedroom radar not heard since the start of the service',
+      ]);
+    });
+
+    it('keeps the sensors not known next to the failure of the occupancy, never empty', async () => {
+      await page();
+      answer(lastSensors().resource, BEDROOM_SENSORS);
+      fail(lastOccupancy().resource, new ApiError('server', 503));
+
+      const card = await sensors();
+      expect(words(card)).toContain('What the sensors sense could not be read.');
+      expect(words(card?.querySelector('[data-testid="sensors-occupancy"]'))).toBe(
+        'help Occupancy not known',
+      );
+      const rows = [...card!.querySelectorAll('[data-testid="sensor"]')].map(words);
+      expect(rows).toEqual([
+        'Bedroom motion state not known yet',
+        'Bedroom radar state not known yet',
+      ]);
+    });
+
+    it('takes no occupancy of another room', async () => {
+      await page();
+      answer(lastSensors().resource, BEDROOM_SENSORS);
+      answer(lastOccupancy().resource, { room: 'office', occupied: true, sensors: [] });
+
+      expect(words((await sensors())?.querySelector('[data-testid="sensors-occupancy"]'))).toBe(
+        'help Occupancy not known',
+      );
+    });
+
+    it('tells a failure of the registry before any answer', async () => {
+      await page();
+      fail(lastSensors().resource, new ApiError('server', 503));
+
+      expect(words(await sensors())).toContain('The sensors of the room could not be read.');
+    });
 
     it('lists the motion and presence sensors the registry places there, their state not known', async () => {
       await page();

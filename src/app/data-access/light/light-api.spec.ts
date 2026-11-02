@@ -94,6 +94,23 @@ describe('LightApi', () => {
     }
   });
 
+  // HAS-369: the sensors card of My room
+  it('reads the occupancy of one room by its name, encoded as a path segment', () => {
+    vi.useFakeTimers();
+    try {
+      TestBed.runInInjectionContext(() => {
+        lights.watchOccupancy(() => 'living room');
+      });
+      vi.advanceTimersByTime(0);
+
+      const occupancy = http.expectOne('/home/light/rooms/living%20room/occupancy');
+      expect(occupancy.request.method).toBe('GET');
+      occupancy.flush({ room: 'living room', sensors: [] });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('writes the switch of the resident as a body, and answers the rule as stored', async () => {
     const answer = firstValueFrom(lights.residentEnabled('living room', false));
 

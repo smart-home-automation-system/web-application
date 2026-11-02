@@ -258,7 +258,8 @@ export const en = {
     },
     // the refusals of heating-service, by their code
     error: {
-      invalidSchedule: 'The heating service refused the period for a reason this page could not check.',
+      invalidSchedule:
+        'The heating service refused the period for a reason this page could not check.',
       scheduleNotFound: 'The heating service no longer has this period.',
       heaterNotFound: 'The heating service does not drive this heater.',
       roomNotFound: 'The heating service does not know this room.',
@@ -1316,7 +1317,12 @@ export const en = {
     },
     sensors: {
       title: 'Sensors',
-      note: 'What the sensors sense is not kept by any service yet.',
+      note: 'As the lights service hears them - what they sense, not who of the household is at home.',
+      registry: 'List of sensors from the device registry:',
+      motionNow: 'motion now',
+      unreported: 'not reported by the lights service',
+      occupancyFailed: 'What the sensors sense could not be read.',
+      registryFailed: 'The sensors of the room could not be read.',
     },
     heating: {
       loading: 'Loading the room',

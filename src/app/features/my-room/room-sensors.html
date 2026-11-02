@@ -5,11 +5,53 @@
         <div mat-card-avatar class="domain-badge"><mat-icon>sensors</mat-icon></div>
         <mat-card-title>{{ t('myRoom.sensors.title') }}</mat-card-title>
         <mat-card-subtitle>
-          <app-data-freshness [lastUpdated]="answer.lastUpdated()" [stale]="answer.stale()" />
+          <app-data-freshness
+            [lastUpdated]="occupancyAnswer.lastUpdated()"
+            [stale]="occupancyAnswer.stale()"
+          />
         </mat-card-subtitle>
       </mat-card-header>
       <mat-card-content class="sensors__content">
-        <app-api-error-strip [error]="answer.error()" />
+        <!-- rendered only with a failure: an empty strip would still take a gap of the grid -->
+        @if (occupancyAnswer.error(); as failure) {
+          <app-api-error-strip [error]="failure" [summary]="t('myRoom.sensors.occupancyFailed')" />
+        }
+        @if (answer.error(); as failure) {
+          <app-api-error-strip [error]="failure" [summary]="t('myRoom.sensors.registryFailed')" />
+        }
+
+        @let here = occupancy();
+        <!-- what the sensors of the room say: a room nobody senses is "not known", never empty -->
+        <p
+          class="occupancy"
+          data-testid="sensors-occupancy"
+          [attr.data-occupancy]="occupancyState()"
+        >
+          <mat-icon class="occupancy__icon" aria-hidden="true">{{
+            occupancyState() === 'occupied'
+              ? 'person'
+              : occupancyState() === 'empty'
+                ? 'person_off'
+                : 'help'
+          }}</mat-icon>
+          <span
+            >{{ t(OCCUPANCY_LABELS[occupancyState()]) }}
+            @if (here?.since | houseAge; as since) {
+              · {{ t('lights.occupancy.since') }} {{ since }}
+            }
+            @if (here?.motion === true) {
+              · <span data-testid="motion-now">{{ t('myRoom.sensors.motionNow') }}</span>
+            } @else if (here?.lastMotionAt | houseAge; as age) {
+              · {{ t('lights.occupancy.motion') }} {{ age }}
+            }
+            @if (isLux(here?.lux)) {
+              · {{ t('lights.occupancy.lux', { lux: here!.lux }) }}
+            } @else if (here?.illumination; as illumination) {
+              · {{ illuminationText(illumination) | displayText }}
+            }
+          </span>
+        </p>
+
         @for (group of groups() ?? []; track group.kind) {
           <section class="sensors__group" [attr.data-kind]="group.kind">
             <h3 class="sensors__title">
@@ -17,17 +59,44 @@
               >&ngsp;{{ t(group.title) }}
             </h3>
             <ul class="sensors__list">
-              @for (sensor of group.sensors; track sensor.id ?? $index) {
-                <li class="sensors__row">
-                  <span>{{ sensor.name ?? t('rooms.unnamed') }}</span
-                  >&ngsp;
-                  <span class="sensors__state">{{ t('rooms.stateUnknown') }}</span>
+              @for (row of group.sensors; track row.device.id ?? $index) {
+                <li class="sensors__row" data-testid="sensor">
+                  <span>{{ row.device.name ?? t('rooms.unnamed') }}</span>
+                  <span class="sensors__state">
+                    @switch (row.report.kind) {
+                      @case ('reported') {
+                        @if (row.report.lastReportAt | houseAge; as heard) {
+                          {{ t('lights.window.heard') }} {{ heard }}
+                        } @else {
+                          {{ t('lights.window.notHeard') }}
+                        }
+                        @if (row.report.reachable === false) {
+                          ·
+                          <span class="sensors__warning" data-testid="sensor-unreachable">{{
+                            t('lights.window.sensorUnreachable')
+                          }}</span>
+                        }
+                      }
+                      @case ('unreported') {
+                        {{ t('myRoom.sensors.unreported') }}
+                      }
+                      @default {
+                        {{ t('rooms.stateUnknown') }}
+                      }
+                    }
+                  </span>
                 </li>
               }
             </ul>
           </section>
         }
-        <p class="sensors__note">{{ t('myRoom.sensors.note') }}</p>
+        <p class="sensors__note">
+          {{ t('myRoom.sensors.note') }}
+          <span class="sensors__registry"
+            >{{ t('myRoom.sensors.registry') }}
+            <app-data-freshness [lastUpdated]="answer.lastUpdated()" [stale]="answer.stale()"
+          /></span>
+        </p>
       </mat-card-content>
     </mat-card>
   }

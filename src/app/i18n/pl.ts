@@ -1299,7 +1299,12 @@ export const pl: Messages = {
     },
     sensors: {
       title: 'Czujniki',
-      note: 'Tego, co wyczuwają czujniki, nie przechowuje jeszcze żadna usługa.',
+      note: 'Tak, jak słyszy je usługa oświetlenia - co wyczuwają, nie kto z domowników jest w domu.',
+      registry: 'Lista czujników z rejestru urządzeń:',
+      motionNow: 'ruch teraz',
+      unreported: 'usługa oświetlenia go nie zgłasza',
+      occupancyFailed: 'Nie udało się odczytać, co wyczuwają czujniki.',
+      registryFailed: 'Nie udało się odczytać czujników pokoju.',
     },
     heating: {
       loading: 'Wczytywanie pokoju',

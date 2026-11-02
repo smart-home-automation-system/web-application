@@ -64,6 +64,13 @@ export interface Occupancy {
   /** House wall-clock time the service saw `occupied` change. */
   readonly since?: string;
   readonly lastMotionAt?: string;
+  /**
+   * `true` while a motion sensor of the room still reports motion (`light-service` 0.11.0, HAS-349),
+   * `false` once it cleared; left out where no motion sensor was heard of.
+   */
+  readonly motion?: boolean;
+  /** House wall-clock time the last motion cleared. */
+  readonly motionClearedAt?: string;
   /** The word of a Presence: `dark`, `twilight`, `bright`. */
   readonly illumination?: string;
   /** The newest number of a motion sensor. */
@@ -223,6 +230,19 @@ export class LightApi {
   watchRoom(room: () => string): PollingResource<RoomLights | null> {
     return pollingResource(
       () => this.api.get<RoomLights | null>(`/light/rooms/${encodeURIComponent(room())}`),
+      { intervalMs: POLL_EVERY_MS },
+    );
+  }
+
+  /**
+   * Whether one room is occupied, and what each of its presence and motion sensors last reported
+   * (HAS-369, the sensors card of "My room"): answered for every room of the house - one without
+   * lights or sensors too (`sensors: []`), so the card does not depend on the lights of the room. The
+   * name is read when a call is made. Call in an injection context.
+   */
+  watchOccupancy(room: () => string): PollingResource<Occupancy | null> {
+    return pollingResource(
+      () => this.api.get<Occupancy | null>(`/light/rooms/${encodeURIComponent(room())}/occupancy`),
       { intervalMs: POLL_EVERY_MS },
     );
   }

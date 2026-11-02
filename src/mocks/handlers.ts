@@ -40,6 +40,7 @@ import {
   removeRule,
   replaceRule,
   roomLights,
+  roomOccupancy,
   roomRule,
   setBrightness,
   setColor,
@@ -424,6 +425,12 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: /^\/home\/light\/rooms\/([^/]+)$/,
     reply: (_request, fresh, [room]) => roomLights(decodeURIComponent(room), fresh),
+  },
+  // HAS-369: the sensors card of My room - what the sensors of one room sense
+  {
+    method: 'GET',
+    path: /^\/home\/light\/rooms\/([^/]+)\/occupancy$/,
+    reply: (_request, fresh, [room]) => roomOccupancy(decodeURIComponent(room), fresh),
   },
   {
     method: 'GET',

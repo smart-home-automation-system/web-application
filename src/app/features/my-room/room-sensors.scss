@@ -1,4 +1,4 @@
-// the sensors of the room by kind, a line each with its state - not known until a service keeps it
+// the room as its sensors sense it, then the sensors by kind, a line each with when it was last heard
 :host {
   display: contents;
 }
@@ -52,4 +52,32 @@ mat-card-content {
 
 .sensors {
   --app-domain: var(--app-domain-devices);
+}
+
+.occupancy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  &[data-occupancy='occupied'] {
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.mat-icon.occupancy__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.sensors__warning {
+  color: var(--mat-sys-on-error-container);
+}
+
+.sensors__registry {
+  display: block;
 }
