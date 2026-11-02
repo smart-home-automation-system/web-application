@@ -259,6 +259,9 @@ function occupancyOf(room: string, now: Date): Occupancy {
         occupied: true,
         since: houseTime(now, 40 * 60 + 5),
         lastMotionAt: houseTime(now, 65),
+        // HAS-369: a motion still going on (HAS-349)
+        motion: true,
+        motionClearedAt: houseTime(now, 75),
         illumination: 'twilight',
         lux: 39,
         sensors: [
@@ -289,7 +292,8 @@ function occupancyOf(room: string, now: Date): Occupancy {
             name: 'Living room motion sensor',
             kind: 'motion sensor',
             lastReportAt: houseTime(now, 4 * 60 + 5),
-            reachable: true,
+            // HAS-369: a battery sensor the service no longer reaches - its last report stays
+            reachable: false,
           },
         ],
       };
@@ -581,6 +585,26 @@ export function turnRoom(room: string, turn: string | null, source: string | nul
 export function roomLights(room: string, fresh = false, now: Date = new Date()): MockReply {
   const found = lightsByRoom(fresh, now).find((one) => one.room === room);
   return { status: 200, body: found ?? { room, lights: [], occupancy: { room, sensors: [] } } };
+}
+
+/**
+ * `GET /home/light/rooms/{room}/occupancy` (HAS-369): answered for every room, one without lights
+ * too - a room the mock service senses nothing in is `sensors: []` (the loft: its presence sensor of
+ * the registry is not reported); a name that is no room of the house is the service's 400.
+ */
+export function roomOccupancy(room: string, fresh = false, now: Date = new Date()): MockReply {
+  if (!ROOM_NAMES.includes(room)) {
+    return refused(400, 'room is not a room of the house');
+  }
+  const occupancy = occupancyOf(room, now);
+  // just after a start the service still names the sensors of the room, none of them heard yet
+  const body: Occupancy = fresh
+    ? {
+        room,
+        sensors: (occupancy.sensors ?? []).map(({ id, name, kind }) => ({ id, name, kind })),
+      }
+    : occupancy;
+  return { status: 200, body };
 }
 
 /** `GET /home/light/rooms/{room}/rules`: the rule as stored, or the 404 of a room without one. */

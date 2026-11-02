@@ -157,10 +157,11 @@ test.describe('a resident with two rooms', () => {
     await page.goto('/room');
 
     // the switch of the house, the four cards of the room and the appliances: each tells its call -
-    // the lights card two, its lights and its rule (HAS-268); the blinds, the lights, the sensors and
-    // the appliances are shown for the failure - nobody knows then if there are any; so is the card of the
-    // chores of the member (HAS-346)
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(8);
+    // the lights card two, its lights and its rule (HAS-268), the sensors card two, the registry and
+    // the occupancy (HAS-369); the blinds, the lights, the sensors and the appliances are shown for the
+    // failure - nobody knows then if there are any; so is the card of the chores of the member (HAS-346)
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(9);
+    await expect(page.getByTestId('room-sensors').getByRole('alert')).toHaveCount(2);
     await expect(page.getByTestId('my-chores').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('appliances').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('room-lights').getByRole('alert')).toHaveCount(2);
@@ -359,17 +360,38 @@ test.describe('the blinds and the sensors of the room', () => {
     });
   });
 
+  // HAS-369: what the sensors sense, from the occupancy of light-service
+  test('tells the office occupied, the motion going on and when each sensor was heard', async ({
+    page,
+  }) => {
+    await page.goto('/room');
+    const sensors = page.getByTestId('room-sensors');
+    await expect(sensors.getByTestId('sensors-occupancy')).toContainText('Occupied');
+    await expect(sensors.getByTestId('motion-now')).toHaveText('motion now');
+    await expect(sensors.getByTestId('sensors-occupancy')).toContainText('39 lx');
+    await expect(sensors.getByTestId('sensor')).toHaveCount(2);
+    for (const row of await sensors.getByTestId('sensor').all()) {
+      await expect(row).toContainText('heard');
+    }
+  });
+
   test.describe('for a resident with a sensor and no blinds', () => {
     test.use({ profile: 'resident' });
 
-    test('lists the sensor with its state not known, and shows no blinds', async ({ page }) => {
+    test('lists the sensor the lights service does not report, and shows no blinds', async ({
+      page,
+    }) => {
       await page.goto('/room');
       await expect(page.getByTestId('room-temperature')).toBeVisible();
 
       const sensors = page.getByTestId('room-sensors');
       await expect(sensors).toContainText('Presence');
       await expect(sensors.locator('.sensors__row')).toHaveCount(1);
-      await expect(sensors.locator('.sensors__state')).toHaveText('state not known yet');
+      // HAS-369: the room has no lights, its occupancy is read all the same - and says nothing
+      await expect(sensors.locator('.sensors__state')).toHaveText(
+        'not reported by the lights service',
+      );
+      await expect(sensors.getByTestId('sensors-occupancy')).toHaveText('help Occupancy not known');
       await expect(page.getByTestId('room-blinds')).toHaveCount(0);
       await expect(page.getByTestId('room-lights')).toHaveCount(0);
       await expect(sensors.locator('button, [tabindex]')).toHaveCount(0);

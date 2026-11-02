@@ -420,6 +420,17 @@ for (const language of ['en', 'pl'] as const) {
             path: shot(testInfo.project.name, scheme, language, 'my-room-heaters'),
           });
         });
+
+        // HAS-369: the sensors card of the office - occupied, motion going on, each sensor heard
+        test('my room, the sensors', async ({ page }, testInfo) => {
+          await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+          await page.goto('/room');
+          const sensors = page.getByTestId('room-sensors');
+          await expect(sensors.getByTestId('motion-now')).toBeVisible();
+          await sensors.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'my-room-sensors'),
+          });
+        });
       });
 
       // the administration of the household: the registry as it is, a member being changed
