@@ -28,6 +28,7 @@ import {
 import {
   OFFERED_KINDS,
   EATON_GATEWAYS,
+  INVERTER_BRANDS,
   LIGHT_KINDS,
   PLACEMENTS,
   ROOM_NAMES,
@@ -50,17 +51,23 @@ import {
   FIRST_GENERATION_ON_MQTT,
   GENERATIONS,
   addressProblem,
+  batterySerialProblem,
   bindingOf,
   bindingTaken,
   bindingsOf,
   bluetoothAddressProblem,
   chosenProblem,
   deviceIdProblem,
+  loggerSerialOf,
+  loggerSerialProblem,
   nameProblem,
   normaliseName,
   openingSensorsOf,
+  optionalAddressProblem,
   pointOf,
   pointProblem,
+  registrationProblem,
+  serialProblem,
   vendorsOf,
 } from './device-rules';
 
@@ -120,6 +127,7 @@ export class SmartDeviceForm implements OnInit {
   protected readonly generations = GENERATIONS;
   protected readonly isZone = isZone;
   protected readonly gateways = EATON_GATEWAYS;
+  protected readonly brands = INVERTER_BRANDS;
   protected readonly lightKinds = LIGHT_KINDS;
   protected readonly lightKindLabels = LIGHT_KIND_LABELS;
   protected readonly placements = PLACEMENTS;
@@ -164,6 +172,30 @@ export class SmartDeviceForm implements OnInit {
     nonNullable: true,
     validators: validator(bluetoothAddressProblem),
   });
+  // an inverter (HAS-341): its serial, the address of its dongle, the registration number of a
+  // SolaX dongle, the logger of a SOFAR and the serial of its battery - all but the serial optional
+  protected readonly serial = new FormControl('', {
+    nonNullable: true,
+    validators: validator(serialProblem),
+  });
+  protected readonly inverterAddress = new FormControl('', {
+    nonNullable: true,
+    validators: validator(optionalAddressProblem),
+  });
+  protected readonly registration = new FormControl('', {
+    nonNullable: true,
+    validators: validator(registrationProblem),
+  });
+  protected readonly loggerSerial = new FormControl('', {
+    nonNullable: true,
+    validators: validator(loggerSerialProblem),
+  });
+  protected readonly batterySerial = new FormControl('', {
+    nonNullable: true,
+    validators: validator(batterySerialProblem),
+  });
+  /** The brand decides which of the two numbers of its link the form asks for. */
+  protected readonly brand = signal<string>(INVERTER_BRANDS[0]);
 
   protected readonly binding = signal<Binding>('shelly');
   protected readonly vendor = signal('shelly');
@@ -271,7 +303,7 @@ export class SmartDeviceForm implements OnInit {
       }
     });
     // what was found taken was found for the binding as it was then
-    for (const control of [this.address, this.deviceId, this.point, this.bluetooth]) {
+    for (const control of [this.address, this.deviceId, this.point, this.bluetooth, this.serial]) {
       control.valueChanges.subscribe(() => this.taken.set(undefined));
     }
   }
@@ -297,6 +329,13 @@ export class SmartDeviceForm implements OnInit {
     this.gateway.set(device.eaton?.gateway ?? EATON_GATEWAYS[0]);
     this.point.setValue(device.eaton?.point === undefined ? '' : String(device.eaton.point));
     this.bluetooth.setValue(device.bthome?.address ?? '');
+    this.brand.set(device.inverter?.brand ?? INVERTER_BRANDS[0]);
+    this.serial.setValue(device.inverter?.serialNumber ?? '');
+    this.inverterAddress.setValue(device.inverter?.address ?? '');
+    this.registration.setValue(device.inverter?.registrationNumber ?? '');
+    const logger = device.inverter?.loggerSerial;
+    this.loggerSerial.setValue(logger === undefined ? '' : String(logger));
+    this.batterySerial.setValue(device.inverter?.batterySerialNumber ?? '');
     this.lightKind.set(device.lightKind);
     this.placement.set(device.placement);
     this.positioning.set(device.positioning);
@@ -324,6 +363,10 @@ export class SmartDeviceForm implements OnInit {
   protected setGateway(gateway: string): void {
     this.gateway.set(gateway);
     this.taken.set(undefined);
+  }
+
+  protected setBrand(brand: string): void {
+    this.brand.set(brand);
   }
 
   protected setPositioning(value: string): void {
@@ -361,7 +404,32 @@ export class SmartDeviceForm implements OnInit {
         return [this.point];
       case 'bthome':
         return [this.bluetooth];
+      case 'inverter':
+        // the number of the other brand is not sent, so it is not checked either
+        return [
+          this.serial,
+          this.inverterAddress,
+          this.brand() === 'solax' ? this.registration : this.loggerSerial,
+          this.batterySerial,
+        ];
     }
+  }
+
+  /** The binding of an inverter as it is sent: what is empty left out, each number of its brand only. */
+  private inverterBinding(): NonNullable<DeviceDetails['inverter']> {
+    const brand = this.brand();
+    const address = this.inverterAddress.value.trim();
+    const registrationNumber = this.registration.value.trim();
+    const loggerSerial = loggerSerialOf(this.loggerSerial.value);
+    const batterySerialNumber = this.batterySerial.value.trim();
+    return {
+      brand,
+      serialNumber: this.serial.value.trim(),
+      ...(address === '' ? {} : { address }),
+      ...(brand === 'solax' && registrationNumber !== '' ? { registrationNumber } : {}),
+      ...(brand === 'sofar' && loggerSerial !== undefined ? { loggerSerial } : {}),
+      ...(batterySerialNumber === '' ? {} : { batterySerialNumber }),
+    };
   }
 
   /** The device as it is sent: one binding, and only the fields of its kind. */
@@ -394,6 +462,7 @@ export class SmartDeviceForm implements OnInit {
         ? { eaton: { gateway: this.gateway(), point: pointOf(this.point.value) } }
         : {}),
       ...(binding === 'bthome' ? { bthome: { address: normaliseMac(this.bluetooth.value) } } : {}),
+      ...(binding === 'inverter' ? { inverter: this.inverterBinding() } : {}),
       ...(kind === 'light' && lightKind !== undefined ? { lightKind } : {}),
       ...(kind === 'blinds' && placement !== undefined ? { placement } : {}),
       ...(kind === 'blinds' && positioning !== undefined ? { positioning } : {}),

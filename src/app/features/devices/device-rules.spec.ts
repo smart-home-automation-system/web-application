@@ -2,6 +2,7 @@ import { SmartDevice } from '../../data-access/devices/device-registry-api';
 import { DEVICE_KINDS } from '../../data-access/household/registry-values';
 import {
   addressProblem,
+  batterySerialProblem,
   bindingOf,
   bindingsOf,
   bindingTaken,
@@ -11,11 +12,16 @@ import {
   chosenProblem,
   deviceIdProblem,
   isZone,
+  loggerSerialOf,
+  loggerSerialProblem,
   nameProblem,
   openingSensorsOf,
+  optionalAddressProblem,
   pointOf,
   pointProblem,
+  registrationProblem,
   sameDevice,
+  serialProblem,
   vendorsOf,
 } from './device-rules';
 
@@ -41,7 +47,13 @@ const GATEWAY: SmartDevice = {
 };
 const EATON: SmartDevice = { id: 4, vendor: 'eaton', eaton: { gateway: 'blinds', point: 48 } };
 const SENSOR: SmartDevice = { id: 9, vendor: 'shelly', bthome: { address: '7c:c6:b6:00:00:01' } };
-const REGISTRY = [SHELLY, GATEWAY, EATON, SENSOR];
+const INVERTER: SmartDevice = {
+  id: 64,
+  kind: 'inverter',
+  vendor: 'other',
+  inverter: { brand: 'solax', serialNumber: 'MOCKX0000000001', registrationNumber: 'SMOCK00001' },
+};
+const REGISTRY = [SHELLY, GATEWAY, EATON, SENSOR, INVERTER];
 
 describe('the rules of a device', () => {
   // the table of DeviceRules in database-service: what moves and lights is wired, a sensor is
@@ -58,6 +70,8 @@ describe('the rules of a device', () => {
     ['push button', ['shelly', 'eaton']],
     // HAS-282: an appliance is the plug it runs on
     ['appliance', ['shelly']],
+    // HAS-326: an inverter is reached by its binding alone
+    ['inverter', ['inverter']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });
@@ -68,8 +82,9 @@ describe('the rules of a device', () => {
     }
   });
 
-  // the registry decides about a kind this version has never heard of
-  it('offer every binding for a kind they do not know', () => {
+  // the registry decides about a kind this version has never heard of - but the inverter binding is
+  // the part of the inverter alone
+  it('offer every binding but the inverter one for a kind they do not know', () => {
     expect(bindingsOf('wind sensor')).toEqual(['shelly', 'eaton', 'bthome']);
   });
 
@@ -78,6 +93,8 @@ describe('the rules of a device', () => {
     expect(vendorsOf('eaton')).toEqual(['eaton']);
     // a Bluetooth sensor is of any vendor but Eaton
     expect(vendorsOf('bthome')).toEqual(['shelly', 'other']);
+    // an inverter is of none of the vendors the registry names
+    expect(vendorsOf('inverter')).toEqual(['other']);
   });
 
   // HAS-260: the registry takes a zone (200 to 299) as the channel of a presence sensor alone
@@ -103,6 +120,7 @@ describe('the rules of a device', () => {
   });
 
   it('read the one binding a device has', () => {
+    expect(bindingOf(INVERTER)).toBe('inverter');
     expect(bindingOf(SHELLY)).toBe('shelly');
     expect(bindingOf(EATON)).toBe('eaton');
     expect(bindingOf(SENSOR)).toBe('bthome');
@@ -307,6 +325,86 @@ describe('the rules of a device', () => {
       expect(sameDevice(linked, { ...details, openingSensors: [9, 14] })).toBe(true);
       expect(sameDevice(linked, { ...details, openingSensors: [14, 9] })).toBe(false);
       expect(sameDevice(linked, details)).toBe(false);
+    });
+  });
+
+  // HAS-341: the bounds of InverterBinding of smart-home-sdk 1.15.0
+  describe('about an inverter', () => {
+    it.each([
+      ['MOCKX', undefined],
+      [' MOCKX0000000001 ', undefined],
+      ['A'.repeat(40), undefined],
+      ['MOCK', 'devices.problem.serial'],
+      ['A'.repeat(41), 'devices.problem.serial'],
+      ['mockx00001', 'devices.problem.serial'],
+      ['MOCK-00001', 'devices.problem.serial'],
+      ['', 'devices.problem.serial'],
+    ])('judges the serial "%s"', (serial, problem) => {
+      expect(serialProblem(serial)).toBe(problem);
+    });
+
+    it('asks for nothing but the serial', () => {
+      expect(batterySerialProblem('')).toBeUndefined();
+      expect(batterySerialProblem('MOCK')).toBe('devices.problem.serial');
+      expect(optionalAddressProblem('')).toBeUndefined();
+      expect(optionalAddressProblem('192.0.2.64')).toBeUndefined();
+      expect(optionalAddressProblem('dongle.local')).toBe('devices.problem.address');
+      expect(registrationProblem('')).toBeUndefined();
+      expect(loggerSerialProblem('')).toBeUndefined();
+    });
+
+    it.each([
+      ['SMOCK', undefined],
+      ['A'.repeat(20), undefined],
+      ['SMOC', 'devices.problem.registration'],
+      ['A'.repeat(21), 'devices.problem.registration'],
+      ['smock00001', 'devices.problem.registration'],
+    ])('judges the registration number "%s"', (registration, problem) => {
+      expect(registrationProblem(registration)).toBe(problem);
+    });
+
+    it.each([
+      ['1', 1],
+      ['4294967295', 4_294_967_295],
+      [' 1234567890 ', 1_234_567_890],
+      ['0', undefined],
+      ['4294967296', undefined],
+      ['12.5', undefined],
+      ['-1', undefined],
+      ['12345678901', undefined],
+    ])('reads the logger serial "%s"', (text, serial) => {
+      expect(loggerSerialOf(text)).toBe(serial);
+      expect(loggerSerialProblem(text)).toBe(
+        serial === undefined ? 'devices.problem.loggerSerial' : undefined,
+      );
+    });
+
+    it('finds a serial number another inverter has', () => {
+      expect(
+        bindingTaken({ inverter: { brand: 'sofar', serialNumber: 'MOCKX0000000001' } }, REGISTRY),
+      ).toBe('devices.problem.serialTaken');
+      expect(
+        bindingTaken({ inverter: { brand: 'sofar', serialNumber: 'MOCKF0000000001' } }, REGISTRY),
+      ).toBeUndefined();
+    });
+
+    it('tells a change of its binding from none', () => {
+      const details = {
+        name: 'SOLAX inverter',
+        room: 'garage',
+        kind: 'inverter',
+        enabled: true,
+        vendor: 'other',
+        inverter: INVERTER.inverter,
+      };
+      const before = { ...INVERTER, ...details };
+      expect(sameDevice(before, details)).toBe(true);
+      expect(
+        sameDevice(before, {
+          ...details,
+          inverter: { ...details.inverter, batterySerialNumber: 'MOCKB0000000001' },
+        }),
+      ).toBe(false);
     });
   });
 

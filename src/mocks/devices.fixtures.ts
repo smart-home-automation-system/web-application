@@ -3,6 +3,7 @@ import { SmartDevice } from '../app/data-access/devices/device-registry-api';
 import {
   DEVICE_KINDS,
   EATON_GATEWAYS,
+  INVERTER_BRANDS,
   LIGHT_KINDS,
   PLACEMENTS,
   ROOM_NAMES,
@@ -325,6 +326,31 @@ const AT_THE_START: readonly StoredDevice[] = [
       quietTo: '07:00',
     },
   },
+  // the two inverters of energy-service (HAS-341): invented serials, an address of the documentation range
+  {
+    id: 64,
+    name: 'SOLAX inverter',
+    room: 'garage',
+    kind: 'inverter',
+    enabled: true,
+    vendor: 'other',
+    inverter: {
+      brand: 'solax',
+      serialNumber: 'MOCKX0000000001',
+      address: '192.0.2.64',
+      registrationNumber: 'SMOCK00001',
+      batterySerialNumber: 'MOCKB0000000001',
+    },
+  },
+  {
+    id: 65,
+    name: 'SOFAR inverter',
+    room: 'boiler',
+    kind: 'inverter',
+    enabled: true,
+    vendor: 'other',
+    inverter: { brand: 'sofar', serialNumber: 'MOCKF0000000001', loggerSerial: 1234567890 },
+  },
 ];
 
 // the ids from 40 on are the lights and sensors of the rules: a device added gets the next id after 14
@@ -431,7 +457,7 @@ function deviceOf(body: unknown): Draft | undefined {
   if (!isRecord(body)) {
     return undefined;
   }
-  const { name, room, kind, enabled, vendor, shelly, eaton, bthome } = body;
+  const { name, room, kind, enabled, vendor, shelly, eaton, bthome, inverter } = body;
   const { lightKind, placement, positioning, openingSensors } = body;
   if (typeof name !== 'string' || name.length < 3 || name.length > 50) {
     return undefined;
@@ -459,7 +485,12 @@ function deviceOf(body: unknown): Draft | undefined {
   ) {
     return undefined;
   }
-  const bindings = { shelly: shellyOf(shelly), eaton: eatonOf(eaton), bthome: bthomeOf(bthome) };
+  const bindings = {
+    shelly: shellyOf(shelly),
+    eaton: eatonOf(eaton),
+    bthome: bthomeOf(bthome),
+    inverter: inverterOf(inverter),
+  };
   if (Object.values(bindings).includes(null)) {
     return undefined;
   }
@@ -472,6 +503,7 @@ function deviceOf(body: unknown): Draft | undefined {
     ...(bindings.shelly ? { shelly: bindings.shelly } : {}),
     ...(bindings.eaton ? { eaton: bindings.eaton } : {}),
     ...(bindings.bthome ? { bthome: bindings.bthome } : {}),
+    ...(bindings.inverter ? { inverter: bindings.inverter } : {}),
     ...(lightKind === undefined ? {} : { lightKind }),
     ...(placement === undefined ? {} : { placement }),
     ...(positioning === undefined ? {} : { positioning }),
@@ -535,6 +567,44 @@ function bthomeOf(value: unknown): SmartDevice['bthome'] | null {
     : null;
 }
 
+const INVERTER_TEXT = /^[A-Z0-9]+$/;
+
+/** `InverterBinding`: a brand, a serial; the address, the two numbers of a link and the battery optional. */
+function inverterOf(value: unknown): SmartDevice['inverter'] | null {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value) || !oneOf(value['brand'], INVERTER_BRANDS)) {
+    return null;
+  }
+  const { brand, serialNumber, address, registrationNumber, loggerSerial, batterySerialNumber } = value;
+  const text = (one: unknown, least: number, most: number) =>
+    typeof one === 'string' && INVERTER_TEXT.test(one) && one.length >= least && one.length <= most;
+  if (!text(serialNumber, 5, 40)) {
+    return null;
+  }
+  if (address !== undefined && (typeof address !== 'string' || !IPV4.test(address))) {
+    return null;
+  }
+  if (registrationNumber !== undefined && !text(registrationNumber, 5, 20)) {
+    return null;
+  }
+  if (loggerSerial !== undefined && !whole(loggerSerial, 1, 4_294_967_295)) {
+    return null;
+  }
+  if (batterySerialNumber !== undefined && !text(batterySerialNumber, 5, 40)) {
+    return null;
+  }
+  return {
+    brand,
+    serialNumber: serialNumber as string,
+    ...(address === undefined ? {} : { address: address as string }),
+    ...(registrationNumber === undefined ? {} : { registrationNumber: registrationNumber as string }),
+    ...(loggerSerial === undefined ? {} : { loggerSerial }),
+    ...(batterySerialNumber === undefined ? {} : { batterySerialNumber: batterySerialNumber as string }),
+  };
+}
+
 function whole(value: unknown, least: number, most: number): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= least && value <= most;
 }
@@ -556,18 +626,19 @@ function refusalOf(device: Draft, self: StoredDevice | undefined): MockReply | u
 
 /** `DeviceRules` of `database-service`, in its words. */
 function brokenRuleOf(device: Draft): string | undefined {
-  const given = (['shelly', 'eaton', 'bthome'] as const).filter(
+  const given = (['shelly', 'eaton', 'bthome', 'inverter'] as const).filter(
     (binding) => device[binding] !== undefined,
   );
   if (given.length !== 1) {
-    return `A device is reached through exactly one binding - shelly, eaton or bthome - and this one has ${
+    return `A device is reached through exactly one binding - shelly, eaton, bthome or inverter - and this one has ${
       given.length === 0 ? 'none' : given.join(' and ')
     }`;
   }
   const [binding] = given;
   if (
     (device.vendor === 'eaton') !== (binding === 'eaton') ||
-    (binding === 'shelly' && device.vendor !== 'shelly')
+    (binding === 'shelly' && device.vendor !== 'shelly') ||
+    (binding === 'inverter' && device.vendor !== 'other')
   ) {
     return `A device of the vendor [${device.vendor}] is not reached through the binding [${binding}]`;
   }
@@ -597,6 +668,13 @@ function brokenRuleOf(device: Draft): string | undefined {
     device.kind !== 'blinds'
   ) {
     return `placement and positioning describe blinds, not a device of the kind [${device.kind}]`;
+  }
+  const inverter = device.inverter;
+  if (inverter !== undefined && inverter.brand !== 'solax' && inverter.registrationNumber !== undefined) {
+    return `registrationNumber is the one of a SolaX dongle, not of an inverter of the brand [${inverter.brand}]`;
+  }
+  if (inverter !== undefined && inverter.brand !== 'sofar' && inverter.loggerSerial !== undefined) {
+    return `loggerSerial is the one of the Solarman logger of a SOFAR, not of an inverter of the brand [${inverter.brand}]`;
   }
   const sensors = device.openingSensors ?? [];
   if (sensors.length > 0) {
@@ -628,7 +706,10 @@ function possibleBindingsOf(kind: string): readonly string[] {
     case 'weather station':
       return ['bthome'];
     case 'bthome gateway':
+    case 'appliance':
       return ['shelly'];
+    case 'inverter':
+      return ['inverter'];
     default:
       return ['shelly', 'eaton', 'bthome'];
   }
@@ -636,7 +717,13 @@ function possibleBindingsOf(kind: string): readonly string[] {
 
 /** The unique indexes of the registry, in the words of its answer. */
 function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string | undefined {
-  const { shelly, eaton, bthome } = device;
+  const { shelly, eaton, bthome, inverter } = device;
+  if (
+    inverter !== undefined &&
+    others.some((one) => one.inverter?.serialNumber === inverter.serialNumber)
+  ) {
+    return `A device is already registered for the inverter with the serial number [${inverter.serialNumber}]`;
+  }
   if (shelly !== undefined) {
     const channel = shelly.channel === undefined ? '' : `, channel ${shelly.channel}`;
     const sameChannel = others.filter(

@@ -39,7 +39,7 @@ export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
- * `SmartVendor`, `EatonGatewayType` of `smart-home-sdk` 1.13.0) - copies, like the ones above,
+ * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.15.0) - copies, like the ones above,
  * and under the same rule: they are what the administration of the devices offers, and what
  * the registry already holds is shown and sent back as it is.
  */
@@ -56,6 +56,9 @@ export const DEVICE_KINDS = [
   // HAS-282 (smart-home-sdk 1.13.0): a washing machine, a dryer or a dishwasher, the plug it runs on -
   // known here, and not offered for a new device: its settings are written through the API (HAS-283)
   'appliance',
+  // HAS-341 (smart-home-sdk 1.15.0, HAS-326): a photovoltaic inverter read by energy-service, reached by
+  // its inverter binding alone
+  'inverter',
 ] as const;
 
 export type DeviceKind = (typeof DEVICE_KINDS)[number];
@@ -80,6 +83,11 @@ export type Placement = (typeof PLACEMENTS)[number];
 export const VENDORS = ['shelly', 'eaton', 'other'] as const;
 
 export type Vendor = (typeof VENDORS)[number];
+
+/** The brands of an inverter (`InverterBrand`): the SOLAX and the SOFAR of the house. */
+export const INVERTER_BRANDS = ['solax', 'sofar'] as const;
+
+export type InverterBrand = (typeof INVERTER_BRANDS)[number];
 
 export const EATON_GATEWAYS = ['blinds', 'lights'] as const;
 

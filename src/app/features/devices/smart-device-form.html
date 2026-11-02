@@ -203,6 +203,113 @@
             }
           </mat-form-field>
         }
+        @case ('inverter') {
+          <div class="form__group" role="group" [attr.aria-labelledby]="id + '-brand'">
+            <h3 class="form__label" [id]="id + '-brand'">{{ t('devices.form.brand') }}</h3>
+            <mat-button-toggle-group
+              hideSingleSelectionIndicator
+              data-testid="brand"
+              [attr.aria-labelledby]="id + '-brand'"
+              [value]="brand()"
+              [disabled]="busy()"
+              (change)="setBrand($event.value)"
+            >
+              @for (one of brands; track one) {
+                <!-- the brand as the registry spells it, in capitals as on the inverter -->
+                <mat-button-toggle [value]="one">{{ one.toUpperCase() }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+          </div>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.serial') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="40"
+              data-testid="serial"
+              [formControl]="serial"
+            />
+            <mat-hint>{{ t('devices.form.serialHint') }}</mat-hint>
+            @if (problemOf(serial); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.inverterAddress') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="15"
+              [formControl]="inverterAddress"
+            />
+            <mat-hint>{{ t('devices.form.optional') }}</mat-hint>
+            @if (problemOf(inverterAddress); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          @if (brand() === 'solax') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ t('devices.form.registration') }}</mat-label>
+              <input
+                matInput
+                class="code"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                maxlength="20"
+                data-testid="registration"
+                [formControl]="registration"
+              />
+              <mat-hint>{{ t('devices.form.registrationHint') }}</mat-hint>
+              @if (problemOf(registration); as problem) {
+                <mat-error>{{ t(problem) }}</mat-error>
+              }
+            </mat-form-field>
+          } @else {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ t('devices.form.loggerSerial') }}</mat-label>
+              <input
+                matInput
+                class="code"
+                inputmode="numeric"
+                autocomplete="off"
+                maxlength="10"
+                data-testid="logger-serial"
+                [formControl]="loggerSerial"
+              />
+              <mat-hint>{{ t('devices.form.loggerSerialHint') }}</mat-hint>
+              @if (problemOf(loggerSerial); as problem) {
+                <mat-error>{{ t(problem) }}</mat-error>
+              }
+            </mat-form-field>
+          }
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.batterySerial') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="40"
+              [formControl]="batterySerial"
+            />
+            <mat-hint>{{ t('devices.form.optional') }}</mat-hint>
+            @if (problemOf(batterySerial); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+        }
       }
 
       @if (taken(); as problem) {

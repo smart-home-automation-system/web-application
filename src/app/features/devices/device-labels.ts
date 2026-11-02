@@ -22,6 +22,7 @@ export const KIND_LABELS: Readonly<Record<DeviceKind, MessageKey>> = {
   'bthome gateway': 'devices.kind.bthomeGateway',
   'push button': 'devices.kind.pushButton',
   appliance: 'devices.kind.appliance',
+  inverter: 'devices.kind.inverter',
 };
 
 /** Names of Material Symbols. */
@@ -36,6 +37,7 @@ const KIND_ICONS: Readonly<Record<DeviceKind, string>> = {
   'bthome gateway': 'bluetooth_connected',
   'push button': 'touch_app',
   appliance: 'local_laundry_service',
+  inverter: 'solar_power',
 };
 
 export const LIGHT_KIND_LABELS: Readonly<Record<LightKind, MessageKey>> = {
@@ -59,6 +61,7 @@ export const BINDING_LABELS: Readonly<Record<Binding, MessageKey>> = {
   shelly: 'devices.binding.shelly',
   eaton: 'devices.binding.eaton',
   bthome: 'devices.binding.bthome',
+  inverter: 'devices.binding.inverter',
 };
 
 /**

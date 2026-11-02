@@ -570,6 +570,63 @@ describe('Devices', () => {
     expect(text(card('office').querySelector('[data-kind="light"]'))).toBe('Light none');
   });
 
+  // HAS-341: an inverter (smart-home-sdk 1.15.0) shows its binding and keeps it whole on a change; the
+  // number of the other brand is never sent
+  it('shows an inverter with its binding and changes it with the whole binding', async () => {
+    const inverter: SmartDevice = {
+      id: 64,
+      name: 'SOLAX inverter',
+      room: 'garage',
+      kind: 'inverter',
+      enabled: true,
+      vendor: 'other',
+      inverter: {
+        brand: 'solax',
+        serialNumber: 'MOCKX0000000001',
+        address: '192.0.2.64',
+        registrationNumber: 'SMOCK00001',
+      },
+    };
+    answerTheRegistryWith([inverter]);
+    const garage = await openRoom('garage');
+    expect(text(row(64).querySelector('[data-testid="binding"]'))).toBe(
+      'SOLAX MOCKX0000000001 192.0.2.64',
+    );
+
+    button(row(64), 'Edit')!.click();
+    fixture.detectChanges();
+    const form = row(64).querySelector<HTMLElement>('app-smart-device-form')!;
+    expect(form.querySelector('[data-testid="logger-serial"]')).toBeNull();
+    type(form.querySelector<HTMLInputElement>('[data-testid="registration"]')!, 'smock');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+    // refused before it is sent: capitals and digits, 5 to 20
+    expect(text(form)).toContain('A registration number is 5 to 20 capital letters and digits.');
+
+    type(form.querySelector<HTMLInputElement>('[data-testid="registration"]')!, 'SMOCK00002');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+    const request = http.expectOne({ method: 'PUT', url: '/home/device/registry/64' });
+    expect(request.request.body).toEqual({
+      name: 'SOLAX inverter',
+      room: 'garage',
+      kind: 'inverter',
+      enabled: true,
+      vendor: 'other',
+      inverter: {
+        brand: 'solax',
+        serialNumber: 'MOCKX0000000001',
+        address: '192.0.2.64',
+        registrationNumber: 'SMOCK00002',
+      },
+    });
+    request.flush({});
+    await settled();
+    answerTheRegistryWith([inverter]);
+    await settled();
+    expect(garage.querySelector('[data-device="64"]')).not.toBeNull();
+  });
+
   it('switches a device off with the operation made for it, and shows what the registry says', async () => {
     answerTheRegistryWith([LIGHT]);
     await openRoom('office');
