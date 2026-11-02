@@ -86,6 +86,12 @@ function buckets(range: Range, now: Date): number[] {
 }
 
 const round = (value: number) => Math.round(value * 100) / 100;
+/** A bucket of an average with the lowest and the highest reading around it. */
+const spread = (avg: number, by: number) => ({
+  avg: round(avg),
+  min: round(avg - by),
+  max: round(avg + by),
+});
 /** Where in its day a moment lies, as an angle. */
 const dayAngle = (seconds: number) => ((seconds % DAY) / DAY) * 2 * Math.PI;
 
@@ -172,6 +178,9 @@ export interface WeatherHistoryRefusal extends HistoryRefusal {
   readonly code: 'UNKNOWN_METRIC';
 }
 
+/** What a history of the weather or the energy answers: the points, or the refusal of its question. */
+type MetricHistory = WeatherHistory | HistoryRefusal | WeatherHistoryRefusal;
+
 /** The hour of the day of a moment on the wall clock, with its fraction. */
 const hourOf = (seconds: number) => (seconds % DAY) / HOUR;
 /** A wave over the day with its peak at `peak` o'clock. */
@@ -200,11 +209,6 @@ function weatherBucket(
   at: number,
   width: number,
 ): { avg: number; min?: number; max?: number } {
-  const spread = (avg: number, by: number) => ({
-    avg: round(avg),
-    min: round(avg - by),
-    max: round(avg + by),
-  });
   const middle = at + width / 2;
   switch (metric) {
     case 'temperature':
@@ -265,7 +269,7 @@ export function weatherHistory(
   to: string | null,
   fresh: boolean,
   now: Date = new Date(),
-): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
+): MetricHistory {
   return metricHistory(WEATHER_METRICS, weatherBucket, { metric, from, to, fresh, now });
 }
 
@@ -283,7 +287,7 @@ function metricHistory<M extends string>(
     fresh: boolean;
     now: Date;
   },
-): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
+): MetricHistory {
   const known = metrics.find((name) => name === asked.metric);
   if (known === undefined) {
     return { status: 400, message: 'Unknown metric', code: 'UNKNOWN_METRIC' };
@@ -337,11 +341,6 @@ function energyBucket(metric: (typeof ENERGY_METRICS)[number], at: number, width
   // the battery takes the surplus of the day and gives it back in the evening
   const battery = Math.max(-2000, Math.min(3000, solax + sofar - house));
   const soc = 20 + 60 * Math.max(0, Math.min(1, ((middle % DAY) / HOUR - 9) / 6));
-  const spread = (avg: number, by: number) => ({
-    avg: round(avg),
-    min: round(avg - by),
-    max: round(avg + by),
-  });
   switch (metric) {
     case 'pv-solax':
       return spread(solax, solax * 0.05);
@@ -370,6 +369,6 @@ export function energyHistory(
   to: string | null,
   fresh: boolean,
   now: Date = new Date(),
-): WeatherHistory | HistoryRefusal | WeatherHistoryRefusal {
+): MetricHistory {
   return metricHistory(ENERGY_METRICS, energyBucket, { metric, from, to, fresh, now });
 }

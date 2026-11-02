@@ -160,7 +160,7 @@ export function loggerSerialProblem(text: string): MessageKey | undefined {
 
 export function loggerSerialOf(text: string): number | undefined {
   const digits = text.trim();
-  if (!/^[0-9]{1,10}$/.test(digits)) {
+  if (!/^\d{1,10}$/.test(digits)) {
     return undefined;
   }
   const serial = Number(digits);

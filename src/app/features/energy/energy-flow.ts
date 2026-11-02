@@ -20,15 +20,13 @@ function arrow(
   fromHouse: string,
   words: Readonly<Record<FlowDirection, MessageKey>>,
 ): Arrow {
-  const icon =
-    direction === 'in'
-      ? toHouse
-      : direction === 'out'
-        ? fromHouse
-        : direction === 'idle'
-          ? 'remove'
-          : 'question_mark';
-  return { icon, state: direction, label: words[direction] };
+  const icons: Readonly<Record<FlowDirection, string>> = {
+    in: toHouse,
+    out: fromHouse,
+    idle: 'remove',
+    unknown: 'question_mark',
+  };
+  return { icon: icons[direction], state: direction, label: words[direction] };
 }
 
 /**

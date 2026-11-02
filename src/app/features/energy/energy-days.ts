@@ -148,7 +148,7 @@ export class EnergyDays {
   /** The answer of the range on screen; `undefined` until it is in. */
   protected readonly shown = computed(() => {
     const answered = this.days.value();
-    return answered !== undefined && answered.query === this.query() ? answered.answer : undefined;
+    return answered?.query === this.query() ? answered?.answer : undefined;
   });
 
   protected readonly waiting = computed(

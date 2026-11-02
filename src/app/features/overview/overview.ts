@@ -58,6 +58,9 @@ interface DeviceLine {
   readonly working: boolean | undefined;
 }
 
+/** The way the grid flows in the words of `GridDirection` of energy-service. */
+const GRID_WORDS = { in: 'import', out: 'export', idle: 'idle' } as const;
+
 /**
  * The landing page of the administrator: the house at a glance - a tile per dashboard with the few
  * facts somebody looks for first, each leading to the page that has the rest. Nothing here changes
@@ -294,8 +297,6 @@ export class Overview {
   /** The way the grid flows, by the dead band of the service the diagram uses too; none while not known. */
   protected readonly energyGridLabel = computed(() => {
     const flow = this.energyFlow().gridFlow;
-    return flow === 'unknown'
-      ? undefined
-      : gridDirectionLabel(flow === 'in' ? 'import' : flow === 'out' ? 'export' : 'idle');
+    return flow === 'unknown' ? undefined : gridDirectionLabel(GRID_WORDS[flow]);
   });
 }

@@ -415,6 +415,18 @@ export class SmartDeviceForm implements OnInit {
     }
   }
 
+  /** The binding of a Shelly as it is sent: the id and the channel only when given. */
+  private shellyBinding(): NonNullable<DeviceDetails['shelly']> {
+    const deviceId = this.deviceId.value.trim();
+    const channel = this.channel();
+    return {
+      address: this.address.value.trim(),
+      generation: this.generation(),
+      ...(deviceId === '' ? {} : { deviceId }),
+      ...(channel === undefined ? {} : { channel }),
+    };
+  }
+
   /** The binding of an inverter as it is sent: what is empty left out, each number of its brand only. */
   private inverterBinding(): NonNullable<DeviceDetails['inverter']> {
     const brand = this.brand();
@@ -436,8 +448,6 @@ export class SmartDeviceForm implements OnInit {
   private details(): DeviceDetails {
     const kind = this.kind.value;
     const binding = this.binding();
-    const deviceId = this.deviceId.value.trim();
-    const channel = this.channel();
     const lightKind = this.lightKind();
     const placement = this.placement();
     const positioning = this.positioning();
@@ -448,16 +458,7 @@ export class SmartDeviceForm implements OnInit {
       kind,
       enabled: this.enabled(),
       vendor: this.vendor(),
-      ...(binding === 'shelly'
-        ? {
-            shelly: {
-              address: this.address.value.trim(),
-              generation: this.generation(),
-              ...(deviceId === '' ? {} : { deviceId }),
-              ...(channel === undefined ? {} : { channel }),
-            },
-          }
-        : {}),
+      ...(binding === 'shelly' ? { shelly: this.shellyBinding() } : {}),
       ...(binding === 'eaton'
         ? { eaton: { gateway: this.gateway(), point: pointOf(this.point.value) } }
         : {}),

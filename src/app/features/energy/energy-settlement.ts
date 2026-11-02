@@ -261,9 +261,7 @@ export class EnergySettlement {
 
   protected readonly shown = computed(() => {
     const answered = this.months.value();
-    return answered !== undefined && answered.query === this.year() && answered.answer !== null
-      ? answered.answer
-      : undefined;
+    return answered?.query === this.year() ? (answered?.answer ?? undefined) : undefined;
   });
 
   protected readonly waiting = computed(
