@@ -957,7 +957,9 @@ e2e/              # Playwright tests
     tile is three calls (flows, battery, status) like the heating tile, the flows its own, the other two told in
     `tileFailures`.
   - **The days are bars by category** (`BarsChart` of `shared/history-chart/`, the counterpart of `HistoryChart`
-    through the same `ChartEngine`): the closed days up to yesterday, a value not known no bar, the sums under
+    through the same `ChartEngine`): the closed days up to yesterday, the yield of each inverter apart (the
+    service leaves `production` out when one of them is not known - the days before the SOFAR was read), a value
+    not known no bar, the sums under
     the chart count only the known days and say how many. **The settlement is kWh, never money** (the owner
     settles by "opusty"); a month without a closed day has no figures; "in the grid now" is `stored` of the
     last month with a day (`storedNow`).

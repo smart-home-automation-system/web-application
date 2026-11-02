@@ -43,22 +43,24 @@ export function daysIn(query: DaysQuery): readonly string[] {
 }
 
 interface SeriesSpec {
-  readonly key: 'production' | 'imported' | 'exported';
+  readonly key: 'solaxYield' | 'sofarYield' | 'imported' | 'exported';
   readonly name: MessageKey;
-  readonly color: 1 | 2 | 5;
+  readonly color: 1 | 2 | 4 | 5;
 }
 
 const SERIES: readonly SeriesSpec[] = [
-  { key: 'production', name: 'energy.days.production', color: 1 },
+  { key: 'solaxYield', name: 'energy.source.solax', color: 1 },
+  { key: 'sofarYield', name: 'energy.source.sofar', color: 4 },
   { key: 'imported', name: 'energy.days.imported', color: 2 },
   { key: 'exported', name: 'energy.days.exported', color: 5 },
 ];
 
 /**
- * The closed days of the energy (HAS-341): the production, what the house took from the grid and
- * what it returned, kWh per day as bars - 7 or 30 days up to yesterday, the day the service closed
+ * The closed days of the energy (HAS-341): what each inverter produced - apart, so a day the service
+ * knows one of them for still shows it, where `production` (both) is left out -, what the house took
+ * from the grid and what it returned, kWh per day as bars - 7 or 30 days up to yesterday, the day the service closed
  * last. **A day the answer leaves out, or a value it leaves out, has no bar** (a day of the meter
- * alone has no production, never 0), and the sums under the chart count only what is known, with
+ * alone has no yield, never 0), and the sums under the chart count only what is known, with
  * how many days that is. Its own call, freshness and failure in the frame; a period is asked anew
  * and shown only once its answer is in (`settledFor`, the rule of a report).
  */

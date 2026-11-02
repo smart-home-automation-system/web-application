@@ -156,9 +156,7 @@ describe('Energy', () => {
     const flow = await card('flow');
     expect(words(flow.querySelector('[data-node="panels"]'))).toContain('0 W');
     expect(words(flow.querySelector('[data-node="grid"]'))).toContain('not known');
-    expect(flow.querySelector('.arrow--grid')?.getAttribute('aria-label')).toBe(
-      'Not known',
-    );
+    expect(flow.querySelector('.arrow--grid')?.getAttribute('aria-label')).toBe('Not known');
     expect(words(flow.querySelector('[data-today="imported"]'))).toBe(
       'Taken from the grid not known',
     );
@@ -294,14 +292,21 @@ describe('Energy', () => {
   it('asks for the closed days up to yesterday', async () => {
     await fixture.whenStable();
     expect(daysAsked()).toEqual({ from: '2026-10-26', to: '2026-11-01' });
-    answerQuery(days, daysAsked(), [{ day: '2026-11-01', imported: 34.02, exported: 0.13 }]);
+    answerQuery(days, daysAsked(), [
+      { day: '2026-10-31', solaxYield: 8.1, imported: 31.33, exported: 0.39 },
+      { day: '2026-11-01', imported: 34.02, exported: 0.13 },
+    ]);
     await fixture.whenStable();
     const facts = page().querySelector('[data-testid="days-facts"]')!;
-    expect(words(facts.querySelector('[data-total="production"]'))).toBe(
-      'Produced 0.0 kWh (0 of 7 days)',
+    // the SOLAX known on a day the SOFAR is not: its bar stands; the meter alone gives no yield, never 0
+    expect(words(facts.querySelector('[data-total="solaxYield"]'))).toBe(
+      'SOLAX 8.1 kWh (1 of 7 days)',
+    );
+    expect(words(facts.querySelector('[data-total="sofarYield"]'))).toBe(
+      'SOFAR 0.0 kWh (0 of 7 days)',
     );
     expect(words(facts.querySelector('[data-total="imported"]'))).toBe(
-      'Taken 34.0 kWh (1 of 7 days)',
+      'Taken 65.4 kWh (2 of 7 days)',
     );
   });
 

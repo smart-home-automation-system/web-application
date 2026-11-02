@@ -587,8 +587,7 @@ export const pl: Messages = {
     },
     days: {
       title: 'Dni',
-      label: 'Energia każdego zamkniętego dnia: wyprodukowana, pobrana z sieci i oddana do niej',
-      production: 'Wyprodukowano',
+      label: 'Energia każdego zamkniętego dnia: wyprodukowana przez każdy falownik, pobrana z sieci i oddana do niej',
       imported: 'Pobrano',
       exported: 'Oddano',
       known: '({{ known }} z {{ days }} dni)',

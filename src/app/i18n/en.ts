@@ -592,8 +592,7 @@ export const en = {
     },
     days: {
       title: 'Days',
-      label: 'The energy of each closed day: produced, taken from and returned to the grid',
-      production: 'Produced',
+      label: 'The energy of each closed day: produced by each inverter, taken from and returned to the grid',
       imported: 'Taken',
       exported: 'Returned',
       known: '({{ known }} of {{ days }} days)',
