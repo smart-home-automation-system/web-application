@@ -291,11 +291,11 @@ export class Overview {
   );
   /** The grid lost is the one thing of the tile in red; not known is never lost. */
   protected readonly gridLost = computed(() => gridStateOf(this.energyStatus.value()) === 'lost');
+  /** The way the grid flows, by the dead band of the service the diagram uses too; none while not known. */
   protected readonly energyGridLabel = computed(() => {
-    const grid = this.energyFlow().grid;
-    if (grid === undefined) {
-      return undefined;
-    }
-    return gridDirectionLabel(grid > 20 ? 'import' : grid < -20 ? 'export' : 'idle');
+    const flow = this.energyFlow().gridFlow;
+    return flow === 'unknown'
+      ? undefined
+      : gridDirectionLabel(flow === 'in' ? 'import' : flow === 'out' ? 'export' : 'idle');
   });
 }
