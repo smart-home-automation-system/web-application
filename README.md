@@ -47,7 +47,8 @@ dashboards:
   and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
   the rooms with a light on, and whether the house is empty and acted on) and the appliances
   (HAS-282: which of the washing machine, the dryer and the dishwasher runs and which waits to be
-  emptied - nothing to press there). Every call has its own freshness and its own failure, so the
+  emptied - nothing to press there) and the energy (HAS-341: the panels, the house and the grid now, the
+  state of charge of the battery, a lost grid in red). Every call has its own freshness and its own failure, so the
   page stays whole while one service is down; the title of a tile leads to the dashboard that has
   the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
@@ -61,6 +62,16 @@ dashboards:
   voltage) - and six charts of the history over 24 hours, 7 or 30 days, one period for all:
   temperature and dew point, humidity, wind and gusts, daylight (logarithmic), rain per interval,
   pressure.
+- **Energy** (HAS-341, the administrator's, `/energy`): the energy of the house from `energy-service` -
+  where it goes now (the panels above the house, the battery and the grid beside it, an arrow along each
+  line by the sign of its power, "not known" where a power is not), the day so far, the grid as the SOLAX
+  sees it and whether each source answers, a card each for the SOLAX (the strings, the run mode in words),
+  the battery (the state of charge as a gauge, the energy left), the SOFAR (its state and faults in the
+  words of the Solarman cloud) and the grid meter (per phase, a phase above 22 A marked), the open alarms
+  and the outages of the grid of the last year; then the powers and the state of charge over 24 hours, 7
+  or 30 days, the closed days as bars, and **the net-metering of the billing year** ("opusty") - per month
+  what was returned, credited at the ratio, taken, covered by the credit and bought, and the credit "in the
+  grid" now - all in kWh, never money.
 - **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
   each kind of thing in it - temperature, heating, lights (a bulb each), blinds (a position each,
   the door first), motion, presence sensors, openings (windows and doors), the rest - and a window
@@ -232,7 +243,7 @@ dashboards:
   for every room, with every device of it - blinds, lights, sensors, whatever their vendor - each
   with what it is and how it is reached: the address, channel and
   MQTT id of a Shelly, the gateway and point of an Eaton device, the address of a Bluetooth
-  sensor. And the forms to register a device, change one, switch one off and on for the
+  sensor, the brand, serial and address of an inverter (HAS-341). And the forms to register a device, change one, switch one off and on for the
   services, and remove one. Blinds are given **the sensors of their own window** (HAS-290), picked
   from the opening sensors of the registry - none means a window that counts as closed; a sensor
   that blinds still name is not offered for removal. **The kind decides what the form asks for**: the ways such a device
@@ -482,6 +493,14 @@ Endpoints used today:
 | `GET` | `/home/appliance/{id}/runs?from=&to=` | The cycles of one appliance that started in the range (appliances: the last 30 days of every appliance, one after the other, every 60 s - the counters and the lists read that one answer) |
 | `GET` | `/home/appliance/{id}/samples?from=&to=` | The draw of the plug, a sample every 30 s (appliances: the last 24 or 48 hours of each appliance, every 60 s) |
 | `GET` | `/home/device/registry?kind=appliance&enabled=true` | The appliances with their settings (appliances, read only, every 60 s) |
+| `GET` | `/home/energy/flows` | Where the energy goes now and the day so far (energy: every 15 s; overview: every 60 s). Needs `energy-service` 0.8.0 and `api-gateway-service` 0.10.0 or later |
+| `GET` | `/home/energy/status` | The sources and the grid as the SOLAX sees it (energy: every 30 s; overview: every 60 s) |
+| `GET` | `/home/energy/grid`, `/home/energy/inverters`, `/home/energy/battery` | The grid meter, both inverters and the battery now (energy, every 15 s; the battery also on the overview, every 60 s) |
+| `GET` | `/home/energy/alerts` | The open alarms (energy, every 60 s). Needs `energy-service` 0.10.0 |
+| `GET` | `/home/energy/outages?from=&to=` | The outages of the grid of the last year (energy, every 60 s) |
+| `GET` | `/home/energy/history?metric=&from=&to=` | `pv-power`, `house-load`, `grid-power` and `battery-soc` over the period of the page (energy, every 3 min); `UNKNOWN_METRIC` and `INVALID_RANGE` have texts |
+| `GET` | `/home/energy/days?from=&to=` | The closed days up to yesterday, 7 or 30 (energy, every 15 min) |
+| `GET` | `/home/energy/months?year=` | The net-metering of a billing year (energy, every 15 min) |
 | `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |
