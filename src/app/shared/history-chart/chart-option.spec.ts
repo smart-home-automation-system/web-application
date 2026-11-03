@@ -155,6 +155,24 @@ describe('chartOption', () => {
       ]);
 
       expect(text).toContain('Tank: <strong>no readings</strong> (Thu 8 Oct, 00:00 – 04:00)');
+      // the middle of the gap is no moment of the data: no time of its own is printed
+      expect(text).not.toContain('02:00');
+    });
+
+    it('lifts the bridge onto a log axis like its line', () => {
+      const night: ChartLine = {
+        ...GAPPED,
+        points: [
+          [at('2026-10-08T00:00:00'), 0],
+          [at('2026-10-08T02:00:00'), null],
+          [at('2026-10-08T04:00:00'), 0],
+        ],
+      };
+
+      expect(drawn({ lines: [night], logarithmic: true }).series[1].data).toEqual([
+        [at('2026-10-08T00:00:00'), 1],
+        [at('2026-10-08T04:00:00'), 1],
+      ]);
     });
 
     it('never lists the bridge in the tooltip as a reading', () => {

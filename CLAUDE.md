@@ -703,8 +703,12 @@ e2e/              # Playwright tests
     the dashed line of a room is its schedule - after every line, so a line keeps the index of its
     place; it has no legend entry (`legend.data`), no symbols and no row in the tooltip. Inside a gap
     the tooltip says "no readings" with the readings on both sides (`gapAround`, `gapSpan`), never a
-    value made up between them; the lowest and the highest count readings only. A schedule and bars
-    get no bridge.
+    value made up between them, and prints no time of its own (the middle of a gap is no moment of
+    the data); the lowest and the highest count readings only. The bridges are drawing only, so
+    `HistoryChart` tells a screen reader how many gaps its lines have (`history.gaps`, a
+    `.visually-hidden` line next to the picture). A schedule and bars get no bridge.
+    **Open (owner to decide):** the 3 h of a room is applied to every room, also to one on an Eaton
+    sensor that reports every few minutes - its outage of up to 3 h is drawn solid.
   - **A history is a `queryResource`** (`core/api/query-resource.ts`, the rule of the presence
     reports): the answer carries the range it is for, and the view shows it only while that is
     the answer of the **period** on screen (`shownHistory`) - until then a progress bar, not

@@ -73,6 +73,11 @@ export function axisLabel(at: number, spanMs: number, locale: string): string {
   if (spanMs > 2 * DAY_MS || at % DAY_MS === 0) {
     return day.format(at);
   }
+  return clockTime(at, locale);
+}
+
+/** The time of the day alone, as the house had it: `14:20`. */
+function clockTime(at: number, locale: string): string {
   return dateTimeFormat(locale, {
     timeZone: 'UTC',
     hour: '2-digit',
@@ -229,9 +234,13 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
               : [row(markerOf(colors.lines[line.color - 1]), line.name, asked)];
           }),
         ];
-        return [at === undefined ? '' : escapeHtml(tooltipTime(at, input.locale)), ...lines].join(
-          '<br>',
-        );
+        // inside a gap the moment is the middle the gap was marked at - no reading: its rows say
+        // when the readings around it were, and no time of its own is printed
+        const inGap =
+          measured.length > 0 &&
+          measured.every((hoveredRow) => typeof measuredValue(hoveredRow) !== 'number');
+        const header = at === undefined || inGap ? [] : [escapeHtml(tooltipTime(at, input.locale))];
+        return [...header, ...lines].join('<br>');
       },
     },
     xAxis: {
@@ -305,14 +314,7 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
 /** The readings on both sides of a gap, the second without its day when it is the same day. */
 export function gapSpan(from: number, to: number, locale: string): string {
   const sameDay = Math.floor(from / DAY_MS) === Math.floor(to / DAY_MS);
-  const end = sameDay
-    ? dateTimeFormat(locale, {
-        timeZone: 'UTC',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-      }).format(to)
-    : tooltipTime(to, locale);
+  const end = sameDay ? clockTime(to, locale) : tooltipTime(to, locale);
   return `(${tooltipTime(from, locale)} – ${end})`;
 }
 

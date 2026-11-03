@@ -63,6 +63,41 @@ describe('HistoryChart', () => {
     expect(image?.getAttribute('aria-label')).toBe('Temperature of the tank');
   });
 
+  // the bridges are drawing only: whoever cannot see them is told in words (HAS-375)
+  it('tells a screen reader how many gaps its lines have, and the tooltip what to say in one', async () => {
+    const gaps = () =>
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="chart-gaps"]');
+    await settle();
+    expect(gaps()).toBeNull();
+
+    fixture.componentInstance.lines.set([
+      {
+        ...TANK,
+        points: [
+          [at('2026-10-08T00:00:00'), 46.81],
+          [at('2026-10-08T02:00:00'), null],
+          [at('2026-10-08T04:00:00'), 45.9],
+        ],
+      },
+    ]);
+    await settle();
+
+    expect(gaps()?.textContent?.trim()).toBe(
+      'Gaps in the readings in this period: 1, drawn as a faint dotted line.',
+    );
+    const drawn = charts.drawn.at(-1) as { tooltip: { formatter(rows: unknown): string } };
+    expect(
+      drawn.tooltip.formatter([
+        {
+          seriesName: 'Tank',
+          seriesIndex: 0,
+          dataIndex: 1,
+          value: [at('2026-10-08T02:00:00'), null],
+        },
+      ]),
+    ).toContain('<strong>no readings</strong>');
+  });
+
   it('draws its lines once the library has arrived', async () => {
     await settle();
 
