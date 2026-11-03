@@ -543,6 +543,16 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the charge of the battery (HAS-342): a charge going on, the automation and the planned outages
+      test('energy charge', async ({ page }, testInfo) => {
+        await page.goto('/energy');
+        await page.getByTestId('charge-start').click();
+        await expect(page.getByTestId('charge-state')).toBeVisible();
+        await page.locator('app-energy-control').screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy-charge'),
+        });
+      });
+
       // the page an NFC tag opens (HAS-346): the claim recorded, and the question of a browser that
       // knows nobody (its own context, no remembered profile)
       test('tag page', async ({ page, browser }, testInfo) => {

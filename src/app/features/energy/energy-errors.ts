@@ -13,6 +13,16 @@ export const ENERGY_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   REGISTRY_UNAVAILABLE: 'energy.error.registryUnavailable',
   INVALID_RANGE: 'energy.error.invalidRange',
   UNKNOWN_METRIC: 'energy.error.unknownMetric',
+  // the charge and its automation (HAS-336, HAS-338)
+  INVALID_CHARGE: 'energy.error.invalidCharge',
+  CHARGE_IN_PROGRESS: 'energy.error.chargeInProgress',
+  TARGET_REACHED: 'energy.error.targetReached',
+  NOT_FOUND_CHARGE: 'energy.error.chargeNotFound',
+  WRITE_TOO_SOON: 'energy.error.writeTooSoon',
+  INVERTER_UNAVAILABLE: 'energy.error.inverterUnavailable',
+  DEVICE_FAILED: 'energy.error.deviceFailed',
+  INVALID_AUTOMATION: 'energy.error.invalidAutomation',
+  NOT_FOUND_PLANNED_OUTAGE: 'energy.error.plannedOutageNotFound',
 };
 
 /** A failed call of the energy page: a code of the service in our words, anything else as usual. */

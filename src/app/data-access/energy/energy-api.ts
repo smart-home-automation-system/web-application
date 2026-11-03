@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
@@ -248,6 +249,94 @@ export interface EnergyAlert {
   readonly detail?: string;
 }
 
+/**
+ * One charge of the battery from the grid (energy-service >= 0.12.1, HAS-336): `state` `requested`
+ * (the command sent, the inverter not yet charging), `charging`, `ending` (over, the Self Use of the
+ * owner not set back yet), `ended` or `failed`; `source` `dashboard` or `automation`; `endedBy`
+ * `target`, `window`, `cancel` or `failed`; `failure` the code of a failed run. A value this
+ * version does not know is printed as it came.
+ */
+export interface ChargeRun {
+  readonly id?: number;
+  readonly state?: string;
+  readonly source?: string;
+  readonly requestedAt?: string;
+  readonly targetSoc?: number;
+  readonly windowStart?: string;
+  readonly windowEnd?: string;
+  readonly deliveryStatus?: number;
+  readonly deliveredAt?: string;
+  readonly socAtStart?: number;
+  readonly socAtEnd?: number;
+  readonly endedAt?: string;
+  readonly endedBy?: string;
+  readonly failure?: string;
+  readonly restoredAt?: string;
+  /** The planned outage an automatic charge was started for (HAS-338). */
+  readonly plannedOutageId?: number;
+}
+
+/**
+ * `GET /energy/battery/charge` (HAS-336, HAS-338): whether a charge runs or is being set back, that
+ * charge, the battery now (`soc` %, `power` W positive while charging), the minutes to its target,
+ * and `plannedStart` - when the automation would start the charge before the next planned outage of
+ * the street at the SOC now, whether its switch is on or not.
+ */
+export interface ChargeState {
+  readonly active?: boolean;
+  readonly run?: ChargeRun;
+  readonly soc?: number;
+  readonly power?: number;
+  readonly minutesLeft?: number;
+  readonly plannedStart?: string;
+}
+
+/** The body of a charge: the SOC to charge to (10 - 100) and, when given, the house time it ends at. */
+export interface ChargeRequest {
+  readonly targetSoc: number;
+  readonly until?: string;
+}
+
+/**
+ * `GET /energy/automation` (HAS-338): the switch of the automatic charge before a planned outage of
+ * the street (off until the owner turns it on), its target SOC, the power the start is computed with
+ * (kW) and the margin before the outage (min). Written whole by `PUT`.
+ */
+export interface Automation {
+  readonly chargeBeforeOutage?: boolean;
+  readonly targetSoc?: number;
+  readonly chargePowerKw?: number;
+  readonly marginMinutes?: number;
+  readonly updatedAt?: string;
+}
+
+/** The body of `PUT /energy/automation`: every field. */
+export interface AutomationBody {
+  readonly chargeBeforeOutage: boolean;
+  readonly targetSoc: number;
+  readonly chargePowerKw: number;
+  readonly marginMinutes: number;
+}
+
+/**
+ * One outage Tauron announces for the house (`GET /energy/outages/planned`, HAS-337, HAS-338):
+ * `kind` `planned` or `unplanned` (a failure), `scope` `street` (the street of the house named) or
+ * `town` (the town alone), `description` the words of Tauron (Polish, printed as they are),
+ * `plannedChargeStart` on the next planned outage of the street only.
+ */
+export interface PlannedOutage {
+  readonly id?: number;
+  readonly startsAt?: string;
+  readonly endsAt?: string;
+  readonly kind?: string;
+  readonly scope?: string;
+  readonly description?: string;
+  readonly firstSeenAt?: string;
+  readonly notifiedAt?: string;
+  readonly skipAutomation?: boolean;
+  readonly plannedChargeStart?: string;
+}
+
 /** Which closed days are asked for: both ends included, `YYYY-MM-DD`. */
 export interface DaysQuery {
   readonly from: string;
@@ -261,6 +350,10 @@ const POLL_STATUS_EVERY_MS = 30_000;
 const POLL_ALERTS_EVERY_MS = 60_000;
 // a reading is stored a minute after a change, a bucket is 5 minutes at its narrowest
 const POLL_HISTORY_EVERY_MS = 3 * 60_000;
+// a charge moves with the battery, read every 15 s by the service; the watch follows its command every 10 s
+const POLL_CHARGE_EVERY_MS = 10_000;
+// the settings change by a write of the page itself; the outages of Tauron are read every hour
+const POLL_SETTINGS_EVERY_MS = 60_000;
 // a day is closed once, after 00:15
 const POLL_DAYS_EVERY_MS = 15 * 60_000;
 
@@ -349,6 +442,67 @@ export class EnergyApi {
       (asked) => this.api.get<EnergyMonths | null>('/energy/months', { year: String(asked) }),
       { intervalMs: POLL_DAYS_EVERY_MS },
     );
+  }
+
+  /** The charge going on or being set back, with the battery now (HAS-336). Call in an injection context. */
+  watchCharge(): PollingResource<ChargeState | null> {
+    return pollingResource(() => this.api.get<ChargeState | null>('/energy/battery/charge'), {
+      intervalMs: POLL_CHARGE_EVERY_MS,
+    });
+  }
+
+  /** The charges requested in a range (house times, at most 366 days). Call in an injection context. */
+  watchChargeRuns(
+    range: () => HistoryRange,
+  ): QueryResource<HistoryRange, readonly ChargeRun[] | null> {
+    return queryResource(
+      range,
+      (asked) =>
+        this.api.get<readonly ChargeRun[] | null>('/energy/battery/charge/runs', { ...asked }),
+      { intervalMs: POLL_SETTINGS_EVERY_MS },
+    );
+  }
+
+  /** The settings of the automatic charge (HAS-338). Call in an injection context. */
+  watchAutomation(): PollingResource<Automation | null> {
+    return pollingResource(() => this.api.get<Automation | null>('/energy/automation'), {
+      intervalMs: POLL_SETTINGS_EVERY_MS,
+    });
+  }
+
+  /** The outages Tauron announces for the house that have not ended (HAS-337). Call in an injection context. */
+  watchPlannedOutages(): PollingResource<readonly PlannedOutage[] | null> {
+    return pollingResource(
+      () => this.api.get<readonly PlannedOutage[] | null>('/energy/outages/planned'),
+      { intervalMs: POLL_SETTINGS_EVERY_MS },
+    );
+  }
+
+  /**
+   * A charge of the battery from the grid, by the dashboard - **a write to the inverter**. The answer
+   * (the run as requested) is not used: the page reads the charge again.
+   */
+  startCharge(request: ChargeRequest): Observable<void> {
+    return this.api
+      .post<unknown>('/energy/battery/charge', request, { source: 'dashboard' })
+      .pipe(map(() => undefined));
+  }
+
+  /** The charge going on ended and the Self Use of the owner set back - a write to the inverter. */
+  cancelCharge(): Observable<void> {
+    return this.api.delete<unknown>('/energy/battery/charge').pipe(map(() => undefined));
+  }
+
+  /** The settings of the automatic charge, written whole; the page reads them again. */
+  saveAutomation(body: AutomationBody): Observable<void> {
+    return this.api.put<unknown>('/energy/automation', body).pipe(map(() => undefined));
+  }
+
+  /** No automatic charge for this planned outage, or allowed again. */
+  skipOutage(id: number, skip: boolean): Observable<void> {
+    return this.api
+      .put<unknown>(`/energy/outages/planned/${id}/${skip ? 'skip' : 'unskip'}`, undefined)
+      .pipe(map(() => undefined));
   }
 
   /** The outages that started in a range (house times, at most 366 days). Call in an injection context. */

@@ -1,0 +1,133 @@
+@use '../../shared/domain-tile/tile-content';
+
+$gap: 12px;
+
+// The control of the charge (HAS-342): the charge and the automation side by side, the planned outages
+// and the charges under them; one column on a phone.
+:host {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $gap;
+  align-items: stretch;
+  max-width: 1600px;
+  margin: $gap auto 0;
+  container-type: inline-size;
+}
+
+@container (min-width: 900px) {
+  :host {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.charge__state {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-large);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 0 0 12px;
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
+.question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.form__row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.form__hint {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.form__problems {
+  margin: 0;
+  padding: 8px 12px 8px 28px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-error-container);
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button[type='submit'],
+.form__actions,
+[data-testid='charge-cancel'] {
+  justify-self: start;
+}
+
+.planned,
+.runs {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planned__item {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  button {
+    justify-self: start;
+  }
+}
+
+.planned__kind,
+.planned__words {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.planned__note {
+  font: var(--mat-sys-body-medium);
+}
+
+.runs__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 8px;
+  font: var(--mat-sys-body-medium);
+}
+
+@media (max-width: 599px) {
+  .runs__item {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

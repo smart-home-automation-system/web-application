@@ -67,6 +67,16 @@ import {
   inverters,
 } from './energy.fixtures';
 import {
+  automation,
+  cancelCharge,
+  chargeRuns,
+  chargeState,
+  plannedOutages,
+  saveAutomation,
+  skipOutage,
+  startCharge,
+} from './charge.fixtures';
+import {
   addDevice,
   addMember,
   householdProfiles,
@@ -662,6 +672,47 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/energy/outages',
     reply: (_, fresh) => ({ status: 200, body: gridOutages(fresh) }),
+  },
+  // the charge of the battery and its automation (HAS-342)
+  {
+    method: 'GET',
+    path: '/home/energy/battery/charge',
+    reply: (_, fresh) => ({ status: 200, body: chargeState(fresh) }),
+  },
+  {
+    method: 'POST',
+    path: '/home/energy/battery/charge',
+    reply: (request) => startCharge(request),
+  },
+  {
+    method: 'DELETE',
+    path: '/home/energy/battery/charge',
+    reply: () => cancelCharge(),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/battery/charge/runs',
+    reply: (_, fresh) => ({ status: 200, body: chargeRuns(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/automation',
+    reply: (_, fresh) => ({ status: 200, body: automation(fresh) }),
+  },
+  {
+    method: 'PUT',
+    path: '/home/energy/automation',
+    reply: (request) => saveAutomation(request),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/outages/planned',
+    reply: (_, fresh) => ({ status: 200, body: plannedOutages(fresh) }),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/energy\/outages\/planned\/(\d+)\/(skip|unskip)$/,
+    reply: (_, __, [id, action]) => skipOutage(Number(id), action === 'skip'),
   },
   {
     method: 'GET',

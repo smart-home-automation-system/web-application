@@ -15,6 +15,7 @@ import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { EnergyChartCard } from './energy-chart-card';
+import { EnergyControl } from './energy-control';
 import { ENERGY_CHARTS, energyChart } from './energy-charts';
 import { EnergyDays, shiftDay } from './energy-days';
 import { describeEnergyError } from './energy-errors';
@@ -73,6 +74,7 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
     TranslocoDirective,
     DomainTile,
     EnergyChartCard,
+    EnergyControl,
     EnergyDays,
     EnergyFlow,
     EnergySettlement,
