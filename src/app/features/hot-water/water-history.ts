@@ -17,8 +17,8 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
  * last day, week or month, with the band the tank is kept in.
  *
  * One call feeds it, so it is one card. The service averages the readings into buckets and
- * chooses their width; a bucket without a reading has no point, and the line is broken there -
- * a gap is drawn as a gap, never bridged.
+ * chooses their width; a bucket without a reading has no point - one missed is drawn through, a
+ * longer silence is bridged faintly and told as "no readings" (HAS-375).
  */
 @Component({
   selector: 'app-water-history',

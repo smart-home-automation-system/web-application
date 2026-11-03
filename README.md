@@ -263,9 +263,13 @@ cards of a row are of one size (HAS-266).
 
 **The charts** are drawn with ECharts, downloaded by the first view that shows one and never
 with the first page. A history is asked for with its two ends only - the services choose how
-the range is cut into buckets - and **a bucket without a reading is a break in the line**, never
-a slope drawn across it. The dashed line of a room is the schedule the room has *today*: what
-was in force on a past day is stored nowhere, and the chart says so.
+the range is cut into buckets. **A line stays whole, and an outage stays visible** (HAS-375): a
+silence up to two buckets - for a room up to 3 hours, since a battery thermometer reports on a
+change only - is drawn through as the line it is; a longer one (the database down, a sensor
+silent) is bridged by a faint dotted line, and the tooltip there says "no readings" with the
+readings on both sides, never a value made up between them. The dashed line of a room is the
+schedule the room has *today*: what was in force on a past day is stored nowhere, and the chart
+says so.
 
 Everybody in the household has a **profile**, opened by a personal link and remembered in the
 browser: the administrator gets the whole application, a resident their own page - see

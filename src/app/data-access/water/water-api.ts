@@ -52,7 +52,8 @@ export interface WaterHistoryPoint {
  * `GET /home/water/temperature/history?from=&to=` (`water-service` 0.6.0): both temperatures
  * over a range, averaged into buckets whose width the service chooses - 5 minutes up to 2 days,
  * 30 minutes up to 8, 2 hours up to 31. **A bucket without a reading has no point**: two points
- * further apart than `bucketSeconds` are a gap in the readings, and the line is broken there.
+ * further apart than `bucketSeconds` are a silence; one longer than two buckets is a gap, bridged
+ * faintly by the chart (HAS-375).
  * A reading is stored every 3 minutes, so one missed poll can leave a 5-minute bucket empty.
  */
 export interface WaterHistory {

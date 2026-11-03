@@ -692,9 +692,23 @@ e2e/              # Playwright tests
     because the services align their buckets to the clock of the house and a range that starts
     inside one gets a first point before its axis. Wall-clock arithmetic only - a day is 24
     hours there, also on the two nights the clocks change.
-  - **A missing bucket is a break in the line** (`toLine`): two points further apart than
-    `bucketSeconds` get a `null` between them, and the chart never connects across one. A point
-    that cannot be read is left out, which makes it a gap too. Never "fix" a gap by connecting.
+  - **A line stays whole, an outage stays visible** (owner, 2026-11-03, HAS-375 - it replaced the
+    break at every missing bucket of HAS-201, which split the weather after a database outage into
+    islands and drew a battery thermometer as dots). `toLine` draws a silence up to the chart's
+    `solidGapSeconds` through as the line it is - by default two buckets (`solidGapOf`), for the
+    rooms of the heating at least `ROOM_QUIET_SECONDS` (3 h: a Plus H&T or a BLU H&T reports on a
+    change only, and its last reading holds), for a plug its 90 s - and puts a `null` in the middle
+    of a longer one. The library still never connects a `null` (`connectNulls: false`): a gap is
+    bridged by **a series of its own** (`bridgesOf`, id `<key>-gaps`) - thin, faint, **dotted**, since
+    the dashed line of a room is its schedule - after every line, so a line keeps the index of its
+    place; it has no legend entry (`legend.data`), no symbols and no row in the tooltip. Inside a gap
+    the tooltip says "no readings" with the readings on both sides (`gapAround`, `gapSpan`), never a
+    value made up between them, and prints no time of its own (the middle of a gap is no moment of
+    the data); the lowest and the highest count readings only. The bridges are drawing only, so
+    `HistoryChart` tells a screen reader how many gaps its lines have (`history.gaps`, a
+    `.visually-hidden` line next to the picture). A schedule and bars get no bridge.
+    **The 3 h hold for every room** (owner, 2026-11-03), also for one on an Eaton sensor that
+    reports every few minutes: its outage of up to 3 h is drawn solid, accepted - do not re-raise.
   - **A history is a `queryResource`** (`core/api/query-resource.ts`, the rule of the presence
     reports): the answer carries the range it is for, and the view shows it only while that is
     the answer of the **period** on screen (`shownHistory`) - until then a progress bar, not

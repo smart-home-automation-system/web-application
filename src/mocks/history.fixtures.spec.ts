@@ -1,7 +1,13 @@
 import { RoomHistory } from '../app/data-access/heating/heating-api';
 import { WaterHistory } from '../app/data-access/water/water-api';
 import { WeatherHistory } from '../app/data-access/weather/weather-api';
-import { isHistoryRefusal, roomHistory, waterHistory, weatherHistory } from './history.fixtures';
+import {
+  ON_CHANGE_ROOM,
+  isHistoryRefusal,
+  roomHistory,
+  waterHistory,
+  weatherHistory,
+} from './history.fixtures';
 
 // 18:30 in the house on 2026-10-10 (summer time, UTC+2)
 const NOW = new Date('2026-10-10T16:30:00Z');
@@ -39,6 +45,28 @@ describe('the histories of the mock house', () => {
     ['2026-09-11T00:00:00', '2026-10-11T00:00:00', 10800],
   ])('cuts a room from %s to %s into buckets of %i s', (from, to, bucketSeconds) => {
     expect(room(from, to).bucketSeconds).toBe(bucketSeconds);
+  });
+
+  // a battery thermometer: readings hours apart, never one per bucket (HAS-375)
+  it('has few readings of the bathroom up, as from a thermometer that reports on a change', () => {
+    const answer = roomHistory(
+      ON_CHANGE_ROOM,
+      '2026-10-09T19:00:00',
+      '2026-10-10T19:00:00',
+      false,
+      NOW,
+    );
+    if (isHistoryRefusal(answer)) {
+      throw new Error(`refused: ${answer.message}`);
+    }
+    const points = answer.points ?? [];
+    const times = points.map((point) => Date.parse(`${point.at}Z`));
+    const silences = times.slice(1).map((at, index) => at - times[index]);
+    const everyBucket = room('2026-10-09T19:00:00', '2026-10-10T19:00:00').points ?? [];
+
+    expect(points.length).toBeGreaterThan(5);
+    expect(points.length).toBeLessThan(everyBucket.length / 3);
+    expect(Math.min(...silences)).toBeGreaterThan((answer.bucketSeconds ?? 0) * 1_000);
   });
 
   it('answers the range as it was asked for', () => {

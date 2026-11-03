@@ -1,15 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
   inject,
   input,
   viewChild,
 } from '@angular/core';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
-import { ChartLine } from './chart-data';
+import { ChartLine, gapAround } from './chart-data';
 import { drawChart } from './chart-drawing';
 import { ChartBand, chartOption } from './chart-option';
 
@@ -44,6 +45,12 @@ import { ChartBand, chartOption } from './chart-option';
         [class.chart__plot--failed]="failed()"
         [attr.aria-label]="label()"
       ></div>
+      @if (gaps() > 0) {
+        <!-- the dotted bridges are drawing only: a screen reader is told of them in words -->
+        <span class="visually-hidden" data-testid="chart-gaps">{{
+          t('history.gaps', { count: gaps() })
+        }}</span>
+      }
       @if (failed()) {
         <p class="chart__failed" role="status" data-testid="chart-failed">
           {{ t('history.chartFailed') }}
@@ -70,7 +77,25 @@ export class HistoryChart {
   /** What the value can never go past; the axis never steps over it. */
   readonly bounds = input<{ readonly min?: number; readonly max?: number }>();
 
-  private readonly locale = inject(LanguageStore).locale;
+  private readonly languages = inject(LanguageStore);
+  private readonly locale = this.languages.locale;
+  private readonly transloco = inject(TranslocoService);
+  /** What the tooltip says inside a gap; read with the language, so that it follows it. */
+  private readonly noReadings = computed(() => {
+    this.languages.language();
+    return this.transloco.translate('history.noReadings');
+  });
+  /** The gaps of the measured lines - what the faint dotted bridges stand for (HAS-375). */
+  protected readonly gaps = computed(() =>
+    this.lines()
+      .filter((line) => !line.dashed && !line.bars)
+      .reduce(
+        (count, line) =>
+          count +
+          line.points.filter((_, index) => gapAround(line.points, index) !== undefined).length,
+        0,
+      ),
+  );
   private readonly plot = viewChild.required<ElementRef<HTMLElement>>('plot');
   /** The library could not be downloaded; cleared by the attempt that succeeds. */
   protected readonly failed = drawChart(
@@ -85,6 +110,7 @@ export class HistoryChart {
       logarithmic: this.logarithmic(),
       decimals: this.decimals(),
       bounds: this.bounds(),
+      noReadings: this.noReadings(),
     }),
     chartOption,
   );

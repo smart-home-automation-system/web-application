@@ -1,5 +1,14 @@
 import { SchedulePeriod } from '../room-heating/room-views';
-import { axisOf, scheduleLine, summarise, toLine, wallClockOf } from './chart-data';
+import {
+  axisOf,
+  bridgesOf,
+  gapAround,
+  scheduleLine,
+  solidGapOf,
+  summarise,
+  toLine,
+  wallClockOf,
+} from './chart-data';
 
 const at = (dateTime: string) => Date.parse(`${dateTime}Z`);
 const value = (point: Record<string, unknown>) => point['value'];
@@ -21,8 +30,8 @@ describe('toLine', () => {
     ]);
   });
 
-  // the services leave a bucket without a reading out: that is a gap, not a slope
-  it('breaks the line where a bucket is missing', () => {
+  // one bucket missed is a silence within what a sensor does, and drawn through (HAS-375)
+  it('draws a single missing bucket through', () => {
     const line = toLine(
       [
         { at: '2026-10-08T00:00:00', value: 21.5 },
@@ -36,9 +45,41 @@ describe('toLine', () => {
     expect(line).toEqual([
       [at('2026-10-08T00:00:00'), 21.5],
       [at('2026-10-08T00:20:00'), 21.4],
-      // where the missing bucket would have started
-      [at('2026-10-08T00:40:00'), null],
       [at('2026-10-08T01:00:00'), 20.9],
+    ]);
+  });
+
+  // a longer silence - the outage of a database - is a gap, which the chart bridges faintly
+  it('breaks the line in the middle of a silence longer than two buckets', () => {
+    const line = toLine(
+      [
+        { at: '2026-10-08T00:00:00', value: 21.5 },
+        { at: '2026-10-08T01:00:00', value: 20.9 },
+      ],
+      1200,
+      value,
+    );
+
+    expect(line).toEqual([
+      [at('2026-10-08T00:00:00'), 21.5],
+      [at('2026-10-08T00:30:00'), null],
+      [at('2026-10-08T01:00:00'), 20.9],
+    ]);
+  });
+
+  it('draws through as long a silence as the caller allows', () => {
+    const points = [
+      { at: '2026-10-08T00:00:00', value: 21.5 },
+      { at: '2026-10-08T02:40:00', value: 21 },
+      { at: '2026-10-08T06:00:00', value: 20.5 },
+    ];
+
+    expect(toLine(points, 1200, value, 3 * 3600)).toEqual([
+      [at('2026-10-08T00:00:00'), 21.5],
+      [at('2026-10-08T02:40:00'), 21],
+      // 3 h 20 min is past the three hours
+      [at('2026-10-08T04:20:00'), null],
+      [at('2026-10-08T06:00:00'), 20.5],
     ]);
   });
 
@@ -56,7 +97,7 @@ describe('toLine', () => {
     expect(line.some(([, reading]) => reading === null)).toBe(false);
   });
 
-  // nothing checks an answer at runtime: what cannot be read is left out, and so becomes a gap
+  // nothing checks an answer at runtime: what cannot be read is left out, a silence like any other
   it('leaves out a point without a readable time or a finite value', () => {
     const line = toLine(
       [
@@ -65,7 +106,7 @@ describe('toLine', () => {
         { at: 'yesterday', value: 21 },
         { value: 21 },
         null,
-        { at: '2026-10-08T00:40:00', value: 21.2 },
+        { at: '2026-10-08T01:20:00', value: 21.2 },
       ],
       1200,
       value,
@@ -73,8 +114,8 @@ describe('toLine', () => {
 
     expect(line).toEqual([
       [at('2026-10-08T00:00:00'), 21.5],
-      [at('2026-10-08T00:20:00'), null],
-      [at('2026-10-08T00:40:00'), 21.2],
+      [at('2026-10-08T00:40:00'), null],
+      [at('2026-10-08T01:20:00'), 21.2],
     ]);
   });
 
@@ -100,6 +141,75 @@ describe('toLine', () => {
     expect(toLine(points, 300, (point) => point['circulation'])).toEqual([
       [at('2026-10-08T00:00:00'), 26.4],
     ]);
+  });
+});
+
+describe('solidGapOf', () => {
+  it('is two buckets, or longer where the caller asks for it', () => {
+    expect(solidGapOf(1200)).toBe(2400);
+    expect(solidGapOf(1200, 3 * 3600)).toBe(3 * 3600);
+    // a bucket of a long range is wider than the quiet of a sensor
+    expect(solidGapOf(6 * 3600, 3 * 3600)).toBe(12 * 3600);
+  });
+
+  it('tells nothing without a bucket, unless the caller names a silence', () => {
+    expect(solidGapOf(undefined)).toBeUndefined();
+    expect(solidGapOf('wide')).toBeUndefined();
+    expect(solidGapOf(-5, 3600)).toBe(3600);
+  });
+});
+
+describe('bridgesOf', () => {
+  it('joins the two readings around every gap, each bridge apart', () => {
+    expect(
+      bridgesOf([
+        [1, 20],
+        [2, 21],
+        [3, null],
+        [4, 22],
+        [5, null],
+        [6, 23],
+      ]),
+    ).toEqual([
+      [2, 21],
+      [4, 22],
+      [4, null],
+      [4, 22],
+      [6, 23],
+    ]);
+  });
+
+  it('has nothing to bridge in a whole line, or at its ends', () => {
+    expect(
+      bridgesOf([
+        [1, 20],
+        [2, 21],
+      ]),
+    ).toEqual([]);
+    expect(
+      bridgesOf([
+        [1, null],
+        [2, 21],
+        [3, null],
+      ]),
+    ).toEqual([]);
+  });
+});
+
+describe('gapAround', () => {
+  const line = [
+    [1, 20],
+    [5, null],
+    [9, 22],
+  ] as const;
+
+  it('names the readings around a gap', () => {
+    expect(gapAround(line, 1)).toEqual({ from: 1, to: 9 });
+  });
+
+  it('is nothing for a reading or outside the line', () => {
+    expect(gapAround(line, 0)).toBeUndefined();
+    expect(gapAround(line, 7)).toBeUndefined();
   });
 });
 

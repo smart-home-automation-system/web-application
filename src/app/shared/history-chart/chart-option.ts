@@ -1,7 +1,7 @@
 import type { EChartsCoreOption } from 'echarts/core';
 
 import { dateTimeFormat, numberFormat } from '../../core/i18n/intl-formats';
-import { ChartLine, LinePoint } from './chart-data';
+import { ChartLine, LinePoint, bridgesOf, gapAround } from './chart-data';
 
 /** A band of values drawn behind the lines - the temperatures the hot water is kept between. */
 export interface ChartBand {
@@ -43,6 +43,11 @@ export interface ChartInput {
    * a step of air around the values, but never steps over these.
    */
   readonly bounds?: { readonly min?: number; readonly max?: number };
+  /**
+   * What the tooltip says of a line inside one of its gaps, "No readings", in the language of the
+   * interface; the gap is not told without it.
+   */
+  readonly noReadings?: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
@@ -68,6 +73,11 @@ export function axisLabel(at: number, spanMs: number, locale: string): string {
   if (spanMs > 2 * DAY_MS || at % DAY_MS === 0) {
     return day.format(at);
   }
+  return clockTime(at, locale);
+}
+
+/** The time of the day alone, as the house had it: `14:20`. */
+function clockTime(at: number, locale: string): string {
   return dateTimeFormat(locale, {
     timeZone: 'UTC',
     hour: '2-digit',
@@ -156,6 +166,8 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
       textStyle: { ...text, color: colors.strongText },
       // a legend entry is no switch here: a line that vanishes at a click reads as missing data
       selectedMode: false,
+      // one entry per line: the bridges of its gaps carry its name and get none
+      data: input.lines.map((line) => line.name),
     },
     tooltip: {
       trigger: 'axis',
@@ -181,18 +193,39 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
         // The moment is that of a measured point. A line of steps has points at its edges only,
         // so ECharts lists it where the pointer is near an edge and nowhere else - or twice,
         // where two steps share one: what it asks for at the moment is read off the line here.
-        const measured = rows.filter((row) => !steps.has(row.seriesName ?? ''));
+        // a bridge of a gap is no reading, and has no row of its own
+        const measured = rows.filter(
+          (row) =>
+            !steps.has(row.seriesName ?? '') &&
+            (row.seriesIndex === undefined || row.seriesIndex < input.lines.length),
+        );
         const at = (measured[0] ?? rows[0])?.value?.[0];
         const row = (marker: string, name: string, reading: number) =>
           // the markers are markup of ECharts and of this file; a name is ours, and escaped
           // all the same
           `${marker}${escapeHtml(name)}: <strong>${withUnit(value.format(reading), unit)}</strong>`;
+        /** A line inside one of its gaps: no value, the readings on both sides of the silence. */
+        const gapRow = (hoveredRow: (typeof rows)[number]) => {
+          const line =
+            hoveredRow.seriesIndex === undefined ? undefined : input.lines[hoveredRow.seriesIndex];
+          const gap =
+            line === undefined || hoveredRow.dataIndex === undefined
+              ? undefined
+              : gapAround(line.points, hoveredRow.dataIndex);
+          return gap === undefined || input.noReadings === undefined
+            ? []
+            : [
+                `${hoveredRow.marker ?? ''}${escapeHtml(hoveredRow.seriesName ?? '')}: ` +
+                  `<strong>${escapeHtml(input.noReadings)}</strong> ` +
+                  escapeHtml(gapSpan(gap.from, gap.to, input.locale)),
+              ];
+        };
         const lines = [
           ...measured.flatMap((hoveredRow) => {
             const reading = measuredValue(hoveredRow);
             return typeof reading === 'number'
               ? [row(hoveredRow.marker ?? '', hoveredRow.seriesName ?? '', reading)]
-              : [];
+              : gapRow(hoveredRow);
           }),
           ...input.lines.flatMap((line) => {
             const asked = line.dashed && at !== undefined ? valueAt(line.points, at) : undefined;
@@ -201,9 +234,13 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
               : [row(markerOf(colors.lines[line.color - 1]), line.name, asked)];
           }),
         ];
-        return [at === undefined ? '' : escapeHtml(tooltipTime(at, input.locale)), ...lines].join(
-          '<br>',
-        );
+        // inside a gap the moment is the middle the gap was marked at - no reading: its rows say
+        // when the readings around it were, and no time of its own is printed
+        const inGap =
+          measured.length > 0 &&
+          measured.every((hoveredRow) => typeof measuredValue(hoveredRow) !== 'number');
+        const header = at === undefined || inGap ? [] : [escapeHtml(tooltipTime(at, input.locale))];
+        return [...header, ...lines].join('<br>');
       },
     },
     xAxis: {
@@ -245,42 +282,78 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
       axisLabel: { ...text, formatter: (at: number) => withUnit(axisValue.format(at), input.unit) },
       splitLine: { lineStyle: { color: colors.grid, opacity: 0.35 } },
     },
-    series: input.lines.map((line, index) =>
-      line.bars
-        ? {
-            type: 'bar',
-            id: line.key,
-            name: line.name,
-            data: line.points,
-            barMaxWidth: 10,
-            emphasis: { disabled: true },
-          }
-        : {
-            type: 'line',
-            id: line.key,
-            name: line.name,
-            data: input.logarithmic ? onLogAxis(line.points) : line.points,
-            // a break in the line is a gap in the readings: never bridged
-            connectNulls: false,
-            // a point between two gaps has no line to either side, and would not be drawn at all
-            showSymbol: !line.dashed,
-            symbol: 'circle',
-            symbolSize: 2.5,
-            lineStyle: { width: 2, type: line.dashed ? 'dashed' : 'solid' },
-            emphasis: { disabled: true },
-            ...(index === 0 && band !== undefined
-              ? {
-                  markArea: {
-                    silent: true,
-                    itemStyle: { color: colors.text, opacity: 0.12 },
-                    // no words inside the picture: a line crosses the band anywhere, and would cross
-                    // them - the caller says next to the chart what the shaded band is
-                    label: { show: false },
-                    data: [[{ name: band.name, yAxis: band.low }, { yAxis: band.high }]],
-                  },
-                }
-              : {}),
-          },
-    ),
+    series: [
+      ...input.lines.map(seriesOf(input, colors)),
+      // after every line, so that a line keeps the index of its place in `input.lines`
+      ...input.lines.flatMap((line) => {
+        const bridges = line.bars || line.dashed ? [] : bridgesOf(line.points);
+        const color = colors.lines[line.color - 1];
+        return bridges.length === 0
+          ? []
+          : [
+              {
+                type: 'line',
+                id: `${line.key}-gaps`,
+                name: line.name,
+                data: input.logarithmic ? onLogAxis(bridges) : bridges,
+                connectNulls: false,
+                showSymbol: false,
+                silent: true,
+                tooltip: { show: false },
+                // dotted, thin and faint: the dashed line is the schedule of a room
+                lineStyle: { width: 1.5, type: 'dotted', opacity: 0.6, color },
+                itemStyle: { color },
+                emphasis: { disabled: true },
+              },
+            ];
+      }),
+    ],
   };
+}
+
+/** The readings on both sides of a gap, the second without its day when it is the same day. */
+export function gapSpan(from: number, to: number, locale: string): string {
+  const sameDay = Math.floor(from / DAY_MS) === Math.floor(to / DAY_MS);
+  const end = sameDay ? clockTime(to, locale) : tooltipTime(to, locale);
+  return `(${tooltipTime(from, locale)} – ${end})`;
+}
+
+function seriesOf(input: ChartInput, colors: ChartColors) {
+  const band = input.band;
+  return (line: ChartLine, index: number) =>
+    line.bars
+      ? {
+          type: 'bar',
+          id: line.key,
+          name: line.name,
+          data: line.points,
+          barMaxWidth: 10,
+          emphasis: { disabled: true },
+        }
+      : {
+          type: 'line',
+          id: line.key,
+          name: line.name,
+          data: input.logarithmic ? onLogAxis(line.points) : line.points,
+          // a break in the line is a gap in the readings: its bridge is a series of its own
+          connectNulls: false,
+          // a point between two gaps has no line to either side, and would not be drawn at all
+          showSymbol: !line.dashed,
+          symbol: 'circle',
+          symbolSize: 2.5,
+          lineStyle: { width: 2, type: line.dashed ? 'dashed' : 'solid' },
+          emphasis: { disabled: true },
+          ...(index === 0 && band !== undefined
+            ? {
+                markArea: {
+                  silent: true,
+                  itemStyle: { color: colors.text, opacity: 0.12 },
+                  // no words inside the picture: a line crosses the band anywhere, and would cross
+                  // them - the caller says next to the chart what the shaded band is
+                  label: { show: false },
+                  data: [[{ name: band.name, yAxis: band.low }, { yAxis: band.high }]],
+                },
+              }
+            : {}),
+        };
 }

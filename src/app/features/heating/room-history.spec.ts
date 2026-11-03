@@ -89,7 +89,7 @@ describe('RoomHistory', () => {
     expect(asked.range()).toEqual({ from: '2026-10-09T19:00:00', to: '2026-10-10T19:00:00' });
   });
 
-  it('draws the temperature, broken where a bucket is missing', async () => {
+  it('draws the temperature through a missing bucket', async () => {
     create();
     answerQuery(history, asked.range(), DAY);
     await settle();
@@ -100,10 +100,30 @@ describe('RoomHistory', () => {
         data: [
           [at('2026-10-10T17:00:00'), 21.44],
           [at('2026-10-10T17:20:00'), 21.38],
-          [at('2026-10-10T17:40:00'), null],
           [at('2026-10-10T18:00:00'), 20.9],
         ],
       },
+    ]);
+  });
+
+  // a battery thermometer reports on a change only: hours of silence are one line (HAS-375)
+  it('draws up to three hours of silence through, and breaks a longer one', async () => {
+    create();
+    answerQuery(history, asked.range(), {
+      ...DAY,
+      points: [
+        { at: '2026-10-10T08:00:00', value: 21 },
+        { at: '2026-10-10T11:00:00', value: 21.5 },
+        { at: '2026-10-10T15:00:00', value: 22 },
+      ],
+    });
+    await settle();
+
+    expect(charts.lines()[0].data).toEqual([
+      [at('2026-10-10T08:00:00'), 21],
+      [at('2026-10-10T11:00:00'), 21.5],
+      [at('2026-10-10T13:00:00'), null],
+      [at('2026-10-10T15:00:00'), 22],
     ]);
   });
 
