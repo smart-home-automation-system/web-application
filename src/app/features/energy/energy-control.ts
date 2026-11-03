@@ -231,7 +231,10 @@ export class EnergyControl {
       return;
     }
     this.send(
-      this.api.startCharge({ targetSoc: wholeOf(this.target()) ?? CHARGE_TARGET.max, until }),
+      this.api.startCharge({
+        targetSoc: wholeOf(this.target()) ?? CHARGE_TARGET.max,
+        until: until.until,
+      }),
       'energy.charge.startFailed',
       this.chargeBusy,
       this.chargeFailure,

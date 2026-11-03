@@ -29,20 +29,21 @@ export function within(value: number | undefined, bounds: { min: number; max: nu
   return value !== undefined && value >= bounds.min && value <= bounds.max;
 }
 
+/** The end asked for a charge; without `until` the service estimates it. */
+export interface ChargeEnd {
+  readonly until?: string;
+}
+
 /**
  * The end of a charge written as a time of day (`HH:mm`, the field of the page): the next such time of
  * the house - today when it is still ahead, tomorrow otherwise - as the house time the service takes
- * (`2026-11-03T18:30:00`). Empty for an empty field (the service then estimates the end); `invalid`
+ * (`2026-11-03T18:30:00`). No `until` for an empty field (the service then estimates the end); `invalid`
  * for anything that is not a time.
  */
-export function untilOf(
-  time: string,
-  now: number,
-  timeZone: string,
-): string | undefined | 'invalid' {
+export function untilOf(time: string, now: number, timeZone: string): ChargeEnd | 'invalid' {
   const trimmed = time.trim();
   if (trimmed === '') {
-    return undefined;
+    return {};
   }
   const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(trimmed);
   if (!match) {
@@ -51,7 +52,7 @@ export function untilOf(
   const minute = Number(match[1]) * 60 + Number(match[2]);
   const today = houseDay(now, timeZone);
   const day = minute > houseWeekMinute(now, timeZone).minute ? today : shiftDay(today, 1);
-  return `${day}T${trimmed}:00`;
+  return { until: `${day}T${trimmed}:00` };
 }
 
 const RUN_STATES: Readonly<Record<string, MessageKey>> = {
