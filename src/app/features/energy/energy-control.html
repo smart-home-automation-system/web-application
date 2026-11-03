@@ -1,0 +1,382 @@
+<ng-container *transloco="let t">
+  <!-- the charge going on, or the form of a new one -->
+  <app-domain-tile
+    class="control__charge"
+    heading="energy.cards.charge"
+    icon="battery_charging_full"
+    domain="energy"
+    waitingLabel="energy.page.loading"
+    [describeWith]="describe"
+    [resource]="charge"
+    data-testid="card-charge"
+  >
+    @if (charge.value() !== undefined) {
+      @if (run(); as r) {
+        <p class="charge__state" data-testid="charge-state">
+          <strong>{{ runStateLabel(r) | displayText }}</strong>
+          · {{ t('energy.charge.startedBy') }} {{ runSourceLabel(r) | displayText }}
+        </p>
+        <dl class="facts">
+          <dt>{{ t('energy.charge.window') }}</dt>
+          <dd data-testid="charge-window">
+            @if (r.windowStart && r.windowEnd) {
+              {{ r.windowStart | houseDateTime }} – {{ r.windowEnd | houseDateTime }}
+            } @else {
+              {{ t('energy.notKnown') }}
+            }
+          </dd>
+          <dt>{{ t('energy.charge.target') }}</dt>
+          <dd>
+            @if (numberOf(r.targetSoc) !== undefined) {
+              {{ r.targetSoc | localNumber: WHOLE }}&nbsp;%
+            } @else {
+              {{ t('energy.notKnown') }}
+            }
+          </dd>
+          <dt>{{ t('energy.charge.socNow') }}</dt>
+          <dd data-testid="charge-soc">
+            @if (numberOf(charge.value()?.soc) !== undefined) {
+              {{ charge.value()?.soc | localNumber: WHOLE }}&nbsp;%
+            } @else {
+              {{ t('energy.notKnown') }}
+            }
+          </dd>
+          <dt>{{ t('energy.charge.power') }}</dt>
+          <dd><app-power-value [watts]="charge.value()?.power" /></dd>
+          @if (numberOf(charge.value()?.minutesLeft) !== undefined) {
+            <dt>{{ t('energy.charge.left') }}</dt>
+            <dd data-testid="charge-left">
+              {{ t('energy.charge.minutes', { minutes: charge.value()?.minutesLeft }) }}
+            </dd>
+          }
+        </dl>
+        @if (r.state === 'ending') {
+          <p class="tile__detail">{{ t('energy.charge.endingNote') }}</p>
+        }
+        @if (goingOn() && r.state !== 'ending') {
+          @if (askCancel()) {
+            <p class="question" role="alert" data-testid="charge-cancel-question">
+              {{ t('energy.charge.cancelQuestion') }}
+              <button
+                matButton
+                type="button"
+                data-testid="charge-cancel-keep"
+                #keep
+                (click)="askCancel.set(false)"
+              >
+                {{ t('energy.charge.keep') }}
+              </button>
+              <button
+                matButton="outlined"
+                type="button"
+                data-testid="charge-cancel-confirm"
+                [disabled]="chargeBusy()"
+                (click)="cancel()"
+              >
+                {{ t('energy.charge.cancel') }}
+              </button>
+            </p>
+          } @else {
+            <button
+              matButton="outlined"
+              type="button"
+              data-testid="charge-cancel"
+              [disabled]="chargeBusy()"
+              (click)="cancel()"
+            >
+              <mat-icon>stop</mat-icon>{{ t('energy.charge.cancel') }}
+            </button>
+          }
+        }
+      } @else {
+        <p class="tile__detail" data-testid="charge-none">{{ t('energy.charge.none') }}</p>
+        <form class="form" data-testid="charge-form" (submit)="$event.preventDefault(); start()">
+          <div class="form__row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ t('energy.charge.target') }}</mat-label>
+              <input
+                matInput
+                inputmode="numeric"
+                data-testid="charge-target"
+                [value]="target()"
+                (input)="target.set(textOf($event))"
+              />
+              <span matTextSuffix>%</span>
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ t('energy.charge.until') }}</mat-label>
+              <input
+                matInput
+                type="time"
+                data-testid="charge-until"
+                [value]="until()"
+                (input)="until.set(textOf($event))"
+              />
+            </mat-form-field>
+          </div>
+          <p class="form__hint">{{ t('energy.charge.hint') }}</p>
+          @if (chargeTried() && (!targetValid() || untilValue() === 'invalid')) {
+            <ul class="form__problems" data-testid="charge-problems">
+              @if (!targetValid()) {
+                <li>
+                  {{ t('energy.charge.targetProblem', { min: TARGET.min, max: TARGET.max }) }}
+                </li>
+              }
+              @if (untilValue() === 'invalid') {
+                <li>{{ t('energy.charge.untilProblem') }}</li>
+              }
+            </ul>
+          }
+          <button
+            matButton="filled"
+            type="submit"
+            data-testid="charge-start"
+            [disabled]="chargeBusy()"
+          >
+            <mat-icon>bolt</mat-icon>{{ t('energy.charge.start') }}
+          </button>
+        </form>
+      }
+      @if (chargeBusy()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('energy.charge.sending')" />
+      }
+      @if (charge.value()?.plannedStart; as planned) {
+        <p class="tile__detail" data-testid="charge-planned">
+          {{ t('energy.charge.plannedStart') }} {{ planned | houseDateTime }}
+        </p>
+      }
+      @if (chargeFailure(); as failed) {
+        <app-api-error-strip
+          [error]="failed.error"
+          [summary]="t(failed.summary)"
+          [describeWith]="describe"
+        />
+      }
+    }
+  </app-domain-tile>
+
+  <!-- the automation before a planned outage -->
+  <app-domain-tile
+    class="control__automation"
+    heading="energy.cards.automation"
+    icon="event_upcoming"
+    domain="energy"
+    waitingLabel="energy.page.loading"
+    [describeWith]="describe"
+    [resource]="automation"
+    data-testid="card-automation"
+  >
+    @if (automation.value() !== undefined) {
+      <form
+        class="form"
+        data-testid="automation-form"
+        (submit)="$event.preventDefault(); saveAutomation()"
+      >
+        <mat-slide-toggle
+          data-testid="automation-switch"
+          [checked]="autoOn()"
+          [disabled]="autoBusy()"
+          (toggleChange)="editAuto(() => autoOn.set(!autoOn()))"
+        >
+          {{ t('energy.automation.switch') }}
+        </mat-slide-toggle>
+        <p class="tile__detail">{{ t('energy.automation.explain') }}</p>
+        <div class="form__row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('energy.automation.target') }}</mat-label>
+            <input
+              matInput
+              inputmode="numeric"
+              data-testid="automation-target"
+              [value]="autoTarget()"
+              (input)="editAuto(() => autoTarget.set(textOf($event)))"
+            />
+            <span matTextSuffix>%</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('energy.automation.power') }}</mat-label>
+            <input
+              matInput
+              inputmode="decimal"
+              data-testid="automation-power"
+              [value]="autoPower()"
+              (input)="editAuto(() => autoPower.set(textOf($event)))"
+            />
+            <span matTextSuffix>kW</span>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('energy.automation.margin') }}</mat-label>
+            <input
+              matInput
+              inputmode="numeric"
+              data-testid="automation-margin"
+              [value]="autoMargin()"
+              (input)="editAuto(() => autoMargin.set(textOf($event)))"
+            />
+            <span matTextSuffix>min</span>
+          </mat-form-field>
+        </div>
+        @if (autoTried() && !autoValid()) {
+          @let problem = autoProblems();
+          <ul class="form__problems" data-testid="automation-problems">
+            @if (problem.target) {
+              <li>{{ t('energy.charge.targetProblem', { min: TARGET.min, max: TARGET.max }) }}</li>
+            }
+            @if (problem.power) {
+              <li>{{ t('energy.automation.powerProblem', { min: POWER.min, max: POWER.max }) }}</li>
+            }
+            @if (problem.margin) {
+              <li>
+                {{ t('energy.automation.marginProblem', { min: MARGIN.min, max: MARGIN.max }) }}
+              </li>
+            }
+          </ul>
+        }
+        <div class="form__actions">
+          <button
+            matButton="filled"
+            type="submit"
+            data-testid="automation-save"
+            [disabled]="autoBusy() || !autoEdited()"
+          >
+            {{ t('energy.automation.save') }}
+          </button>
+          <button
+            matButton
+            type="button"
+            data-testid="automation-reset"
+            [disabled]="autoBusy() || !autoEdited()"
+            (click)="resetAutomation()"
+          >
+            {{ t('energy.automation.reset') }}
+          </button>
+        </div>
+        @if (automation.value()?.updatedAt; as at) {
+          <p class="tile__detail">
+            {{ t('energy.automation.updatedAt') }} {{ at | houseDateTime }}
+          </p>
+        }
+      </form>
+      @if (autoFailure(); as failed) {
+        <app-api-error-strip
+          [error]="failed.error"
+          [summary]="t(failed.summary)"
+          [describeWith]="describe"
+        />
+      }
+    }
+  </app-domain-tile>
+
+  <!-- the planned outages of Tauron, with the start of the charge and its skip -->
+  <app-domain-tile
+    class="control__planned"
+    heading="energy.cards.planned"
+    icon="power_off"
+    domain="energy"
+    waitingLabel="energy.page.loading"
+    [describeWith]="describe"
+    [resource]="planned"
+    data-testid="card-planned"
+  >
+    @if (outages(); as list) {
+      @if (list.length === 0) {
+        <p class="tile__detail" data-testid="planned-none">{{ t('energy.planned.none') }}</p>
+      } @else {
+        <ul class="planned" data-testid="planned-list">
+          @for (outage of list; track outage.id ?? $index) {
+            <li class="planned__item" data-testid="planned-outage" [attr.data-id]="outage.id">
+              <strong
+                >{{ outage.startsAt | houseDateTime }} – {{ outage.endsAt | houseDateTime }}</strong
+              >
+              <span class="planned__kind"
+                >{{ outageKindLabel(outage) | displayText }} ·
+                {{ outageScopeLabel(outage) | displayText }}</span
+              >
+              @if (outage.description; as words) {
+                <span class="planned__words">{{ words }}</span>
+              }
+              @if (automationApplies(outage)) {
+                @if (outage.skipAutomation) {
+                  <span class="planned__note" data-testid="planned-skipped">{{
+                    t('energy.planned.skipped')
+                  }}</span>
+                } @else if (outage.plannedChargeStart; as start) {
+                  <span class="planned__note" data-testid="planned-start"
+                    >{{ t('energy.planned.chargeFrom') }} {{ start | houseDateTime }}</span
+                  >
+                }
+                <button
+                  matButton
+                  type="button"
+                  [attr.data-testid]="outage.skipAutomation ? 'planned-unskip' : 'planned-skip'"
+                  [disabled]="skipBusy() !== undefined"
+                  (click)="skip(outage, !outage.skipAutomation)"
+                >
+                  {{ t(outage.skipAutomation ? 'energy.planned.unskip' : 'energy.planned.skip') }}
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+    @if (skipFailure(); as failed) {
+      <app-api-error-strip
+        [error]="failed.error"
+        [summary]="t(failed.summary)"
+        [describeWith]="describe"
+      />
+    }
+  </app-domain-tile>
+
+  <!-- the charges of the last 30 days -->
+  <app-domain-tile
+    class="control__runs"
+    heading="energy.cards.runs"
+    icon="history"
+    domain="energy"
+    waitingLabel="energy.page.loading"
+    [describeWith]="describe"
+    [resource]="runs"
+    data-testid="card-runs"
+  >
+    @if (runList(); as list) {
+      @if (list.length === 0) {
+        <p class="tile__detail" data-testid="runs-none">{{ t('energy.runs.none') }}</p>
+      } @else {
+        <ul class="runs" data-testid="runs-list">
+          @for (r of list; track r.id ?? $index) {
+            <li class="runs__item" data-testid="run" [attr.data-id]="r.id">
+              <strong>{{ r.requestedAt | houseDateTime }}</strong>
+              <span>{{ runSourceLabel(r) | displayText }}</span>
+              <span>
+                @if (numberOf(r.socAtStart) !== undefined) {
+                  {{ r.socAtStart | localNumber: WHOLE }}&nbsp;%
+                } @else {
+                  ?
+                }
+                →
+                @if (numberOf(r.socAtEnd) !== undefined) {
+                  {{ r.socAtEnd | localNumber: WHOLE }}&nbsp;%
+                } @else {
+                  {{ t('energy.runs.toTarget', { target: r.targetSoc ?? '?' }) }}
+                }
+              </span>
+              <span>
+                @if (r.endedBy) {
+                  {{ runEndLabel(r) | displayText }}
+                } @else {
+                  {{ runStateLabel(r) | displayText }}
+                }
+                @if (r.failure; as code) {
+                  ({{ code }})
+                }
+              </span>
+            </li>
+          }
+        </ul>
+        <p class="tile__detail">{{ t('energy.runs.range') }}</p>
+      }
+    }
+  </app-domain-tile>
+</ng-container>

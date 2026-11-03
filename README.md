@@ -71,7 +71,13 @@ dashboards:
   and the outages of the grid of the last year; then the powers and the state of charge over 24 hours, 7
   or 30 days, the closed days as bars, and **the net-metering of the billing year** ("opusty") - per month
   what was returned, credited at the ratio, taken, covered by the credit and bought, and the credit "in the
-  grid" now - all in kWh, never money.
+  grid" now - all in kWh, never money. **Charging the battery** (HAS-342): the charge from the grid started with
+  its target and an optional end time, and while it goes on its state, who started it, its window, the battery
+  now and the minutes to the target with "Stop charging" (a charge the automation started is asked about first:
+  stopping it skips its outage); the switch of the charge before a planned outage of the street with its
+  target, power and margin; the planned outages of Tauron with the start the charge would have and "No charge
+  for this one"; the charges of the last 30 days. These are writes to the real inverter - no question but the
+  one above, read again at once and 2.5 s later.
 - **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
   each kind of thing in it - temperature, heating, lights (a bulb each), blinds (a position each,
   the door first), motion, presence sensors, openings (windows and doors), the rest - and a window
@@ -502,6 +508,13 @@ Endpoints used today:
 | `GET` | `/home/energy/grid`, `/home/energy/inverters`, `/home/energy/battery` | The grid meter, both inverters and the battery now (energy, every 15 s; the battery also on the overview, every 60 s) |
 | `GET` | `/home/energy/alerts` | The open alarms (energy, every 60 s). Needs `energy-service` 0.10.0 |
 | `GET` | `/home/energy/outages?from=&to=` | The outages of the grid of the last year (energy, every 60 s) |
+| `GET` | `/home/energy/battery/charge` | The charge going on with the battery now and the start the automation would plan (energy, every 10 s). Needs `energy-service` 0.13.0 |
+| `POST` | `/home/energy/battery/charge?source=dashboard` | Starts a charge from the grid - **a write to the inverter** - with `{targetSoc, until}` (energy); the codes of the service have texts |
+| `DELETE` | `/home/energy/battery/charge` | Stops the charge going on and sets the inverter back (energy) |
+| `GET` | `/home/energy/battery/charge/runs?from=&to=` | The charges of the last 30 days (energy, every 60 s) |
+| `GET`, `PUT` | `/home/energy/automation` | The switch and the settings of the charge before a planned outage, written whole and read again (energy, every 60 s); `INVALID_AUTOMATION` has a text |
+| `GET` | `/home/energy/outages/planned` | The outages Tauron announces for the house, with the planned start of the charge (energy, every 60 s) |
+| `PUT` | `/home/energy/outages/planned/{id}/skip`, `.../unskip` | No automatic charge for an outage, or allowed again (energy) |
 | `GET` | `/home/energy/history?metric=&from=&to=` | `pv-power`, `house-load`, `grid-power` and `battery-soc` over the period of the page (energy, every 3 min); `UNKNOWN_METRIC` and `INVALID_RANGE` have texts |
 | `GET` | `/home/energy/days?from=&to=` | The closed days up to yesterday, 7 or 30 (energy, every 15 min) |
 | `GET` | `/home/energy/months?year=` | The net-metering of a billing year (energy, every 15 min) |

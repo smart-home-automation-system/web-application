@@ -979,6 +979,15 @@ e2e/              # Playwright tests
     last month with a day (`storedNow`).
   - The mock house is a bright afternoon (`energy.fixtures.ts`): phase B overloaded, one SOFAR fault, the SolaX
     cloud silent; the mock registry holds the two inverters (ids 64, 65 - the devices page counts 27).
+  - **The charge of the battery** (HAS-342, `EnergyControl` in `energy-control.ts`, its own four cards in the section
+    under the flow): the charge, the automation, the planned outages and the charges of 30 days. **These are writes to
+    the real inverter** (`POST` / `DELETE /energy/battery/charge`) - no question by the owner's choice, except the cancel
+    of a charge the automation started (it also skips the outage; "Keep charging" takes the focus). The end of a charge
+    is a time of day (`untilOf`: today while ahead, tomorrow otherwise). **Copied facts** (`energy-charge.ts`): the target
+    10 - 100, the power 1 - 8 kW, the margin 0 - 720 min of `ChargeRules` / `AutomationRules` of energy-service; the
+    automation applies to a planned outage of the street only (owner, 2026-11-03). The settings follow the stored answer
+    until edited; "Save" is off until then. The mock (`charge.fixtures.ts`) charges until stopped, refuses as the service
+    does; `resetCharge()`.
   - **The registry knows the kind `inverter`** (`smart-home-sdk` 1.15.0): `bindingsOf('inverter')` is the
     `inverter` binding alone, of the vendor `other`; the form asks for the brand and the serial, offers the
     registration number of the dongle on a SOLAX only and the logger serial on a SOFAR only, the number of the

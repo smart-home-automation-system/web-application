@@ -115,6 +115,11 @@ describe('Energy', () => {
               yearAsked = year;
               return months;
             },
+            // the control of the charge (HAS-342) has a test of its own
+            watchCharge: () => fakeResource(),
+            watchChargeRuns: () => fakeQueryResource(),
+            watchAutomation: () => fakeResource(),
+            watchPlannedOutages: () => fakeResource(),
           },
         },
       ],

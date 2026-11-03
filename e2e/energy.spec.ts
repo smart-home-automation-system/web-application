@@ -84,3 +84,46 @@ test('shows an inverter on the devices page with its binding', async ({ page }) 
 
   await expect(page.locator('[data-device="64"] [data-testid="binding"]')).toContainText('SOLAX');
 });
+
+// HAS-342: the charge of the battery - against the mock API only, never the real inverter
+test('starts and stops a charge from the grid, and keeps it in the history', async ({ page }) => {
+  await page.goto('/energy');
+
+  await expect(page.getByTestId('charge-none')).toBeVisible();
+  await page.getByTestId('charge-target').fill('90');
+  await page.getByTestId('charge-start').click();
+  await expect(page.getByTestId('charge-state')).toHaveText('Charging · started by the dashboard');
+
+  await page.getByTestId('charge-cancel').click();
+  await expect(page.getByTestId('charge-none')).toBeVisible();
+  await expect(page.getByTestId('run').first()).toContainText('stopped');
+});
+
+test('turns the automation on and skips a planned outage of the street', async ({ page }) => {
+  await page.goto('/energy');
+
+  const automation = page.getByTestId('card-automation');
+  await automation.getByRole('switch').click();
+  await page.getByTestId('automation-power').fill('9');
+  await page.getByTestId('automation-save').click();
+  await expect(page.getByTestId('automation-problems')).toContainText('from 1 to 8 kW');
+  await page.getByTestId('automation-power').fill('4,5');
+  await page.getByTestId('automation-save').click();
+  await expect(automation).toContainText('Last changed');
+  await expect(automation.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+
+  const street = page.getByTestId('planned-outage').first();
+  await expect(street).toContainText('The charge would start at');
+  await street.getByTestId('planned-skip').click();
+  await expect(street.getByTestId('planned-skipped')).toBeVisible();
+  await expect(page.getByTestId('charge-planned')).toHaveCount(0);
+});
+
+test('tells a charge the house did not take', async ({ page }) => {
+  await useScenario(page, 'writes-fail');
+  await page.goto('/energy');
+
+  await page.getByTestId('charge-start').click();
+  await expect(page.getByTestId('card-charge')).toContainText('The charge could not be started.');
+  await expect(page.getByTestId('charge-none')).toBeVisible();
+});

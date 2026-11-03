@@ -5,10 +5,19 @@ describe('the refusals of energy-service', () => {
   // the codes of EnergyError the dashboard words; a new one of the service is added here with its text
   it('has a text for every code of the service', () => {
     expect(Object.keys(ENERGY_ERROR_TEXTS).sort()).toEqual([
+      'CHARGE_IN_PROGRESS',
+      'DEVICE_FAILED',
+      'INVALID_AUTOMATION',
+      'INVALID_CHARGE',
       'INVALID_RANGE',
+      'INVERTER_UNAVAILABLE',
+      'NOT_FOUND_CHARGE',
       'NOT_FOUND_INVERTER',
+      'NOT_FOUND_PLANNED_OUTAGE',
       'REGISTRY_UNAVAILABLE',
+      'TARGET_REACHED',
       'UNKNOWN_METRIC',
+      'WRITE_TOO_SOON',
     ]);
   });
 
