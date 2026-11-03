@@ -707,8 +707,8 @@ e2e/              # Playwright tests
     the data); the lowest and the highest count readings only. The bridges are drawing only, so
     `HistoryChart` tells a screen reader how many gaps its lines have (`history.gaps`, a
     `.visually-hidden` line next to the picture). A schedule and bars get no bridge.
-    **Open (owner to decide):** the 3 h of a room is applied to every room, also to one on an Eaton
-    sensor that reports every few minutes - its outage of up to 3 h is drawn solid.
+    **The 3 h hold for every room** (owner, 2026-11-03), also for one on an Eaton sensor that
+    reports every few minutes: its outage of up to 3 h is drawn solid, accepted - do not re-raise.
   - **A history is a `queryResource`** (`core/api/query-resource.ts`, the rule of the presence
     reports): the answer carries the range it is for, and the view shows it only while that is
     the answer of the **period** on screen (`shownHistory`) - until then a progress bar, not
