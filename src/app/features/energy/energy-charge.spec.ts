@@ -16,13 +16,13 @@ const NOW = Date.parse('2026-11-03T13:45:00Z');
 
 describe('the charge of the battery (HAS-342)', () => {
   it('takes the end as the next such time of the house - today ahead, tomorrow behind', () => {
-    expect(untilOf('18:30', NOW, 'Europe/Warsaw')).toBe('2026-11-03T18:30:00');
-    expect(untilOf('06:00', NOW, 'Europe/Warsaw')).toBe('2026-11-04T06:00:00');
-    expect(untilOf('14:45', NOW, 'Europe/Warsaw')).toBe('2026-11-04T14:45:00');
+    expect(untilOf('18:30', NOW, 'Europe/Warsaw')).toEqual({ until: '2026-11-03T18:30:00' });
+    expect(untilOf('06:00', NOW, 'Europe/Warsaw')).toEqual({ until: '2026-11-04T06:00:00' });
+    expect(untilOf('14:45', NOW, 'Europe/Warsaw')).toEqual({ until: '2026-11-04T14:45:00' });
   });
 
   it('leaves the end to the estimate for an empty field, and refuses what is not a time', () => {
-    expect(untilOf('  ', NOW, 'Europe/Warsaw')).toBeUndefined();
+    expect(untilOf('  ', NOW, 'Europe/Warsaw')).toEqual({});
     expect(untilOf('25:00', NOW, 'Europe/Warsaw')).toBe('invalid');
     expect(untilOf('9:00', NOW, 'Europe/Warsaw')).toBe('invalid');
   });
