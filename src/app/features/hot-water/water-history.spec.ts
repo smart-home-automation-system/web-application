@@ -103,15 +103,32 @@ describe('WaterHistory', () => {
   });
 
   // a bucket without a reading has no point: the line is broken there, never bridged
-  it('breaks the lines where a bucket is missing', async () => {
+  // one missed poll leaves a bucket empty: still one line (HAS-375)
+  it('draws the lines through a single missing bucket', async () => {
     answerQuery(history, asked(), DAY);
     await settle();
 
     expect(charts.lines()[0].data).toEqual([
       [at('2026-10-10T18:00:00'), 46.81],
       [at('2026-10-10T18:05:00'), 46.5],
-      [at('2026-10-10T18:10:00'), null],
       [at('2026-10-10T18:15:00'), 45.9],
+    ]);
+  });
+
+  it('breaks the lines in a silence longer than two buckets', async () => {
+    answerQuery(history, asked(), {
+      ...DAY,
+      points: [
+        { at: '2026-10-10T18:00:00', water: 46.81, circulation: 26.44 },
+        { at: '2026-10-10T18:20:00', water: 45.9, circulation: 27.1 },
+      ],
+    });
+    await settle();
+
+    expect(charts.lines()[0].data).toEqual([
+      [at('2026-10-10T18:00:00'), 46.81],
+      [at('2026-10-10T18:10:00'), null],
+      [at('2026-10-10T18:20:00'), 45.9],
     ]);
   });
 

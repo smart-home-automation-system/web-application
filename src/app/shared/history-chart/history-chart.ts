@@ -1,12 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
   inject,
   input,
   viewChild,
 } from '@angular/core';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
 import { ChartLine } from './chart-data';
@@ -70,7 +71,14 @@ export class HistoryChart {
   /** What the value can never go past; the axis never steps over it. */
   readonly bounds = input<{ readonly min?: number; readonly max?: number }>();
 
-  private readonly locale = inject(LanguageStore).locale;
+  private readonly languages = inject(LanguageStore);
+  private readonly locale = this.languages.locale;
+  private readonly transloco = inject(TranslocoService);
+  /** What the tooltip says inside a gap; read with the language, so that it follows it. */
+  private readonly noReadings = computed(() => {
+    this.languages.language();
+    return this.transloco.translate('history.noReadings');
+  });
   private readonly plot = viewChild.required<ElementRef<HTMLElement>>('plot');
   /** The library could not be downloaded; cleared by the attempt that succeeds. */
   protected readonly failed = drawChart(
@@ -85,6 +93,7 @@ export class HistoryChart {
       logarithmic: this.logarithmic(),
       decimals: this.decimals(),
       bounds: this.bounds(),
+      noReadings: this.noReadings(),
     }),
     chartOption,
   );

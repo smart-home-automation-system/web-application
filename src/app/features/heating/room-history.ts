@@ -3,12 +3,24 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
 import { HeatingApi } from '../../data-access/heating/heating-api';
-import { ChartLine, scheduleLine, summarise, toLine } from '../../shared/history-chart/chart-data';
+import {
+  ChartLine,
+  scheduleLine,
+  solidGapOf,
+  summarise,
+  toLine,
+} from '../../shared/history-chart/chart-data';
 import { HistoryChart } from '../../shared/history-chart/history-chart';
 import { HistoryFrame } from '../../shared/history-chart/history-frame';
 import { historyPeriod, shownHistory } from '../../shared/history-chart/history-period';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { SchedulePeriod } from '../../shared/room-heating/room-views';
+
+/**
+ * How long a room may be silent and still be drawn as one line (HAS-375): a battery thermometer -
+ * a Plus H&T, a BLU H&T - reports on a change only, and what it last sent holds until the next.
+ */
+export const ROOM_QUIET_SECONDS = 3 * 60 * 60;
 
 /**
  * The stored temperatures of one room over the last day, week or month, with what its
@@ -55,7 +67,12 @@ export class RoomHistory {
     // read so that the name follows the language
     this.language();
     const answer = this.shown.answer();
-    const points = toLine(answer?.points, answer?.bucketSeconds, (point) => point['value']);
+    const points = toLine(
+      answer?.points,
+      answer?.bucketSeconds,
+      (point) => point['value'],
+      solidGapOf(answer?.bucketSeconds, ROOM_QUIET_SECONDS),
+    );
     return points.length === 0
       ? undefined
       : {

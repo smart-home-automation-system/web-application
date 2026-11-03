@@ -4,6 +4,7 @@ import {
   ChartInput,
   axisLabel,
   chartOption,
+  gapSpan,
   tooltipTime,
   valueAt,
 } from './chart-option';
@@ -84,8 +85,91 @@ describe('chartOption', () => {
     expect(xAxis.max).toBe(at('2026-10-09T00:00:00'));
   });
 
-  it('never bridges a break of a line', () => {
+  it('never lets the library bridge a break of a line', () => {
     expect(option().series.every((line) => line.connectNulls === false)).toBe(true);
+  });
+
+  // owner, 2026-11-03 (HAS-375): the line stays whole, the outage stays visible
+  describe('a gap', () => {
+    const GAPPED: ChartLine = {
+      ...TANK,
+      points: [
+        [at('2026-10-08T00:00:00'), 46.8],
+        [at('2026-10-08T02:00:00'), null],
+        [at('2026-10-08T04:00:00'), 45.9],
+        [at('2026-10-08T04:05:00'), 45.8],
+      ],
+    };
+    interface Drawn {
+      legend: { data: string[] };
+      series: {
+        id: string;
+        name: string;
+        data: unknown;
+        silent?: boolean;
+        showSymbol: boolean;
+        tooltip?: { show: boolean };
+        lineStyle: { type: string; color?: string; opacity?: number };
+      }[];
+      tooltip: { formatter(hovered: unknown): string };
+    }
+    const drawn = (overrides: Partial<ChartInput> = {}) =>
+      chartOption(input({ lines: [GAPPED, SCHEDULE], ...overrides }), COLORS) as unknown as Drawn;
+
+    it('is bridged by a faint dotted series of its own, after every line', () => {
+      const series = drawn().series;
+
+      expect(series.map((one) => one.id)).toEqual(['water', 'schedule', 'water-gaps']);
+      expect(series[2].data).toEqual([
+        [at('2026-10-08T00:00:00'), 46.8],
+        [at('2026-10-08T04:00:00'), 45.9],
+      ]);
+      expect(series[2].lineStyle).toEqual(
+        expect.objectContaining({ type: 'dotted', color: 'rgb(1, 1, 1)', opacity: 0.6 }),
+      );
+      expect(series[2].showSymbol).toBe(false);
+      expect(series[2].silent).toBe(true);
+      expect(series[2].tooltip).toEqual({ show: false });
+    });
+
+    it('gets no entry of its own in the legend', () => {
+      expect(drawn().legend.data).toEqual(['Tank', 'Schedule']);
+    });
+
+    it('leaves a whole line, a schedule and bars without a bridge', () => {
+      expect(option().series).toHaveLength(1);
+      const rain: ChartLine = { ...GAPPED, key: 'rain', bars: true };
+      const steps: ChartLine = { ...GAPPED, key: 'steps', dashed: true };
+      expect(drawn({ lines: [rain, steps] }).series).toHaveLength(2);
+    });
+
+    it('says "no readings" in the tooltip, with the readings on both sides', () => {
+      const text = drawn({ noReadings: 'no readings' }).tooltip.formatter([
+        {
+          seriesName: 'Tank',
+          seriesIndex: 0,
+          dataIndex: 1,
+          value: [at('2026-10-08T02:00:00'), null],
+          marker: '<i></i>',
+        },
+      ]);
+
+      expect(text).toContain('Tank: <strong>no readings</strong> (Thu 8 Oct, 00:00 – 04:00)');
+    });
+
+    it('never lists the bridge in the tooltip as a reading', () => {
+      const text = drawn({ noReadings: 'no readings' }).tooltip.formatter([
+        {
+          seriesName: 'Tank',
+          seriesIndex: 2,
+          dataIndex: 0,
+          value: [at('2026-10-08T00:00:00'), 46.8],
+          marker: '<i></i>',
+        },
+      ]);
+
+      expect(text).not.toContain('Tank');
+    });
   });
 
   it('gives every line the colour of the theme it names, in order', () => {
@@ -342,6 +426,17 @@ describe('axisLabel', () => {
 
   it('follows the language', () => {
     expect(axisLabel(at('2026-10-08T12:00:00'), 7 * DAY_MS, 'pl-PL')).toBe('8 paź');
+  });
+});
+
+describe('gapSpan', () => {
+  it('names the day of the end only when it is another', () => {
+    expect(gapSpan(at('2026-10-08T00:00:00'), at('2026-10-08T04:00:00'), 'en-GB')).toBe(
+      '(Thu 8 Oct, 00:00 – 04:00)',
+    );
+    expect(gapSpan(at('2026-10-08T22:00:00'), at('2026-10-09T03:00:00'), 'en-GB')).toBe(
+      '(Thu 8 Oct, 22:00 – Fri 9 Oct, 03:00)',
+    );
   });
 });
 

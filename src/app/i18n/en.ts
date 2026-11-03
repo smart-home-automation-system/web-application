@@ -113,6 +113,7 @@ export const en = {
     loading: 'Loading the history',
     empty: 'No reading in this period.',
     chartFailed: 'The chart could not be loaded. It is tried again with the next update.',
+    noReadings: 'no readings',
     preset: {
       choose: 'Period of the history',
       day: '24 hours',

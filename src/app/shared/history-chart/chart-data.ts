@@ -52,16 +52,31 @@ export function axisOf(
 }
 
 /**
- * The points of a history as a line, oldest first, **broken wherever a bucket is missing**: the
- * services leave a bucket without a reading out, so two points further apart than the width of
- * a bucket are a gap in the readings, not a slope between them. Nothing checks an answer at
- * runtime: a point without a readable time or a finite value is left out, which makes it a gap
- * too. Without a usable `bucketSeconds` no gap can be told, and the line is drawn through.
+ * The longest silence a line is drawn through as measured: twice the bucket (one bucket missed),
+ * or `atLeastSeconds` where the sensor is quiet by design - a battery thermometer reports on a
+ * change only, and the value it last sent holds until the next. `undefined` without either.
+ */
+export function solidGapOf(bucketSeconds: unknown, atLeastSeconds = 0): number | undefined {
+  const twoBuckets = finite(bucketSeconds) && bucketSeconds > 0 ? 2 * bucketSeconds : 0;
+  const solid = Math.max(twoBuckets, atLeastSeconds);
+  return solid > 0 ? solid : undefined;
+}
+
+/**
+ * The points of a history as a line, oldest first (owner, 2026-11-03, HAS-375 - it replaces the
+ * break at every missing bucket of HAS-201). The services leave a bucket without a reading out, so
+ * two points further apart than a bucket are a silence. **A silence up to `solidGapSeconds`** -
+ * by default two buckets, see `solidGapOf` - **is drawn through**, as the line it is; **a longer
+ * one is a gap**: a `null` in its middle, which the chart bridges with a faint dotted line
+ * (`bridgesOf`) and the tooltip reads as "no readings". Nothing checks an answer at runtime: a
+ * point without a readable time or a finite value is left out. Without a usable `bucketSeconds`
+ * or `solidGapSeconds` no gap can be told, and the line is drawn through.
  */
 export function toLine(
   points: unknown,
   bucketSeconds: unknown,
   valueOf: (point: Record<string, unknown>) => unknown,
+  solidGapSeconds: number | undefined = solidGapOf(bucketSeconds),
 ): LinePoint[] {
   if (!Array.isArray(points)) {
     return [];
@@ -77,16 +92,54 @@ export function toLine(
     })
     .sort((a, b) => a[0] - b[0]);
 
-  const bucketMs = finite(bucketSeconds) && bucketSeconds > 0 ? bucketSeconds * 1_000 : undefined;
+  const solidMs =
+    finite(solidGapSeconds) && solidGapSeconds > 0 ? solidGapSeconds * 1_000 : undefined;
   const line: LinePoint[] = [];
   read.forEach(([at, value], index) => {
-    if (bucketMs !== undefined && index > 0 && at - read[index - 1][0] > bucketMs) {
-      // the break lies where the missing bucket would have started
-      line.push([read[index - 1][0] + bucketMs, null]);
+    const before = read[index - 1]?.[0];
+    if (solidMs !== undefined && before !== undefined && at - before > solidMs) {
+      // in the middle of the gap: where the pointer of the chart finds it
+      line.push([before + (at - before) / 2, null]);
     }
     line.push([at, value]);
   });
   return line;
+}
+
+/**
+ * What bridges the gaps of a line: for every `null` between two readings, those two readings,
+ * each pair apart from the next. Drawn faint and dotted, it keeps a line whole without passing
+ * for a measurement.
+ */
+export function bridgesOf(line: readonly LinePoint[]): LinePoint[] {
+  const bridges: LinePoint[] = [];
+  line.forEach(([, value], index) => {
+    const before = line[index - 1];
+    const after = line[index + 1];
+    if (value !== null || before?.[1] == null || after?.[1] == null) {
+      return;
+    }
+    if (bridges.length > 0) {
+      bridges.push([before[0], null]);
+    }
+    bridges.push(before, after);
+  });
+  return bridges;
+}
+
+/**
+ * The two readings around a gap of a line, by the index of its `null`; `undefined` for anything
+ * else.
+ */
+export function gapAround(
+  line: readonly LinePoint[],
+  index: number,
+): { readonly from: number; readonly to: number } | undefined {
+  const before = line[index - 1];
+  const after = line[index + 1];
+  return line[index]?.[1] === null && before?.[1] != null && after?.[1] != null
+    ? { from: before[0], to: after[0] }
+    : undefined;
 }
 
 /** `undefined` for a line without a single value. */

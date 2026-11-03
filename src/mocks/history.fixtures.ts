@@ -124,10 +124,15 @@ export function waterHistory(
   };
 }
 
+/** The room of the mock house whose thermometer reports on a change only, and how often. */
+export const ON_CHANGE_ROOM = 'bathroom up';
+const ON_CHANGE_EVERY = 100 * MINUTE;
+
 /**
  * `GET /home/heating/rooms/{name}/temperature/history`, in the shape of a real answer: a room
  * that is warmest in the evening and coolest before dawn. Invented values; the room is named
- * as it was asked for, which the caller has checked to be a room of the mock house.
+ * as it was asked for, which the caller has checked to be a room of the mock house. The bathroom
+ * up has few readings - a battery thermometer - and every room the hour of yesterday's silence.
  */
 export function roomHistory(
   room: string,
@@ -142,6 +147,16 @@ export function roomHistory(
   }
   // a different level per room, so that two rooms do not share one line
   const level = 20 + (room.length % 4) * 0.5;
+  // the thermometer of the bathroom up is on a battery and reports on a change only (HAS-375):
+  // a reading every 100 minutes, so most buckets of a day are empty - drawn as one line
+  const read =
+    room === ON_CHANGE_ROOM
+      ? buckets(range, now).filter(
+          (at, index, all) =>
+            index === 0 ||
+            Math.floor(at / ON_CHANGE_EVERY) !== Math.floor(all[index - 1] / ON_CHANGE_EVERY),
+        )
+      : buckets(range, now);
   return {
     room,
     from: localDateTime(range.from),
@@ -149,7 +164,7 @@ export function roomHistory(
     bucketSeconds: range.bucket,
     points: fresh
       ? []
-      : buckets(range, now).map((at) => ({
+      : read.map((at) => ({
           at: localDateTime(at),
           value: round(level + 1.2 * Math.sin(dayAngle(at) - 2.4)),
         })),

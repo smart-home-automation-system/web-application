@@ -112,6 +112,7 @@ export const pl: Messages = {
     empty: 'Brak odczytów w tym okresie.',
     chartFailed:
       'Nie udało się wczytać wykresu. Kolejna próba nastąpi przy następnej aktualizacji.',
+    noReadings: 'brak odczytów',
     preset: {
       choose: 'Okres historii',
       day: '24 godziny',

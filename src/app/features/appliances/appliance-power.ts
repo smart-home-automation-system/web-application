@@ -13,7 +13,7 @@ import { HistoryPeriod, shownHistory } from '../../shared/history-chart/history-
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { POWER_PRESETS } from './appliance-history';
 
-// a plug is read every 30 s: three missed reads are a gap in the line, never a slope across it
+// a plug is read every 30 s: three missed reads are a gap in the line, bridged faintly (HAS-375)
 const GAP_SECONDS = 90;
 
 const finite = (value: unknown): value is number =>
@@ -111,7 +111,7 @@ export class AppliancePower {
   protected readonly shown = shownHistory(this.samples, () => this.period());
 
   protected readonly power = computed(() =>
-    toLine(this.shown.answer(), GAP_SECONDS, (sample) => sample['watts']),
+    toLine(this.shown.answer(), GAP_SECONDS, (sample) => sample['watts'], GAP_SECONDS),
   );
   protected readonly summary = computed(() => summarise(this.power()));
 
