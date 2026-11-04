@@ -145,7 +145,7 @@ describe('EnergyForecastCard', () => {
 
     const lines = (await card()).querySelectorAll<HTMLElement>('.forecast__load');
     // one per column: a closed day and five days
-    expect(lines.length).toBe(6);
+    expect(lines).toHaveLength(6);
     // the largest amount is the 28.4 kWh of Saturday
     expect(lines[0].style.bottom).toBe(`${(24.6 / 28.4) * 100}%`);
     expect(words((await card()).querySelector('[data-testid="forecast-house-load"]'))).toBe(
