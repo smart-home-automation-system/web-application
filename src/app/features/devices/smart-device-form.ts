@@ -49,7 +49,9 @@ import {
   channelsOf,
   isZone,
   FIRST_GENERATION_ON_MQTT,
-  GENERATIONS,
+  channelNeeded,
+  generationsOf,
+  WATER_VALVE_CHANNEL,
   addressProblem,
   batterySerialProblem,
   bindingOf,
@@ -124,7 +126,6 @@ export class SmartDeviceForm implements OnInit {
   readonly cancelled = output();
 
   protected readonly notSet = NOT_SET;
-  protected readonly generations = GENERATIONS;
   protected readonly isZone = isZone;
   protected readonly gateways = EATON_GATEWAYS;
   protected readonly brands = INVERTER_BRANDS;
@@ -223,6 +224,12 @@ export class SmartDeviceForm implements OnInit {
     withHeld(withHeld(ROOM_NAMES, this.device()?.room), this.room()),
   );
   protected readonly kinds = computed(() => withHeld(OFFERED_KINDS, this.device()?.kind));
+  /** The generations on offer for the chosen kind - a water valve from the second on (HAS-313). */
+  protected readonly generations = computed(() =>
+    generationsOf(this.chosenKind(), this.device()?.shelly?.generation),
+  );
+  /** Whether the chosen kind cannot do without its channel - the water valve, on 0 (HAS-313). */
+  protected readonly channelNeeded = computed(() => channelNeeded(this.chosenKind()));
   /** The channels on offer for the chosen kind - with the one the device has, whatever it is. */
   protected readonly channels = computed(() =>
     channelsOf(this.chosenKind(), this.device()?.shelly?.channel),
@@ -300,6 +307,19 @@ export class SmartDeviceForm implements OnInit {
       const channel = untracked(this.channel);
       if (channel !== undefined && !possible.includes(channel)) {
         this.channel.set(undefined);
+      }
+    });
+    // a water valve is reached on the channel 0 and from the second generation on (HAS-313): the form puts
+    // it there, so it can never send what database-service refuses
+    effect(() => {
+      if (this.channelNeeded() && untracked(this.channel) === undefined) {
+        this.channel.set(WATER_VALVE_CHANNEL);
+      }
+    });
+    effect(() => {
+      const possible = this.generations();
+      if (!possible.includes(untracked(this.generation))) {
+        untracked(() => this.setGeneration(possible[0]));
       }
     });
     // what was found taken was found for the binding as it was then

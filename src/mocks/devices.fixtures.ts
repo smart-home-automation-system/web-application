@@ -351,6 +351,21 @@ const AT_THE_START: readonly StoredDevice[] = [
     vendor: 'other',
     inverter: { brand: 'sofar', serialNumber: 'MOCKF0000000001', loggerSerial: 1234567890 },
   },
+  // the water valve of the garage (HAS-313): a Shelly X of generation 3, an invented id, an address of the documentation range
+  {
+    id: 66,
+    name: 'Water valve',
+    room: 'garage',
+    kind: 'water valve',
+    enabled: true,
+    vendor: 'shelly',
+    shelly: {
+      address: '192.0.2.66',
+      generation: 3,
+      deviceId: 'neowatervalve-0a0b0c0d0e66',
+      channel: 0,
+    },
+  },
 ];
 
 // the ids from 40 on are the lights and sensors of the rules: a device added gets the next id after 14
@@ -660,6 +675,13 @@ function brokenRuleOf(device: Draft): string | undefined {
   if (channel !== undefined && channel >= 200 && device.kind !== 'presence sensor') {
     return `The channel ${channel} is a zone, which only a device of the kind [presence sensor] has, not one of the kind [${device.kind}]`;
   }
+  // the water valve (HAS-311, checkWaterValve)
+  if (device.kind === 'water valve' && (device.shelly?.generation ?? 0) < 2) {
+    return `A device of the kind [water valve] is a Shelly of generation 2 or later, not ${device.shelly?.generation}`;
+  }
+  if (device.kind === 'water valve' && channel !== 0) {
+    return `A device of the kind [water valve] is reached on the channel 0, not ${channel}`;
+  }
   if (device.lightKind !== undefined && device.kind !== 'light') {
     return `lightKind describes a light, not a device of the kind [${device.kind}]`;
   }
@@ -707,6 +729,7 @@ function possibleBindingsOf(kind: string): readonly string[] {
       return ['bthome'];
     case 'bthome gateway':
     case 'appliance':
+    case 'water valve':
       return ['shelly'];
     case 'inverter':
       return ['inverter'];

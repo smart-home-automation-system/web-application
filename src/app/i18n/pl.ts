@@ -1728,6 +1728,7 @@ export const pl: Messages = {
       channelHint:
         'Przekaźnik z kilkoma wyjściami to jedno urządzenie rejestru na każde wyjście. Brak dla urządzenia bez kanałów.',
       zoneHint: 'Czujnik obecności to jedna strefa urządzenia - 200 to jego strefa główna.',
+      valveHint: 'Zawór wody to Shelly generacji 2 lub nowszej, na kanale 0.',
       gateway: 'Bramka',
       point: 'Punkt',
       pointHint: 'Punkt danych na bramce, od 1 do 99',
@@ -1808,6 +1809,7 @@ export const pl: Messages = {
       pushButton: 'Przycisk',
       appliance: 'Urządzenie AGD',
       inverter: 'Falownik',
+      waterValve: 'Zawór wody',
     },
     lightKind: {
       relay: 'przełączane',

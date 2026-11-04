@@ -39,7 +39,7 @@ export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
- * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.15.0) - copies, like the ones above,
+ * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.16.0) - copies, like the ones above,
  * and under the same rule: they are what the administration of the devices offers, and what
  * the registry already holds is shown and sent back as it is.
  */
@@ -59,6 +59,8 @@ export const DEVICE_KINDS = [
   // HAS-341 (smart-home-sdk 1.15.0, HAS-326): a photovoltaic inverter read by energy-service, reached by
   // its inverter binding alone
   'inverter',
+  // HAS-313 (smart-home-sdk 1.16.0, HAS-311): the smart valve on the water main, a Shelly read by water-service
+  'water valve',
 ] as const;
 
 export type DeviceKind = (typeof DEVICE_KINDS)[number];

@@ -627,6 +627,56 @@ describe('Devices', () => {
     expect(garage.querySelector('[data-device="64"]')).not.toBeNull();
   });
 
+  // HAS-313 (smart-home-sdk 1.16.0, checkWaterValve of database-service 0.21.0): a water valve is a Shelly from
+  // the second generation on, on the channel 0 - the form offers nothing else, so it never sends what the
+  // registry refuses
+  it('registers a water valve as a Shelly of the second generation or later on the channel 0', async () => {
+    answerTheRegistryWith([]);
+    const garage = await openRoom('garage', 'Add');
+    const form = garage.querySelector<HTMLElement>('app-smart-device-form')!;
+    const toggles = (group: string): string[] =>
+      [...form.querySelectorAll(`[data-testid="${group}"] mat-button-toggle`)].map((one) => text(one));
+    const chosen = (group: string): string =>
+      text(form.querySelector(`[data-testid="${group}"] .mat-button-toggle-checked`));
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Water valve');
+    choose(form, 'kind', 'water valve');
+    await settled();
+    expect(form.querySelector('[data-testid="binding"] button')).toBeNull();
+    expect(text(form)).toContain('Shelly on the network');
+    expect(toggles('channel')).toEqual(['0']);
+    expect(chosen('channel')).toBe('0');
+    expect(toggles('generation')).toEqual(['2', '3', '4']);
+    expect(form.querySelector('[data-testid="valve-hint"]')).not.toBeNull();
+
+    const [address, deviceId] = [...form.querySelectorAll<HTMLInputElement>('input.code')];
+    type(address, '192.0.2.66');
+    type(deviceId, 'neowatervalve-0a0b0c0d0e66');
+    form.querySelectorAll<HTMLElement>('[data-testid="generation"] button')[1].click();
+    fixture.detectChanges();
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    const request = http.expectOne({ method: 'POST', url: '/home/device/registry' });
+    expect(request.request.body).toEqual({
+      name: 'Water valve',
+      room: 'garage',
+      kind: 'water valve',
+      enabled: true,
+      vendor: 'shelly',
+      shelly: {
+        address: '192.0.2.66',
+        generation: 3,
+        deviceId: 'neowatervalve-0a0b0c0d0e66',
+        channel: 0,
+      },
+    });
+    request.flush({});
+    await settled();
+    answerTheRegistryWith([]);
+    await settled();
+  });
+
   it('switches a device off with the operation made for it, and shows what the registry says', async () => {
     answerTheRegistryWith([LIGHT]);
     await openRoom('office');

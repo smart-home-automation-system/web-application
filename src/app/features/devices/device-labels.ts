@@ -23,6 +23,7 @@ export const KIND_LABELS: Readonly<Record<DeviceKind, MessageKey>> = {
   'push button': 'devices.kind.pushButton',
   appliance: 'devices.kind.appliance',
   inverter: 'devices.kind.inverter',
+  'water valve': 'devices.kind.waterValve',
 };
 
 /** Names of Material Symbols. */
@@ -38,6 +39,7 @@ const KIND_ICONS: Readonly<Record<DeviceKind, string>> = {
   'push button': 'touch_app',
   appliance: 'local_laundry_service',
   inverter: 'solar_power',
+  'water valve': 'valve',
 };
 
 export const LIGHT_KIND_LABELS: Readonly<Record<LightKind, MessageKey>> = {
