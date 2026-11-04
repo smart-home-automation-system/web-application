@@ -61,9 +61,10 @@ export function bindingsOf(kind: string): readonly Binding[] {
       return ['shelly', 'eaton'];
     case 'weather station':
       return ['bthome'];
-    // a gateway is a Shelly, and so is the plug an appliance runs on (HAS-282)
+    // a gateway is a Shelly, and so is the plug an appliance runs on (HAS-282) and the water valve (HAS-313)
     case 'bthome gateway':
     case 'appliance':
+    case 'water valve':
       return ['shelly'];
     case 'inverter':
       return ['inverter'];
@@ -79,9 +80,35 @@ export function bindingsOf(kind: string): readonly Binding[] {
  * whatever it is, so that saving does not drop it unseen.
  */
 export function channelsOf(kind: string, held?: number): readonly number[] {
-  const offered: readonly number[] =
-    kind === 'presence sensor' ? [...CHANNELS, MAIN_ZONE] : CHANNELS;
+  const offered = offeredChannels(kind);
   return held === undefined || offered.includes(held) ? offered : [...offered, held];
+}
+
+function offeredChannels(kind: string): readonly number[] {
+  if (kind === 'presence sensor') {
+    return [...CHANNELS, MAIN_ZONE];
+  }
+  return channelNeeded(kind) ? [WATER_VALVE_CHANNEL] : CHANNELS;
+}
+
+/**
+ * The water valve (HAS-313, `checkWaterValve` of `database-service` 0.21.0): a Shelly of the second
+ * generation or later - its readings are virtual components over MQTT and RPC - reached on the channel 0,
+ * which it cannot do without. Every other kind may have no channel.
+ */
+export const WATER_VALVE_CHANNEL = 0;
+
+export function channelNeeded(kind: string): boolean {
+  return kind === 'water valve';
+}
+
+/** The generations on offer for a kind - with the one the device has, whatever it is. */
+export function generationsOf(kind: string, held?: number): readonly number[] {
+  const offered: readonly number[] =
+    kind === 'water valve'
+      ? GENERATIONS.filter((generation) => generation >= FIRST_GENERATION_ON_MQTT)
+      : GENERATIONS;
+  return held === undefined || offered.includes(held) ? offered : [...offered, held].sort((a, b) => a - b);
 }
 
 /**

@@ -1746,6 +1746,7 @@ export const en = {
       channelHint:
         'A relay with several outputs is one device of the registry per output. None for a device without channels.',
       zoneHint: 'A presence sensor stands for one zone of the device - 200 is its main zone.',
+      valveHint: 'A water valve is a Shelly of generation 2 or later, reached on the channel 0.',
       gateway: 'Gateway',
       point: 'Point',
       pointHint: 'The data point on the gateway, 1 to 99',
@@ -1827,6 +1828,7 @@ export const en = {
       pushButton: 'Push button',
       appliance: 'Appliance',
       inverter: 'Inverter',
+      waterValve: 'Water valve',
     },
     lightKind: {
       relay: 'switched',

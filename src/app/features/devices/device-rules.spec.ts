@@ -8,7 +8,9 @@ import {
   bindingTaken,
   blindsUsing,
   bluetoothAddressProblem,
+  channelNeeded,
   channelsOf,
+  generationsOf,
   chosenProblem,
   deviceIdProblem,
   isZone,
@@ -72,6 +74,8 @@ describe('the rules of a device', () => {
     ['appliance', ['shelly']],
     // HAS-326: an inverter is reached by its binding alone
     ['inverter', ['inverter']],
+    // HAS-313: the water valve is a Shelly on the network
+    ['water valve', ['shelly']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });
@@ -102,6 +106,18 @@ describe('the rules of a device', () => {
     expect(channelsOf('presence sensor')).toEqual([0, 1, 2, 3, 200]);
     expect(channelsOf('light')).toEqual([0, 1, 2, 3]);
     expect(channelsOf('wind sensor')).toEqual([0, 1, 2, 3]);
+  });
+
+  // HAS-313 (checkWaterValve of database-service 0.21.0): a water valve is on the channel 0, from the second
+  // generation on; a valve the registry holds otherwise keeps what it has on offer
+  it('offer a water valve the channel 0 and the generations from the second on', () => {
+    expect(channelNeeded('water valve')).toBe(true);
+    expect(channelNeeded('light')).toBe(false);
+    expect(channelsOf('water valve')).toEqual([0]);
+    expect(channelsOf('water valve', 2)).toEqual([0, 2]);
+    expect(generationsOf('water valve')).toEqual([2, 3, 4]);
+    expect(generationsOf('water valve', 1)).toEqual([1, 2, 3, 4]);
+    expect(generationsOf('light')).toEqual([1, 2, 3, 4]);
   });
 
   // a channel the registry holds is never dropped by a form that does not offer it

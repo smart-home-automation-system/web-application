@@ -29,6 +29,7 @@ describe('the copies of the SDK', () => {
       'push button',
       'appliance',
       'inverter',
+      'water valve',
     ]);
   });
 
