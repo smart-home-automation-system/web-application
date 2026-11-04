@@ -60,6 +60,7 @@ import {
   energyAlerts,
   energyDays,
   energyFlows,
+  energyForecast,
   energyMonths,
   energyStatus,
   gridOutages,
@@ -719,6 +720,11 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: '/home/energy/history',
     reply: (request, fresh) =>
       history(energyHistory(request.params.get('metric'), from(request), to(request), fresh)),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/forecast',
+    reply: (_, fresh) => ({ status: 200, body: energyForecast(fresh) }),
   },
   {
     method: 'GET',

@@ -511,9 +511,26 @@
       } @else if (!energyFlows.error()) {
         <p class="tile__detail">{{ t('energy.cards.none') }}</p>
       }
+      @if (energyForecast.value() !== undefined) {
+        @let tomorrow = energyTomorrow();
+        <p class="tile__detail" data-testid="energy-tomorrow">
+          @switch (tomorrow.kind) {
+            @case ('both') {
+              {{ t('overview.energy.tomorrow', { word: t(tomorrow.word), kwh: tomorrow.kwh }) }}
+            }
+            @case ('kwh') {
+              {{ t('overview.energy.tomorrowKwh', { kwh: tomorrow.kwh }) }}
+            }
+            @default {
+              {{ t('overview.energy.tomorrowUnknown') }}
+            }
+          }
+        </p>
+      }
       <div tileFailures>
         <app-api-error-strip [error]="energyBattery.error()" />
         <app-api-error-strip [error]="energyStatus.error()" />
+        <app-api-error-strip [error]="energyForecast.error()" />
       </div>
     </app-domain-tile>
   </section>

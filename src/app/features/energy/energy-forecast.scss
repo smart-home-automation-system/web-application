@@ -1,0 +1,203 @@
+@use '../../shared/domain-tile/tile-content';
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+.forecast__outlook {
+  margin-top: 4px;
+}
+
+// the columns of the days: the two closed days, then seven from today - a row on a wide card, a
+// scroll of its own on a phone (nine columns do not fit 390 px)
+.forecast__chart {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.forecast__columns {
+  --forecast-bars: 120px;
+
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(72px, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.forecast__day {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 4px;
+  border-radius: var(--mat-sys-corner-small);
+  text-align: center;
+}
+
+.forecast__day--past {
+  background: var(--app-glass-edge);
+}
+
+// today stands apart from the closed days before it
+.forecast__day--first {
+  margin-inline-start: 6px;
+}
+
+// the further a day, the less its forecast is worth
+.forecast__day--pale .forecast__bars,
+.forecast__day--pale .forecast__category {
+  opacity: 0.55;
+}
+
+.forecast__name {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface);
+  white-space: nowrap;
+}
+
+.forecast__bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: var(--forecast-bars);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.forecast__stack {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  width: 22px;
+  height: 100%;
+}
+
+.forecast__bar {
+  display: block;
+  width: 22px;
+  border-radius: 3px 3px 0 0;
+}
+
+.forecast__bar--solax {
+  background: var(--app-chart-1);
+}
+
+.forecast__bar--sofar {
+  background: var(--app-chart-4);
+}
+
+.forecast__bar--forecast {
+  align-self: flex-end;
+  width: 14px;
+  border: 1px dashed var(--mat-sys-outline);
+  background: transparent;
+}
+
+// the house load of the last closed days, the same height in every column
+.forecast__load {
+  position: absolute;
+  inset-inline: -3px;
+  border-top: 2px dashed var(--mat-sys-on-surface-variant);
+  pointer-events: none;
+}
+
+.forecast__value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  strong {
+    font: var(--mat-sys-label-large);
+    color: var(--mat-sys-on-surface);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+.forecast__small {
+  font: var(--mat-sys-body-small);
+}
+
+// the category: a word, and a dot of its colour - the colour is never the only sign
+.forecast__category {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.forecast__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mat-sys-outline-variant);
+}
+
+[data-category='poor'] .forecast__dot {
+  background: var(--mat-sys-error);
+}
+
+[data-category='fair'] .forecast__dot {
+  background: var(--mat-sys-tertiary);
+}
+
+[data-category='good'] .forecast__dot {
+  background: var(--mat-sys-primary);
+}
+
+.forecast__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.forecast__swatch {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.forecast__swatch--solax {
+  background: var(--app-chart-1);
+}
+
+.forecast__swatch--sofar {
+  background: var(--app-chart-4);
+}
+
+.forecast__swatch--forecast {
+  border: 1px dashed var(--mat-sys-outline);
+}
+
+.forecast__swatch--load {
+  height: 0;
+  border-top: 2px dashed var(--mat-sys-on-surface-variant);
+}
+
+.forecast__subtitle {
+  margin: 16px 0 4px;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}

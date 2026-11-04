@@ -3,6 +3,7 @@ import {
   EnergyAlert,
   EnergyDay,
   EnergyFlows,
+  EnergyForecast,
   EnergyMonths,
   EnergyStatus,
   GridOutage,
@@ -334,4 +335,81 @@ export function energyMonths(year: string | null, fresh: boolean): MockReply {
         ),
   };
   return { status: 200, body: answer };
+}
+
+/**
+ * `GET /home/energy/forecast` (HAS-372): a grey start of the week and the sun back on the fourth
+ * day - today poor, tomorrow none, then poor, good, good, fair, poor - so the sentence reads "little
+ * production for 3 days, better on <weekday>"; the SOLAX at a calibrated 0.62 on 9 days, the SOFAR
+ * still at the initial 0.8; the two closed days with what the forecast gave beside what was
+ * produced; 48 hours of power from the hour now. `no-readings` answers a service that has fetched
+ * nothing: stale, no day.
+ */
+export function energyForecast(fresh: boolean, now: Date = new Date()): EnergyForecast {
+  const ratios = {
+    solax: { ratio: 0.62, calibratedOnDays: fresh ? 0 : 9 },
+    sofar: { ratio: 0.8, calibratedOnDays: 0 },
+  };
+  if (fresh) {
+    return { stale: true, performanceRatio: ratios, days: [], past: [], hourly: [] };
+  }
+  const today = dayOf(houseTime(now, 0).slice(0, 10));
+  const plan: readonly [number, number, string, number, number][] = [
+    // solax, sofar, category, cloud cover, sunshine hours
+    [4.3, 2.5, 'poor', 96, 1],
+    [1.1, 0.7, 'none', 100, 0],
+    [3.9, 2.4, 'poor', 92, 1],
+    [17.8, 10.6, 'good', 25, 6],
+    [18.6, 11.2, 'good', 12, 7],
+    [11.4, 6.9, 'fair', 55, 4],
+    [5.2, 3.1, 'poor', 88, 2],
+  ];
+  const houseLoad = 24.6;
+  const days = plan.map(([solax, sofar, category, cloudCover, sunshineHours], index) => {
+    const total = Math.round((solax + sofar) * 100) / 100;
+    return {
+      day: isoDay(today + index * DAY_MS),
+      solaxKwh: solax,
+      sofarKwh: sofar,
+      totalKwh: total,
+      coverage: Math.round((total / houseLoad) * 100) / 100,
+      category,
+      cloudCover,
+      sunshineHours,
+    };
+  });
+  const start = Date.parse(`${houseTime(now, 0).slice(0, 13)}:00:00Z`);
+  const hourly = Array.from({ length: 48 }, (_, index) => {
+    const hour = start + index * 3_600_000;
+    const sun = Math.max(0, Math.sin(((new Date(hour).getUTCHours() - 7) / 9) * Math.PI));
+    const bright = index >= 24 ? 0.15 : 0.35;
+    return {
+      hour: `${new Date(hour).toISOString().slice(0, 13)}:00:00`,
+      solaxKw: Math.round(sun * bright * 6.5 * 100) / 100,
+      sofarKw: Math.round(sun * bright * 4 * 100) / 100,
+      cloudCover: index >= 24 ? 100 : 90,
+    };
+  });
+  return {
+    fetchedAt: at(now, 17 * 60 + 5).slice(0, 19),
+    stale: false,
+    houseLoadKwh: houseLoad,
+    houseLoadDays: 7,
+    performanceRatio: ratios,
+    days,
+    past: [
+      {
+        day: isoDay(today - 2 * DAY_MS),
+        solax: { forecastKwh: 12.4, actualKwh: 11.1 },
+        sofar: { forecastKwh: 7.5, actualKwh: 7.9 },
+      },
+      {
+        day: isoDay(today - DAY_MS),
+        solax: { forecastKwh: 6.2, actualKwh: 5.4 },
+        sofar: { forecastKwh: 3.8, actualKwh: 3.1 },
+      },
+    ],
+    hourly,
+    outlook: { sunBackOn: isoDay(today + 3 * DAY_MS), daysWithoutSun: 3 },
+  };
 }

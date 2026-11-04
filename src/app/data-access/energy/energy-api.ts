@@ -343,6 +343,67 @@ export interface DaysQuery {
   readonly to: string;
 }
 
+/** The performance ratio of one inverter: `calibratedOnDays` 0 while the initial one is used. */
+export interface ForecastRatio {
+  readonly ratio?: number;
+  readonly calibratedOnDays?: number;
+}
+
+/** A day of the forecast: kWh, the coverage of the house load (1 = all of it), its category. */
+export interface ForecastDay {
+  readonly day?: string;
+  readonly solaxKwh?: number;
+  readonly sofarKwh?: number;
+  readonly totalKwh?: number;
+  readonly coverage?: number;
+  /** `none`, `poor`, `fair`, `good` - printed as it came when this version does not know it. */
+  readonly category?: string;
+  /** The mean cloud cover while the sun is up, %. */
+  readonly cloudCover?: number;
+  /** The hours above 120 W/m2 on the ground. */
+  readonly sunshineHours?: number;
+}
+
+/** What the forecast gave for a closed day (at the ratio in use now) and what was produced. */
+export interface ForecastCompared {
+  readonly forecastKwh?: number;
+  readonly actualKwh?: number;
+}
+
+export interface ForecastPast {
+  readonly day?: string;
+  readonly solax?: ForecastCompared;
+  readonly sofar?: ForecastCompared;
+}
+
+/** An hour of the forecast: the mean power expected in it, kW, from its start. */
+export interface ForecastHour {
+  readonly hour?: string;
+  readonly solaxKw?: number;
+  readonly sofarKw?: number;
+  readonly cloudCover?: number;
+}
+
+/**
+ * `GET /energy/forecast` (energy-service >= 0.16.0, HAS-372): the solar of the coming days, judged
+ * by the service against the house load of the last closed days - **the bands are the service's,
+ * never copied here**. `stale` is always written; everything else is left out when not known.
+ */
+export interface EnergyForecast {
+  readonly fetchedAt?: string;
+  readonly stale?: boolean;
+  readonly houseLoadKwh?: number;
+  readonly houseLoadDays?: number;
+  readonly performanceRatio?: { readonly solax?: ForecastRatio; readonly sofar?: ForecastRatio };
+  /** Seven days from today. */
+  readonly days?: readonly ForecastDay[];
+  /** The last two calibrated days, oldest first. */
+  readonly past?: readonly ForecastPast[];
+  /** The next 48 hours from the hour now. */
+  readonly hourly?: readonly ForecastHour[];
+  readonly outlook?: { readonly sunBackOn?: string; readonly daysWithoutSun?: number };
+}
+
 // the SOLAX is read every 15 s, the grid meter on every change: the flow of the house moves fast
 const POLL_LIVE_EVERY_MS = 15_000;
 const POLL_STATUS_EVERY_MS = 30_000;
@@ -356,6 +417,8 @@ const POLL_CHARGE_EVERY_MS = 10_000;
 const POLL_SETTINGS_EVERY_MS = 60_000;
 // a day is closed once, after 00:15
 const POLL_DAYS_EVERY_MS = 15 * 60_000;
+// the forecast is fetched every hour and calibrated every hour; five minutes keeps the hour of the 48 current
+const POLL_FORECAST_EVERY_MS = 5 * 60_000;
 
 @Injectable({ providedIn: 'root' })
 export class EnergyApi {
@@ -396,6 +459,13 @@ export class EnergyApi {
   watchBattery(intervalMs = POLL_LIVE_EVERY_MS): PollingResource<Battery | null> {
     return pollingResource(() => this.api.get<Battery | null>('/energy/battery'), {
       intervalMs,
+    });
+  }
+
+  /** The production forecast of the coming days (HAS-372). Call in an injection context. */
+  watchForecast(): PollingResource<EnergyForecast | null> {
+    return pollingResource(() => this.api.get<EnergyForecast | null>('/energy/forecast'), {
+      intervalMs: POLL_FORECAST_EVERY_MS,
     });
   }
 

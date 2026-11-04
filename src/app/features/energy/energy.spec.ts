@@ -102,6 +102,8 @@ describe('Energy', () => {
             watchInverters: () => inverters,
             watchBattery: () => battery,
             watchAlerts: () => alerts,
+            // the forecast card (HAS-373) has a test of its own
+            watchForecast: () => fakeResource(),
             watchOutages: (range: () => HistoryRange) => {
               outagesAsked = range;
               return outages;

@@ -48,7 +48,7 @@ dashboards:
   the rooms with a light on, and whether the house is empty and acted on) and the appliances
   (HAS-282: which of the washing machine, the dryer and the dishwasher runs and which waits to be
   emptied - nothing to press there) and the energy (HAS-341: the panels, the house and the grid now, the
-  state of charge of the battery, a lost grid in red). Every call has its own freshness and its own failure, so the
+  state of charge of the battery, a lost grid in red; since HAS-373 tomorrow of the production forecast in a line - "Tomorrow: poor, about 6 kWh"). Every call has its own freshness and its own failure, so the
   page stays whole while one service is down; the title of a tile leads to the dashboard that has
   the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
@@ -68,7 +68,12 @@ dashboards:
   sees it and whether each source answers, a card each for the SOLAX (the strings, the run mode in words),
   the battery (the state of charge as a gauge, the energy left), the SOFAR (its state and faults in the
   words of the Solarman cloud) and the grid meter (per phase, a phase above 22 A marked), the open alarms
-  and the outages of the grid of the last year; then the powers and the state of charge over 24 hours, 7
+  and the outages of the grid of the last year; **the production forecast** (HAS-373) - one sentence of the coming
+  days ("Little production for 3 days, better on Saturday (about 28 kWh, above the house load)"), the two closed days
+  with what the forecast gave beside what was produced, seven days with the kWh of each inverter stacked, the
+  category of the service in words and a colour, the share of the house load (the days from the fourth on paler),
+  the mean house load of the last days as a dashed line across, the expected power of the next 48 hours and the
+  performance ratio of each inverter; then the powers and the state of charge over 24 hours, 7
   or 30 days, the closed days as bars, and **the net-metering of the billing year** ("opusty") - per month
   what was returned, credited at the ratio, taken, covered by the credit and bought, and the credit "in the
   grid" now - all in kWh, never money. **Charging the battery** (HAS-342): the charge from the grid started with
@@ -506,6 +511,7 @@ Endpoints used today:
 | `GET` | `/home/energy/flows` | Where the energy goes now and the day so far (energy: every 15 s; overview: every 60 s). Needs `energy-service` 0.8.0 and `api-gateway-service` 0.10.0 or later |
 | `GET` | `/home/energy/status` | The sources and the grid as the SOLAX sees it (energy: every 30 s; overview: every 60 s) |
 | `GET` | `/home/energy/grid`, `/home/energy/inverters`, `/home/energy/battery` | The grid meter, both inverters and the battery now (energy, every 15 s; the battery also on the overview, every 60 s) |
+| `GET` | `/home/energy/forecast` | The production forecast of the coming days (energy and overview, every 5 min). Needs `energy-service` 0.16.0; the categories are the service's, no band is copied |
 | `GET` | `/home/energy/alerts` | The open alarms (energy, every 60 s). Needs `energy-service` 0.10.0 |
 | `GET` | `/home/energy/outages?from=&to=` | The outages of the grid of the last year (energy, every 60 s) |
 | `GET` | `/home/energy/battery/charge` | The charge going on with the battery now and the start the automation would plan (energy, every 10 s). Needs `energy-service` 0.13.0 |
