@@ -80,13 +80,15 @@ export function bindingsOf(kind: string): readonly Binding[] {
  * whatever it is, so that saving does not drop it unseen.
  */
 export function channelsOf(kind: string, held?: number): readonly number[] {
-  const offered: readonly number[] =
-    kind === 'presence sensor'
-      ? [...CHANNELS, MAIN_ZONE]
-      : channelNeeded(kind)
-        ? [WATER_VALVE_CHANNEL]
-        : CHANNELS;
+  const offered = offeredChannels(kind);
   return held === undefined || offered.includes(held) ? offered : [...offered, held];
+}
+
+function offeredChannels(kind: string): readonly number[] {
+  if (kind === 'presence sensor') {
+    return [...CHANNELS, MAIN_ZONE];
+  }
+  return channelNeeded(kind) ? [WATER_VALVE_CHANNEL] : CHANNELS;
 }
 
 /**
