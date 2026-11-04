@@ -34,6 +34,8 @@ export const OVERVIEW_READS: readonly string[] = [
   '/home/energy/flows',
   '/home/energy/battery',
   '/home/energy/status',
+  // HAS-373: tomorrow of the forecast on the energy tile
+  '/home/energy/forecast',
 ];
 
 export function isShellRead(request: HttpRequest<unknown>): boolean {

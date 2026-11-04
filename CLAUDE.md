@@ -793,7 +793,7 @@ e2e/              # Playwright tests
   tiles "Rooms" and "Temperature sensors" are gone (the first led to the heating page under the
   name of the rooms view). An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
-  the overview through the real routes lets its fourteen reads through with `isOverviewRead` (the energy tile three of them, HAS-341)
+  the overview through the real routes lets its fifteen reads through with `isOverviewRead` (the energy tile four of them, HAS-341, HAS-373)
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
 - **The appliances are one resource for the whole application** (HAS-282, `ApplianceStore` in
   `data-access/appliance/`, `GET /appliance` of `appliance-service` every 30 s): the notice of the
@@ -988,6 +988,18 @@ e2e/              # Playwright tests
     automation applies to a planned outage of the street only (owner, 2026-11-03). The settings follow the stored answer
     until edited; "Save" is off until then. The mock (`charge.fixtures.ts`) charges until stopped, refuses as the service
     does; `resetCharge()`.
+  - **The production forecast** (HAS-373, `EnergyForecastCard` in `energy-forecast.ts`, `GET /energy/forecast` of
+    energy-service >= 0.16.0, every 5 min; its read is in `isOverviewRead` for the tile): **the categories and the bands
+    are the service's** - nothing here compares a coverage with a number; the four words are `energy-forecast-views.ts`
+    (a category this version does not know is printed as it came, no word is "not judged"). The sentence is
+    `outlookOf` - its kinds put into words by the template, the weekday a key of its own per day ("w sobotę": Intl
+    gives the nominative) - and is "not judged yet" while no day has a category (no closed day with a house load).
+    **The columns are HTML, not a chart**: the closed days of `past` first (the forecast at the ratio in use beside
+    what was produced), then the seven days - the SOLAX and the SOFAR stacked, the days from the fourth on paler
+    (`PALE_FROM_DAY`) - every bar a share of the largest amount of the card, the house load included, so its dashed
+    line (drawn in every column) stands where its number is. A day without its kWh has no bar and says "not known".
+    The 48 hours are a `HistoryChart` of two lines. `stale` of the answer is said in words. The overview tile has
+    one line for tomorrow (`tomorrowOf`), the call a fourth failure in its `tileFailures`.
   - **The registry knows the kind `inverter`** (`smart-home-sdk` 1.15.0): `bindingsOf('inverter')` is the
     `inverter` binding alone, of the vendor `other`; the form asks for the brand and the serial, offers the
     registration number of the dongle on a SOLAX only and the logger serial on a SOFAR only, the number of the

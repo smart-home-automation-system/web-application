@@ -20,6 +20,7 @@ import { ENERGY_CHARTS, energyChart } from './energy-charts';
 import { EnergyDays, shiftDay } from './energy-days';
 import { describeEnergyError } from './energy-errors';
 import { EnergyFlow } from './energy-flow';
+import { EnergyForecastCard } from './energy-forecast';
 import { EnergySettlement } from './energy-settlement';
 import {
   alertKindLabel,
@@ -77,6 +78,7 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
     EnergyControl,
     EnergyDays,
     EnergyFlow,
+    EnergyForecastCard,
     EnergySettlement,
     HouseAgePipe,
     HouseDateTimePipe,

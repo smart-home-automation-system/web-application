@@ -7,7 +7,13 @@ import { ApiError } from '../../core/api/api-error';
 import { Appliance } from '../../data-access/appliance/appliance-api';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
-import { Battery, EnergyApi, EnergyFlows, EnergyStatus } from '../../data-access/energy/energy-api';
+import {
+  Battery,
+  EnergyApi,
+  EnergyFlows,
+  EnergyForecast,
+  EnergyStatus,
+} from '../../data-access/energy/energy-api';
 import { EmptyHouse, LightApi, RoomLights } from '../../data-access/light/light-api';
 import { BoilerApi, BoilerStatus } from '../../data-access/boiler/boiler-api';
 import {
@@ -93,6 +99,7 @@ describe('Overview', () => {
   let energyFlows: FakeResource<EnergyFlows | null>;
   let energyBattery: FakeResource<Battery | null>;
   let energyStatus: FakeResource<EnergyStatus | null>;
+  let energyForecast: FakeResource<EnergyForecast | null>;
   let fixture: ComponentFixture<Overview>;
 
   beforeEach(() => {
@@ -111,6 +118,7 @@ describe('Overview', () => {
     energyFlows = fakeResource();
     energyBattery = fakeResource();
     energyStatus = fakeResource();
+    energyForecast = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -138,6 +146,7 @@ describe('Overview', () => {
             watchFlows: () => energyFlows,
             watchBattery: () => energyBattery,
             watchStatus: () => energyStatus,
+            watchForecast: () => energyForecast,
           },
         },
         {
@@ -564,6 +573,38 @@ describe('Overview', () => {
       ).toContain('The grid is lost');
       expect(await row('grid')).toBe('Grid not known');
       expect(await row('battery')).toBe('Battery not known');
+    });
+
+    // HAS-373: tomorrow of the forecast, as much as the answer says
+    it('tells tomorrow of the forecast in a line', async () => {
+      answer(energyFlows, { production: 0 });
+      const tomorrow = async () =>
+        words((await tile('energy')).querySelector('[data-testid="energy-tomorrow"]'));
+
+      answer(energyForecast, {
+        stale: false,
+        days: [
+          { day: '2026-11-04', totalKwh: 4.1, category: 'poor' },
+          { day: '2026-11-05', totalKwh: 6.4, category: 'poor' },
+        ],
+      });
+      expect(await tomorrow()).toBe('Tomorrow: poor, about 6 kWh');
+
+      answer(energyForecast, {
+        stale: false,
+        days: [{ day: '2026-11-04' }, { day: '2026-11-05', totalKwh: 6.4 }],
+      });
+      expect(await tomorrow()).toBe('Tomorrow: about 6 kWh');
+
+      answer(energyForecast, { stale: true, days: [] });
+      expect(await tomorrow()).toBe('Tomorrow: forecast not known');
+
+      await useLanguage('pl');
+      answer(energyForecast, {
+        stale: false,
+        days: [{ day: '2026-11-04' }, { day: '2026-11-05', totalKwh: 1.8, category: 'none' }],
+      });
+      expect(await tomorrow()).toBe('Jutro: praktycznie brak, ok. 2 kWh');
     });
 
     it('tells a failure of the battery or the grid in the tile, apart from the flows', async () => {

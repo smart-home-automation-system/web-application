@@ -167,6 +167,11 @@
     </app-domain-tile>
   </section>
 
+  <!-- HAS-373: the production forecast of the coming days, after the flows and before the history -->
+  <section class="forecast" [attr.aria-label]="t('energy.page.forecast')">
+    <app-energy-forecast />
+  </section>
+
   <section class="control" [attr.aria-label]="t('energy.page.control')">
     <app-energy-control />
   </section>

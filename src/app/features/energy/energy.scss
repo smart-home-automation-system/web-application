@@ -11,6 +11,7 @@ $gap: 12px;
 // the flow beside the sources, the four devices in a row (two of two, one column), the alarms
 // beside the outages, the charts in rows of two. Cards side by side end on one line.
 .live,
+.forecast,
 .cards,
 .lists,
 .charts {
@@ -22,6 +23,7 @@ $gap: 12px;
   margin-inline: auto;
 }
 
+.forecast,
 .cards,
 .lists,
 .charts {

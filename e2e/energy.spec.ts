@@ -36,7 +36,8 @@ test('shows where the energy goes now, the devices, the alarms and the history',
   await expect(page.getByTestId('card-alerts').locator('li')).toHaveCount(2);
   await expect(page.getByTestId('outage')).toHaveCount(2);
 
-  await expect(main.locator('.chart__plot svg')).toHaveCount(3);
+  // the power, the battery, the days and the 48 hours of the forecast (HAS-373)
+  await expect(main.locator('.chart__plot svg')).toHaveCount(4);
   await expect(page.getByTestId('in-the-grid')).toBeVisible();
   // the net-metering in kWh, never money
   await expect(main).not.toContainText('zł');
@@ -64,12 +65,38 @@ test('says what is not known just after the service started', async ({ page }) =
   await expect(page.getByTestId('no-alerts')).toBeVisible();
 });
 
+// HAS-373: the production forecast - the sentence, the closed days beside, seven days, 48 hours
+test('shows the production forecast of the coming days', async ({ page }) => {
+  await page.goto('/energy');
+  const card = page.getByTestId('card-forecast');
+
+  await expect(card.getByTestId('forecast-outlook')).toContainText(
+    'Little production for 3 days, better',
+  );
+  await expect(card.locator('.forecast__day--past')).toHaveCount(2);
+  await expect(card.locator('.forecast__day:not(.forecast__day--past)')).toHaveCount(7);
+  await expect(card.locator('.forecast__day--pale')).toHaveCount(4);
+  await expect(card.getByTestId('forecast-house-load')).toHaveText(
+    'House load, mean of 7 days: 24.6 kWh',
+  );
+  await expect(
+    card.getByRole('img', {
+      name: 'The power each inverter is expected to give in the next 48 hours',
+    }),
+  ).toBeVisible();
+  await expect(card.getByTestId('forecast-ratios')).toHaveText(
+    'Performance ratio: SOLAX 0.62 (9 days), SOFAR 0.80 (initial)',
+  );
+});
+
 test('shows the energy on the overview, leading to the page', async ({ page }) => {
   await page.goto('/overview');
   const tile = page.getByTestId('tile-energy');
 
   await expect(tile.locator('[data-energy="production"]')).toContainText('5.32 kW');
   await expect(tile.locator('[data-energy="battery"]')).toContainText('68 %');
+  // HAS-373: tomorrow of the forecast
+  await expect(tile.getByTestId('energy-tomorrow')).toHaveText('Tomorrow: hardly any, about 2 kWh');
   await tile.getByRole('link').click();
 
   await expect(page).toHaveURL(/\/energy$/);

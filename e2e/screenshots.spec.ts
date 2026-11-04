@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(14, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(15, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -536,10 +536,21 @@ for (const language of ['en', 'pl'] as const) {
           page.getByRole('main').locator('mat-progress-bar[mode="indeterminate"]'),
         ).toHaveCount(0);
         // the two charts of the history and the bars of the days are drawn before the picture
-        await expect(page.locator('.chart__plot svg')).toHaveCount(3);
+        await expect(page.locator('.chart__plot svg')).toHaveCount(4);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy'),
           fullPage: true,
+        });
+      });
+
+      // the production forecast (HAS-373): the sentence, the closed days, seven days and 48 hours
+      test('energy forecast', async ({ page }, testInfo) => {
+        await page.goto('/energy');
+        const card = page.getByTestId('card-forecast');
+        await expect(card.getByTestId('forecast-outlook')).toBeVisible();
+        await expect(card.locator('.chart__plot svg')).toBeVisible();
+        await card.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy-forecast'),
         });
       });
 

@@ -1,0 +1,230 @@
+<ng-container *transloco="let t">
+  <app-domain-tile
+    heading="energy.forecast.title"
+    icon="wb_sunny"
+    domain="energy"
+    waitingLabel="energy.page.loading"
+    [describeWith]="describe"
+    [resource]="forecast"
+    data-testid="card-forecast"
+  >
+    @if (answer(); as a) {
+      @if (stale()) {
+        <p class="tile__detail tile__detail--alert" data-testid="forecast-stale">
+          @if (fetchedAt(); as at) {
+            {{ t('energy.forecast.stale') }} · {{ at | houseAge }}
+          } @else {
+            {{ t('energy.forecast.notFetched') }}
+          }
+        </p>
+      }
+
+      <!-- one sentence of the coming days -->
+      @let o = outlook();
+      <p
+        class="tile__lead forecast__outlook"
+        data-testid="forecast-outlook"
+        [attr.data-kind]="o.kind"
+      >
+        @switch (o.kind) {
+          @case ('unknown') {
+            {{ t('energy.forecast.outlook.unknown') }}
+          }
+          @case ('noSun') {
+            {{ t('energy.forecast.outlook.noSun') }}
+          }
+          @case ('today') {
+            {{
+              o.tomorrow
+                ? t('energy.forecast.outlook.todayAndTomorrow')
+                : t('energy.forecast.outlook.todayOnly')
+            }}
+          }
+          @case ('back') {
+            {{
+              o.on === 'tomorrow'
+                ? t('energy.forecast.outlook.tomorrow')
+                : t('energy.forecast.outlook.later', { days: o.days, on: t(o.on) })
+            }}
+            @if (o.kwh !== undefined) {
+              {{
+                o.share !== undefined && o.share >= 100
+                  ? t('energy.forecast.outlook.amountAbove', { kwh: o.kwh })
+                  : o.share !== undefined
+                    ? t('energy.forecast.outlook.amountShare', { kwh: o.kwh, share: o.share })
+                    : t('energy.forecast.outlook.amount', { kwh: o.kwh })
+              }}
+            }
+          }
+        }
+      </p>
+
+      @if (days().length === 0 && past().length === 0) {
+        <p class="tile__detail" data-testid="forecast-none">{{ t('energy.forecast.none') }}</p>
+      } @else {
+        <div class="forecast__chart">
+          <ol class="forecast__columns" [attr.aria-label]="t('energy.forecast.label')">
+            <!-- the closed days: the forecast beside what was produced -->
+            @for (day of past(); track day.day) {
+              <li class="forecast__day forecast__day--past" [attr.data-day]="day.day">
+                <span class="forecast__name">{{ dayName()(day.day) }}</span>
+                <span class="forecast__bars" aria-hidden="true">
+                  @if (houseLoadAt() !== undefined) {
+                    <span class="forecast__load" [style.bottom.%]="houseLoadAt()"></span>
+                  }
+                  <span
+                    class="forecast__bar forecast__bar--forecast"
+                    [style.height.%]="height(day.forecast)"
+                  ></span>
+                  <span class="forecast__stack">
+                    <span
+                      class="forecast__bar forecast__bar--solax"
+                      [style.height.%]="height(day.actualSolax)"
+                    ></span>
+                    <span
+                      class="forecast__bar forecast__bar--sofar"
+                      [style.height.%]="height(day.actualSofar)"
+                    ></span>
+                  </span>
+                </span>
+                <span class="forecast__value" data-field="past">
+                  <span class="forecast__word">{{ t('energy.forecast.produced') }}</span>
+                  <strong>{{
+                    day.actual === undefined
+                      ? t('energy.notKnown')
+                      : (day.actual | localNumber: ONE) + ' kWh'
+                  }}</strong>
+                  <span class="forecast__small"
+                    >{{ t('energy.forecast.forecastWas') }}
+                    {{
+                      day.forecast === undefined
+                        ? t('energy.notKnown')
+                        : (day.forecast | localNumber: ONE) + ' kWh'
+                    }}</span
+                  >
+                </span>
+              </li>
+            }
+            <!-- the seven days from today -->
+            @for (day of days(); track day.day; let i = $index) {
+              <li
+                class="forecast__day"
+                [class.forecast__day--pale]="day.pale"
+                [class.forecast__day--first]="i === 0"
+                [attr.data-day]="day.day"
+                [attr.data-category]="day.category ?? day.otherCategory ?? 'unknown'"
+              >
+                <span class="forecast__name">{{
+                  i === 0
+                    ? t('energy.forecast.today')
+                    : i === 1
+                      ? t('energy.forecast.tomorrow')
+                      : dayName()(day.day)
+                }}</span>
+                <span class="forecast__bars" aria-hidden="true">
+                  @if (houseLoadAt() !== undefined) {
+                    <span class="forecast__load" [style.bottom.%]="houseLoadAt()"></span>
+                  }
+                  <span class="forecast__stack">
+                    <span
+                      class="forecast__bar forecast__bar--solax"
+                      [style.height.%]="height(day.solax)"
+                    ></span>
+                    <span
+                      class="forecast__bar forecast__bar--sofar"
+                      [style.height.%]="height(day.sofar)"
+                    ></span>
+                  </span>
+                </span>
+                <span class="forecast__value">
+                  <span class="forecast__category" data-field="category">
+                    <span class="forecast__dot" aria-hidden="true"></span>
+                    {{
+                      categoryLabel(day.category)
+                        ? t(categoryLabel(day.category)!)
+                        : (day.otherCategory ?? t('energy.forecast.category.unknown'))
+                    }}
+                  </span>
+                  <strong data-field="kwh">{{
+                    day.total === undefined
+                      ? t('energy.notKnown')
+                      : (day.total | localNumber: ONE) + ' kWh'
+                  }}</strong>
+                  @if (day.share !== undefined) {
+                    <span class="forecast__small" data-field="share">{{
+                      t('energy.forecast.share', { share: day.share })
+                    }}</span>
+                  }
+                  @if (day.sunshineHours !== undefined) {
+                    <span class="forecast__small">{{
+                      t('energy.forecast.sunshine', { hours: day.sunshineHours })
+                    }}</span>
+                  }
+                </span>
+              </li>
+            }
+          </ol>
+        </div>
+
+        <ul class="forecast__legend">
+          <li>
+            <span class="forecast__swatch forecast__swatch--solax" aria-hidden="true"></span
+            >{{ t('energy.source.solax') }}
+          </li>
+          <li>
+            <span class="forecast__swatch forecast__swatch--sofar" aria-hidden="true"></span
+            >{{ t('energy.source.sofar') }}
+          </li>
+          @if (past().length > 0) {
+            <li data-testid="forecast-past-legend">
+              <span class="forecast__swatch forecast__swatch--forecast" aria-hidden="true"></span
+              >{{ t('energy.forecast.forecastBar') }}
+            </li>
+          }
+          <li data-testid="forecast-house-load">
+            <span class="forecast__swatch forecast__swatch--load" aria-hidden="true"></span>
+            @if (houseLoad() !== undefined && houseLoadDays() !== undefined) {
+              {{ t('energy.forecast.houseLoad', { days: houseLoadDays()! }) }}
+              {{ houseLoad()! | localNumber: ONE }} kWh
+            } @else {
+              {{ t('energy.forecast.houseLoadUnknown') }}
+            }
+          </li>
+        </ul>
+      }
+
+      <!-- the next 48 hours -->
+      @let axis = hourlyAxis();
+      @if (axis !== undefined && hourlyLines().length > 0) {
+        <h3 class="forecast__subtitle">{{ t('energy.forecast.hourly') }}</h3>
+        <app-history-chart
+          [lines]="hourlyLines()"
+          [from]="axis.from"
+          [to]="axis.to"
+          unit="kW"
+          [decimals]="1"
+          [bounds]="{ min: 0 }"
+          [label]="t('energy.forecast.hourlyLabel')"
+        />
+      }
+
+      <p class="tile__detail" data-testid="forecast-ratios">
+        {{ t('energy.forecast.ratio') }}
+        @for (r of ratios(); track r.inverter; let last = $last) {
+          {{ t(r.name) }}
+          {{ r.ratio === undefined ? t('energy.notKnown') : (r.ratio | localNumber: RATIO) }}
+          ({{
+            r.days === undefined
+              ? t('energy.notKnown')
+              : r.days === 0
+                ? t('energy.forecast.ratioInitial')
+                : t('energy.forecast.ratioDays', { days: r.days })
+          }}){{ last ? '' : ',' }}
+        }
+      </p>
+      <p class="tile__detail">{{ t('energy.forecast.note') }}</p>
+    } @else if (!forecast.error()) {
+      <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+    }
+  </app-domain-tile>
+</ng-container>

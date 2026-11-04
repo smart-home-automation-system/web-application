@@ -37,6 +37,7 @@ import {
   numberOf,
   toFlowView,
 } from '../energy/energy-views';
+import { tomorrowOf } from '../energy/energy-forecast-views';
 import { PowerValue } from '../energy/power-value';
 import { stateOf } from '../../shared/lights/light-labels';
 import { countStates, lightRoomsOf } from '../lights/light-rooms';
@@ -66,7 +67,7 @@ const GRID_WORDS = { in: 'import', out: 'export', idle: 'idle' } as const;
  * facts somebody looks for first, each leading to the page that has the rest. Nothing here changes
  * the house: the switch of the heating is on the heating page only (owner, 2026-10-21, HAS-266).
  *
- * Fourteen calls feed the page (the appliances since HAS-282, the energy since HAS-341), each with its own failure: the page
+ * Fifteen calls feed the page (the appliances since HAS-282, the energy since HAS-341, its forecast since HAS-373), each with its own failure: the page
  * is whole when one service is down, and says which. Every tile is one call - but the heating tile, which tells the state of
  * the system, its rooms and its silent sensors (three calls, owner's choice of HAS-266): it tells
  * the freshness of the state and the failure of each of the three. The tiles claim what their
@@ -119,6 +120,8 @@ export class Overview {
   protected readonly energyFlows = this.energyApi.watchFlows(60_000);
   protected readonly energyBattery = this.energyApi.watchBattery(60_000);
   protected readonly energyStatus = this.energyApi.watchStatus(60_000);
+  // HAS-373: tomorrow of the production forecast, a fourth call told in the failures of the tile
+  protected readonly energyForecast = this.energyApi.watchForecast();
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
@@ -294,6 +297,8 @@ export class Overview {
   );
   /** The grid lost is the one thing of the tile in red; not known is never lost. */
   protected readonly gridLost = computed(() => gridStateOf(this.energyStatus.value()) === 'lost');
+  /** Tomorrow of the forecast: its word and kWh, as much as the answer says. */
+  protected readonly energyTomorrow = computed(() => tomorrowOf(this.energyForecast.value()));
   /** The way the grid flows, by the dead band of the service the diagram uses too; none while not known. */
   protected readonly energyGridLabel = computed(() => {
     const flow = this.energyFlow().gridFlow;

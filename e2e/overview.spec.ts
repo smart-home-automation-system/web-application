@@ -100,7 +100,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(14);
+    await expect(alerts).toHaveCount(15);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -108,8 +108,8 @@ test.describe('overview', () => {
     // the lights tile two - the lights and the empty house
     await expect(page.getByTestId('tile-heating').getByRole('alert')).toHaveCount(3);
     await expect(page.getByTestId('tile-light').getByRole('alert')).toHaveCount(2);
-    // HAS-341: the energy tile three - the flows, the battery and the grid
-    await expect(page.getByTestId('tile-energy').getByRole('alert')).toHaveCount(3);
+    // HAS-341: the energy tile four - the flows, the battery, the grid and the forecast (HAS-373)
+    await expect(page.getByTestId('tile-energy').getByRole('alert')).toHaveCount(4);
     for (const tile of [
       'tile-water',
       'tile-boiler',
