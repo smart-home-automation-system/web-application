@@ -13,7 +13,9 @@ import {
   WaterTemperatures,
   WaterValve,
 } from '../../data-access/water/water-api';
-import { HotWater } from './hot-water';
+import { Observable, of, throwError } from 'rxjs';
+
+import { HotWater, VALVE_READ_AFTER_MS } from './hot-water';
 
 /** A polled resource whose every signal the test sets by hand. */
 interface FakeResource<T> extends PollingResource<T> {
@@ -42,6 +44,8 @@ describe('HotWater', () => {
   let demand: FakeResource<WaterHeatingDemand>;
   let valve: FakeResource<WaterValve>;
   let totals: FakeResource<ConsumptionTotals>;
+  let commanded: string[];
+  let commandAnswer: Observable<void>;
   let fixture: ComponentFixture<HotWater>;
 
   beforeEach(() => {
@@ -49,6 +53,8 @@ describe('HotWater', () => {
     demand = fakeResource();
     valve = fakeResource();
     totals = fakeResource();
+    commanded = [];
+    commandAnswer = of(undefined);
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -61,6 +67,12 @@ describe('HotWater', () => {
             watchHistory: () => fakeQueryResource(),
             watchValve: () => valve,
             watchConsumptionTotals: () => totals,
+            // the bills are a card of their own, with tests of their own (water-bills.spec)
+            watchBills: () => fakeResource(),
+            commandValve: (state: 'open' | 'close') => {
+              commanded.push(state);
+              return commandAnswer;
+            },
             // the consumption is a card of its own, with tests of its own (water-consumption.spec)
             watchConsumption: () => fakeQueryResource(),
           },
@@ -84,7 +96,8 @@ describe('HotWater', () => {
 
   /** A card of the page, or the reading inside the card of the tank or of the circulation. */
   async function part(
-    name: 'temperatures' | 'demand' | 'circulation-card' | 'tank' | 'circulation' | 'valve',
+    name:
+      'temperatures' | 'demand' | 'circulation-card' | 'tank' | 'circulation' | 'valve' | 'usage',
   ): Promise<HTMLElement | null> {
     await fixture.whenStable();
     return (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${name}"]`);
@@ -420,6 +433,7 @@ describe('HotWater', () => {
         counter: { total: 61.896, measuredAt: house(30) },
         measuredAt: house(8),
       });
+      answer(totals, {});
 
       const card = (await part('valve'))!;
       expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('Open');
@@ -428,22 +442,23 @@ describe('HotWater', () => {
       expect(words(card.querySelector('[data-testid="valve-temperature"]'))).toBe(
         'Water temperature 12.9 °C',
       );
-      expect(words(card.querySelector('[data-testid="valve-usage-counter"]'))).toBe(
-        'Counter, in all 61.896 m³',
-      );
+      expect(
+        words((await part('usage'))!.querySelector('[data-testid="valve-usage-counter"]')),
+      ).toBe('Counter, in all 61.896 m³');
       expect(card.querySelector('.tile__measured--old')).toBeNull();
     });
 
     // missing is never off: what the answer leaves out is not known - never closed, never zero
     it('says not known for what the answer leaves out', async () => {
       answer(valve, { pressure: 4.92, measuredAt: house(8) });
+      answer(totals, {});
 
       const card = (await part('valve'))!;
       expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('State not known');
       expect(words(card.querySelector('[data-testid="valve-flow"]'))).toBe('Flow not known');
-      expect(words(card.querySelector('[data-testid="valve-usage-counter"]'))).toBe(
-        'Counter, in all not known',
-      );
+      expect(
+        words((await part('usage'))!.querySelector('[data-testid="valve-usage-counter"]')),
+      ).toBe('Counter, in all not known');
       expect(words(card)).not.toContain('Closed');
     });
 
@@ -476,7 +491,7 @@ describe('HotWater', () => {
       answer(valve, { state: 'open', measuredAt: house(8) });
       answer(totals, { day: 0.271, week: 1.298, year: 104.356 });
 
-      const card = (await part('valve'))!;
+      const card = (await part('usage'))!;
       expect(words(card.querySelector('[data-testid="valve-usage-day"]'))).toBe('Today 271 L');
       expect(words(card.querySelector('[data-testid="valve-usage-week"]'))).toBe(
         'This week 1,298 L',
@@ -489,13 +504,117 @@ describe('HotWater', () => {
       );
     });
 
-    it('tells a failure of the totals in the card, the valve still shown', async () => {
+    // the water used is a card of its own (owner, 2026-11-05): its failure is told there, the valve still shown
+    it('tells a failure of the totals in the card of the water used, the valve still shown', async () => {
       answer(valve, { state: 'open', measuredAt: house(8) });
       fail(totals, new ApiError('server', 502));
 
-      const card = (await part('valve'))!;
-      expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('Open');
-      expect(card.querySelectorAll('[role="alert"]')).toHaveLength(1);
+      expect(words((await part('valve'))!.querySelector('[data-testid="valve-state"]'))).toContain(
+        'Open',
+      );
+      expect((await part('valve'))!.querySelectorAll('[role="alert"]')).toHaveLength(0);
+      expect((await part('usage'))!.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    });
+
+    // HAS-323: the one write that cuts the water of the whole house - offered as the change of the state, asked first
+    describe('the command', () => {
+      const button = async (name: string) =>
+        (await part('valve'))!.querySelector(`[data-testid="${name}"]`) as HTMLButtonElement | null;
+
+      it('offers to close an open valve, to open a closed one, and both while the state is not known', async () => {
+        answer(valve, { state: 'open', measuredAt: house(8) });
+        expect(await button('valve-close')).toBeTruthy();
+        expect(await button('valve-open')).toBeNull();
+
+        answer(valve, { state: 'closed', measuredAt: house(8) });
+        expect(await button('valve-open')).toBeTruthy();
+        expect(await button('valve-close')).toBeNull();
+
+        answer(valve, { pressure: 4.9, measuredAt: house(8) });
+        expect(await button('valve-close')).toBeTruthy();
+        expect(await button('valve-open')).toBeTruthy();
+      });
+
+      it('asks before it closes the valve, and sends nothing for a cancel', async () => {
+        answer(valve, { state: 'open', measuredAt: house(8) });
+
+        (await button('valve-close'))!.click();
+        const question = (await part('valve'))!.querySelector('[data-testid="valve-question"]');
+
+        expect(words(question)).toContain(
+          'Close the water valve? It cuts the water of the whole house.',
+        );
+        expect(question?.getAttribute('aria-labelledby')).toBe(question?.querySelector('p')?.id);
+        expect(commanded).toEqual([]);
+
+        (await button('valve-cancel'))!.click();
+
+        expect(await button('valve-close')).toBeTruthy();
+        expect(commanded).toEqual([]);
+      });
+
+      // taken is not done: the valve is read again a moment later, and its read says the rest
+      it('closes the valve once confirmed and reads it again after a moment', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout'] });
+        const refresh = vi.spyOn(valve, 'refresh');
+        answer(valve, { state: 'open', measuredAt: house(8) });
+
+        (await button('valve-close'))!.click();
+        (await button('valve-confirm'))!.click();
+        await fixture.whenStable();
+
+        expect(commanded).toEqual(['close']);
+        expect((await part('valve'))!.querySelector('mat-progress-bar')).toBeTruthy();
+        expect(refresh).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(VALVE_READ_AFTER_MS);
+
+        expect(refresh).toHaveBeenCalled();
+        expect((await part('valve'))!.querySelector('mat-progress-bar')).toBeNull();
+        vi.useRealTimers();
+      });
+
+      // closed by other means while the question was open: there is nothing left to ask
+      it('drops the question once the valve is in the state asked for', async () => {
+        answer(valve, { state: 'open', measuredAt: house(8) });
+        (await button('valve-close'))!.click();
+        expect((await part('valve'))!.querySelector('[data-testid="valve-question"]')).toBeTruthy();
+
+        answer(valve, { state: 'closed', measuredAt: house(8) });
+
+        expect((await part('valve'))!.querySelector('[data-testid="valve-question"]')).toBeNull();
+        expect(await button('valve-open')).toBeTruthy();
+        expect(commanded).toEqual([]);
+      });
+
+      it('says the valve has not confirmed the last command while it has not', async () => {
+        answer(valve, { state: 'closed', measuredAt: house(8), lastCommandConfirmed: false });
+
+        expect(words(await button('valve-unconfirmed'))).toContain(
+          'The valve has not confirmed the last command yet.',
+        );
+
+        answer(valve, { state: 'closed', measuredAt: house(8), lastCommandConfirmed: true });
+
+        expect(await button('valve-unconfirmed')).toBeNull();
+      });
+
+      it('tells a command the valve did not take, after reading it again', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout'] });
+        commandAnswer = throwError(
+          () => new ApiError('server', 502, [{ message: 'refused', code: 'DEVICE_FAILED' }]),
+        );
+        answer(valve, { state: 'open', measuredAt: house(8) });
+
+        (await button('valve-close'))!.click();
+        (await button('valve-confirm'))!.click();
+        await vi.advanceTimersByTimeAsync(VALVE_READ_AFTER_MS);
+
+        const text = words(await part('valve'));
+        expect(text).toContain('The valve did not take the command.');
+        expect(text).toContain('The valve refused the command or did not answer it.');
+        vi.useRealTimers();
+      });
     });
 
     // against a water-service without the valve the card shows its 404, and the rest of the page works

@@ -518,9 +518,10 @@ e2e/              # Playwright tests
     since when, closed, a sensor not heard of - and the hold of its heating as a badge. A room
     without a sensor says nothing; a state this version does not know is "not heard of", never
     closed. The values are those of the window of a blind, the same words in both places.
-  - **The dashboard writes to the house in six places now**: the heating switch, the two
+  - **The dashboard writes to the house in eight places now**: the heating switch, the two
     registries, and - from this view - the blinds and the lights (through `light-service` since HAS-292);
-    the sixth is the periods of the heaters (HAS-357, the window of a room on the heating page). (The blinds page adds the
+    the sixth is the periods of the heaters (HAS-357, the window of a room on the heating page); the seventh and the
+    eighth are the command of the water valve and the bills of the waterworks (HAS-323, the water page). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
@@ -781,11 +782,25 @@ e2e/              # Playwright tests
     which a history does not.
   - The overview tile "Water" (`tile-valve`, next to the hot water) is two calls - the valve and the water of today -
     the second told in `tileFailures`.
-  - **The layout is the heating page's** (owner, 2026-11-05): a row of four cards of one size - the valve, the tank,
-    the demand, the circulation - in a grid of 1240 px (two a row from 640 px, four from 1100 px), the consumption and
-    the history under it, as wide. The valve card shows the water of today, this week, this month and this year
-    (`watchConsumptionTotals`: four calls one after the other every 5 minutes, read as one, `at` left out so the
-    service counts from its own today) and the counter - the counter alone says little (owner).
+  - **The layout is the heating page's** (owner, 2026-11-05): a row of five cards of one size - the valve, the water
+    used, the tank, the demand, the circulation - in a grid of 1240 px (two a row from 640 px, three from 900 px, five
+    from 1240 px), the consumption, the bills and the history under it, as wide. **The water used is a card of its own**
+    (owner, HAS-323): today, this week, this month and this year (`watchConsumptionTotals`: four calls one after the
+    other every 5 minutes, read as one, `at` left out so the service counts from its own today) and the counter of
+    the valve - the counter alone says little (owner).
+  - **The command of the valve** (HAS-323, `water-service` >= 0.12.0) - the one write that cuts the water of the
+    whole house: the button offers the change of the state (both while it is not known), **always after a question**
+    that says so, "Cancel" focused; `POST /water/valve?state=&source=dashboard` sent once, the valve read again
+    `VALVE_READ_AFTER_MS` (2.5 s) later whatever the command came to (an unanswered one may have been carried out),
+    and `lastCommandConfirmed: false` told on the card. A question with nothing left to ask goes by itself (the
+    valve reached that state, or is not known any more) - the rule of the heating switch.
+  - **The bills** (HAS-323, `water-bills.ts`, `water-service` >= 0.9.0): newest first, measured and difference left
+    out as "not measured" / "not known" when the service leaves them out; the difference coloured by its size
+    (within 3 % plain, within 10 % outlined, more on the strip of an error). The form is **a copy of `BillRules`**
+    (`bill-rules.ts`: both days, in order, from 2000, not past today; volumes at least 0, three decimals; the amount
+    two; the note 500 characters; an overlap - a shared day, both ends included - with the bills it shows): a rule
+    changed in `water-service` is changed there. The pattern of the heating schedule editor: one write at a time,
+    then the bills read again, a bill already gone counts as removed. The days are chosen on the calendar.
   - **Heating going on stands out** (owner, 2026-11-05): "heating needed" on a strip tinted with
     `--app-domain-heating` and its flame in that colour; the words stay `on-surface`, so the contrast the check
     knows holds - the colour is the strip and the icon.

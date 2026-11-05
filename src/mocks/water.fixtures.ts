@@ -1,9 +1,11 @@
 import {
   WaterConsumption,
   WaterHeatingDemand,
+  WaterBill,
   WaterTemperatures,
   WaterValve,
 } from '../app/data-access/water/water-api';
+import type { MockReply } from './handlers';
 import { houseTime } from './house-time';
 
 /**
@@ -32,11 +34,39 @@ export const WATER_HEATING_DEMAND: WaterHeatingDemand = { active: false };
  * `GET /home/water/valve` (HAS-316): the valve of the garage open, a tap running, the mains at almost 5 bar - its
  * newest report a few seconds old, since the service hears the valve at once and reads it every minute.
  */
+/** The valve of the mock house: open until the dashboard closes it (HAS-323), its last command confirmed at once. */
+let valveOpen = true;
+let valveCommanded = false;
+
+export function resetWaterValve(): void {
+  valveOpen = true;
+  valveCommanded = false;
+}
+
+/** `POST /home/water/valve?state=&source=` (HAS-321): taken, the valve in the state asked - 202 with what was taken. */
+export function commandWaterValve(state: string | null, source: string | null): MockReply {
+  if (state !== 'open' && state !== 'close') {
+    return refusal(
+      400,
+      'INVALID_COMMAND',
+      'Invalid valve command',
+      `The state is open or close, not ${state}`,
+    );
+  }
+  valveOpen = state === 'open';
+  valveCommanded = true;
+  return {
+    status: 202,
+    body: { state, source, commandedAt: houseTime(new Date(), 0).slice(0, 19) },
+  };
+}
+
 export function waterValve(now: Date = new Date(), secondsAgo = 8): WaterValve {
   const at = houseTime(now, secondsAgo).slice(0, 19);
   return {
-    state: 'open',
-    flowRate: 6.5,
+    state: valveOpen ? 'open' : 'closed',
+    ...(valveCommanded ? { lastCommandConfirmed: true } : {}),
+    flowRate: valveOpen ? 6.5 : 0,
     pressure: 4.92,
     temperature: 12.9,
     counter: { total: 61.896, measuredAt: houseTime(now, 40).slice(0, 19) },
@@ -195,4 +225,112 @@ export function waterConsumption(
     ...(fresh ? {} : { previousTotal: Math.round(total * 1.08 * 1_000) / 1_000 }),
     buckets,
   };
+}
+
+const refusal = (status: number, code: string, message: string, details: string): MockReply => ({
+  status,
+  body: { errors: [{ code, message, details }] },
+});
+
+/** Two bills of the mock house, invented: one far from what the valve measured, one close to it. */
+const BILLS_AT_THE_START: readonly WaterBill[] = [
+  {
+    id: 2,
+    periodFrom: '2026-09-29',
+    periodTo: '2026-10-20',
+    billedVolume: 11,
+    meterReading: 398,
+    amount: 275.56,
+    note: 'Invented bill 2',
+  },
+  { id: 1, periodFrom: '2026-07-30', periodTo: '2026-08-31', billedVolume: 18, amount: 470.23 },
+];
+
+let bills: WaterBill[] = BILLS_AT_THE_START.map((bill) => ({ ...bill }));
+
+export function resetWaterBills(): void {
+  bills = BILLS_AT_THE_START.map((bill) => ({ ...bill }));
+}
+
+/** What the mock valve measured over a period: about what was billed, the first bill a good deal less. */
+function measured(bill: WaterBill): Partial<WaterBill> {
+  const billed = bill.billedVolume ?? 0;
+  const factor = bill.id === 1 ? 0.82 : 1.002;
+  const measuredVolume = Math.round(billed * factor * 1_000) / 1_000;
+  const difference = Math.round((measuredVolume - billed) * 1_000) / 1_000;
+  return {
+    measuredVolume,
+    difference,
+    ...(billed === 0 ? {} : { differencePercent: Math.round((difference / billed) * 1_000) / 10 }),
+  };
+}
+
+/** `GET /home/water/bills` (HAS-318): newest first, each with what was measured over it. */
+export function waterBills(): WaterBill[] {
+  return [...bills]
+    .sort((a, b) => (b.periodFrom ?? '').localeCompare(a.periodFrom ?? ''))
+    .map((bill) => ({ ...bill, ...measured(bill) }));
+}
+
+function billProblem(body: unknown, id?: number): string | undefined {
+  const bill = (body ?? {}) as WaterBill;
+  if (!bill.periodFrom || !bill.periodTo || bill.billedVolume === undefined) {
+    return 'periodFrom, periodTo and billedVolume are required';
+  }
+  if (bill.periodTo < bill.periodFrom) {
+    return 'periodTo must not be before periodFrom';
+  }
+  const from = bill.periodFrom;
+  const to = bill.periodTo;
+  const other = bills.find(
+    (one) => one.id !== id && (one.periodFrom ?? '') <= to && from <= (one.periodTo ?? ''),
+  );
+  return other ? `The period overlaps the bill ${other.id}` : undefined;
+}
+
+const billOf = (body: unknown): WaterBill => {
+  const bill = body as WaterBill;
+  return {
+    periodFrom: bill.periodFrom,
+    periodTo: bill.periodTo,
+    billedVolume: bill.billedVolume,
+    ...(bill.meterReading === undefined ? {} : { meterReading: bill.meterReading }),
+    ...(bill.amount === undefined ? {} : { amount: bill.amount }),
+    ...(bill.note === undefined ? {} : { note: bill.note }),
+  };
+};
+
+/** `POST /home/water/bills`, refused as the service refuses it. */
+export function createWaterBill(body: unknown): MockReply {
+  const problem = billProblem(body);
+  if (problem !== undefined) {
+    return refusal(400, 'INVALID_BILL', 'Invalid water bill', problem);
+  }
+  const created = { id: Math.max(0, ...bills.map((bill) => bill.id ?? 0)) + 1, ...billOf(body) };
+  bills = [...bills, created];
+  return { status: 201, body: { ...created, ...measured(created) } };
+}
+
+/** `PUT /home/water/bills/{id}`: the whole bill. */
+export function replaceWaterBill(id: string, body: unknown): MockReply {
+  const current = bills.find((bill) => String(bill.id) === id);
+  if (current === undefined) {
+    return refusal(404, 'NOT_FOUND_BILL', 'Water bill not found', `No water bill ${id}`);
+  }
+  const problem = billProblem(body, current.id);
+  if (problem !== undefined) {
+    return refusal(400, 'INVALID_BILL', 'Invalid water bill', problem);
+  }
+  const replaced = { id: current.id, ...billOf(body) };
+  bills = bills.map((bill) => (bill.id === current.id ? replaced : bill));
+  return { status: 200, body: { ...replaced, ...measured(replaced) } };
+}
+
+/** `DELETE /home/water/bills/{id}`. */
+export function deleteWaterBill(id: string): MockReply {
+  if (!bills.some((bill) => String(bill.id) === id)) {
+    return refusal(404, 'NOT_FOUND_BILL', 'Water bill not found', `No water bill ${id}`);
+  }
+  bills = bills.filter((bill) => String(bill.id) !== id);
+  return { status: 204, body: null };
 }

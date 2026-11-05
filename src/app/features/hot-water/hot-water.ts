@@ -1,10 +1,22 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { ApiError, toApiError } from '../../core/api/api-error';
 import { APP_CONFIG } from '../../core/config/app-config';
 import { Ticker } from '../../core/time/ticker';
 import {
@@ -20,6 +32,7 @@ import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { TemperatureGauge } from './temperature-gauge';
+import { WaterBills } from './water-bills';
 import { WaterConsumptionCard } from './water-consumption';
 import { describeWaterError } from './water-errors';
 import { WaterHistory } from './water-history';
@@ -68,10 +81,16 @@ interface UsageRow {
  * polls of the service were missed. An answer without that time - an older `water-service` -
  * gets neither.
  */
+/** How long after a command the valve is read again: it reports a change at once, a command takes a moment. */
+export const VALVE_READ_AFTER_MS = 2_500;
+
+let nextQuestion = 0;
+
 @Component({
   selector: 'app-hot-water',
   imports: [
     NgTemplateOutlet,
+    MatButtonModule,
     MatCardModule,
     MatIconModule,
     MatProgressBarModule,
@@ -81,6 +100,7 @@ interface UsageRow {
     HouseAgePipe,
     LocalNumberPipe,
     TemperatureGauge,
+    WaterBills,
     WaterConsumptionCard,
     WaterHistory,
   ],
@@ -96,6 +116,22 @@ export class HotWater {
   protected readonly demand = this.api.watchHeatingDemand();
   protected readonly valve = this.api.watchValve();
   protected readonly totals = this.api.watchConsumptionTotals();
+
+  // ---- the command of the valve (HAS-323) ----
+
+  /** The command asked about; the valve is closed or opened only once it is confirmed. */
+  protected readonly valveQuestion = signal<'open' | 'close' | undefined>(undefined);
+  protected readonly valveQuestionId = `valve-question-${nextQuestion++}`;
+  /** A command was sent and the valve is being read again. */
+  protected readonly commanding = signal(false);
+  protected readonly commandFailure = signal<ApiError | undefined>(undefined);
+  private readonly keepValve = viewChild<unknown, ElementRef<HTMLElement>>('keepValve', {
+    read: ElementRef,
+  });
+  private readonly destroyRef = inject(DestroyRef);
+  /** The read of the valve after a command, waiting; cleared with the page. */
+  private readAfterCommand?: ReturnType<typeof setTimeout>;
+  private destroyed = false;
   protected readonly describeWater = describeWaterError;
   protected readonly band = HOT_WATER_BAND;
   protected readonly oneDecimal: Intl.NumberFormatOptions = {
@@ -151,6 +187,65 @@ export class HotWater {
       },
     ];
   });
+
+  constructor() {
+    // the question takes the focus on "Cancel", the safe answer - an Enter pressed out of habit cuts no water
+    effect(() => this.keepValve()?.nativeElement.focus());
+    // a question that has nothing left to ask goes: the valve reached that state by other means, or is not known
+    // any more - cleared, never hidden, or it would come back by itself (the rule of the heating switch)
+    effect(() => {
+      const asked = this.valveQuestion();
+      const open = this.valveView().open;
+      const settled = (asked === 'close' && open === false) || (asked === 'open' && open === true);
+      if (asked !== undefined && !this.commanding() && (settled || !this.valveKnown())) {
+        this.valveQuestion.set(undefined);
+      }
+    });
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      clearTimeout(this.readAfterCommand);
+    });
+  }
+
+  /** The commands offered: the one that changes the state, both while the state is not known. */
+  protected commandsOf(open: boolean | undefined): readonly ('open' | 'close')[] {
+    if (open === undefined) {
+      return ['close', 'open'];
+    }
+    return open ? ['close'] : ['open'];
+  }
+
+  /**
+   * Sends the command once, then reads the valve again after `VALVE_READ_AFTER_MS` - the valve reports its new
+   * state within that - whatever the command came to: a command without an answer may have been carried out. Taken
+   * is not done: the read says whether the valve confirmed it (`lastCommandConfirmed`).
+   */
+  protected command(state: 'open' | 'close'): void {
+    if (this.commanding()) {
+      return;
+    }
+    this.commanding.set(true);
+    this.commandFailure.set(undefined);
+    const after = (failure?: ApiError) => {
+      if (this.destroyed) {
+        return;
+      }
+      this.readAfterCommand = setTimeout(() => {
+        void this.valve
+          .refresh()
+          .catch(() => undefined)
+          .then(() => {
+            this.commanding.set(false);
+            this.valveQuestion.set(undefined);
+            this.commandFailure.set(failure);
+          });
+      }, VALVE_READ_AFTER_MS);
+    };
+    this.api.commandValve(state).subscribe({
+      error: (error: unknown) => after(toApiError(error)),
+      complete: () => after(),
+    });
+  }
 
   /** True, false, or `undefined` while the answer does not say. */
   protected readonly heatingNeeded = computed(() => {

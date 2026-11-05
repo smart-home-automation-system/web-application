@@ -108,6 +108,11 @@ import {
 } from './schedules.fixtures';
 import {
   WATER_HEATING_DEMAND,
+  commandWaterValve,
+  createWaterBill,
+  deleteWaterBill,
+  replaceWaterBill,
+  waterBills,
   waterConsumption,
   waterTemperatures,
   waterValve,
@@ -623,6 +628,30 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/water/valve',
     reply: (_, fresh) => ({ status: 200, body: fresh ? {} : waterValve() }),
+  },
+  {
+    // HAS-321: the command of the valve
+    method: 'POST',
+    path: '/home/water/valve',
+    reply: (request) =>
+      commandWaterValve(request.params.get('state'), request.params.get('source')),
+  },
+  // HAS-318: the bills of the waterworks; before its first reading the service has none
+  {
+    method: 'GET',
+    path: '/home/water/bills',
+    reply: (_, fresh) => ({ status: 200, body: fresh ? [] : waterBills() }),
+  },
+  { method: 'POST', path: '/home/water/bills', reply: (request) => createWaterBill(request.body) },
+  {
+    method: 'PUT',
+    path: /^\/home\/water\/bills\/(\d+)$/,
+    reply: (request, _, [id]) => replaceWaterBill(id, request.body),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/water\/bills\/(\d+)$/,
+    reply: (_, __, [id]) => deleteWaterBill(id),
   },
   {
     method: 'GET',

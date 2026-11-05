@@ -25,6 +25,8 @@ export interface ValveView {
   /** House wall-clock time of the newest report; `undefined` when the answer does not say. */
   readonly measuredAt?: string;
   readonly measuredInstant?: number;
+  /** Whether the last command was answered by the valve (HAS-321); `undefined` before one since the start. */
+  readonly lastCommandConfirmed?: boolean;
 }
 
 /** The words of the service for the state of the valve. */
@@ -53,6 +55,8 @@ export function toValveView(answer: WaterValve | null | undefined, timeZone: str
     counter: finite(answer?.counter?.total),
     measuredAt: parsed ? (at as string) : undefined,
     measuredInstant: parsed ? houseInstant(parsed, timeZone) : undefined,
+    lastCommandConfirmed:
+      typeof answer?.lastCommandConfirmed === 'boolean' ? answer.lastCommandConfirmed : undefined,
   };
 }
 

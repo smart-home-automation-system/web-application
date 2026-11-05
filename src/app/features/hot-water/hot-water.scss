@@ -1,7 +1,7 @@
 // the rows of a value and its name, shared with the tiles of the overview (HAS-322: the valve)
 @use '../../shared/domain-tile/tile-content';
 
-// A row of four cards of one size, in the middle of the page - the valve, the tank, the demand and the circulation -
+// A row of five cards of one size, in the middle of the page - the valve, the water used, the tank, the demand and the circulation -
 // and the consumption and the history under it, as wide as the row (owner, 2026-11-05, HAS-322: the heating page).
 // Two a row on a tablet, one on a phone; the cards of a row are as tall as the tallest, so none stops short of its
 // neighbour (owner, 2026-10-10).
@@ -24,8 +24,13 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  @media (min-width: 1100px) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  // five cards since the water used has its own (owner, 2026-11-05): all of them in one row on a wide screen
+  @media (min-width: 1240px) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -140,9 +145,25 @@ mat-card-content {
   margin-inline: auto;
 }
 
-// the water of the running ranges under the readings of the valve
-.tile__subtitle {
-  margin: 12px 0 0;
-  font: var(--mat-sys-title-small);
-  color: var(--mat-sys-on-surface);
+// the command of the valve (HAS-323): its buttons, or the question that comes before it
+.valve__commands,
+.valve__answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
+
+.valve__question {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  p {
+    margin: 0;
+    font: var(--mat-sys-body-medium);
+  }
+}
+

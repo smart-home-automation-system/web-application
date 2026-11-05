@@ -71,23 +71,6 @@
                 </dd>
               </div>
             </dl>
-            <!-- the water of the running day, week, month and year, and the counter of the valve (owner, 2026-11-05) -->
-            <h3 class="tile__subtitle">{{ t('water.valve.usage') }}</h3>
-            <dl class="tile__rows" data-testid="valve-usage">
-              @for (row of usage(); track row.key) {
-                <div class="tile__row" [attr.data-testid]="'valve-usage-' + row.key">
-                  <dt>{{ t(row.label) }}</dt>
-                  <dd>
-                    @if (row.value !== undefined) {
-                      {{ row.value | localNumber: row.format }} {{ row.unit }}
-                    } @else {
-                      {{ t('water.unknown') }}
-                    }
-                  </dd>
-                </div>
-              }
-            </dl>
-            <app-api-error-strip [error]="totals.error()" [describeWith]="describeWater" />
             @if (view.measuredAt | houseAge; as age) {
               <p
                 class="tile__detail tile__measured"
@@ -104,6 +87,78 @@
                 }}</span>
               </p>
             }
+
+            <!-- the command (HAS-323): the one write that cuts the water of the whole house, after a question -->
+            @if (view.lastCommandConfirmed === false) {
+              <p class="tile__detail tile__measured" data-testid="valve-unconfirmed">
+                <mat-icon>hourglass_top</mat-icon>
+                <span>{{ t('water.valve.unconfirmed') }}</span>
+              </p>
+            }
+            @let asked = valveQuestion();
+            @if (asked !== undefined) {
+              <div
+                class="valve__question"
+                role="group"
+                [attr.aria-labelledby]="valveQuestionId"
+                data-testid="valve-question"
+              >
+                <p [id]="valveQuestionId">
+                  {{
+                    t(asked === 'close' ? 'water.valve.confirmClose' : 'water.valve.confirmOpen')
+                  }}
+                </p>
+                <div class="valve__answers">
+                  <button
+                    #keepValve
+                    matButton
+                    type="button"
+                    data-testid="valve-cancel"
+                    (click)="valveQuestion.set(undefined)"
+                  >
+                    {{ t('water.valve.cancel') }}
+                  </button>
+                  <button
+                    matButton="filled"
+                    type="button"
+                    data-testid="valve-confirm"
+                    [disabled]="commanding()"
+                    (click)="command(asked)"
+                  >
+                    {{ t(asked === 'close' ? 'water.valve.doClose' : 'water.valve.doOpen') }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="valve__commands">
+                @for (state of commandsOf(view.open); track state) {
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    disabledInteractive
+                    [attr.data-testid]="'valve-' + state"
+                    [disabled]="commanding()"
+                    (click)="valveQuestion.set(state)"
+                  >
+                    <mat-icon>{{ state === 'close' ? 'block' : 'water_drop' }}</mat-icon>
+                    {{ t(state === 'close' ? 'water.valve.doClose' : 'water.valve.doOpen') }}
+                  </button>
+                }
+              </div>
+            }
+            @if (commanding()) {
+              <mat-progress-bar
+                mode="indeterminate"
+                [attr.aria-label]="t('water.valve.commanding')"
+              />
+            }
+            @if (commandFailure(); as failure) {
+              <app-api-error-strip
+                [error]="failure"
+                [summary]="t('water.valve.commandFailed')"
+                [describeWith]="describeWater"
+              />
+            }
           } @else if (!valve.error()) {
             <p class="tile__detail" data-testid="valve-nothing">{{ t('water.valve.nothing') }}</p>
           }
@@ -115,6 +170,40 @@
     <!-- Both temperatures come from one call, and each has a card of its own (owner,
          2026-10-10): so each card tells the freshness, the age of the reading and the failure
          of that call itself. -->
+    <!-- the water used, in a card of its own next to the valve (owner, 2026-11-05): today, this week, this month and
+         this year - one call of four totals - and the counter of the valve, from the call of the valve -->
+    <mat-card appearance="outlined" class="tile card--domain" data-testid="usage">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>water_full</mat-icon></div>
+        <mat-card-title>{{ t('water.usage.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="totals.lastUpdated()" [stale]="totals.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (totals.loading()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('water.usage.loading')" />
+        } @else {
+          <dl class="tile__rows" data-testid="valve-usage">
+            @for (row of usage(); track row.key) {
+              <div class="tile__row" [attr.data-testid]="'valve-usage-' + row.key">
+                <dt>{{ t(row.label) }}</dt>
+                <dd>
+                  @if (row.value !== undefined) {
+                    {{ row.value | localNumber: row.format }} {{ row.unit }}
+                  } @else {
+                    {{ t('water.unknown') }}
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+          <app-api-error-strip [error]="totals.error()" [describeWith]="describeWater" />
+        }
+      </mat-card-content>
+    </mat-card>
+
     <mat-card appearance="outlined" class="tile card--domain" data-testid="temperatures">
       <mat-card-header>
         <div mat-card-avatar class="domain-badge"><mat-icon>water_drop</mat-icon></div>
@@ -250,5 +339,6 @@
   </ng-template>
 
   <app-water-consumption class="wide" />
+  <app-water-bills class="wide" />
   <app-water-history class="wide" />
 </ng-container>
