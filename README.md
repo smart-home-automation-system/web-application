@@ -41,7 +41,8 @@ dashboards:
   dashboard. **Heating** (HAS-266): whether the system is on and since when, how many rooms there
   are and how many are being heated, the coldest and the warmest room with the age of each reading,
   and a **red blinking light** by its title while a temperature sensor is silent; the switch itself
-  is on the heating page only. Then the hot water, the boiler room, who is at home - with a warning
+  is on the heating page only. Then the hot water, the water of the house (HAS-322: the valve of the
+  garage open or closed, its flow and the litres used today), the boiler room, who is at home - with a warning
   when the detection has not checked for more than five minutes - the weather (temperature, dew
   point, wind and gusts, rain, daylight), the blinds (HAS-254: how many are open, closed, moving
   and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
@@ -165,6 +166,12 @@ dashboards:
   through, and is not in the week - it never heats. After every write the rooms are read again and
   only that answer moves the list. The switch of the house asks before it acts, and what it shows
   afterwards is what the house answers when asked again, never what was clicked.
+- **Water** (HAS-322, the hot-water page until then): **the water valve of the garage** - open or
+  closed, the flow in l/min, the pressure in bar, the water temperature and the counter in m³, with
+  the age of its newest report (out of date after 3 minutes) - and **the consumption of the house**
+  by day (in hours), week and month (in days) and year (in months) as bars, in litres (a year in
+  m³), with the total and the one of the range before; a day is chosen on a calendar or stepped back
+  and forth. A bucket the service did not watch has no bar, never 0. Then the hot water:
 - **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
   circulation, **when the sensors were read** - a reading older than 6 minutes is marked out of
@@ -268,7 +275,8 @@ dashboards:
   the temperature of the room in the heating ends there. Nothing is shown as done before the
   registry says so, and one change is made at a time.
 
-Hot water, the boiler room and the presence are read-only.
+The water, the hot water, the boiler room and the presence are read-only (the command of the valve comes
+with HAS-323).
 
 Every view stands in the **middle of the page**, with its title in the top left corner, and the
 cards of a row are of one size (HAS-266).
@@ -466,6 +474,8 @@ Endpoints used today:
 | `GET` | `/home/water/status/temperature` | The last reading of the tank and the circulation with `measuredAt`, the time the sensors were read (hot water, overview), polled every 30 s. Without `measuredAt` - a `water-service` below 0.6.0 - the age of the reading is not shown. The service answers 200 with **no body** until its first reading - shown as "no temperature has been measured yet" |
 | `GET` | `/home/water/temperature/history?from=&to=` | Both temperatures over a range, averaged into buckets (hot water). Asked when the period changes, then every 3 min. Needs `water-service` 0.6.0 or later |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
+| `GET` | `/home/water/valve` | The water valve now - state, flow, pressure, water temperature, counter, the time of its newest report (water, overview), polled every 15 s. A field left out is shown as not known; `{}` before the first report. Needs `water-service` 0.7.0 or later - against an older one the card shows the 404 |
+| `GET` | `/home/water/consumption?range=&at=` | The water used over a day, week, month or year in buckets, with the total and the one before (water; today on the overview), asked when the range or the day changes, then every minute. Needs `water-service` 0.8.0 or later |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room, overview), polled every 30 s |
 | `GET` | `/home/weather/current` | Every metric of the weather station with `value`, `measuredAt` and `stale` (the strip on every page, overview, weather), polled every 60 s by one resource for all. A metric never heard is not in the answer and is not drawn; `{}` is a station not heard yet. Needs `weather-service` 0.4.0 and `api-gateway-service` 0.6.0 or later |
 | `GET` | `/home/weather/status` | How the service hears the station: its gateway (answers or not, when checked), when the station was last heard, `silent` after 30 min (weather), polled every 60 s |
