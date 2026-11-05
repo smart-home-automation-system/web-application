@@ -117,13 +117,14 @@ test.describe('when the backend fails', () => {
     await page.goto('/');
 
     // a failure per call of the overview - three in the heating tile, two in the lights tile, one in
-    // the appliance tile (HAS-282), four in the energy tile (HAS-341, the forecast HAS-373) - and nothing received in any tile
+    // the appliance tile (HAS-282), four in the energy tile (HAS-341, the forecast HAS-373), two in the water tile
+    // (HAS-322) - and nothing received in any tile
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(15);
+    await expect(alerts).toHaveCount(17);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The server cannot be reached');
     }
-    await expect(page.getByText('No data received')).toHaveCount(9);
+    await expect(page.getByText('No data received')).toHaveCount(10);
     // the shell keeps working without the backend
     await expect(
       page.getByRole('navigation').getByRole('link', { name: 'Weather' }).first(),
@@ -135,7 +136,7 @@ test.describe('when the backend fails', () => {
     await page.goto('/');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(15);
+    await expect(alerts).toHaveCount(17);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('error 502');
       await expect(alert).not.toContainText('Mock scenario');

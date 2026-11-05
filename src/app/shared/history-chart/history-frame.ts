@@ -35,6 +35,9 @@ const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
  *
  * It decides nothing about the data - the caller says whether it waits and whether there is
  * anything to draw - so the two histories cannot come to tell these states differently.
+ *
+ * The periods are those of a history by default; a card with periods of its own - the consumption of the water
+ * (HAS-322: a day, a week, a month, a year) - names them and their labels (`P` is its type of period).
  */
 @Component({
   selector: 'app-history-frame',
@@ -56,7 +59,7 @@ const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
           (change)="preset.set($event.value)"
         >
           @for (option of presets(); track option) {
-            <mat-button-toggle [value]="option">{{ t(labels[option]) }}</mat-button-toggle>
+            <mat-button-toggle [value]="option">{{ t(labels()[option]) }}</mat-button-toggle>
           }
         </mat-button-toggle-group>
         @if (!waiting()) {
@@ -83,8 +86,8 @@ const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
   styleUrl: './history-frame.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HistoryFrame {
-  readonly preset = model.required<HistoryPreset>();
+export class HistoryFrame<P extends string = HistoryPreset> {
+  readonly preset = model.required<P>();
   /** The answer for the period on screen has not arrived, one way or the other. */
   readonly waiting = input.required<boolean>();
   /** There is nothing to draw for the period: no answer, or one without a reading. */
@@ -99,6 +102,9 @@ export class HistoryFrame {
   protected readonly content = contentChild.required(TemplateRef);
 
   /** The periods offered, in their order; the three of a history by default. */
-  readonly presets = input<readonly HistoryPreset[]>(HISTORY_PRESETS);
-  protected readonly labels = PRESET_LABELS;
+  readonly presets = input<readonly P[]>(HISTORY_PRESETS as readonly string[] as readonly P[]);
+  /** The words of each period offered; those of a history by default. */
+  readonly labels = input<Readonly<Record<P, MessageKey>>>(
+    PRESET_LABELS as Readonly<Record<string, MessageKey>> as Readonly<Record<P, MessageKey>>,
+  );
 }

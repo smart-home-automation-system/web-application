@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(15, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(17, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -209,7 +209,7 @@ for (const language of ['en', 'pl'] as const) {
           });
         });
 
-        test(`hot water${suffix}`, async ({ page }, testInfo) => {
+        test(`water${suffix}`, async ({ page }, testInfo) => {
           await useScenario(page, scenario);
           await page.goto('/water');
           await expect(page.getByTestId('demand').locator('mat-progress-bar')).toHaveCount(0);
@@ -217,14 +217,17 @@ for (const language of ['en', 'pl'] as const) {
           await expect(page.getByTestId('water-history').locator('mat-progress-bar')).toHaveCount(
             0,
           );
+          await expect(page.getByTestId('valve').locator('mat-progress-bar')).toHaveCount(0);
+          await expect(page.getByTestId('consumption').locator('mat-progress-bar')).toHaveCount(0);
           if (scenario === 'default') {
             await expect(page.getByText(TEXTS[language].warmEnough)).toBeVisible();
-            // the history is drawn before the picture is taken
-            await expect(page.locator('.chart__plot svg')).toBeVisible();
+            // the history and the consumption are drawn before the picture is taken
+            await expect(page.getByTestId('water-history').locator('.chart__plot svg')).toBeVisible();
+            await expect(page.getByTestId('consumption').locator('.chart__plot svg')).toBeVisible();
           }
           await photoIsShown(page);
           await page.screenshot({
-            path: shot(testInfo.project.name, scheme, language, `hot-water${suffix}`),
+            path: shot(testInfo.project.name, scheme, language, `water${suffix}`),
             fullPage: true,
           });
         });

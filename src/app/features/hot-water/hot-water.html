@@ -1,7 +1,113 @@
 <ng-container *transloco="let t">
   <header class="page-header">
-    <h1>{{ t('hotWater.title') }}</h1>
+    <h1>{{ t('water.title') }}</h1>
   </header>
+
+  <!-- the water of the house (HAS-322): the valve of the garage and what the house used -->
+  <section class="tiles" [attr.aria-label]="t('water.house')">
+    <mat-card appearance="outlined" class="tile tile--valve card--domain" data-testid="valve">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>valve</mat-icon></div>
+        <mat-card-title>{{ t('water.valve.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="valve.lastUpdated()" [stale]="valve.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        @if (valve.loading()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('water.valve.loading')" />
+        } @else {
+          @let view = valveView();
+          @if (valveKnown()) {
+            <p
+              class="tile__state"
+              [class.tile__state--on]="view.open !== undefined"
+              data-testid="valve-state"
+            >
+              <mat-icon>{{
+                view.open === undefined ? 'help' : view.open ? 'water_drop' : 'block'
+              }}</mat-icon>
+              {{
+                t(
+                  view.open === undefined
+                    ? 'water.valve.stateUnknown'
+                    : view.open
+                      ? 'water.valve.open'
+                      : 'water.valve.closed'
+                )
+              }}
+            </p>
+            <dl class="tile__rows">
+              <div class="tile__row" data-testid="valve-flow">
+                <dt>{{ t('water.valve.flow') }}</dt>
+                <dd>
+                  @if (view.flowRate !== undefined) {
+                    {{ view.flowRate | localNumber: oneDecimal }} l/min
+                  } @else {
+                    {{ t('water.unknown') }}
+                  }
+                </dd>
+              </div>
+              <div class="tile__row" data-testid="valve-pressure">
+                <dt>{{ t('water.valve.pressure') }}</dt>
+                <dd>
+                  @if (view.pressure !== undefined) {
+                    {{ view.pressure | localNumber: twoDecimals }} bar
+                  } @else {
+                    {{ t('water.unknown') }}
+                  }
+                </dd>
+              </div>
+              <div class="tile__row" data-testid="valve-temperature">
+                <dt>{{ t('water.valve.temperature') }}</dt>
+                <dd>
+                  @if (view.temperature !== undefined) {
+                    {{ view.temperature | localNumber: oneDecimal }} °C
+                  } @else {
+                    {{ t('water.unknown') }}
+                  }
+                </dd>
+              </div>
+              <div class="tile__row" data-testid="valve-counter">
+                <dt>{{ t('water.valve.counter') }}</dt>
+                <dd>
+                  @if (view.counter !== undefined) {
+                    {{ view.counter | localNumber: threeDecimals }} m³
+                  } @else {
+                    {{ t('water.unknown') }}
+                  }
+                </dd>
+              </div>
+            </dl>
+            @if (view.measuredAt | houseAge; as age) {
+              <p
+                class="tile__detail tile__measured"
+                [class.tile__measured--old]="valveOutOfDate()"
+                data-testid="valve-measured"
+              >
+                @if (valveOutOfDate()) {
+                  <mat-icon>warning</mat-icon>
+                }
+                <span>{{
+                  t(valveOutOfDate() ? 'water.valve.reportedOutOfDate' : 'water.valve.reported', {
+                    age,
+                  })
+                }}</span>
+              </p>
+            }
+          } @else if (!valve.error()) {
+            <p class="tile__detail" data-testid="valve-nothing">{{ t('water.valve.nothing') }}</p>
+          }
+          <app-api-error-strip [error]="valve.error()" [describeWith]="describeWater" />
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <app-water-consumption class="tile--consumption" />
+  </section>
+
+  <h2 class="section-title">{{ t('hotWater.title') }}</h2>
 
   <section class="tiles" [attr.aria-label]="t('hotWater.readings')">
     <!-- Both temperatures come from one call, and each has a card of its own (owner,

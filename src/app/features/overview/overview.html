@@ -130,6 +130,73 @@
       }
     </app-domain-tile>
 
+    <!-- the water of the house (HAS-322): the valve of the garage and the water of today -->
+    <app-domain-tile
+      heading="overview.valve.title"
+      icon="valve"
+      domain="water"
+      link="/water"
+      waitingLabel="water.valve.loading"
+      [resource]="valve"
+      [describeWith]="describeWater"
+      data-testid="tile-valve"
+    >
+      @let view = valveView();
+      @if (valveKnown()) {
+        <dl class="tile__rows tile__rows--big">
+          <div class="tile__row" data-testid="tile-valve-state">
+            <dt>{{ t('water.valve.title') }}</dt>
+            <dd>
+              <strong>{{
+                t(
+                  view.open === undefined
+                    ? 'water.unknown'
+                    : view.open
+                      ? 'water.valve.open'
+                      : 'water.valve.closed'
+                )
+              }}</strong>
+            </dd>
+          </div>
+          <div class="tile__row" data-testid="tile-valve-flow">
+            <dt>{{ t('overview.valve.flow') }}</dt>
+            <dd>
+              @if (view.flowRate !== undefined) {
+                <strong>{{ view.flowRate | localNumber: ONE_DECIMAL }} l/min</strong>
+              } @else {
+                {{ t('water.unknown') }}
+              }
+            </dd>
+          </div>
+          <div class="tile__row" data-testid="tile-valve-today">
+            <dt>{{ t('overview.valve.today') }}</dt>
+            <dd>
+              @let litres = usedToday();
+              @if (litres !== undefined) {
+                <strong>{{ litres | localNumber }} L</strong>
+              } @else {
+                {{ t('water.unknown') }}
+              }
+            </dd>
+          </div>
+        </dl>
+        @if (view.measuredAt | houseAge; as age) {
+          <p
+            class="tile__detail"
+            [class.tile__detail--alert]="valveOutOfDate()"
+            data-testid="valve-measured"
+          >
+            {{ t(valveOutOfDate() ? 'water.valve.reportedOutOfDate' : 'water.valve.reported', { age }) }}
+          </p>
+        }
+      } @else if (!valve.error()) {
+        <p class="tile__detail">{{ t('water.valve.nothing') }}</p>
+      }
+      <div tileFailures>
+        <app-api-error-strip [error]="todayConsumption.error()" [describeWith]="describeWater" />
+      </div>
+    </app-domain-tile>
+
     <app-domain-tile
       heading="overview.boiler.title"
       icon="water_heater"

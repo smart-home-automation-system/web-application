@@ -1,3 +1,6 @@
+// the rows of a value and its name, shared with the tiles of the overview (HAS-322: the valve)
+@use '../../shared/domain-tile/tile-content';
+
 // The tank on the left, the demand and the circulation one under the other on the right - and
 // the two sides always end on one line (owner, 2026-10-10: no card may stop short of its
 // neighbour and leave a hole above the history). Flex, not a grid: whichever side is the taller,
@@ -107,6 +110,32 @@ mat-card-content {
   mat-icon {
     flex: none;
   }
+}
+
+// The water of the house (HAS-322): the valve next to the consumption, which has bars to tell apart and so twice
+// the room; on a phone one under the other
+.tile--valve {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.tile--consumption {
+  flex: 2 1 560px;
+  min-width: 0;
+}
+
+.tile__state + .tile__rows {
+  margin-top: 12px;
+}
+
+// the hot water under the water of the house, with its name as the floors of the blinds have theirs
+.section-title {
+  max-width: 960px;
+  margin: 24px auto 10px;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+  color: var(--mat-sys-on-background);
 }
 
 // the history has lines to tell apart: as wide as the tiles above it together
