@@ -166,13 +166,17 @@ dashboards:
   through, and is not in the week - it never heats. After every write the rooms are read again and
   only that answer moves the list. The switch of the house asks before it acts, and what it shows
   afterwards is what the house answers when asked again, never what was clicked.
-- **Water** (HAS-322, the hot-water page until then): **the water valve of the garage** - open or
-  closed, the flow in l/min, the pressure in bar, the water temperature and the counter in m³, with
-  the age of its newest report (out of date after 3 minutes) - and **the consumption of the house**
+- **Water** (HAS-322, the hot-water page until then): a row of four cards of one size, as on the
+  heating page - **the water valve of the garage** (open or closed, the flow in l/min, the pressure in
+  bar, the water temperature, the water used today, this week, this month and this year and the
+  counter in m³, with the age of its newest report, out of date after 3 minutes), the tank, whether
+  the water asks to be heated - **heating going on stands out on a strip in the colour of the
+  heating** - and the circulation - and under them **the consumption of the house**
   by day (in hours), week and month (in days) and year (in months) as bars, in litres (a year in
   m³), with the total and the one of the range before; a day is chosen on a calendar or stepped back
   and forth. A bucket the service did not watch has no bar, never 0. Then the hot water:
-- **Hot water**: the temperature of the water in the tank on a gauge with the band it is kept in
+- **Hot water**: the temperature of the water in the tank on a gauge from 20 to 80 °C - the water
+  of a year, cold after a weekend away, hot from the sun in summer - with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
   circulation, **when the sensors were read** - a reading older than 6 minutes is marked out of
   date, because the service repeats its last one while the sensor is silent - whether the water
