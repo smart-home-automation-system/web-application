@@ -762,6 +762,36 @@ e2e/              # Playwright tests
   of the overview read the answer with one function (`toWaterReading`, `isOutOfDate` in
   `data-access/water/water-reading.ts`). Known limit, as for every age here: it is counted by
   the clock of the browser, so one that is minutes off sees the warning early or late.
+- **The water page is the water of the house** (HAS-322, `/water`, "Water" / "Woda", the administrator's like the
+  whole page; owner 2026-11-05): the valve of the garage (`GET /water/valve`) and the consumption
+  (`GET /water/consumption`) above the hot water, which stays as it was under its own heading. What is easy to break:
+  - **The valve** is read once by `toValveView` (`features/hot-water/water-views.ts`) for the page and the overview
+    tile. A field the answer leaves out is "not known" - never closed, never 0 (`water-service` leaves out what was
+    not reported within 5 minutes). Its age is `measuredAt` - the newest report - out of date past
+    `VALVE_OUT_OF_DATE_MS` (3 minutes: two reads of the minute of `ValveReconciliation` missed - **a copy** of that
+    interval, change both).
+  - **The consumption** asks a range and a day (`at` = the first day of the range, so stepping inside a range asks
+    nothing new): a day in hours, a week (Monday to Sunday, as the service) and a month in days, a year in months.
+    The buckets drawn are every bucket of `from` - `to` of the answer (`bucketStarts`, on the wall clock); **a bucket
+    the answer has no point for has no bar** - the service did not watch the counter - and a bucket without water is
+    0. Litres for a day, a week and a month, m³ for a year (`unitOf`). A total the answer leaves out is not known.
+  - The codes it words: `NOT_FOUND_VALVE`, `REGISTRY_UNAVAILABLE`, `INVALID_RANGE` (`water-errors.ts`) - a new code of
+    `water-service` the page meets needs a text there.
+  - `HistoryFrame` is generic over its periods since HAS-322 (`presets` and `labels`): the consumption offers a year,
+    which a history does not.
+  - The overview tile "Water" (`tile-valve`, next to the hot water) is two calls - the valve and the water of today -
+    the second told in `tileFailures`.
+  - **The layout is the heating page's** (owner, 2026-11-05): a row of four cards of one size - the valve, the tank,
+    the demand, the circulation - in a grid of 1240 px (two a row from 640 px, four from 1100 px), the consumption and
+    the history under it, as wide. The valve card shows the water of today, this week, this month and this year
+    (`watchConsumptionTotals`: four calls one after the other every 5 minutes, read as one, `at` left out so the
+    service counts from its own today) and the counter - the counter alone says little (owner).
+  - **Heating going on stands out** (owner, 2026-11-05): "heating needed" on a strip tinted with
+    `--app-domain-heating` and its flame in that colour; the words stay `on-surface`, so the contrast the check
+    knows holds - the colour is the strip and the icon.
+  - **The gauge of the tank runs 20 - 80 °C** (owner, 2026-11-05: cold after a weekend away, up to 80 °C on a hot
+    summer day): the ends of the scale at its ends and the band named once, under its middle - its two ends would
+    stand on each other on a scale of 60 degrees.
 - **The overview is one tile per call** (HAS-201, `features/overview/`): `DomainTile`
   (`shared/domain-tile/`, shared with the weather page since HAS-241, the styles of its content
   in `_tile-content.scss`, which the page that projects them `@use`s) tells

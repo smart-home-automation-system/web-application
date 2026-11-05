@@ -106,7 +106,12 @@ import {
   replaceSchedule,
   scheduleToday,
 } from './schedules.fixtures';
-import { WATER_HEATING_DEMAND, waterTemperatures } from './water.fixtures';
+import {
+  WATER_HEATING_DEMAND,
+  waterConsumption,
+  waterTemperatures,
+  waterValve,
+} from './water.fixtures';
 import {
   STATION_STATUS_BEFORE_FIRST_READING,
   currentWeather,
@@ -612,6 +617,18 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/water/temperature/history',
     reply: (request, fresh) => history(waterHistory(from(request), to(request), fresh)),
+  },
+  {
+    // HAS-316: just after a start the service has heard nothing of the valve - an empty object, never zeros
+    method: 'GET',
+    path: '/home/water/valve',
+    reply: (_, fresh) => ({ status: 200, body: fresh ? {} : waterValve() }),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/consumption',
+    reply: (request, fresh) =>
+      history(waterConsumption(request.params.get('range'), request.params.get('at'), fresh)),
   },
   {
     method: 'GET',

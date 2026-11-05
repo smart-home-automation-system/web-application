@@ -16,7 +16,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
-import { provideCalendar } from '../../core/i18n/calendar';
+import { dayOfCalendar, provideCalendar } from '../../core/i18n/calendar';
 import { houseDay, houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { isRecord } from '../../core/util/is-record';
@@ -335,7 +335,7 @@ export class Presence {
       this.showInDateField(shown);
       return;
     }
-    const picked = { first: toDay(first), last: toDay(last) };
+    const picked = { first: dayOfCalendar(first), last: dayOfCalendar(last) };
     if (picked.first === dayOf(shown.from) && picked.last === addDays(dayOf(shown.to), -1)) {
       return;
     }
@@ -396,8 +396,3 @@ function finite(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-/** The day a date of the calendar stands for - the calendar works in the zone of the browser. */
-function toDay(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}

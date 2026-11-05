@@ -1,0 +1,24 @@
+// the card of a chart of the energy page, in the colour of the water
+@use '../energy/energy-chart-card';
+
+.chart {
+  --app-domain: var(--app-domain-water);
+}
+
+// the day of the range above the periods: a step, the calendar, a step, and the name of the range
+.period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 8px;
+}
+
+.period__day {
+  width: 11rem;
+}
+
+.period__name {
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}

@@ -6,7 +6,13 @@ import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { houseTime } from '../../../mocks/house-time';
 import { ApiError } from '../../core/api/api-error';
 import { PollingResource } from '../../core/api/polling-resource';
-import { WaterApi, WaterHeatingDemand, WaterTemperatures } from '../../data-access/water/water-api';
+import {
+  ConsumptionTotals,
+  WaterApi,
+  WaterHeatingDemand,
+  WaterTemperatures,
+  WaterValve,
+} from '../../data-access/water/water-api';
 import { HotWater } from './hot-water';
 
 /** A polled resource whose every signal the test sets by hand. */
@@ -34,11 +40,15 @@ const NOTHING_MEASURED = 'No temperature has been measured yet.';
 describe('HotWater', () => {
   let temperatures: FakeResource<WaterTemperatures | null>;
   let demand: FakeResource<WaterHeatingDemand>;
+  let valve: FakeResource<WaterValve>;
+  let totals: FakeResource<ConsumptionTotals>;
   let fixture: ComponentFixture<HotWater>;
 
   beforeEach(() => {
     temperatures = fakeResource();
     demand = fakeResource();
+    valve = fakeResource();
+    totals = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -49,6 +59,10 @@ describe('HotWater', () => {
             watchHeatingDemand: () => demand,
             // the history is a card of its own, with tests of its own (water-history.spec)
             watchHistory: () => fakeQueryResource(),
+            watchValve: () => valve,
+            watchConsumptionTotals: () => totals,
+            // the consumption is a card of its own, with tests of its own (water-consumption.spec)
+            watchConsumption: () => fakeQueryResource(),
           },
         },
       ],
@@ -70,7 +84,7 @@ describe('HotWater', () => {
 
   /** A card of the page, or the reading inside the card of the tank or of the circulation. */
   async function part(
-    name: 'temperatures' | 'demand' | 'circulation-card' | 'tank' | 'circulation',
+    name: 'temperatures' | 'demand' | 'circulation-card' | 'tank' | 'circulation' | 'valve',
   ): Promise<HTMLElement | null> {
     await fixture.whenStable();
     return (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${name}"]`);
@@ -115,8 +129,9 @@ describe('HotWater', () => {
       );
       expect(gauge.getAttribute('aria-valuetext')).toBe('40.5 °C; kept between 38 and 42 °C');
       expect([...gauge.querySelectorAll('.gauge__scale span')].map(words)).toEqual([
-        '38 °C',
-        '42 °C',
+        '20 °C',
+        '38–42 °C',
+        '80 °C',
       ]);
     });
 
@@ -213,6 +228,8 @@ describe('HotWater', () => {
 
       expect(words(state)).toBe('mode_heat Heating needed');
       expect(state.classList).toContain('tile__state--on');
+      // it stands out at a glance: the strip in the colour of the heating (owner, 2026-11-05)
+      expect(state.classList).toContain('tile__state--heating');
     });
 
     it('says that the water is warm enough', async () => {
@@ -222,6 +239,7 @@ describe('HotWater', () => {
 
       expect(words(state)).toBe('check_circle Warm enough');
       expect(state.classList).not.toContain('tile__state--on');
+      expect((await part('demand'))!.querySelector('.tile__state--heating')).toBeNull();
     });
 
     // "warm enough" must be something the service said, never the reading of a missing field
@@ -375,7 +393,7 @@ describe('HotWater', () => {
 
     const shown = (await part('temperatures'))!;
 
-    expect(words((fixture.nativeElement as HTMLElement).querySelector('h1'))).toBe('Ciepła woda');
+    expect(words((fixture.nativeElement as HTMLElement).querySelector('h1'))).toBe('Woda');
     expect(words(await part('tank'))).toBe('44,8 °C');
     expect(words(await part('circulation'))).toBe('29,8 °C');
     expect(words((await part('circulation-card'))!.querySelector('mat-card-title'))).toBe(
@@ -387,5 +405,111 @@ describe('HotWater', () => {
     expect(words((await part('demand'))!.querySelector('.tile__state'))).toContain(
       'Wymaga grzania',
     );
+  });
+
+  // HAS-322: the valve of the garage - what it reports, what the answer leaves out, its age
+  describe('the water valve', () => {
+    const house = (secondsAgo: number) => houseTime(new Date(), secondsAgo).slice(0, 19);
+
+    it('shows the state, the flow, the pressure, the water temperature and the counter', async () => {
+      answer(valve, {
+        state: 'open',
+        flowRate: 6.5,
+        pressure: 4.92,
+        temperature: 12.9,
+        counter: { total: 61.896, measuredAt: house(30) },
+        measuredAt: house(8),
+      });
+
+      const card = (await part('valve'))!;
+      expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('Open');
+      expect(words(card.querySelector('[data-testid="valve-flow"]'))).toBe('Flow 6.5 l/min');
+      expect(words(card.querySelector('[data-testid="valve-pressure"]'))).toBe('Pressure 4.92 bar');
+      expect(words(card.querySelector('[data-testid="valve-temperature"]'))).toBe(
+        'Water temperature 12.9 °C',
+      );
+      expect(words(card.querySelector('[data-testid="valve-usage-counter"]'))).toBe(
+        'Counter, in all 61.896 m³',
+      );
+      expect(card.querySelector('.tile__measured--old')).toBeNull();
+    });
+
+    // missing is never off: what the answer leaves out is not known - never closed, never zero
+    it('says not known for what the answer leaves out', async () => {
+      answer(valve, { pressure: 4.92, measuredAt: house(8) });
+
+      const card = (await part('valve'))!;
+      expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('State not known');
+      expect(words(card.querySelector('[data-testid="valve-flow"]'))).toBe('Flow not known');
+      expect(words(card.querySelector('[data-testid="valve-usage-counter"]'))).toBe(
+        'Counter, in all not known',
+      );
+      expect(words(card)).not.toContain('Closed');
+    });
+
+    it('shows a closed valve without a flow as it is', async () => {
+      answer(valve, { state: 'closed', flowRate: 0, measuredAt: house(8) });
+
+      const card = (await part('valve'))!;
+      expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('Closed');
+      expect(words(card.querySelector('[data-testid="valve-flow"]'))).toBe('Flow 0.0 l/min');
+    });
+
+    it('says the valve is not heard once its newest report is older than 3 minutes', async () => {
+      answer(valve, { state: 'open', measuredAt: house(181) });
+
+      const measured = (await part('valve'))!.querySelector('[data-testid="valve-measured"]');
+      expect(measured?.classList).toContain('tile__measured--old');
+      expect(words(measured)).toContain('the valve has not been heard since');
+    });
+
+    it('says the valve has reported nothing for an empty answer', async () => {
+      answer(valve, {});
+
+      expect(words((await part('valve'))!.querySelector('[data-testid="valve-nothing"]'))).toBe(
+        'The valve has reported nothing yet.',
+      );
+    });
+
+    // the counter alone says little (owner, 2026-11-05): the water of today, this week, this month and this year
+    it('shows the water of the running ranges in litres, a year in m³, and what is not known', async () => {
+      answer(valve, { state: 'open', measuredAt: house(8) });
+      answer(totals, { day: 0.271, week: 1.298, year: 104.356 });
+
+      const card = (await part('valve'))!;
+      expect(words(card.querySelector('[data-testid="valve-usage-day"]'))).toBe('Today 271 L');
+      expect(words(card.querySelector('[data-testid="valve-usage-week"]'))).toBe(
+        'This week 1,298 L',
+      );
+      expect(words(card.querySelector('[data-testid="valve-usage-month"]'))).toBe(
+        'This month not known',
+      );
+      expect(words(card.querySelector('[data-testid="valve-usage-year"]'))).toBe(
+        'This year 104.4 m³',
+      );
+    });
+
+    it('tells a failure of the totals in the card, the valve still shown', async () => {
+      answer(valve, { state: 'open', measuredAt: house(8) });
+      fail(totals, new ApiError('server', 502));
+
+      const card = (await part('valve'))!;
+      expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('Open');
+      expect(card.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    });
+
+    // against a water-service without the valve the card shows its 404, and the rest of the page works
+    it('words the refusals of the service and shows the rest of the page', async () => {
+      fail(
+        valve,
+        new ApiError('client', 404, [
+          { message: 'No water valve is registered', code: 'NOT_FOUND_VALVE' },
+        ]),
+      );
+      answer(demand, { active: false });
+
+      expect(words(await part('valve'))).toContain('No water valve is registered.');
+      expect((await part('demand'))?.querySelector('mat-progress-bar')).toBeNull();
+    });
   });
 });

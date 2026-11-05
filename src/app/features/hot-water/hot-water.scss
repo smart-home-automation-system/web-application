@@ -1,44 +1,48 @@
-// The tank on the left, the demand and the circulation one under the other on the right - and
-// the two sides always end on one line (owner, 2026-10-10: no card may stop short of its
-// neighbour and leave a hole above the history). Flex, not a grid: whichever side is the taller,
-// the other is stretched to it, at every width.
-.tiles {
+// the rows of a value and its name, shared with the tiles of the overview (HAS-322: the valve)
+@use '../../shared/domain-tile/tile-content';
+
+// A row of four cards of one size, in the middle of the page - the valve, the tank, the demand and the circulation -
+// and the consumption and the history under it, as wide as the row (owner, 2026-11-05, HAS-322: the heating page).
+// Two a row on a tablet, one on a phone; the cards of a row are as tall as the tallest, so none stops short of its
+// neighbour (owner, 2026-10-10).
+:host {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   gap: 12px;
-  max-width: 960px;
-  // in the middle of the page, as the cards of the other views
+  width: 100%;
+  max-width: 1240px;
   margin-inline: auto;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 1100px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tiles .tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.tiles .tile mat-card-content {
+  flex: 1 1 auto;
 }
 
 // every card here is of the hot-water domain: its colour on the edge, the badge and the gauge
 .tile {
   --app-domain: var(--app-domain-water);
-}
-
-// the temperatures are what the page is about: twice the width, so the gauge has room for
-// its scale
-.tile--tank {
-  flex: 2 1 560px;
-  min-width: 0;
-}
-
-// The two small cards. Next to the tank there is room for one of them in a row, so they stand
-// one under the other and share the height of the tank between them; in a window too narrow
-// for that they move under the tank, side by side and of one height; on a phone one per row.
-.tiles__stack {
-  flex: 1 1 280px;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: stretch;
-  gap: 12px;
-
-  .tile {
-    flex: 1 1 280px;
-    min-width: 0;
-  }
 }
 
 // tighter than Material's 16 px all round: the tiles are read, not touched
@@ -75,6 +79,21 @@ mat-card-content {
   color: var(--mat-sys-on-surface-variant);
 }
 
+// The water being heated stands out at a glance (owner, 2026-11-05, HAS-322): the state on a strip tinted with the
+// colour of the heating and its flame in that colour. The text stays `on-surface` - the tint is light enough for it
+// on the glass of a card - so the contrast the check knows holds; the colour is the strip and the icon, not the words.
+.tile__state--heating {
+  align-self: flex-start;
+  padding: 8px 14px 8px 10px;
+  border-radius: var(--mat-sys-corner-medium);
+  background: color-mix(in srgb, var(--app-domain-heating) 24%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-domain-heating) 55%, transparent);
+
+  mat-icon {
+    color: var(--app-domain-heating);
+  }
+}
+
 // On a domain card the text is `on-surface` or its variant - the two colours the contrast check
 // knows on the wash of a domain. What tells "heating needed" from "warm enough" is the stronger
 // colour, the icon and the words, not a hue.
@@ -109,10 +128,21 @@ mat-card-content {
   }
 }
 
-// the history has lines to tell apart: as wide as the tiles above it together
-.history {
-  display: block;
-  max-width: 960px;
+.tile__state + .tile__rows {
   margin-top: 12px;
+}
+
+// the consumption and the history have bars and lines to tell apart: as wide as the row above them
+.wide {
+  display: block;
+  width: 100%;
+  max-width: 1240px;
   margin-inline: auto;
+}
+
+// the water of the running ranges under the readings of the valve
+.tile__subtitle {
+  margin: 12px 0 0;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
 }

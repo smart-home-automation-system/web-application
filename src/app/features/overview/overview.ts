@@ -3,6 +3,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
+import { houseDay } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
@@ -13,7 +14,7 @@ import {
   PRESENCE_CHECK_IS_LATE_AFTER_MS,
   PresenceApi,
 } from '../../data-access/presence/presence-api';
-import { WaterApi } from '../../data-access/water/water-api';
+import { ConsumptionQuery, WaterApi } from '../../data-access/water/water-api';
 import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
 import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
@@ -40,6 +41,8 @@ import {
 import { tomorrowOf } from '../energy/energy-forecast-views';
 import { PowerValue } from '../energy/power-value';
 import { stateOf } from '../../shared/lights/light-labels';
+import { describeWaterError } from '../hot-water/water-errors';
+import { hasValveReading, isValveOutOfDate, toValveView, volumeIn } from '../hot-water/water-views';
 import { countStates, lightRoomsOf } from '../lights/light-rooms';
 import {
   PERSON_STATE_LABELS,
@@ -67,7 +70,8 @@ const GRID_WORDS = { in: 'import', out: 'export', idle: 'idle' } as const;
  * facts somebody looks for first, each leading to the page that has the rest. Nothing here changes
  * the house: the switch of the heating is on the heating page only (owner, 2026-10-21, HAS-266).
  *
- * Fifteen calls feed the page (the appliances since HAS-282, the energy since HAS-341, its forecast since HAS-373), each with its own failure: the page
+ * Seventeen calls feed the page (the appliances since HAS-282, the energy since HAS-341, its forecast since HAS-373, the water
+ * valve and the water of today since HAS-322), each with its own failure: the page
  * is whole when one service is down, and says which. Every tile is one call - but the heating tile, which tells the state of
  * the system, its rooms and its silent sensors (three calls, owner's choice of HAS-266): it tells
  * the freshness of the state and the failure of each of the three. The tiles claim what their
@@ -101,7 +105,17 @@ export class Overview {
   protected readonly heating = this.heatingApi.watchStatus();
   protected readonly rooms = this.heatingApi.watchRooms();
   protected readonly sensors = this.heatingApi.watchSensors();
-  protected readonly water = inject(WaterApi).watchTemperatures();
+  private readonly waterApi = inject(WaterApi);
+  protected readonly water = this.waterApi.watchTemperatures();
+  // HAS-322: the valve of the garage and the water of today - the consumption a call of its own, its failure told
+  // in the tile apart from that of the valve
+  protected readonly valve = this.waterApi.watchValve();
+  private readonly todayQuery = computed(
+    (): ConsumptionQuery => ({ range: 'day', at: houseDay(this.ticker.now(), this.zone) }),
+    { equal: (a, b) => a.at === b.at },
+  );
+  protected readonly todayConsumption = this.waterApi.watchConsumption(this.todayQuery);
+  protected readonly describeWater = describeWaterError;
   protected readonly boiler = inject(BoilerApi).watchStatus();
   protected readonly presence = inject(PresenceApi).watchNow();
   // the resource of the strip in the panel: one poller, so the two never tell different answers
@@ -151,6 +165,21 @@ export class Overview {
   protected readonly roomsSummary = computed(() =>
     summariseRooms(toRoomViews(this.rooms.value()), OUTSIDE_ROOMS),
   );
+
+  // ---- the water valve (HAS-322) ----
+
+  protected readonly valveView = computed(() => toValveView(this.valve.value(), this.zone));
+  protected readonly valveKnown = computed(() => hasValveReading(this.valveView()));
+  protected readonly valveOutOfDate = computed(() =>
+    isValveOutOfDate(this.valveView(), this.ticker.now()),
+  );
+  /** Litres of today; `undefined` until the answer of today is in, or when it leaves the total out. */
+  protected readonly usedToday = computed(() => {
+    const answered = this.todayConsumption.value();
+    return answered?.query.at === this.todayQuery().at
+      ? volumeIn('day', answered.answer?.total)
+      : undefined;
+  });
 
   // ---- hot water ----
 

@@ -27,14 +27,19 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
         <div
           class="gauge__band"
           [style.left.%]="at(low())"
-          [style.width.%]="at(high()) - at(low())"
+          [style.width.%]="between(low(), high())"
         ></div>
         <div class="gauge__marker" [style.left.%]="marker()"></div>
       </div>
       <!-- the same numbers are in the reading of the meter -->
+      <!-- the ends of the scale at its ends, the band under its middle: on a scale of 60 degrees the two
+           ends of a band of 4 would stand on each other -->
       <div class="gauge__scale" aria-hidden="true">
-        <span [style.left.%]="at(low())">{{ low() | localNumber }} °C</span>
-        <span [style.left.%]="at(high())">{{ high() | localNumber }} °C</span>
+        <span class="gauge__end">{{ min() | localNumber }} °C</span>
+        <span class="gauge__band-label" [style.left.%]="(at(low()) + at(high())) / 2"
+          >{{ low() | localNumber }}–{{ high() | localNumber }} °C</span
+        >
+        <span class="gauge__end gauge__end--max">{{ max() | localNumber }} °C</span>
       </div>
     </div>
   `,
@@ -84,9 +89,22 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 
       span {
         position: absolute;
-        transform: translateX(-50%);
         white-space: nowrap;
       }
+    }
+
+    .gauge__band-label {
+      transform: translateX(-50%);
+      color: var(--mat-sys-on-surface);
+    }
+
+    .gauge__end {
+      left: 0;
+    }
+
+    .gauge__end--max {
+      left: auto;
+      right: 0;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -97,11 +115,11 @@ export class TemperatureGauge {
   readonly low = input.required<number>();
   readonly high = input.required<number>();
   /**
-   * The ends of the scale: wide enough for water that cooled down over a weekend away or was
-   * heated past its band, narrow enough for the band to be a stretch and not a tick.
+   * The ends of the scale: the water of the tank as it is over a year (owner, 2026-11-05, HAS-322) - down to some
+   * 20 °C after a weekend away, up to 80 °C on a hot summer day when the panels heat it.
    */
-  readonly min = input(30);
-  readonly max = input(50);
+  readonly min = input(20);
+  readonly max = input(80);
   /** The name of the meter and its reading, for a screen reader. */
   readonly label = input.required<string>();
   readonly valueText = input.required<string>();
@@ -114,6 +132,11 @@ export class TemperatureGauge {
   protected readonly onScale = computed(() =>
     Math.min(this.max(), Math.max(this.min(), this.value())),
   );
+
+  /** How much of the scale lies between two temperatures, in per cent of its length - rounded as `at` is. */
+  protected between(from: number, to: number): number {
+    return Math.round((this.at(to) - this.at(from)) * 100) / 100;
+  }
 
   /** Where a temperature lies on the scale, in per cent of its length. */
   protected at(temperature: number): number {

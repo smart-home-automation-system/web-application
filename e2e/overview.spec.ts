@@ -30,6 +30,12 @@ test.describe('overview', () => {
     await expect(water).toContainText(/Circulation\s+29\.8 °C/);
     await expect(water.getByTestId('water-measured')).toHaveText(/Measured 1 min\.? ago/);
 
+    // HAS-322: the valve of the garage and the water of today
+    const valve = page.getByTestId('tile-valve');
+    await expect(valve).toContainText(/Water valve\s+Open/);
+    await expect(valve).toContainText(/Flow\s+6\.5 l\/min/);
+    await expect(valve).toContainText(/Used today\s+[\d,]+ L/);
+
     const boiler = page.getByTestId('tile-boiler');
     await expect(boiler).toContainText(/Furnace\s+On/);
     await expect(boiler).toContainText('Hot-water pump');
@@ -59,6 +65,7 @@ test.describe('overview', () => {
   for (const [tile, name, address] of [
     ['tile-heating', 'Heating system', '/heating'],
     ['tile-water', 'Hot water', '/water'],
+    ['tile-valve', 'Water', '/water'],
     ['tile-boiler', 'Boiler room', '/boiler'],
     ['tile-presence', 'At home now', '/presence'],
     ['tile-weather', 'Weather', '/weather'],
@@ -100,7 +107,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(15);
+    await expect(alerts).toHaveCount(17);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -110,6 +117,8 @@ test.describe('overview', () => {
     await expect(page.getByTestId('tile-light').getByRole('alert')).toHaveCount(2);
     // HAS-341: the energy tile four - the flows, the battery, the grid and the forecast (HAS-373)
     await expect(page.getByTestId('tile-energy').getByRole('alert')).toHaveCount(4);
+    // HAS-322: the water tile two - the valve and the water of today
+    await expect(page.getByTestId('tile-valve').getByRole('alert')).toHaveCount(2);
     for (const tile of [
       'tile-water',
       'tile-boiler',
@@ -146,14 +155,14 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(9);
+    expect(tops).toHaveLength(10);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(9);
+      expect(new Set(tops).size).toBe(10);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(9);
+      expect(heights).toHaveLength(10);
       expect(new Set(heights).size).toBe(1);
     }
   });

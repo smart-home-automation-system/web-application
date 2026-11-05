@@ -1,7 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
+import {
+  FakeQueryResource,
+  FakeResource,
+  answer,
+  answerQuery,
+  fail,
+  failQuery,
+  fakeQueryResource,
+  fakeResource,
+} from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { Appliance } from '../../data-access/appliance/appliance-api';
@@ -23,7 +32,13 @@ import {
   TemperatureSensor,
 } from '../../data-access/heating/heating-api';
 import { PresenceApi, ResidentPresence } from '../../data-access/presence/presence-api';
-import { WaterApi, WaterTemperatures } from '../../data-access/water/water-api';
+import {
+  ConsumptionQuery,
+  WaterApi,
+  WaterConsumption,
+  WaterTemperatures,
+  WaterValve,
+} from '../../data-access/water/water-api';
 import { CurrentWeather, WeatherApi } from '../../data-access/weather/weather-api';
 import { Overview } from './overview';
 
@@ -82,13 +97,16 @@ type Tile =
   | 'blinds'
   | 'light'
   | 'appliance'
-  | 'energy';
+  | 'energy'
+  | 'valve';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
   let rooms: FakeResource<readonly Room[] | null>;
   let sensors: FakeResource<readonly TemperatureSensor[] | null>;
   let water: FakeResource<WaterTemperatures | null>;
+  let valve: FakeResource<WaterValve>;
+  let consumption: FakeQueryResource<ConsumptionQuery, WaterConsumption | null>;
   let boiler: FakeResource<BoilerStatus>;
   let presence: FakeResource<readonly ResidentPresence[] | null>;
   let weather: FakeResource<CurrentWeather | null>;
@@ -108,6 +126,8 @@ describe('Overview', () => {
     rooms = fakeResource();
     sensors = fakeResource();
     water = fakeResource();
+    valve = fakeResource();
+    consumption = fakeQueryResource();
     boiler = fakeResource();
     presence = fakeResource();
     weather = fakeResource();
@@ -131,7 +151,14 @@ describe('Overview', () => {
             watchSensors: () => sensors,
           },
         },
-        { provide: WaterApi, useValue: { watchTemperatures: () => water } },
+        {
+          provide: WaterApi,
+          useValue: {
+            watchTemperatures: () => water,
+            watchValve: () => valve,
+            watchConsumption: () => consumption,
+          },
+        },
         { provide: BoilerApi, useValue: { watchStatus: () => boiler } },
         { provide: PresenceApi, useValue: { watchNow: () => presence } },
         { provide: WeatherApi, useValue: { watchCurrent: () => weather } },
@@ -195,6 +222,89 @@ describe('Overview', () => {
 
     expect((await tile('boiler')).querySelector('mat-progress-bar')).toBeNull();
     expect((await tile('water')).querySelector('mat-progress-bar')).toBeTruthy();
+  });
+
+  // HAS-322: the valve of the garage and the water of today, the administrator's like the whole page
+  describe('the water valve', () => {
+    // 18:30 in the house, on 10 October
+    const TODAY: ConsumptionQuery = { range: 'day', at: '2026-10-10' };
+
+    it('tells the state, the flow and the water of today, and leads to the water page', async () => {
+      answer(valve, {
+        state: 'open',
+        flowRate: 6.5,
+        pressure: 4.92,
+        measuredAt: '2026-10-10T18:29:50',
+      });
+      answerQuery(consumption, TODAY, { total: 0.231, buckets: [] });
+
+      const text = words(await tile('valve'));
+      expect(text).toContain('Water valve Open');
+      expect(text).toContain('Flow 6.5 l/min');
+      expect(text).toContain('Used today 231 L');
+      expect(text).toContain('Reported');
+      expect((await tile('valve')).querySelector('a.tile__link')?.getAttribute('href')).toBe(
+        '/water',
+      );
+    });
+
+    // missing is never off: a state or a flow the answer leaves out is not known, the water of today too
+    it('says not known for what the answer leaves out, never closed or zero', async () => {
+      answer(valve, { pressure: 4.92 });
+      answerQuery(consumption, TODAY, { buckets: [] });
+
+      const text = words(await tile('valve'));
+      expect(text).toContain('Water valve not known');
+      expect(text).toContain('Flow not known');
+      expect(text).toContain('Used today not known');
+      expect(text).not.toContain('Closed');
+    });
+
+    it('says a closed valve and a day without water as they are', async () => {
+      answer(valve, { state: 'closed', flowRate: 0, measuredAt: '2026-10-10T18:29:50' });
+      answerQuery(consumption, TODAY, { total: 0, buckets: [] });
+
+      const text = words(await tile('valve'));
+      expect(text).toContain('Water valve Closed');
+      expect(text).toContain('Flow 0.0 l/min');
+      expect(text).toContain('Used today 0 L');
+    });
+
+    it('calls the valve out of date once it was not heard for more than 3 minutes', async () => {
+      answer(valve, { state: 'open', measuredAt: '2026-10-10T18:26:50' });
+
+      const measured = (await tile('valve')).querySelector('[data-testid="valve-measured"]');
+      expect(measured?.classList).toContain('tile__detail--alert');
+      expect(words(measured)).toContain('the valve has not been heard since');
+    });
+
+    it('says when the valve has reported nothing yet', async () => {
+      answer(valve, {});
+
+      expect(words(await tile('valve'))).toContain('The valve has reported nothing yet.');
+    });
+
+    // the water of today is a call of its own: its failure is told in the tile, the valve still shown
+    it('tells a failure of the water of today apart from the valve', async () => {
+      answer(valve, { state: 'open', measuredAt: '2026-10-10T18:29:50' });
+      failQuery(consumption, TODAY, new ApiError('server', 502));
+
+      const text = words(await tile('valve'));
+      expect(text).toContain('Water valve Open');
+      expect(text).toContain('Used today not known');
+      expect((await tile('valve')).querySelectorAll('[role="alert"]')).toHaveLength(1);
+    });
+
+    it('words the refusal of a service without a valve', async () => {
+      fail(
+        valve,
+        new ApiError('client', 404, [
+          { message: 'No water valve is registered', code: 'NOT_FOUND_VALVE' },
+        ]),
+      );
+
+      expect(words(await tile('valve'))).toContain('No water valve is registered.');
+    });
   });
 
   it('leads from every tile to the dashboard that has the rest', async () => {

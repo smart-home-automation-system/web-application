@@ -34,7 +34,7 @@ const pages: Page[] = [
   },
   {
     path: 'water',
-    title: 'nav.hotWater',
+    title: 'nav.water',
     data: { background: 'water' },
     loadComponent: () => import('./features/hot-water/hot-water').then((m) => m.HotWater),
   },

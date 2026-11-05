@@ -32,7 +32,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/lights', label: 'nav.lights', icon: 'lightbulb', access: 'admin' },
   { path: '/appliances', label: 'nav.appliances', icon: 'local_laundry_service', access: 'admin' },
   { path: '/heating', label: 'nav.heating', icon: 'mode_heat', access: 'admin' },
-  { path: '/water', label: 'nav.hotWater', icon: 'water_drop', access: 'admin' },
+  { path: '/water', label: 'nav.water', icon: 'water_drop', access: 'admin' },
   { path: '/boiler', label: 'nav.boilerRoom', icon: 'water_heater', access: 'admin' },
   { path: '/presence', label: 'nav.presence', icon: 'location_home', access: 'admin' },
   { path: '/household', label: 'nav.household', icon: 'group', access: 'admin' },

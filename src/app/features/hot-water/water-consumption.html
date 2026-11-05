@@ -1,0 +1,99 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="chart card--domain" data-testid="consumption">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>water_full</mat-icon></div>
+      <mat-card-title>{{ t('water.consumption.title') }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <!-- the day of the range: a step back, the calendar, a step forward - never past today -->
+      <div class="period" data-testid="consumption-period">
+        <button
+          mat-icon-button
+          type="button"
+          [attr.aria-label]="t('water.consumption.before')"
+          [matTooltip]="t('water.consumption.before')"
+          (click)="step(-1)"
+          data-testid="consumption-before"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <mat-form-field class="period__day" appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ t('water.consumption.day') }}</mat-label>
+          <input
+            matInput
+            readonly
+            [matDatepicker]="picker"
+            [value]="calendarDay()"
+            [max]="calendarMax()"
+            (dateChange)="picked($event)"
+            data-testid="consumption-day"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="picker" />
+          <mat-datepicker #picker />
+        </mat-form-field>
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="!hasNext()"
+          [attr.aria-label]="t('water.consumption.after')"
+          [matTooltip]="t('water.consumption.after')"
+          (click)="step(1)"
+          data-testid="consumption-after"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+        <span class="period__name" data-testid="consumption-name">{{ period() }}</span>
+      </div>
+
+      <app-history-frame
+        [(preset)]="range"
+        [presets]="ranges"
+        [labels]="rangeLabels"
+        [waiting]="waiting()"
+        [empty]="shown() === undefined || !anyKnown()"
+        [error]="consumption.error()"
+        [lastUpdated]="consumption.lastUpdated()"
+        [stale]="consumption.stale()"
+        [describeWith]="describe"
+      >
+        <ng-template>
+          <app-bars-chart
+            [categories]="categories()"
+            [series]="series()"
+            [unit]="unit().unit"
+            [decimals]="unit().decimals"
+            [label]="t('water.consumption.label', { period: period() })"
+          />
+          <ul class="chart__facts" data-testid="consumption-facts">
+            <li data-testid="consumption-total">
+              <span class="chart__name">{{ t('water.consumption.total') }}</span>
+              @let used = total();
+              <span>{{
+                used === undefined
+                  ? t('water.unknown')
+                  : (used | localNumber: format()) + ' ' + unit().unit
+              }}</span>
+            </li>
+            <li data-testid="consumption-previous">
+              <span class="chart__name">{{ t(previousLabels[range()]) }}</span>
+              @let before = previous();
+              <span>{{
+                before === undefined
+                  ? t('water.unknown')
+                  : (before | localNumber: format()) + ' ' + unit().unit
+              }}</span>
+              @if (change(); as percent) {
+                <span class="chart__name" data-testid="consumption-change">{{
+                  t(percent > 0 ? 'water.consumption.more' : 'water.consumption.less', {
+                    percent: percent > 0 ? percent : -percent,
+                  })
+                }}</span>
+              }
+            </li>
+          </ul>
+          <p class="chart__note">{{ t('water.consumption.note') }}</p>
+        </ng-template>
+      </app-history-frame>
+    </mat-card-content>
+  </mat-card>
+</ng-container>

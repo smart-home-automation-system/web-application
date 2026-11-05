@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { concat, map, toArray } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
@@ -69,7 +70,81 @@ export interface WaterHistory {
  */
 export const HOT_WATER_READING_OUT_OF_DATE_MS = 6 * 60_000;
 
+/**
+ * `GET /home/water/valve` (`water-service` >= 0.7.0, HAS-316): the water valve of the garage - the water meter of the
+ * house - as the service holds it in memory. **A value not reported within 5 minutes is left out**, never a default:
+ * missing is never off, and with nothing fresh the answer is `{}`. The service reads the valve every minute and hears
+ * its changes at once.
+ */
+export interface WaterValve {
+  /** `open` or `closed`. */
+  readonly state?: string;
+  /** l/min (the device reports m³/min). */
+  readonly flowRate?: number;
+  /** bar, two decimals (the device reports kPa). */
+  readonly pressure?: number;
+  /** The water at the valve, °C. */
+  readonly temperature?: number;
+  /** The consumption counter of the valve: its total in m³ (three decimals) and when it was reported. */
+  readonly counter?: { readonly total?: number; readonly measuredAt?: string };
+  /** House wall-clock time of the newest report of what is shown, to the second. */
+  readonly measuredAt?: string;
+  /** Whether the last command was answered by the report of the valve (HAS-321); left out before one. */
+  readonly lastCommandConfirmed?: boolean;
+}
+
+/** The four ranges of the consumption, as `water-service` takes them. */
+export type ConsumptionRange = 'day' | 'week' | 'month' | 'year';
+
+export const CONSUMPTION_RANGES: readonly ConsumptionRange[] = ['day', 'week', 'month', 'year'];
+
+/** The question of the consumption: a range and any day in it (`YYYY-MM-DD`, a day of the house). */
+export interface ConsumptionQuery {
+  readonly range: ConsumptionRange;
+  readonly at: string;
+}
+
+/** One bucket: its start, house wall-clock time, and the water used in it, in m³. */
+export interface ConsumptionBucket {
+  readonly at?: string;
+  readonly volume?: number;
+}
+
+/**
+ * `GET /home/water/consumption?range=&at=` (`water-service` >= 0.8.0, HAS-317): the water used over a range - a
+ * day in hours, a week (Monday to Sunday) and a month in days, a year in months. Volumes in m³, three decimals.
+ * **A bucket the service did not watch has no point** (a bar is left out, never 0) - a bucket without water is 0;
+ * `total` / `previousTotal` (the same range one period before) are left out when nothing was watched in it.
+ */
+export interface WaterConsumption {
+  readonly range?: string;
+  /** The range in house time, the start included and the end not. */
+  readonly from?: string;
+  readonly to?: string;
+  readonly unit?: string;
+  readonly total?: number;
+  readonly previousTotal?: number;
+  readonly buckets?: readonly ConsumptionBucket[];
+}
+
+/**
+ * The water used in the running day, week, month and year of the house, in m³ - each the `total` of
+ * `GET /water/consumption?range=` for today (HAS-322); a total the service leaves out (nothing watched) is left out.
+ */
+export interface ConsumptionTotals {
+  readonly day?: number;
+  readonly week?: number;
+  readonly month?: number;
+  readonly year?: number;
+}
+
 const POLL_EVERY_MS = 30_000;
+// the totals of the running ranges, four calls at a time: a minute of water hardly moves a year
+const POLL_TOTALS_EVERY_MS = 5 * 60_000;
+// the valve is read by the service every minute and its changes heard at once
+const POLL_VALVE_EVERY_MS = 15_000;
+// a bucket is an hour at its narrowest
+const POLL_CONSUMPTION_EVERY_MS = 60_000;
 // a bucket is 5 minutes at its narrowest, and a new reading arrives every 3
 const POLL_HISTORY_EVERY_MS = 3 * 60_000;
 
@@ -99,6 +174,55 @@ export class WaterApi {
       range,
       (asked) => this.api.get<WaterHistory | null>('/water/temperature/history', { ...asked }),
       { intervalMs: POLL_HISTORY_EVERY_MS },
+    );
+  }
+
+  /**
+   * The water valve now (HAS-316). Call in an injection context: the polling lives as long as the caller.
+   */
+  watchValve(): PollingResource<WaterValve> {
+    return pollingResource(() => this.api.get<WaterValve>('/water/valve'), {
+      intervalMs: POLL_VALVE_EVERY_MS,
+    });
+  }
+
+  /**
+   * The consumption for the question `query()` gives (HAS-317) - asked again whenever that changes, the answer
+   * tagged with the question it is for. Call in an injection context: the polling lives as long as the caller.
+   */
+  watchConsumption(
+    query: () => ConsumptionQuery,
+  ): QueryResource<ConsumptionQuery, WaterConsumption | null> {
+    return queryResource(
+      query,
+      (asked) => this.api.get<WaterConsumption | null>('/water/consumption', { ...asked }),
+      { intervalMs: POLL_CONSUMPTION_EVERY_MS },
+    );
+  }
+
+  /**
+   * The totals of today, this week, this month and this year (HAS-322) - four calls one after the other, never two
+   * statements of the small pool of the service at once, read as one: a failure of any is the failure of the totals.
+   * `at` is left out, so the service counts from its own today. Call in an injection context: the polling lives as
+   * long as the caller.
+   */
+  watchConsumptionTotals(): PollingResource<ConsumptionTotals> {
+    return pollingResource(
+      () =>
+        concat(
+          ...CONSUMPTION_RANGES.map((range) =>
+            this.api.get<WaterConsumption | null>('/water/consumption', { range }),
+          ),
+        ).pipe(
+          toArray(),
+          map(
+            (answers) =>
+              Object.fromEntries(
+                CONSUMPTION_RANGES.map((range, index) => [range, answers[index]?.total]),
+              ) as ConsumptionTotals,
+          ),
+        ),
+      { intervalMs: POLL_TOTALS_EVERY_MS },
     );
   }
 

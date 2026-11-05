@@ -481,13 +481,54 @@ test.describe('heating', () => {
   });
 });
 
+// HAS-322: the water of the house - the valve of the garage and the consumption - above the hot water
+test.describe('the water of the house', () => {
+  test('shows the valve and the consumption of today, a week and a year', async ({ page }) => {
+    await page.goto('/water');
+
+    const valve = page.getByTestId('valve');
+    await expect(valve.getByTestId('valve-state')).toContainText('Open');
+    await expect(valve.getByTestId('valve-flow')).toHaveText('Flow 6.5 l/min');
+    await expect(valve.getByTestId('valve-pressure')).toHaveText('Pressure 4.92 bar');
+    await expect(valve.getByTestId('valve-usage-counter')).toHaveText('Counter, in all 61.896 m³');
+    await expect(valve.getByTestId('valve-usage-day')).toContainText(' L');
+    await expect(valve.getByTestId('valve-measured')).toContainText('Reported');
+
+    const consumption = page.getByTestId('consumption');
+    await expect(consumption.locator('.chart__plot svg')).toBeVisible();
+    await expect(consumption.getByTestId('consumption-total')).toContainText(' L');
+    await expect(consumption.getByTestId('consumption-after')).toBeDisabled();
+
+    await consumption.getByRole('radio', { name: 'Week' }).click();
+    await expect(consumption.getByTestId('consumption-total')).toContainText(' L');
+    await consumption.getByRole('radio', { name: 'Year' }).click();
+    await expect(consumption.getByTestId('consumption-total')).toContainText('m³');
+    await consumption.getByTestId('consumption-before').click();
+    await expect(consumption.getByTestId('consumption-after')).toBeEnabled();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  // just after a start water-service has heard nothing of the valve and watched nothing: not known, never zeros
+  test('says the valve has reported nothing and draws no consumption before the first readings', async ({
+    page,
+  }) => {
+    await useScenario(page, 'no-readings');
+    await page.goto('/water');
+
+    await expect(page.getByTestId('valve-nothing')).toHaveText(
+      'The valve has reported nothing yet.',
+    );
+    await expect(page.getByTestId('consumption').getByTestId('history-empty')).toBeVisible();
+  });
+});
+
 test.describe('hot water', () => {
   test('shows both temperatures, the band on the gauge and that the water is warm enough', async ({
     page,
   }) => {
     await page.goto('/water');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Hot water' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Water' })).toBeVisible();
     const temperatures = page.getByTestId('temperatures');
     await expect(page.getByTestId('tank')).toHaveText('40.6 °C');
     const gauge = temperatures.getByRole('meter');
@@ -511,15 +552,15 @@ test.describe('hot water', () => {
     ]);
     const marker = markerBox!.x + markerBox!.width / 2;
 
-    // 40.56 °C between 38 and 42
+    // 40.56 °C between 38 and 42, on a scale of 20 to 80 °C (HAS-322)
     expect(marker).toBeGreaterThan(bandBox!.x);
     expect(marker).toBeLessThan(bandBox!.x + bandBox!.width);
-    expect(bandBox!.width).toBeGreaterThan(20);
+    expect(bandBox!.width).toBeGreaterThan(10);
   });
 
-  // The owner's layout (2026-10-10): the tank on the left, the demand and under it the
-  // circulation on the right, the two sides ending on one line.
-  test('stands the circulation under the demand, level with the card of the tank', async ({
+  // The owner's layout (2026-11-05, HAS-322, the heating page): the valve, the tank, the demand and the circulation in
+  // one row of cards of one height on a wide screen, one under the other on a phone; the consumption under them
+  test('stands the four cards in one row of one height, the consumption under them', async ({
     page,
   }, testInfo) => {
     await page.goto('/water');
@@ -527,18 +568,23 @@ test.describe('hot water', () => {
     await expect(page.getByTestId('demand')).toContainText('Warm enough');
 
     const box = async (name: string) => (await page.getByTestId(name).boundingBox())!;
-    const tank = await box('temperatures');
-    const demand = await box('demand');
-    const circulation = await box('circulation-card');
+    const cards = [
+      await box('valve'),
+      await box('temperatures'),
+      await box('demand'),
+      await box('circulation-card'),
+    ];
+    const consumption = await box('consumption');
 
-    expect(circulation.y).toBeGreaterThan(demand.y + demand.height);
-    expect(Math.round(circulation.x)).toBe(Math.round(demand.x));
     if (testInfo.project.name === 'phone') {
-      expect(demand.y).toBeGreaterThan(tank.y + tank.height);
+      for (let index = 1; index < cards.length; index += 1) {
+        expect(cards[index].y).toBeGreaterThan(cards[index - 1].y + cards[index - 1].height - 1);
+      }
     } else {
-      expect(Math.round(demand.y)).toBe(Math.round(tank.y));
-      expect(Math.round(circulation.y + circulation.height)).toBe(Math.round(tank.y + tank.height));
+      expect(new Set(cards.map((card) => Math.round(card.y))).size).toBe(1);
+      expect(new Set(cards.map((card) => Math.round(card.height))).size).toBe(1);
     }
+    expect(consumption.y).toBeGreaterThan(cards[3].y + cards[3].height - 1);
   });
 
   // water-service answers 200 with no body until its first reading
@@ -563,10 +609,10 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    // three calls - the temperatures, the demand and the history - in four cards: the tank and
-    // the circulation come from one call and each tells its failure
+    // five calls - the valve and the consumption (HAS-322), the temperatures, the demand and the history - in six
+    // cards: the tank and the circulation come from one call and each tells its failure
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(4);
+    await expect(alerts).toHaveCount(6);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }
@@ -750,7 +796,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Lights/,
         /Appliances/,
         /Heating/,
-        /Hot water/,
+        /Water/,
         /Boiler room/,
         /Presence/,
         /Household/,
@@ -776,7 +822,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Lights/,
         /Appliances/,
         /Heating/,
-        /Hot water/,
+        /Water/,
         /Boiler room/,
         /Presence/,
         /Household/,
@@ -786,7 +832,7 @@ test.describe('the navigation with more destinations than a phone has room for',
       ]);
       await expect(page.locator('.shell__bottom-more')).toBeHidden();
 
-      await side.getByRole('link', { name: 'Hot water' }).click();
+      await side.getByRole('link', { name: 'Water', exact: true }).click();
 
       await expect(page).toHaveURL(/\/water$/);
     }
