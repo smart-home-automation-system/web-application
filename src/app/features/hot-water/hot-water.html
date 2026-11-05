@@ -97,9 +97,8 @@
             }
             @let asked = valveQuestion();
             @if (asked !== undefined) {
-              <div
+              <fieldset
                 class="valve__question"
-                role="group"
                 [attr.aria-labelledby]="valveQuestionId"
                 data-testid="valve-question"
               >
@@ -128,7 +127,7 @@
                     {{ t(asked === 'close' ? 'water.valve.doClose' : 'water.valve.doOpen') }}
                   </button>
                 </div>
-              </div>
+              </fieldset>
             } @else {
               <div class="valve__commands">
                 @for (state of commandsOf(view.open); track state) {

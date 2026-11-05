@@ -19,13 +19,29 @@ export function numberOf(text: string): number | undefined {
   if (plain === '') {
     return undefined;
   }
-  return /^-?\d+(\.\d+)?$/.test(plain) ? Number(plain) : Number.NaN;
+  // digits, then at most one dot with digits after it - checked part by part, no pattern that backtracks
+  const [whole, fraction, ...rest] = (plain.startsWith('-') ? plain.slice(1) : plain).split('.');
+  return rest.length === 0 && isDigits(whole) && (fraction === undefined || isDigits(fraction))
+    ? Number(plain)
+    : Number.NaN;
 }
 
+function isDigits(part: string): boolean {
+  return part.length > 0 && [...part].every((char) => char >= '0' && char <= '9');
+}
+
+/** The decimals of a number as typed, trailing zeros not counted (`11.1230` has three). */
 function decimalsOf(text: string): number {
   const plain = text.replace(/\s/g, '').replace(',', '.');
   const dot = plain.indexOf('.');
-  return dot < 0 ? 0 : plain.slice(dot + 1).replace(/0+$/, '').length;
+  if (dot < 0) {
+    return 0;
+  }
+  let end = plain.length;
+  while (end > dot + 1 && plain[end - 1] === '0') {
+    end -= 1;
+  }
+  return end - dot - 1;
 }
 
 /** What is wrong with a volume in m³: required or not, at least 0, at most three decimals, below a billion. */

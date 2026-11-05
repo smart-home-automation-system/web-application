@@ -154,8 +154,11 @@ mat-card-content {
   margin-top: 12px;
 }
 
+// a fieldset, named by its question: none of the frame of a form field
 .valve__question {
-  margin-top: 12px;
+  min-inline-size: 0;
+  border: 0;
+  margin: 12px 0 0;
   padding: 10px 12px;
   border-radius: var(--mat-sys-corner-medium);
   background: var(--mat-sys-error-container);
@@ -166,4 +169,3 @@ mat-card-content {
     font: var(--mat-sys-body-medium);
   }
 }
-
