@@ -490,8 +490,10 @@ test.describe('the water of the house', () => {
     await expect(valve.getByTestId('valve-state')).toContainText('Open');
     await expect(valve.getByTestId('valve-flow')).toHaveText('Flow 6.5 l/min');
     await expect(valve.getByTestId('valve-pressure')).toHaveText('Pressure 4.92 bar');
-    await expect(valve.getByTestId('valve-usage-counter')).toHaveText('Counter, in all 61.896 m³');
-    await expect(valve.getByTestId('valve-usage-day')).toContainText(' L');
+    await expect(page.getByTestId('usage').getByTestId('valve-usage-counter')).toHaveText(
+      'Counter, in all 61.896 m³',
+    );
+    await expect(page.getByTestId('usage').getByTestId('valve-usage-day')).toContainText(' L');
     await expect(valve.getByTestId('valve-measured')).toContainText('Reported');
 
     const consumption = page.getByTestId('consumption');
@@ -519,6 +521,64 @@ test.describe('the water of the house', () => {
       'The valve has reported nothing yet.',
     );
     await expect(page.getByTestId('consumption').getByTestId('history-empty')).toBeVisible();
+  });
+});
+
+// HAS-323: the writes of the water page - the valve after a question, the bills of the waterworks
+test.describe('the valve and the bills', () => {
+  test('closes and opens the valve, each after a question', async ({ page }) => {
+    await page.goto('/water');
+    const valve = page.getByTestId('valve');
+    await expect(valve.getByTestId('valve-state')).toContainText('Open');
+
+    await valve.getByTestId('valve-close').click();
+    await expect(valve.getByTestId('valve-question')).toContainText(
+      'It cuts the water of the whole house.',
+    );
+    await valve.getByTestId('valve-confirm').click();
+    await expect(valve.getByTestId('valve-state')).toContainText('Closed');
+
+    await valve.getByTestId('valve-open').click();
+    await valve.getByTestId('valve-confirm').click();
+    await expect(valve.getByTestId('valve-state')).toContainText('Open');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('adds a bill chosen on the calendar, changes it and removes it', async ({ page }) => {
+    await page.goto('/water');
+    const bills = page.getByTestId('bills');
+    await expect(bills.getByTestId('bill')).toHaveCount(2);
+
+    await bills.getByTestId('bill-add').click();
+    await bills.getByRole('button', { name: 'Open calendar' }).first().click();
+    await page
+      .locator('.mat-calendar-body-cell:not(.mat-calendar-body-disabled)')
+      .getByText('1', { exact: true })
+      .click();
+    await bills.getByRole('button', { name: 'Open calendar' }).nth(1).click();
+    await page
+      .locator('.mat-calendar-body-cell:not(.mat-calendar-body-disabled)')
+      .getByText('2', { exact: true })
+      .click();
+    await bills.getByTestId('bill-billed-input').fill('0,5');
+    await bills.getByTestId('bill-amount-input').fill('12,30');
+    await bills.getByTestId('bill-save').click();
+    await expect(bills.getByTestId('bill')).toHaveCount(3);
+    const added = bills.getByTestId('bill').first();
+    await expect(added.getByTestId('bill-billed')).toHaveText('Billed 0.5 m³');
+    await expect(added.getByTestId('bill-amount')).toHaveText('Amount 12.30 zł');
+
+    await added.getByTestId('bill-edit').click();
+    await bills.getByTestId('bill-amount-input').fill('15');
+    await bills.getByTestId('bill-save').click();
+    await expect(bills.getByTestId('bill').first().getByTestId('bill-amount')).toHaveText(
+      'Amount 15.00 zł',
+    );
+
+    await bills.getByTestId('bill').first().getByTestId('bill-remove').click();
+    await bills.getByTestId('bill-remove-confirm').click();
+    await expect(bills.getByTestId('bill')).toHaveCount(2);
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 });
 
@@ -609,10 +669,10 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    // five calls - the valve and the consumption (HAS-322), the temperatures, the demand and the history - in six
-    // cards: the tank and the circulation come from one call and each tells its failure
+    // seven calls - the valve, the totals and the consumption (HAS-322), the bills (HAS-323), the temperatures, the
+    // demand and the history - in eight cards: the tank and the circulation come from one call and each tells its failure
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(6);
+    await expect(alerts).toHaveCount(8);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }

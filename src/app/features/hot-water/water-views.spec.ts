@@ -147,6 +147,10 @@ describe('water views', () => {
         'NOT_FOUND_VALVE',
         'REGISTRY_UNAVAILABLE',
         'INVALID_RANGE',
+        'INVALID_BILL',
+        'NOT_FOUND_BILL',
+        'INVALID_COMMAND',
+        'DEVICE_FAILED',
       ]);
       expect(
         describeWaterError(

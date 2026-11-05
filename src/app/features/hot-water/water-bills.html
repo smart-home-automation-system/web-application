@@ -1,0 +1,287 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="bills card--domain" data-testid="bills">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>receipt_long</mat-icon></div>
+      <mat-card-title>{{ t('water.bills.title') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="bills.lastUpdated()" [stale]="bills.stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (bills.loading()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('water.bills.loading')" />
+      } @else {
+        @if (list().length > 0) {
+          <ul class="list" data-testid="bill-list">
+            @for (bill of list(); track bill.id) {
+              @let size = sizeOf(bill);
+              <li class="bill" data-testid="bill" [attr.data-id]="bill.id">
+                <div class="bill__head">
+                  <span class="bill__period" data-testid="bill-period">{{ periodText(bill) }}</span>
+                  @if (askRemove() === bill.id) {
+                    <span class="question" role="alert" data-testid="bill-remove-question">
+                      {{ t('water.bills.removeQuestion') }}
+                      <button
+                        matButton
+                        type="button"
+                        data-testid="bill-remove-cancel"
+                        #keep
+                        (click)="askRemove.set(undefined)"
+                      >
+                        {{ t('water.bills.cancel') }}
+                      </button>
+                      <button
+                        matButton="outlined"
+                        type="button"
+                        data-testid="bill-remove-confirm"
+                        [disabled]="busy()"
+                        (click)="remove(bill.id!)"
+                      >
+                        {{ t('water.bills.remove') }}
+                      </button>
+                    </span>
+                  } @else {
+                    <span class="bill__actions">
+                      <button
+                        matIconButton
+                        type="button"
+                        data-testid="bill-edit"
+                        [disabled]="busy() || panel().kind !== 'list'"
+                        [matTooltip]="t('water.bills.change')"
+                        matTooltipTouchGestures="off"
+                        [attr.aria-label]="t('water.bills.change')"
+                        (click)="openEdit(bill)"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        matIconButton
+                        type="button"
+                        data-testid="bill-remove"
+                        [disabled]="busy() || panel().kind !== 'list'"
+                        [matTooltip]="t('water.bills.remove')"
+                        matTooltipTouchGestures="off"
+                        [attr.aria-label]="t('water.bills.remove')"
+                        (click)="askRemove.set(bill.id)"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </span>
+                  }
+                </div>
+                <dl class="bill__values">
+                  <div data-testid="bill-billed">
+                    <dt>{{ t('water.bills.billed') }}</dt>
+                    <dd>
+                      @let billedVolume = number(bill.billedVolume);
+                      @if (billedVolume !== undefined) {
+                        {{ billedVolume | localNumber: VOLUME }} m³
+                      } @else {
+                        {{ t('water.unknown') }}
+                      }
+                    </dd>
+                  </div>
+                  <div data-testid="bill-measured">
+                    <dt>{{ t('water.bills.measured') }}</dt>
+                    <dd>
+                      @let measured = number(bill.measuredVolume);
+                      @if (measured !== undefined) {
+                        {{ measured | localNumber: VOLUME }} m³
+                      } @else {
+                        {{ t('water.bills.notMeasured') }}
+                      }
+                    </dd>
+                  </div>
+                  <div data-testid="bill-difference">
+                    <dt>{{ t('water.bills.difference') }}</dt>
+                    <dd>
+                      @let difference = number(bill.difference);
+                      @if (difference !== undefined) {
+                        <span
+                          class="difference"
+                          [class.difference--medium]="size === 'medium'"
+                          [class.difference--large]="size === 'large'"
+                        >
+                          {{ difference | localNumber: SIGNED_VOLUME }} m³
+                          @let percent = number(bill.differencePercent);
+                          @if (percent !== undefined) {
+                            ({{ percent | localNumber: PERCENT }} %)
+                          }
+                        </span>
+                      } @else {
+                        {{ t('water.unknown') }}
+                      }
+                    </dd>
+                  </div>
+                  @if (number(bill.amount) !== undefined) {
+                    <div data-testid="bill-amount">
+                      <dt>{{ t('water.bills.amount') }}</dt>
+                      <dd>{{ number(bill.amount) | localNumber: MONEY }} zł</dd>
+                    </div>
+                  }
+                  @if (number(bill.meterReading) !== undefined) {
+                    <div data-testid="bill-meter">
+                      <dt>{{ t('water.bills.meter') }}</dt>
+                      <dd>{{ number(bill.meterReading) | localNumber: VOLUME }} m³</dd>
+                    </div>
+                  }
+                </dl>
+                @if (bill.note) {
+                  <p class="bill__note" data-testid="bill-note">{{ bill.note }}</p>
+                }
+              </li>
+            }
+          </ul>
+          <p class="note">{{ t('water.bills.explain') }}</p>
+        } @else if (!bills.error()) {
+          <p class="note" data-testid="bills-none">{{ t('water.bills.none') }}</p>
+        }
+        <app-api-error-strip [error]="bills.error()" [describeWith]="describe" />
+
+        @if (panel().kind === 'list') {
+          <button
+            matButton
+            type="button"
+            class="add"
+            data-testid="bill-add"
+            [disabled]="busy()"
+            (click)="openNew()"
+          >
+            <mat-icon>add</mat-icon>{{ t('water.bills.add') }}
+          </button>
+        } @else {
+          <form class="form" data-testid="bill-form" (submit)="$event.preventDefault(); save()">
+            <p class="form__title">
+              {{ t(panel().kind === 'new' ? 'water.bills.titleNew' : 'water.bills.titleEdit') }}
+            </p>
+            <div class="form__row">
+              <!-- the days are chosen on the calendar, never typed: the control reads typed digits the American way -->
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ t('water.bills.from') }}</mat-label>
+                <input
+                  matInput
+                  readonly
+                  [matDatepicker]="fromPicker"
+                  [max]="calendarMax()"
+                  [value]="calendarOf(periodFrom())"
+                  (dateChange)="picked('from', $event)"
+                  data-testid="bill-from"
+                />
+                <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+                <mat-datepicker #fromPicker />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ t('water.bills.to') }}</mat-label>
+                <input
+                  matInput
+                  readonly
+                  [matDatepicker]="toPicker"
+                  [max]="calendarMax()"
+                  [value]="calendarOf(periodTo())"
+                  (dateChange)="picked('to', $event)"
+                  data-testid="bill-to"
+                />
+                <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+                <mat-datepicker #toPicker />
+              </mat-form-field>
+            </div>
+            <div class="form__row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ t('water.bills.billed') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="decimal"
+                  data-testid="bill-billed-input"
+                  [value]="billed()"
+                  (input)="billed.set(textOf($event))"
+                />
+                <span matTextSuffix>m³</span>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ t('water.bills.meter') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="decimal"
+                  data-testid="bill-meter-input"
+                  [value]="meter()"
+                  (input)="meter.set(textOf($event))"
+                />
+                <span matTextSuffix>m³</span>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ t('water.bills.amount') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="decimal"
+                  data-testid="bill-amount-input"
+                  [value]="amount()"
+                  (input)="amount.set(textOf($event))"
+                />
+                <span matTextSuffix>zł</span>
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="form__note">
+              <mat-label>{{ t('water.bills.note') }}</mat-label>
+              <input
+                matInput
+                data-testid="bill-note-input"
+                [attr.maxlength]="NOTE_LENGTH"
+                [value]="note()"
+                (input)="note.set(textOf($event))"
+              />
+            </mat-form-field>
+            <p class="form__hint">{{ t('water.bills.hint') }}</p>
+
+            @if (tried()) {
+              @let problem = problems();
+              <ul class="form__problems" data-testid="bill-problems">
+                @if (problem.period; as key) {
+                  <li>{{ t(key) }}</li>
+                }
+                @if (problem.billed; as key) {
+                  <li>{{ t('water.bills.billed') }}: {{ t(key) }}</li>
+                }
+                @if (problem.meter; as key) {
+                  <li>{{ t('water.bills.meter') }}: {{ t(key) }}</li>
+                }
+                @if (problem.amount; as key) {
+                  <li>{{ t('water.bills.amount') }}: {{ t(key) }}</li>
+                }
+                @if (problem.note; as key) {
+                  <li>{{ t(key, { max: NOTE_LENGTH }) }}</li>
+                }
+                @if (overlap(); as other) {
+                  <li>{{ t('water.bills.rule.overlap', { period: periodText(other) }) }}</li>
+                }
+              </ul>
+            }
+
+            <div class="form__actions">
+              <button matButton="filled" type="submit" data-testid="bill-save" [disabled]="busy()">
+                {{ t('water.bills.save') }}
+              </button>
+              <button
+                matButton
+                type="button"
+                data-testid="bill-cancel"
+                [disabled]="busy()"
+                (click)="close()"
+              >
+                {{ t('water.bills.cancel') }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (failure(); as failed) {
+          <app-api-error-strip
+            [error]="failed.error"
+            [summary]="t(failed.summary)"
+            [describeWith]="describe"
+          />
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</ng-container>

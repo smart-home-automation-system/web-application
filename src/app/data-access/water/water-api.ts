@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { concat, map, toArray } from 'rxjs';
+import { Observable, concat, map, toArray } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
@@ -138,7 +138,40 @@ export interface ConsumptionTotals {
   readonly year?: number;
 }
 
+/**
+ * A bill of the waterworks with what the house measured over its period (`water-service` >= 0.9.0, HAS-318).
+ * Volumes in m³ (three decimals), the amount in PLN; `measuredVolume`, `difference` (measured less billed) and
+ * `differencePercent` (of the billed volume) are left out when a day of the period has no readings - never 0.
+ */
+export interface WaterBill {
+  readonly id?: number;
+  /** The period billed, whole days of the house (`YYYY-MM-DD`), both included. */
+  readonly periodFrom?: string;
+  readonly periodTo?: string;
+  readonly billedVolume?: number;
+  /** The reading of the meter of the waterworks, m³. */
+  readonly meterReading?: number;
+  /** PLN. */
+  readonly amount?: number;
+  readonly note?: string;
+  readonly measuredVolume?: number;
+  readonly difference?: number;
+  readonly differencePercent?: number;
+}
+
+/** A bill as the dashboard writes it - the whole bill, for a new one and a change alike (no partial update). */
+export interface WaterBillBody {
+  readonly periodFrom: string;
+  readonly periodTo: string;
+  readonly billedVolume: number;
+  readonly meterReading?: number;
+  readonly amount?: number;
+  readonly note?: string;
+}
+
 const POLL_EVERY_MS = 30_000;
+// the bills change by hand, their measured volume once a day
+const POLL_BILLS_EVERY_MS = 5 * 60_000;
 // the totals of the running ranges, four calls at a time: a minute of water hardly moves a year
 const POLL_TOTALS_EVERY_MS = 5 * 60_000;
 // the valve is read by the service every minute and its changes heard at once
@@ -224,6 +257,37 @@ export class WaterApi {
         ),
       { intervalMs: POLL_TOTALS_EVERY_MS },
     );
+  }
+
+  /** The bills, newest first (HAS-318). Call in an injection context: the polling lives as long as the caller. */
+  watchBills(): PollingResource<readonly WaterBill[] | null> {
+    return pollingResource(() => this.api.get<readonly WaterBill[] | null>('/water/bills'), {
+      intervalMs: POLL_BILLS_EVERY_MS,
+    });
+  }
+
+  /** A new bill; the answer of the write is not used - the page reads the bills again. */
+  createBill(body: WaterBillBody): Observable<void> {
+    return this.api.post<unknown>('/water/bills', body).pipe(map(() => undefined));
+  }
+
+  /** The bill replaced whole. */
+  replaceBill(id: number, body: WaterBillBody): Observable<void> {
+    return this.api.put<unknown>(`/water/bills/${id}`, body).pipe(map(() => undefined));
+  }
+
+  deleteBill(id: number): Observable<void> {
+    return this.api.delete<unknown>(`/water/bills/${id}`).pipe(map(() => undefined));
+  }
+
+  /**
+   * Closes or opens the water valve (`water-service` >= 0.12.0, HAS-321) - the one command that cuts the water of
+   * the whole house. Sent once; taken (202) is not done: the read of the valve says when it was confirmed.
+   */
+  commandValve(state: 'open' | 'close'): Observable<void> {
+    return this.api
+      .post<unknown>('/water/valve', null, { state, source: 'dashboard' })
+      .pipe(map(() => undefined));
   }
 
   /** Call in an injection context: the polling lives as long as the caller. */

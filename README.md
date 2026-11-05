@@ -166,15 +166,22 @@ dashboards:
   through, and is not in the week - it never heats. After every write the rooms are read again and
   only that answer moves the list. The switch of the house asks before it acts, and what it shows
   afterwards is what the house answers when asked again, never what was clicked.
-- **Water** (HAS-322, the hot-water page until then): a row of four cards of one size, as on the
+- **Water** (HAS-322, the hot-water page until then): a row of five cards of one size, as on the
   heating page - **the water valve of the garage** (open or closed, the flow in l/min, the pressure in
-  bar, the water temperature, the water used today, this week, this month and this year and the
-  counter in m³, with the age of its newest report, out of date after 3 minutes), the tank, whether
+  bar, the water temperature, with the age of its newest report, out of date after 3 minutes, and
+  **"Close the valve" / "Open the valve" after a question** that says it cuts the water of the whole
+  house - HAS-323; the card reads the valve again 2.5 s after the command and says while the valve
+  has not confirmed it), **the water used** (today, this week, this month, this year and the counter
+  in m³), the tank, whether
   the water asks to be heated - **heating going on stands out on a strip in the colour of the
   heating** - and the circulation - and under them **the consumption of the house**
   by day (in hours), week and month (in days) and year (in months) as bars, in litres (a year in
   m³), with the total and the one of the range before; a day is chosen on a calendar or stepped back
-  and forth. A bucket the service did not watch has no bar, never 0. Then the hot water:
+  and forth. A bucket the service did not watch has no bar, never 0. Then **the bills of the
+  waterworks** (HAS-323): newest first, each with what was billed, what the house measured over its
+  period and how far apart they are - in m³ and per cent, a difference of 10 % or more on a red strip -
+  with the amount and the meter reading when given; a bill is added and changed in a form that
+  refuses what `water-service` refuses, and removed after a question. Then the hot water:
 - **Hot water**: the temperature of the water in the tank on a gauge from 20 to 80 °C - the water
   of a year, cold after a weekend away, hot from the sun in summer - with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
@@ -279,8 +286,9 @@ dashboards:
   the temperature of the room in the heating ends there. Nothing is shown as done before the
   registry says so, and one change is made at a time.
 
-The water, the hot water, the boiler room and the presence are read-only (the command of the valve comes
-with HAS-323).
+The hot water, the boiler room and the presence are read-only. The water page writes in two places
+(HAS-323): the command of the valve, after a question, and the bills of the waterworks; after every
+write it reads again, and only that answer moves the page.
 
 Every view stands in the **middle of the page**, with its title in the top left corner, and the
 cards of a row are of one size (HAS-266).
@@ -479,6 +487,8 @@ Endpoints used today:
 | `GET` | `/home/water/temperature/history?from=&to=` | Both temperatures over a range, averaged into buckets (hot water). Asked when the period changes, then every 3 min. Needs `water-service` 0.6.0 or later |
 | `GET` | `/home/water/status/active` | Whether the water asks to be heated (hot water), polled every 30 s |
 | `GET` | `/home/water/valve` | The water valve now - state, flow, pressure, water temperature, counter, the time of its newest report (water, overview), polled every 15 s. A field left out is shown as not known; `{}` before the first report. Needs `water-service` 0.7.0 or later - against an older one the card shows the 404 |
+| `POST` | `/home/water/valve?state=open\|close&source=dashboard` | Closes or opens the valve, after a question (water); the valve is read again 2.5 s later. Needs `water-service` 0.12.0 or later |
+| `GET`, `POST`, `PUT`, `DELETE` | `/home/water/bills`, `/home/water/bills/{id}` | The bills of the waterworks with what the house measured (water), read every 5 min and again after every write. Needs `water-service` 0.9.0 or later |
 | `GET` | `/home/water/consumption?range=&at=` | The water used over a day, week, month or year in buckets, with the total and the one before (water; today on the overview), asked when the range or the day changes, then every minute. Needs `water-service` 0.8.0 or later |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room, overview), polled every 30 s |
 | `GET` | `/home/weather/current` | Every metric of the weather station with `value`, `measuredAt` and `stale` (the strip on every page, overview, weather), polled every 60 s by one resource for all. A metric never heard is not in the answer and is not drawn; `{}` is a station not heard yet. Needs `weather-service` 0.4.0 and `api-gateway-service` 0.6.0 or later |

@@ -11,6 +11,11 @@ export const WATER_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   NOT_FOUND_VALVE: 'water.error.valveNotFound',
   REGISTRY_UNAVAILABLE: 'water.error.registryUnavailable',
   INVALID_RANGE: 'water.error.invalidRange',
+  // the bills and the command of the valve (HAS-323)
+  INVALID_BILL: 'water.error.billInvalid',
+  NOT_FOUND_BILL: 'water.error.billNotFound',
+  INVALID_COMMAND: 'water.error.commandInvalid',
+  DEVICE_FAILED: 'water.error.deviceFailed',
 };
 
 /** A failed call of the water page: a code of the service in our words, anything else as usual. */
