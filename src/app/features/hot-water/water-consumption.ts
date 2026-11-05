@@ -188,4 +188,3 @@ export class WaterConsumptionCard {
     this.chosen.set(periodStart(range, day) === periodStart(range, this.today()) ? undefined : day);
   }
 }
-

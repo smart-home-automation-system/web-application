@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { concat, map, toArray } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
@@ -126,7 +127,20 @@ export interface WaterConsumption {
   readonly buckets?: readonly ConsumptionBucket[];
 }
 
+/**
+ * The water used in the running day, week, month and year of the house, in m³ - each the `total` of
+ * `GET /water/consumption?range=` for today (HAS-322); a total the service leaves out (nothing watched) is left out.
+ */
+export interface ConsumptionTotals {
+  readonly day?: number;
+  readonly week?: number;
+  readonly month?: number;
+  readonly year?: number;
+}
+
 const POLL_EVERY_MS = 30_000;
+// the totals of the running ranges, four calls at a time: a minute of water hardly moves a year
+const POLL_TOTALS_EVERY_MS = 5 * 60_000;
 // the valve is read by the service every minute and its changes heard at once
 const POLL_VALVE_EVERY_MS = 15_000;
 // a bucket is an hour at its narrowest
@@ -183,6 +197,32 @@ export class WaterApi {
       query,
       (asked) => this.api.get<WaterConsumption | null>('/water/consumption', { ...asked }),
       { intervalMs: POLL_CONSUMPTION_EVERY_MS },
+    );
+  }
+
+  /**
+   * The totals of today, this week, this month and this year (HAS-322) - four calls one after the other, never two
+   * statements of the small pool of the service at once, read as one: a failure of any is the failure of the totals.
+   * `at` is left out, so the service counts from its own today. Call in an injection context: the polling lives as
+   * long as the caller.
+   */
+  watchConsumptionTotals(): PollingResource<ConsumptionTotals> {
+    return pollingResource(
+      () =>
+        concat(
+          ...CONSUMPTION_RANGES.map((range) =>
+            this.api.get<WaterConsumption | null>('/water/consumption', { range }),
+          ),
+        ).pipe(
+          toArray(),
+          map(
+            (answers) =>
+              Object.fromEntries(
+                CONSUMPTION_RANGES.map((range, index) => [range, answers[index]?.total]),
+              ) as ConsumptionTotals,
+          ),
+        ),
+      { intervalMs: POLL_TOTALS_EVERY_MS },
     );
   }
 

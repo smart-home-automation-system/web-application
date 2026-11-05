@@ -27,20 +27,20 @@ describe('TemperatureGauge', () => {
     return (fixture.nativeElement as HTMLElement).querySelector(`.gauge__${name}`)!;
   }
 
-  // the scale runs from 30 to 50 °C: one degree is 5 % of it
+  // the scale runs from 20 to 80 °C - the water of a year (HAS-322): ten degrees are a sixth of it
   it('places the band between its two temperatures', async () => {
     await show(40);
 
-    expect(part('band').style.left).toBe('40%');
-    expect(part('band').style.width).toBe('20%');
+    expect(part('band').style.left).toBe('30%');
+    expect(part('band').style.width).toBe('6.67%');
   });
 
   it.each([
-    [30, '0%'],
-    [38, '40%'],
-    [40, '50%'],
-    [40.56, '52.8%'],
-    [50, '100%'],
+    [20, '0%'],
+    [38, '30%'],
+    [50, '50%'],
+    [40.56, '34.27%'],
+    [80, '100%'],
   ])('places the marker for %d °C at %s', async (value, left) => {
     await show(value);
 
@@ -51,7 +51,7 @@ describe('TemperatureGauge', () => {
   it.each([
     [5, '0%'],
     [-3, '0%'],
-    [75, '100%'],
+    [95, '100%'],
   ])('stops the marker at the end of the scale for %i °C', async (value, left) => {
     await show(value);
 
@@ -60,8 +60,8 @@ describe('TemperatureGauge', () => {
 
   // a meter may only report a value on its scale; the reading in words keeps the true number
   it.each([
-    [24, '30'],
-    [55, '50'],
+    [15, '20'],
+    [85, '80'],
     [41.5, '41.5'],
   ])('reports %d °C to a screen reader as %s on its scale', async (value, reported) => {
     await show(value);
@@ -97,8 +97,8 @@ describe('TemperatureGauge', () => {
     const meter = (fixture.nativeElement as HTMLElement).querySelector('[role="meter"]')!;
 
     expect(meter.getAttribute('aria-label')).toBe('Water');
-    expect(meter.getAttribute('aria-valuemin')).toBe('30');
-    expect(meter.getAttribute('aria-valuemax')).toBe('50');
+    expect(meter.getAttribute('aria-valuemin')).toBe('20');
+    expect(meter.getAttribute('aria-valuemax')).toBe('80');
     expect(meter.getAttribute('aria-valuenow')).toBe('40.5');
     expect(meter.getAttribute('aria-valuetext')).toBe('40.5 degrees');
     // the numbers under the track are in the reading already
@@ -111,6 +111,17 @@ describe('TemperatureGauge', () => {
     fixture.componentRef.setInput('value', 42);
     await fixture.whenStable();
 
-    expect(part('marker').style.left).toBe('60%');
+    expect(part('marker').style.left).toBe('36.67%');
+  });
+
+  // on a scale of 60 degrees the two ends of a band of 4 would stand on each other: the band is named once, under
+  // its middle, and the ends of the scale at its ends
+  it('names the ends of the scale and the band under its middle', async () => {
+    await show(40);
+
+    const scale = (fixture.nativeElement as HTMLElement).querySelector('.gauge__scale')!;
+    const labels = [...scale.querySelectorAll('span')].map((span) => span.textContent?.trim());
+    expect(labels).toEqual(['20 °C', '38–42 °C', '80 °C']);
+    expect((scale.querySelector('.gauge__band-label') as HTMLElement).style.left).toBe('33.335%');
   });
 });

@@ -8,11 +8,7 @@ import {
 } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
-import {
-  ConsumptionQuery,
-  WaterApi,
-  WaterConsumption,
-} from '../../data-access/water/water-api';
+import { ConsumptionQuery, WaterApi, WaterConsumption } from '../../data-access/water/water-api';
 import { WaterConsumptionCard } from './water-consumption';
 
 // 18:30 in the house, on Thursday 5 November 2026

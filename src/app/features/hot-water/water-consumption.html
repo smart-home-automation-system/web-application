@@ -68,22 +68,20 @@
             <li data-testid="consumption-total">
               <span class="chart__name">{{ t('water.consumption.total') }}</span>
               @let used = total();
-              <span
-                >{{
-                  used === undefined ? t('water.unknown') : (used | localNumber: format()) + ' ' + unit().unit
-                }}</span
-              >
+              <span>{{
+                used === undefined
+                  ? t('water.unknown')
+                  : (used | localNumber: format()) + ' ' + unit().unit
+              }}</span>
             </li>
             <li data-testid="consumption-previous">
               <span class="chart__name">{{ t(previousLabels[range()]) }}</span>
               @let before = previous();
-              <span
-                >{{
-                  before === undefined
-                    ? t('water.unknown')
-                    : (before | localNumber: format()) + ' ' + unit().unit
-                }}</span
-              >
+              <span>{{
+                before === undefined
+                  ? t('water.unknown')
+                  : (before | localNumber: format()) + ' ' + unit().unit
+              }}</span>
               @if (change(); as percent) {
                 <span class="chart__name" data-testid="consumption-change">{{
                   t(percent > 0 ? 'water.consumption.more' : 'water.consumption.less', {

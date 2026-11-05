@@ -298,7 +298,7 @@ export const pl: Messages = {
   },
   water: {
     title: 'Woda',
-    house: 'Woda w domu',
+    readings: 'Odczyty wody',
     unknown: 'nieznane',
     valve: {
       title: 'Zawór wody',
@@ -309,7 +309,12 @@ export const pl: Messages = {
       flow: 'Przepływ',
       pressure: 'Ciśnienie',
       temperature: 'Temperatura wody',
-      counter: 'Licznik',
+      counter: 'Licznik, łącznie',
+      usage: 'Zużycie',
+      usageDay: 'Dziś',
+      usageWeek: 'Ten tydzień',
+      usageMonth: 'Ten miesiąc',
+      usageYear: 'Ten rok',
       reported: 'Raport {{ age }}',
       reportedOutOfDate: 'Raport {{ age }} - od tamtej pory zawór milczy.',
       nothing: 'Zawór nic jeszcze nie zgłosił.',

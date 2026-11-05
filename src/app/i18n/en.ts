@@ -303,7 +303,7 @@ export const en = {
   },
   water: {
     title: 'Water',
-    house: 'The water of the house',
+    readings: 'Water readings',
     unknown: 'not known',
     valve: {
       title: 'Water valve',
@@ -314,7 +314,12 @@ export const en = {
       flow: 'Flow',
       pressure: 'Pressure',
       temperature: 'Water temperature',
-      counter: 'Counter',
+      counter: 'Counter, in all',
+      usage: 'Used',
+      usageDay: 'Today',
+      usageWeek: 'This week',
+      usageMonth: 'This month',
+      usageYear: 'This year',
       reported: 'Reported {{ age }}',
       reportedOutOfDate: 'Reported {{ age }} - the valve has not been heard since.',
       nothing: 'The valve has reported nothing yet.',

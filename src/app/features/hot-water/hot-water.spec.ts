@@ -7,6 +7,7 @@ import { houseTime } from '../../../mocks/house-time';
 import { ApiError } from '../../core/api/api-error';
 import { PollingResource } from '../../core/api/polling-resource';
 import {
+  ConsumptionTotals,
   WaterApi,
   WaterHeatingDemand,
   WaterTemperatures,
@@ -40,12 +41,14 @@ describe('HotWater', () => {
   let temperatures: FakeResource<WaterTemperatures | null>;
   let demand: FakeResource<WaterHeatingDemand>;
   let valve: FakeResource<WaterValve>;
+  let totals: FakeResource<ConsumptionTotals>;
   let fixture: ComponentFixture<HotWater>;
 
   beforeEach(() => {
     temperatures = fakeResource();
     demand = fakeResource();
     valve = fakeResource();
+    totals = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -57,6 +60,7 @@ describe('HotWater', () => {
             // the history is a card of its own, with tests of its own (water-history.spec)
             watchHistory: () => fakeQueryResource(),
             watchValve: () => valve,
+            watchConsumptionTotals: () => totals,
             // the consumption is a card of its own, with tests of its own (water-consumption.spec)
             watchConsumption: () => fakeQueryResource(),
           },
@@ -125,8 +129,9 @@ describe('HotWater', () => {
       );
       expect(gauge.getAttribute('aria-valuetext')).toBe('40.5 °C; kept between 38 and 42 °C');
       expect([...gauge.querySelectorAll('.gauge__scale span')].map(words)).toEqual([
-        '38 °C',
-        '42 °C',
+        '20 °C',
+        '38–42 °C',
+        '80 °C',
       ]);
     });
 
@@ -223,6 +228,8 @@ describe('HotWater', () => {
 
       expect(words(state)).toBe('mode_heat Heating needed');
       expect(state.classList).toContain('tile__state--on');
+      // it stands out at a glance: the strip in the colour of the heating (owner, 2026-11-05)
+      expect(state.classList).toContain('tile__state--heating');
     });
 
     it('says that the water is warm enough', async () => {
@@ -232,6 +239,7 @@ describe('HotWater', () => {
 
       expect(words(state)).toBe('check_circle Warm enough');
       expect(state.classList).not.toContain('tile__state--on');
+      expect((await part('demand'))!.querySelector('.tile__state--heating')).toBeNull();
     });
 
     // "warm enough" must be something the service said, never the reading of a missing field
@@ -420,7 +428,9 @@ describe('HotWater', () => {
       expect(words(card.querySelector('[data-testid="valve-temperature"]'))).toBe(
         'Water temperature 12.9 °C',
       );
-      expect(words(card.querySelector('[data-testid="valve-counter"]'))).toBe('Counter 61.896 m³');
+      expect(words(card.querySelector('[data-testid="valve-usage-counter"]'))).toBe(
+        'Counter, in all 61.896 m³',
+      );
       expect(card.querySelector('.tile__measured--old')).toBeNull();
     });
 
@@ -431,7 +441,9 @@ describe('HotWater', () => {
       const card = (await part('valve'))!;
       expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('State not known');
       expect(words(card.querySelector('[data-testid="valve-flow"]'))).toBe('Flow not known');
-      expect(words(card.querySelector('[data-testid="valve-counter"]'))).toBe('Counter not known');
+      expect(words(card.querySelector('[data-testid="valve-usage-counter"]'))).toBe(
+        'Counter, in all not known',
+      );
       expect(words(card)).not.toContain('Closed');
     });
 
@@ -459,9 +471,41 @@ describe('HotWater', () => {
       );
     });
 
+    // the counter alone says little (owner, 2026-11-05): the water of today, this week, this month and this year
+    it('shows the water of the running ranges in litres, a year in m³, and what is not known', async () => {
+      answer(valve, { state: 'open', measuredAt: house(8) });
+      answer(totals, { day: 0.271, week: 1.298, year: 104.356 });
+
+      const card = (await part('valve'))!;
+      expect(words(card.querySelector('[data-testid="valve-usage-day"]'))).toBe('Today 271 L');
+      expect(words(card.querySelector('[data-testid="valve-usage-week"]'))).toBe(
+        'This week 1,298 L',
+      );
+      expect(words(card.querySelector('[data-testid="valve-usage-month"]'))).toBe(
+        'This month not known',
+      );
+      expect(words(card.querySelector('[data-testid="valve-usage-year"]'))).toBe(
+        'This year 104.4 m³',
+      );
+    });
+
+    it('tells a failure of the totals in the card, the valve still shown', async () => {
+      answer(valve, { state: 'open', measuredAt: house(8) });
+      fail(totals, new ApiError('server', 502));
+
+      const card = (await part('valve'))!;
+      expect(words(card.querySelector('[data-testid="valve-state"]'))).toContain('Open');
+      expect(card.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    });
+
     // against a water-service without the valve the card shows its 404, and the rest of the page works
     it('words the refusals of the service and shows the rest of the page', async () => {
-      fail(valve, new ApiError('client', 404, [{ message: 'No water valve is registered', code: 'NOT_FOUND_VALVE' }]));
+      fail(
+        valve,
+        new ApiError('client', 404, [
+          { message: 'No water valve is registered', code: 'NOT_FOUND_VALVE' },
+        ]),
+      );
       answer(demand, { active: false });
 
       expect(words(await part('valve'))).toContain('No water valve is registered.');

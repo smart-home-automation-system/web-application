@@ -7,7 +7,13 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
 import { Ticker } from '../../core/time/ticker';
-import { HOT_WATER_BAND, WaterApi } from '../../data-access/water/water-api';
+import {
+  CONSUMPTION_RANGES,
+  ConsumptionRange,
+  HOT_WATER_BAND,
+  WaterApi,
+} from '../../data-access/water/water-api';
+import { MessageKey } from '../../i18n/messages';
 import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
@@ -17,7 +23,24 @@ import { TemperatureGauge } from './temperature-gauge';
 import { WaterConsumptionCard } from './water-consumption';
 import { describeWaterError } from './water-errors';
 import { WaterHistory } from './water-history';
-import { hasValveReading, isValveOutOfDate, toValveView } from './water-views';
+import { hasValveReading, isValveOutOfDate, toValveView, unitOf, volumeIn } from './water-views';
+
+/** The rows of the water of the running ranges in the card of the valve. */
+const USAGE_LABELS: Readonly<Record<ConsumptionRange, MessageKey>> = {
+  day: 'water.valve.usageDay',
+  week: 'water.valve.usageWeek',
+  month: 'water.valve.usageMonth',
+  year: 'water.valve.usageYear',
+};
+
+/** One row of the water used: in the unit of its range, or not known. */
+interface UsageRow {
+  readonly key: string;
+  readonly label: MessageKey;
+  readonly value?: number;
+  readonly unit: string;
+  readonly format: Intl.NumberFormatOptions;
+}
 
 /**
  * The water of the house (HAS-322, the view was the hot water until then): the water valve of the garage - its state,
@@ -26,7 +49,10 @@ import { hasValveReading, isValveOutOfDate, toValveView } from './water-views';
  *
  * The valve has a call of its own (`GET /water/valve`) and so a card of its own; a field the answer leaves out is
  * not known - never zero, never closed. Its age is the newest report of the valve, out of date once two reads of the
- * service were missed (`VALVE_OUT_OF_DATE_MS`).
+ * service were missed (`VALVE_OUT_OF_DATE_MS`). Under it the water of today, this week, this month and this year
+ * (one call of four totals, its failure told in the card) and the counter of the valve (owner, 2026-11-05: the
+ * counter alone says little). The page is a row of four cards of one size - the valve, the tank, the demand, the
+ * circulation - with the consumption and the history under it, as on the heating page.
  *
  * Hot water: the temperature of the water in the tank on a gauge with the band it is kept in,
  * the temperature of the circulation, whether the water asks to be heated, and the history of
@@ -69,6 +95,7 @@ export class HotWater {
   protected readonly temperatures = this.api.watchTemperatures();
   protected readonly demand = this.api.watchHeatingDemand();
   protected readonly valve = this.api.watchValve();
+  protected readonly totals = this.api.watchConsumptionTotals();
   protected readonly describeWater = describeWaterError;
   protected readonly band = HOT_WATER_BAND;
   protected readonly oneDecimal: Intl.NumberFormatOptions = {
@@ -99,6 +126,31 @@ export class HotWater {
   protected readonly valveOutOfDate = computed(() =>
     isValveOutOfDate(this.valveView(), this.ticker.now()),
   );
+
+  /** The water of the running day, week, month and year, then the counter of the valve. */
+  protected readonly usage = computed((): readonly UsageRow[] => {
+    const totals = this.totals.value();
+    const rows = CONSUMPTION_RANGES.map((range): UsageRow => {
+      const { unit, decimals } = unitOf(range);
+      return {
+        key: range,
+        label: USAGE_LABELS[range],
+        value: volumeIn(range, totals?.[range]),
+        unit,
+        format: { minimumFractionDigits: decimals, maximumFractionDigits: decimals },
+      };
+    });
+    return [
+      ...rows,
+      {
+        key: 'counter',
+        label: 'water.valve.counter',
+        value: this.valveView().counter,
+        unit: 'm³',
+        format: this.threeDecimals,
+      },
+    ];
+  });
 
   /** True, false, or `undefined` while the answer does not say. */
   protected readonly heatingNeeded = computed(() => {

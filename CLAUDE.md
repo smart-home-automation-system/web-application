@@ -781,6 +781,17 @@ e2e/              # Playwright tests
     which a history does not.
   - The overview tile "Water" (`tile-valve`, next to the hot water) is two calls - the valve and the water of today -
     the second told in `tileFailures`.
+  - **The layout is the heating page's** (owner, 2026-11-05): a row of four cards of one size - the valve, the tank,
+    the demand, the circulation - in a grid of 1240 px (two a row from 640 px, four from 1100 px), the consumption and
+    the history under it, as wide. The valve card shows the water of today, this week, this month and this year
+    (`watchConsumptionTotals`: four calls one after the other every 5 minutes, read as one, `at` left out so the
+    service counts from its own today) and the counter - the counter alone says little (owner).
+  - **Heating going on stands out** (owner, 2026-11-05): "heating needed" on a strip tinted with
+    `--app-domain-heating` and its flame in that colour; the words stay `on-surface`, so the contrast the check
+    knows holds - the colour is the strip and the icon.
+  - **The gauge of the tank runs 20 - 80 °C** (owner, 2026-11-05: cold after a weekend away, up to 80 °C on a hot
+    summer day): the ends of the scale at its ends and the band named once, under its middle - its two ends would
+    stand on each other on a scale of 60 degrees.
 - **The overview is one tile per call** (HAS-201, `features/overview/`): `DomainTile`
   (`shared/domain-tile/`, shared with the weather page since HAS-241, the styles of its content
   in `_tile-content.scss`, which the page that projects them `@use`s) tells
