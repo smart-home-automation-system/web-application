@@ -49,8 +49,10 @@ const DAY_MS = 24 * HOUR_MS;
 
 /** The litres of an hour of a day of the house: a morning and an evening, nothing at night - the same every run. */
 function hourLitres(day: string, hour: number): number {
-  const seed = [...day].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const shape = [0, 0, 0, 0, 0, 2, 18, 45, 30, 12, 8, 10, 15, 9, 6, 7, 11, 20, 38, 42, 30, 22, 9, 3];
+  const seed = [...day].reduce((sum, char) => sum + (char.codePointAt(0) ?? 0), 0);
+  const shape = [
+    0, 0, 0, 0, 0, 2, 18, 45, 30, 12, 8, 10, 15, 9, 6, 7, 11, 20, 38, 42, 30, 22, 9, 3,
+  ];
   return Math.round(shape[hour] * (0.8 + ((seed + hour * 7) % 9) / 20));
 }
 
@@ -97,11 +99,68 @@ function dayLitres(day: string, today: string, hourNow: number): number {
   return litres;
 }
 
+/** What the mock house knows on a day: the readings begin on `firstWatched`, nothing is known of the future. */
+interface Watch {
+  readonly today: string;
+  readonly hourNow: number;
+  readonly firstWatched: string;
+}
+
+function watchOf(now: Date): Watch {
+  const nowText = houseTime(now, 0);
+  const today = nowText.slice(0, 10);
+  return {
+    today,
+    hourNow: Number(nowText.slice(11, 13)),
+    firstWatched: wallDay(Date.parse(`${today}T00:00:00Z`) - 400 * DAY_MS),
+  };
+}
+
+/** The start of the bucket after one: an hour of a day, a month of a year, a day otherwise. */
+function nextBucket(range: string, cursor: number): number {
+  if (range === 'day') {
+    return cursor + HOUR_MS;
+  }
+  if (range === 'year') {
+    const date = new Date(cursor);
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
+  }
+  return cursor + DAY_MS;
+}
+
+/** The litres of one bucket, or `undefined` when the counter was not watched in it. */
+function bucketLitres(
+  range: string,
+  cursor: number,
+  next: number,
+  watch: Watch,
+): number | undefined {
+  const day = wallDay(cursor);
+  if (day < watch.firstWatched || day > watch.today) {
+    return undefined;
+  }
+  if (range === 'day') {
+    const hour = new Date(cursor).getUTCHours();
+    return day < watch.today || hour <= watch.hourNow ? hourLitres(day, hour) : undefined;
+  }
+  if (range === 'year') {
+    let litres = 0;
+    for (let at = cursor; at < next && wallDay(at) <= watch.today; at += DAY_MS) {
+      litres +=
+        wallDay(at) >= watch.firstWatched ? dayLitres(wallDay(at), watch.today, watch.hourNow) : 0;
+    }
+    return litres;
+  }
+  return dayLitres(day, watch.today, watch.hourNow);
+}
+
+const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19);
+const m3 = (litres: number) => Math.round(litres) / 1_000;
+
 /**
- * `GET /home/water/consumption?range=&at=` (HAS-317) in the shape of a real answer: the buckets the service watched -
- * the readings begin on `firstWatched`, and nothing is known of the future - in m³ with three decimals, the total and
- * the one of the range before. An unknown range is the refusal of the service. `fresh` is a service that has watched
- * nothing yet.
+ * `GET /home/water/consumption?range=&at=` (HAS-317) in the shape of a real answer: the buckets the service watched,
+ * in m³ with three decimals, the total and the one of the range before. An unknown range is the refusal of the
+ * service. `fresh` is a service that has watched nothing yet.
  */
 export function waterConsumption(
   range: string | null,
@@ -116,40 +175,14 @@ export function waterConsumption(
       code: 'INVALID_RANGE',
     };
   }
-  const nowText = houseTime(now, 0);
-  const today = nowText.slice(0, 10);
-  const hourNow = Number(nowText.slice(11, 13));
-  const firstWatched = wallDay(Date.parse(`${today}T00:00:00Z`) - 400 * DAY_MS);
-  const start = startOf(range, at ?? today);
+  const watch = watchOf(now);
+  const start = startOf(range, at ?? watch.today);
   const end = endOf(range, start);
-  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19);
   const buckets: { at: string; volume: number }[] = [];
-  const m3 = (litres: number) => Math.round(litres) / 1_000;
-  if (!fresh) {
-    for (let cursor = start; cursor < end; ) {
-      const day = wallDay(cursor);
-      const next =
-        range === 'day'
-          ? cursor + HOUR_MS
-          : range === 'year'
-            ? Date.UTC(new Date(cursor).getUTCFullYear(), new Date(cursor).getUTCMonth() + 1, 1)
-            : cursor + DAY_MS;
-      const watched = day >= firstWatched && day <= today;
-      if (watched && range === 'day') {
-        const hour = new Date(cursor).getUTCHours();
-        if (day < today || hour <= hourNow) {
-          buckets.push({ at: iso(cursor), volume: m3(hourLitres(day, hour)) });
-        }
-      } else if (watched && range === 'year') {
-        let litres = 0;
-        for (let d = cursor; d < next && wallDay(d) <= today; d += DAY_MS) {
-          litres += wallDay(d) >= firstWatched ? dayLitres(wallDay(d), today, hourNow) : 0;
-        }
-        buckets.push({ at: iso(cursor), volume: m3(litres) });
-      } else if (watched) {
-        buckets.push({ at: iso(cursor), volume: m3(dayLitres(day, today, hourNow)) });
-      }
-      cursor = next;
+  for (let cursor = start; !fresh && cursor < end; cursor = nextBucket(range, cursor)) {
+    const litres = bucketLitres(range, cursor, nextBucket(range, cursor), watch);
+    if (litres !== undefined) {
+      buckets.push({ at: iso(cursor), volume: m3(litres) });
     }
   }
   const total = buckets.reduce((sum, bucket) => sum + bucket.volume, 0);

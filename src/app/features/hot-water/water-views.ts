@@ -1,10 +1,6 @@
 import { dateTimeFormat } from '../../core/i18n/intl-formats';
 import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
-import {
-  ConsumptionRange,
-  WaterConsumption,
-  WaterValve,
-} from '../../data-access/water/water-api';
+import { ConsumptionRange, WaterConsumption, WaterValve } from '../../data-access/water/water-api';
 
 /**
  * How old the newest report of the valve may be before what the card shows is out of date: the service reads the
@@ -31,6 +27,12 @@ export interface ValveView {
   readonly measuredInstant?: number;
 }
 
+/** The words of the service for the state of the valve. */
+const STATES = new Map<unknown, boolean>([
+  ['open', true],
+  ['closed', false],
+]);
+
 const finite = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
@@ -44,7 +46,7 @@ export function toValveView(answer: WaterValve | null | undefined, timeZone: str
   const at: unknown = answer?.measuredAt;
   const parsed = typeof at === 'string' ? parseHouseDateTime(at) : undefined;
   return {
-    open: state === 'open' ? true : state === 'closed' ? false : undefined,
+    open: STATES.get(state),
     flowRate: finite(answer?.flowRate),
     pressure: finite(answer?.pressure),
     temperature: finite(answer?.temperature),
@@ -116,6 +118,18 @@ function nextMonth(wallClockMs: number): number {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
 }
 
+/** The start of the bucket after the one starting at a wall-clock instant. */
+function nextBucket(range: ConsumptionRange, wallClockMs: number): number {
+  switch (range) {
+    case 'day':
+      return wallClockMs + HOUR_MS;
+    case 'year':
+      return nextMonth(wallClockMs);
+    default:
+      return wallClockMs + DAY_MS;
+  }
+}
+
 /**
  * The start of every bucket of a range from its `from` to its `to` (the end not included), oldest first: hours of a
  * day, days of a week or a month, months of a year. All of it on the wall clock: the day the clocks go forward has 24
@@ -124,9 +138,8 @@ function nextMonth(wallClockMs: number): number {
 export function bucketStarts(range: ConsumptionRange, from: string, to: string): readonly string[] {
   const end = wallClock(to);
   const starts: string[] = [];
-  for (let at = wallClock(from); at < end && starts.length < 400; ) {
+  for (let at = wallClock(from); at < end && starts.length < 400; at = nextBucket(range, at)) {
     starts.push(localDateTime(at));
-    at = range === 'day' ? at + HOUR_MS : range === 'year' ? nextMonth(at) : at + DAY_MS;
   }
   return starts;
 }
@@ -150,17 +163,18 @@ export function bucketValues(
   return starts.map((start) => known.get(start) ?? null);
 }
 
+const BUCKET_LABELS: Readonly<Record<ConsumptionRange, Intl.DateTimeFormatOptions>> = {
+  day: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+  week: { weekday: 'short', day: 'numeric' },
+  month: { day: 'numeric' },
+  year: { month: 'short' },
+};
+
 /** The name of a bucket under its bar, in the language of the interface. */
 export function bucketLabel(range: ConsumptionRange, start: string, locale: string): string {
-  const options: Intl.DateTimeFormatOptions =
-    range === 'day'
-      ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }
-      : range === 'week'
-        ? { weekday: 'short', day: 'numeric' }
-        : range === 'month'
-          ? { day: 'numeric' }
-          : { month: 'short' };
-  return dateTimeFormat(locale, { timeZone: 'UTC', ...options }).format(wallClock(start));
+  return dateTimeFormat(locale, { timeZone: 'UTC', ...BUCKET_LABELS[range] }).format(
+    wallClock(start),
+  );
 }
 
 /** A day (`YYYY-MM-DD`) as milliseconds of its midnight on the wall-clock timeline. */

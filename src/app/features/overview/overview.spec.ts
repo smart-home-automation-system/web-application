@@ -243,7 +243,9 @@ describe('Overview', () => {
       expect(text).toContain('Flow 6.5 l/min');
       expect(text).toContain('Used today 231 L');
       expect(text).toContain('Reported');
-      expect((await tile('valve')).querySelector('a.tile__link')?.getAttribute('href')).toBe('/water');
+      expect((await tile('valve')).querySelector('a.tile__link')?.getAttribute('href')).toBe(
+        '/water',
+      );
     });
 
     // missing is never off: a state or a flow the answer leaves out is not known, the water of today too
@@ -290,13 +292,15 @@ describe('Overview', () => {
       const text = words(await tile('valve'));
       expect(text).toContain('Water valve Open');
       expect(text).toContain('Used today not known');
-      expect((await tile('valve')).querySelectorAll('[role="alert"]').length).toBe(1);
+      expect((await tile('valve')).querySelectorAll('[role="alert"]')).toHaveLength(1);
     });
 
     it('words the refusal of a service without a valve', async () => {
       fail(
         valve,
-        new ApiError('client', 404, [{ message: 'No water valve is registered', code: 'NOT_FOUND_VALVE' }]),
+        new ApiError('client', 404, [
+          { message: 'No water valve is registered', code: 'NOT_FOUND_VALVE' },
+        ]),
       );
 
       expect(words(await tile('valve'))).toContain('No water valve is registered.');
