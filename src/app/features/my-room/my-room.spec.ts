@@ -1,7 +1,13 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
+import {
+  FakeResource,
+  answer,
+  fail,
+  fakeQueryResource,
+  fakeResource,
+} from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { Profile } from '../../core/profile/profile';
@@ -15,6 +21,7 @@ import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi, HeatingStatus, Room } from '../../data-access/heating/heating-api';
 import { LightApi, Occupancy, RoomLights, RoomRule } from '../../data-access/light/light-api';
+import { MemberRequestsApi } from '../../data-access/household/member-requests-api';
 import { MyRoom } from './my-room';
 
 /** Thursday 8 October 2026, 14:30:00 on the clocks of the house (Europe/Warsaw, summer time). */
@@ -117,7 +124,22 @@ describe('MyRoom', () => {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
-        { provide: ProfileStore, useValue: { profile } },
+        { provide: ProfileStore, useValue: { profile, members: signal(undefined) } },
+        // HAS-411: the requests card of the household row - its own spec tests it
+        {
+          provide: MemberRequestsApi,
+          useValue: {
+            watch: () => ({
+              ...fakeQueryResource(),
+              changing: signal(undefined),
+              failure: signal(undefined),
+              added: signal(undefined),
+              add: () => Promise.resolve(false),
+              done: () => undefined,
+              remove: () => undefined,
+            }),
+          },
+        },
         {
           provide: PushSubscriptionStore,
           useValue: {
@@ -510,7 +532,12 @@ describe('MyRoom', () => {
     const inRoom = (control: Element) => control.closest('[data-testid="room-heating"]') !== null;
     return {
       inTheRoom: all.filter(inRoom).map(words),
-      elsewhere: all.filter((control) => !inRoom(control)).map(words),
+      // the form and the buttons of the requests (HAS-411) are listed by their own test below
+      elsewhere: all
+        .filter(
+          (control) => !inRoom(control) && control.closest('[data-testid="my-requests"]') === null,
+        )
+        .map(words),
     };
   }
 

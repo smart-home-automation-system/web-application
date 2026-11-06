@@ -18,6 +18,7 @@ import { ROOM_CAPABILITIES } from './capabilities';
 import { HouseHeating } from './house-heating';
 import { HouseholdAppliances } from './household-appliances';
 import { MyChores } from './my-chores';
+import { MyRequests } from './my-requests';
 import { DeviceNotifications } from '../../shared/push/device-notifications';
 
 /**
@@ -46,6 +47,7 @@ import { DeviceNotifications } from '../../shared/push/device-notifications';
     HouseHeating,
     HouseholdAppliances,
     MyChores,
+    MyRequests,
     DeviceNotifications,
   ],
   templateUrl: './my-room.html',

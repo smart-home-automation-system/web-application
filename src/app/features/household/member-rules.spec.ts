@@ -9,6 +9,9 @@ import {
   normalisePhone,
   phoneProblem,
   problemOf,
+  normaliseRequestText,
+  REQUEST_TEXT_MAX_LENGTH,
+  requestTextProblem,
   rule,
 } from './member-rules';
 
@@ -125,5 +128,34 @@ describe('the rules of the household registry', () => {
 
       expect(control.errors).toEqual({ problem: 'household.problem.nameTaken' });
     });
+  });
+});
+
+// HAS-411: a copy of MemberRequestRules of database-service 0.22.0 - its cases
+describe('the text of a household request', () => {
+  it('takes one line of 1 to 100 characters, without the spaces around it', () => {
+    expect(requestTextProblem('  Bread and milk  ')).toBeUndefined();
+    expect(normaliseRequestText('  Bread and milk  ')).toBe('Bread and milk');
+    expect(requestTextProblem('a'.repeat(REQUEST_TEXT_MAX_LENGTH))).toBeUndefined();
+    expect(requestTextProblem('ż'.repeat(100))).toBeUndefined();
+  });
+
+  it('refuses a text of spaces only, a no-break space included', () => {
+    expect(requestTextProblem('')).toBe('requests.problem.empty');
+    expect(requestTextProblem('   ')).toBe('requests.problem.empty');
+    expect(requestTextProblem('\u00a0\u00a0')).toBe('requests.problem.empty');
+  });
+
+  // counted in UTF-16 units, as @Size and the column of the registry
+  it('refuses more than 100 characters', () => {
+    expect(requestTextProblem('a'.repeat(101))).toBe('requests.problem.tooLong');
+    expect(requestTextProblem('😀'.repeat(51))).toBe('requests.problem.tooLong');
+  });
+
+  it('refuses a line break, a tab or another control character inside', () => {
+    expect(requestTextProblem('Bread\nmilk')).toBe('requests.problem.oneLine');
+    expect(requestTextProblem('Bread\tmilk')).toBe('requests.problem.oneLine');
+    expect(requestTextProblem('Bread\u2028milk')).toBe('requests.problem.oneLine');
+    expect(requestTextProblem('Bread\u0007')).toBe('requests.problem.oneLine');
   });
 });

@@ -522,7 +522,8 @@ e2e/              # Playwright tests
     registries, and - from this view - the blinds and the lights (through `light-service` since HAS-292);
     the sixth is the periods of the heaters (HAS-357, the window of a room on the heating page); the seventh and the
     eighth are the command of the water valve and the bills of the waterworks (HAS-323, the water page); the ninth the
-    start of the circulation pump (HAS-406, the water page). (The blinds page adds the
+    start of the circulation pump (HAS-406, the water page); the tenth the household requests (HAS-411, My room - every
+    member writes for anybody, ticks off and removes on their own list). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
@@ -943,6 +944,32 @@ e2e/              # Playwright tests
     the card is drawn once the report names an appliance, or for a failure before any answer.
   - `INVALID_RANGE` has a text (`CHORES_ERROR_TEXTS`, its test lists it). `profile-pages.spec` lets the
     read of the report through. The mock report (`chores.fixtures.ts`) grows with the number of months.
+- **The requests of the household** (HAS-411, epic HAS-407; `database-service` >= 0.22.0, texted at 08:00 by
+  notification-service 0.9.0): the card `MyRequests` ("Requests" / "Zapotrzebowania") in the row of the household
+  on My room, for every member with a profile - **not a capability of a room**. What to keep:
+  - **One call, `GET /household/member/{name}/requests?done=true`** every minute (`MemberRequestsApi.watch`, a
+    `queryResource` of the member of the profile - the list of another profile never stands under this one): the
+    open requests and those done in the last 30 days, split by `toRequestLists` (`my-requests-views.ts`); the done
+    ones folded under the list, the last done first. A request without an id or a text gets no line; the own name
+    is never printed as the author or as who ticked it off.
+  - **The writes are the pattern of the appliances**: `POST` (text, author = the member of the profile), `PUT
+    .../{id}/done?member=`, `DELETE .../{id}` - one at a time, the list read again, only that answer moves the
+    card; a failure is told on the line it was for (an add under the form); `NOT_FOUND_REQUEST` on a removal counts
+    as removed. "Added to the list of" names a recipient whose list is not on the card, until the next change or
+    another profile.
+  - **The text is checked before it is sent**: `requestTextProblem` in `features/household/member-rules.ts` is **a
+    copy of `MemberRequestRules`** of `database-service` (trimmed, not blank - a no-break space included -, at most
+    100 UTF-16 units, one line: no `\p{Cc}`, `\p{Zl}`, `\p{Zp}`) - a rule changed there is changed here. The codes
+    `NOT_FOUND_REQUEST`, `INVALID_REQUEST`, `MEMBER_SWITCHED_OFF`, `NOT_FOUND_HOUSEHOLD_MEMBER` have texts
+    (`REQUEST_ERROR_TEXTS`, its test lists them).
+  - **The recipients are the profiles** (`ProfileStore.members()`), the member of the profile first and chosen.
+    The form is a `FormGroup`: a plain `<form>` under `ReactiveFormsModule` has no directive, and `ngSubmit`
+    never comes (found by the unit test).
+  - `my-room.spec` leaves the controls of this card out of its list of the page's controls - `my-requests.spec`
+    names them; `profile-pages.spec` lets the read through. The mock (`requests.fixtures.ts`): Aurelia has two open
+    requests (one texted, one from Borys) and one done; refused as the service refuses; `resetRequests()`.
+  - The rule of "the time alone today, the date otherwise" is `dayAwareFormat` of `core/time/house-date-time.ts`
+    since this task (`cycleTimeFormat` of the appliances points at it).
 - **The appliances page** (HAS-283, `features/appliances/`, the administrator's; route `/appliances`, after the
   lights in the menu, domain colour `appliance`): to tune the thresholds of the appliances. What to keep:
   - **Three calls, told once** in `SourcesStrip`: the appliances (the `ApplianceStore` of the whole
