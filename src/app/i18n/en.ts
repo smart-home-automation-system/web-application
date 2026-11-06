@@ -1818,6 +1818,11 @@ export const en = {
     doneList: 'Done in the last 30 days ({{ count }})',
     doneAt: 'done {{ time }}',
     doneBy: 'by',
+    written: {
+      title: 'Written by you for the others',
+      for: 'for',
+      none: 'Nothing you wrote for the others is waiting.',
+    },
     form: {
       recipient: 'For',
       text: 'What is needed',

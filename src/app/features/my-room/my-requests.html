@@ -167,6 +167,123 @@
         }
         <p class="requests__note">{{ t('requests.form.note') }}</p>
       </form>
+
+      @if (written.asked() !== undefined) {
+        <section class="requests__written" data-testid="written-requests">
+          <h3 class="requests__heading">{{ t('requests.written.title') }}</h3>
+          @if (writtenSettled()) {
+            <app-api-error-strip [error]="written.error()" [describeWith]="describeError" />
+          }
+          @if (writtenLists(); as shown) {
+            @if (shown.open.length > 0) {
+              <ul class="requests__list" data-testid="written-open">
+                @for (request of shown.open; track request.id) {
+                  <li class="request" [attr.data-request]="request.id">
+                    <span class="request__text">{{ request.text }}</span
+                    >&ngsp;
+                    <p class="request__detail">
+                      <span class="request__from" data-testid="written-for"
+                        >{{ t('requests.written.for') }}&ngsp;{{ request.recipient }}</span
+                      >&ngsp;
+                      @if (request.createdAt; as at) {
+                        <span>{{ at | houseDateTime: timeFormat(at) }}</span
+                        >&ngsp;
+                      }
+                      @if (request.sentAt; as sent) {
+                        <span class="request__sent" data-testid="sent">
+                          <mat-icon aria-hidden="true">sms</mat-icon>
+                          {{
+                            t('requests.sentAt', { time: sent | houseDateTime: timeFormat(sent) })
+                          }}
+                        </span>
+                      } @else {
+                        <span>{{ t('requests.notSentYet') }}</span>
+                      }
+                    </p>
+                    &ngsp;
+                    <div class="request__actions">
+                      <button
+                        matIconButton
+                        type="button"
+                        data-testid="written-remove"
+                        [attr.aria-label]="t('requests.remove')"
+                        [matTooltip]="t('requests.remove')"
+                        matTooltipTouchGestures="off"
+                        (click)="removeWritten(request.recipient, request.id)"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                      @if (written.removing() === request.id) {
+                        <span class="requests__note" data-testid="written-saving">{{
+                          t('requests.saving')
+                        }}</span>
+                      }
+                    </div>
+                    @if (writtenFailure(); as failed) {
+                      @if (failed.id === request.id) {
+                        <app-api-error-strip
+                          [error]="failed.error"
+                          [summary]="
+                            t(
+                              failed.error.kind === 'network'
+                                ? 'requests.change.noAnswer'
+                                : 'requests.change.removeFailed'
+                            )
+                          "
+                          [describeWith]="describeError"
+                        />
+                      }
+                    }
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="requests__note" data-testid="written-none">
+                {{ t('requests.written.none') }}
+              </p>
+            }
+
+            @if (shown.done.length > 0) {
+              <button
+                matButton
+                type="button"
+                class="requests__done-toggle"
+                data-testid="written-done-toggle"
+                [attr.aria-expanded]="writtenDoneShown()"
+                (click)="toggleWrittenDone()"
+              >
+                <mat-icon>{{ writtenDoneShown() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                {{ t('requests.doneList', { count: shown.done.length }) }}
+              </button>
+              @if (writtenDoneShown()) {
+                <ul class="requests__list requests__list--done" data-testid="written-done">
+                  @for (request of shown.done; track request.id) {
+                    <li class="request request--done" [attr.data-request]="request.id">
+                      <span class="request__text">{{ request.text }}</span
+                      >&ngsp;
+                      <p class="request__detail">
+                        <span>{{ t('requests.written.for') }}&ngsp;{{ request.recipient }}</span
+                        >&ngsp;
+                        @if (request.doneAt; as at) {
+                          <span>{{
+                            t('requests.doneAt', { time: at | houseDateTime: timeFormat(at) })
+                          }}</span
+                          >&ngsp;
+                        }
+                        @if (request.doneBy; as by) {
+                          <span>{{ t('requests.doneBy') }}&ngsp;{{ by }}</span>
+                        }
+                      </p>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          } @else if (written.loading() || !writtenSettled()) {
+            <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('requests.loading')" />
+          }
+        </section>
+      }
     </mat-card-content>
   </mat-card>
 </ng-container>

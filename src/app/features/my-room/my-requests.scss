@@ -93,6 +93,19 @@
   }
 }
 
+.requests__written {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--app-glass-edge);
+}
+
+.requests__heading {
+  margin: 0;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .requests__note {
   margin: 0;
   font: var(--mat-sys-body-small);

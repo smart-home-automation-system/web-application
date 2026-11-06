@@ -9,7 +9,8 @@ import { houseTime } from './house-time';
  * per recipient, open oldest first, `?done=true` adds those done; a write refused as the service refuses
  * it - `INVALID_REQUEST` by the copied rule, `NOT_FOUND_HOUSEHOLD_MEMBER`, `MEMBER_SWITCHED_OFF`,
  * `NOT_FOUND_REQUEST`. At the start Aurelia, the administrator of the mock, has two open requests - one
- * texted this morning, one written for her by Borys after it - and one done yesterday.
+ * texted this morning, one written for her by Borys after it - and one done yesterday; she wrote one for
+ * Celina this morning, not texted yet, and one more for her that she ticked off yesterday.
  */
 interface StoredRequest {
   id: number;
@@ -51,11 +52,28 @@ function atTheStart(now: Date): StoredRequest[] {
       doneAt: houseTime(now, 26 * HOUR),
       doneBy: 'Aurelia',
     },
+    {
+      id: 4,
+      member: 'Celina',
+      text: 'Light bulbs for the hall',
+      author: 'Aurelia',
+      createdAt: houseTime(now, 2 * HOUR),
+    },
+    {
+      id: 5,
+      member: 'Celina',
+      text: 'Stamps',
+      author: 'Aurelia',
+      createdAt: houseTime(now, 50 * HOUR),
+      sentAt: houseTime(now, 36 * HOUR),
+      doneAt: houseTime(now, 30 * HOUR),
+      doneBy: 'Celina',
+    },
   ];
 }
 
 let stored: StoredRequest[] | undefined;
-let nextId = 4;
+let nextId = 6;
 
 function requests(): StoredRequest[] {
   stored ??= atTheStart(new Date());
@@ -65,7 +83,7 @@ function requests(): StoredRequest[] {
 /** The requests as they started - for a unit test that changed them. */
 export function resetRequests(): void {
   stored = undefined;
-  nextId = 4;
+  nextId = 6;
 }
 
 export function memberRequests(name: string, done: boolean, fresh: boolean): MockReply {

@@ -243,8 +243,11 @@ dashboards:
   08:00 already carried them (notification-service 0.9.0); each ticked off with "Done" or removed, those done in
   the last 30 days folded under the list. A form writes a request for anybody of the household - the member of
   the profile chosen first - one line of up to 100 characters, checked before it is sent as
-  `database-service` checks it. Nothing optimistic: after a change the list is read again. Needs
-  `database-service` 0.22.0; against an older one the card shows the failure and the rest of the page works.
+  `database-service` checks it. Under the form **"Written by you for the others"** (0.46.1): what the member of
+  the profile wrote for the rest of the household - for whom, when, whether the SMS went, the last written on top,
+  each removable, those ticked off folded - so that a request written for somebody else can be seen to have been
+  added. Nothing optimistic: after a change the list is read again. Needs `database-service` 0.22.0; against an
+  older one the card shows the failure and the rest of the page works.
 - **The tag page** (HAS-346, `/t`): what a phone held to the NFC tag on an appliance opens -
   `/t?picc_data=…&cmac=…`, the read of an NTAG 424 DNA (HAS-343, programmed per
   `docs/nfc-tag-programming.pdf` of deployment-tools). It claims the chore of that appliance at once for
@@ -540,7 +543,7 @@ Endpoints used today:
 | `GET` | `/home/household/push-config` | The public VAPID key of the house (HAS-284), read when the notifications of a device are switched on or made anew; `{}` when the deployment has none, and the card says the house sends none yet. Needs `database-service` 0.18.0 or later |
 | `PUT` | `/home/household/member/{name}/push-subscriptions` | Stores the Web Push subscription of this browser for the member (`endpoint`, `keys`, `userAgent`) - an upsert by the endpoint; also at every start while switched on. `409 MEMBER_SWITCHED_OFF` has a text of its own |
 | `DELETE` | `/home/household/member/{name}/push-subscriptions?endpoint=` | Removes it when the switch is turned off, after the browser ended it |
-| `GET` | `/home/household/member/{name}/requests?done=true` | The requests of the member of the profile - open, and done in the last 30 days (my room, HAS-411), every 60 s and right after a change. Needs `database-service` 0.22.0 |
+| `GET` | `/home/household/member/{name}/requests?done=true` | The requests of the member of the profile - open, and done in the last 30 days (my room, HAS-411), every 60 s and right after a change; the same read of every other profile, one after the other, for what the member of the profile wrote for them. Needs `database-service` 0.22.0 |
 | `POST` | `/home/household/member/{name}/requests` | Writes a request for that member: body `{text, author}`, the author the member of the profile; the text checked first as the service checks it |
 | `PUT` | `/home/household/member/{name}/requests/{id}/done?member=` | Ticks a request off as the member of the profile; the list is read again |
 | `DELETE` | `/home/household/member/{name}/requests/{id}` | Removes a request; `NOT_FOUND_REQUEST` counts as removed. The codes `INVALID_REQUEST`, `MEMBER_SWITCHED_OFF` and `NOT_FOUND_HOUSEHOLD_MEMBER` have texts |

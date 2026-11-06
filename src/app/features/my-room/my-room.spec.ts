@@ -138,6 +138,13 @@ describe('MyRoom', () => {
               done: () => undefined,
               remove: () => undefined,
             }),
+            watchWrittenBy: () => ({
+              ...fakeQueryResource(),
+              asked: signal(undefined),
+              removing: signal(undefined),
+              failure: signal(undefined),
+              remove: () => undefined,
+            }),
           },
         },
         {
