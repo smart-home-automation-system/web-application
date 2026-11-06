@@ -1,5 +1,5 @@
 import { ApiError } from '../../core/api/api-error';
-import { WATER_ERROR_TEXTS, describeWaterError } from './water-errors';
+import { WATER_ERROR_TEXTS, describeCirculationError, describeWaterError } from './water-errors';
 import {
   bucketLabel,
   bucketStarts,
@@ -151,6 +151,7 @@ describe('water views', () => {
         'NOT_FOUND_BILL',
         'INVALID_COMMAND',
         'DEVICE_FAILED',
+        'TANK_COLD',
       ]);
       expect(
         describeWaterError(
@@ -160,6 +161,22 @@ describe('water views', () => {
       expect(describeWaterError(new ApiError('server', 502))).not.toEqual({
         key: 'water.error.valveNotFound',
       });
+    });
+
+    // DEVICE_FAILED is shared with the valve in water-service: a start of the pump names the pump
+    it('names the pump for a start of the circulation that failed', () => {
+      const failed = new ApiError('server', 502, [
+        { message: 'Device failed', code: 'DEVICE_FAILED' },
+      ]);
+      expect(describeCirculationError(failed)).toEqual({
+        key: 'hotWater.circulation.deviceFailed',
+      });
+      expect(describeWaterError(failed)).toEqual({ key: 'water.error.deviceFailed' });
+      expect(
+        describeCirculationError(
+          new ApiError('client', 409, [{ message: 'Tank too cold', code: 'TANK_COLD' }]),
+        ),
+      ).toEqual({ key: 'water.error.tankCold' });
     });
   });
 });

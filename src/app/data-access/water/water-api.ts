@@ -93,6 +93,45 @@ export interface WaterValve {
   readonly lastCommandConfirmed?: boolean;
 }
 
+/**
+ * A run of the circulation pump the service started (`water-service` >= 0.13.0, HAS-404). `endedAt` and `stoppedBy`
+ * are left out while it goes on; a return temperature the Uni did not report is left out too.
+ */
+export interface CirculationRun {
+  readonly startedAt?: string;
+  readonly endedAt?: string;
+  /** `manual`, and with the automation (HAS-405) `motion`, `light`, `window`. */
+  readonly trigger?: string;
+  /** Who asked for a manual run - `dashboard`, a word of the caller. */
+  readonly source?: string;
+  /** `temperature` (the return reached its target), `limit`, `device` (switched off by something else), `failure`. */
+  readonly stoppedBy?: string;
+  readonly returnAtStart?: number;
+  readonly returnAtEnd?: number;
+}
+
+/**
+ * `GET /home/water/circulation` (`water-service` >= 0.13.0, HAS-404): relay 1 "CIRCULATION" of the Shelly Uni of the
+ * hot water as the service last read it (every 15 s, every 5 s while a run goes on). **The read is left out whole once
+ * it is older than a minute** - the pump, the temperatures and `measuredAt` together; `trigger` and `source` only for
+ * a run the service started (the scene of the Shelly cloud switches the pump too, until HAS-405).
+ */
+export interface WaterCirculation {
+  readonly running?: boolean;
+  /** Since when the relay is on, house wall-clock time. */
+  readonly since?: string;
+  readonly trigger?: string;
+  readonly source?: string;
+  /** Sensor 1 of the Uni, on the circulation, °C. */
+  readonly returnTemperature?: number;
+  /** Sensor 0, the tank, °C. */
+  readonly tankTemperature?: number;
+  /** House wall-clock time of the read of the Uni. */
+  readonly measuredAt?: string;
+  /** The newest run the service started, the one going on included. */
+  readonly lastRun?: CirculationRun;
+}
+
 /** The four ranges of the consumption, as `water-service` takes them. */
 export type ConsumptionRange = 'day' | 'week' | 'month' | 'year';
 
@@ -180,6 +219,10 @@ const POLL_VALVE_EVERY_MS = 15_000;
 const POLL_CONSUMPTION_EVERY_MS = 60_000;
 // a bucket is 5 minutes at its narrowest, and a new reading arrives every 3
 const POLL_HISTORY_EVERY_MS = 3 * 60_000;
+// the service reads the Uni every 15 s, every 5 s while a run goes on - and a run lasts 3 minutes at most
+const POLL_CIRCULATION_EVERY_MS = 10_000;
+// a run lasts minutes; the page reads them again after a start of its own
+const POLL_CIRCULATION_RUNS_EVERY_MS = 60_000;
 
 @Injectable({ providedIn: 'root' })
 export class WaterApi {
@@ -287,6 +330,39 @@ export class WaterApi {
   commandValve(state: 'open' | 'close'): Observable<void> {
     return this.api
       .post<unknown>('/water/valve', null, { state, source: 'dashboard' })
+      .pipe(map(() => undefined));
+  }
+
+  /** The circulation pump now (HAS-404). Call in an injection context: the polling lives as long as the caller. */
+  watchCirculation(): PollingResource<WaterCirculation> {
+    return pollingResource(() => this.api.get<WaterCirculation>('/water/circulation'), {
+      intervalMs: POLL_CIRCULATION_EVERY_MS,
+    });
+  }
+
+  /**
+   * The runs of the circulation pump started in the range `range()` gives, newest first (HAS-404) - asked again when
+   * it changes, the answer tagged with the range it is for. Call in an injection context.
+   */
+  watchCirculationRuns(
+    range: () => HistoryRange,
+  ): QueryResource<HistoryRange, readonly CirculationRun[] | null> {
+    return queryResource(
+      range,
+      (asked) =>
+        this.api.get<readonly CirculationRun[] | null>('/water/circulation/runs', { ...asked }),
+      { intervalMs: POLL_CIRCULATION_RUNS_EVERY_MS },
+    );
+  }
+
+  /**
+   * Starts a run of the circulation pump (`water-service` >= 0.13.0, HAS-404): the service reads the tank first
+   * (`409 TANK_COLD`), answers a run going on as it is, and stops the run by itself - at the return target or after
+   * its limit. Sent once; the page reads the pump again.
+   */
+  startCirculation(): Observable<void> {
+    return this.api
+      .post<unknown>('/water/circulation', null, { source: 'dashboard' })
       .pipe(map(() => undefined));
   }
 

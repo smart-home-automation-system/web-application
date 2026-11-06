@@ -288,32 +288,131 @@
       </mat-card-content>
     </mat-card>
 
+    <!-- the circulation pump (HAS-406): its own call since water-service 0.13.0 - the pump, the return and a start;
+         the runs of today in a card of their own under the row -->
     <mat-card appearance="outlined" class="tile card--domain" data-testid="circulation-card">
       <mat-card-header>
         <div mat-card-avatar class="domain-badge"><mat-icon>cycle</mat-icon></div>
         <mat-card-title>{{ t('hotWater.circulation.title') }}</mat-card-title>
         <mat-card-subtitle>
-          <app-data-freshness
-            [lastUpdated]="temperatures.lastUpdated()"
-            [stale]="temperatures.stale()"
-          />
+          <app-data-freshness [lastUpdated]="pump.lastUpdated()" [stale]="pump.stale()" />
         </mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
-        @if (temperatures.loading()) {
-          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('hotWater.loading')" />
+        @if (pump.loading()) {
+          <mat-progress-bar
+            mode="indeterminate"
+            [attr.aria-label]="t('hotWater.circulation.loading')"
+          />
         } @else {
-          @let loop = circulation();
-          @if (loop !== undefined) {
-            <p class="tile__state tile__state--on" data-testid="circulation">
-              {{ loop | localNumber: oneDecimal }} °C
+          @let view = pumpView();
+          @if (pump.value() !== undefined) {
+            <p
+              class="tile__state"
+              [class.tile__state--on]="view.running !== undefined"
+              data-testid="pump-state"
+            >
+              <mat-icon>{{
+                view.running === undefined ? 'help' : view.running ? 'cycle' : 'pause_circle'
+              }}</mat-icon>
+              {{
+                t(
+                  view.running === undefined
+                    ? 'hotWater.circulation.stateUnknown'
+                    : view.running
+                      ? 'hotWater.circulation.running'
+                      : 'hotWater.circulation.stopped'
+                )
+              }}
             </p>
-            <ng-container [ngTemplateOutlet]="measured" />
-          } @else if (!temperatures.error()) {
-            <p class="tile__detail">{{ t('hotWater.noReading') }}</p>
+            @if (view.running === true) {
+              @if (view.since | houseAge; as age) {
+                <p class="tile__detail" data-testid="pump-since">
+                  {{ t('hotWater.circulation.since', { age }) }}
+                </p>
+              }
+              <p class="tile__detail" data-testid="pump-trigger">
+                {{ t('hotWater.circulation.startedBy') }}:
+                @if (view.trigger !== undefined) {
+                  {{ triggerText(view.trigger) | displayText }}
+                  @if (view.source !== undefined) {
+                    ({{ view.source }})
+                  }
+                } @else {
+                  {{ t('hotWater.circulation.notOurs') }}
+                }
+              </p>
+            }
+            <dl class="tile__rows">
+              <div class="tile__row" data-testid="pump-return">
+                <dt>{{ t('hotWater.circulation.return') }}</dt>
+                <dd>
+                  @if (view.returnTemperature !== undefined) {
+                    {{ view.returnTemperature | localNumber: oneDecimal }} °C
+                  } @else {
+                    {{ t('water.unknown') }}
+                  }
+                </dd>
+              </div>
+              @if (view.lastRun; as last) {
+                @if (last.endedAt !== undefined) {
+                  <div class="tile__row" data-testid="pump-last-run">
+                    <dt>{{ t('hotWater.circulation.lastRun') }}</dt>
+                    <dd>
+                      {{ last.startedAt | houseAge }}
+                      @if (last.stoppedBy !== undefined) {
+                        <br />{{ stoppedByText(last.stoppedBy) | displayText }}
+                      }
+                    </dd>
+                  </div>
+                }
+              }
+            </dl>
+            @if (view.measuredAt | houseAge; as age) {
+              <p class="tile__detail tile__measured" data-testid="pump-read">
+                <span>{{ t('hotWater.circulation.read', { age }) }}</span>
+              </p>
+            } @else if (!pump.error()) {
+              <p class="tile__detail tile__measured" data-testid="pump-nothing">
+                <mat-icon>warning</mat-icon>
+                <span>{{ t('hotWater.circulation.nothing') }}</span>
+              </p>
+            }
           }
-          <app-api-error-strip [error]="temperatures.error()" />
+          <div class="valve__commands">
+            <button
+              matButton="outlined"
+              type="button"
+              disabledInteractive
+              data-testid="pump-start"
+              [disabled]="starting() || view.running === true"
+              (click)="startPump()"
+            >
+              <mat-icon>play_arrow</mat-icon>
+              {{ t('hotWater.circulation.start') }}
+            </button>
+          </div>
+          @if (starting()) {
+            <mat-progress-bar
+              mode="indeterminate"
+              [attr.aria-label]="t('hotWater.circulation.starting')"
+            />
+          }
+          @if (startFailure(); as failure) {
+            <app-api-error-strip
+              [error]="failure"
+              [summary]="
+                t(
+                  failure.kind === 'network'
+                    ? 'hotWater.circulation.noAnswer'
+                    : 'hotWater.circulation.startFailed'
+                )
+              "
+              [describeWith]="describeCirculation"
+            />
+          }
+          <app-api-error-strip [error]="pump.error()" [describeWith]="describeWater" />
         }
       </mat-card-content>
     </mat-card>
@@ -340,4 +439,5 @@
   <app-water-consumption class="wide" />
   <app-water-bills class="wide" />
   <app-water-history class="wide" />
+  <app-circulation-runs class="wide" [runs]="runs" [day]="today()" />
 </ng-container>

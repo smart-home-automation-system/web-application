@@ -1,21 +1,24 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { fakeQueryResource } from '../../../testing/fake-resource';
+import { FakeQueryResource, fakeQueryResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { houseTime } from '../../../mocks/house-time';
 import { ApiError } from '../../core/api/api-error';
 import { PollingResource } from '../../core/api/polling-resource';
+import { HistoryRange } from '../../core/time/history-range';
 import {
+  CirculationRun,
   ConsumptionTotals,
   WaterApi,
+  WaterCirculation,
   WaterHeatingDemand,
   WaterTemperatures,
   WaterValve,
 } from '../../data-access/water/water-api';
 import { Observable, of, throwError } from 'rxjs';
 
-import { HotWater, VALVE_READ_AFTER_MS } from './hot-water';
+import { CIRCULATION_READ_AFTER_MS, HotWater, VALVE_READ_AFTER_MS } from './hot-water';
 
 /** A polled resource whose every signal the test sets by hand. */
 interface FakeResource<T> extends PollingResource<T> {
@@ -44,6 +47,10 @@ describe('HotWater', () => {
   let demand: FakeResource<WaterHeatingDemand>;
   let valve: FakeResource<WaterValve>;
   let totals: FakeResource<ConsumptionTotals>;
+  let pump: FakeResource<WaterCirculation>;
+  let runs: FakeQueryResource<HistoryRange, readonly CirculationRun[] | null>;
+  let started: number;
+  let startAnswer: Observable<void>;
   let commanded: string[];
   let commandAnswer: Observable<void>;
   let fixture: ComponentFixture<HotWater>;
@@ -53,6 +60,10 @@ describe('HotWater', () => {
     demand = fakeResource();
     valve = fakeResource();
     totals = fakeResource();
+    pump = fakeResource();
+    runs = fakeQueryResource();
+    started = 0;
+    startAnswer = of(undefined);
     commanded = [];
     commandAnswer = of(undefined);
     TestBed.configureTestingModule({
@@ -75,6 +86,12 @@ describe('HotWater', () => {
             },
             // the consumption is a card of its own, with tests of its own (water-consumption.spec)
             watchConsumption: () => fakeQueryResource(),
+            watchCirculation: () => pump,
+            watchCirculationRuns: () => runs,
+            startCirculation: () => {
+              started++;
+              return startAnswer;
+            },
           },
         },
       ],
@@ -96,8 +113,7 @@ describe('HotWater', () => {
 
   /** A card of the page, or the reading inside the card of the tank or of the circulation. */
   async function part(
-    name:
-      'temperatures' | 'demand' | 'circulation-card' | 'tank' | 'circulation' | 'valve' | 'usage',
+    name: 'temperatures' | 'demand' | 'circulation-card' | 'tank' | 'valve' | 'usage',
   ): Promise<HTMLElement | null> {
     await fixture.whenStable();
     return (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${name}"]`);
@@ -163,29 +179,16 @@ describe('HotWater', () => {
     });
   });
 
-  // the owner's layout (2026-10-10): the tank alone in its card, the circulation under the demand
-  it('shows the temperature of the circulation in a card of its own, after that of the demand', async () => {
+  // the owner's layout (2026-10-10): the tank alone in its card, the circulation under the demand - since HAS-406
+  // the circulation card reads the pump, not the temperatures of the tank
+  it('keeps the circulation in a card of its own, after that of the demand', async () => {
     answer(temperatures, { water: { temperature: 44.75 }, circulation: { temperature: 29.81 } });
 
-    const circulation = await part('circulation');
     const card = (await part('circulation-card'))!;
 
-    expect(words(circulation)).toBe('29.8 °C');
     expect(words(card.querySelector('mat-card-title'))).toBe('Circulation');
-    expect(card.contains(circulation)).toBe(true);
     expect(words(await part('temperatures'))).not.toContain('29.8');
     expect((await part('demand'))!.nextElementSibling).toBe(card);
-  });
-
-  // the field exists in the answer and is always false: the backend does not fill it in
-  it('says nothing about the circulation pump', async () => {
-    answer(temperatures, {
-      water: { temperature: 44.75 },
-      circulation: { temperature: 29.81, pumpActive: false },
-    });
-    await fixture.whenStable();
-
-    expect(words(fixture.nativeElement as HTMLElement).toLowerCase()).not.toContain('pump');
   });
 
   describe('before the first reading', () => {
@@ -198,38 +201,22 @@ describe('HotWater', () => {
         'temperatures that are not numbers',
         { water: { temperature: 'warm' }, circulation: { temperature: null } },
       ],
-    ])('says in both cards that nothing was measured yet, for %s', async (_, body) => {
+    ])('says in the card of the tank that nothing was measured yet, for %s', async (_, body) => {
       answer(temperatures, body as WaterTemperatures | null);
 
       const shown = (await part('temperatures'))!;
-      const loop = (await part('circulation-card'))!;
 
       expect(words(shown)).toContain(NOTHING_MEASURED);
-      expect(words(loop)).toContain(NOTHING_MEASURED);
       expect(await part('tank')).toBeNull();
-      expect(await part('circulation')).toBeNull();
       expect(shown.querySelector('[role="meter"]')).toBeNull();
       expect(shown.querySelector('[role="alert"]')).toBeNull();
-      expect(loop.querySelector('[role="alert"]')).toBeNull();
     });
 
-    it('shows the one temperature that is there, and says in the card of the other that it is missing', async () => {
+    it('shows the tank without a circulation temperature in the answer', async () => {
       answer(temperatures, { water: { temperature: 41 } });
 
       expect(words(await part('tank'))).toBe('41.0 °C');
-      expect(await part('circulation')).toBeNull();
       expect(words(await part('temperatures'))).not.toContain(NOTHING_MEASURED);
-      expect(words(await part('circulation-card'))).toContain(NOTHING_MEASURED);
-    });
-
-    it('shows the circulation alone when only it was measured', async () => {
-      answer(temperatures, { circulation: { temperature: 29.81 } });
-
-      expect(await part('tank')).toBeNull();
-      expect(words(await part('circulation'))).toBe('29.8 °C');
-      expect(words(await part('circulation-card'))).not.toContain(NOTHING_MEASURED);
-      expect((await part('temperatures'))!.querySelector('[role="meter"]')).toBeNull();
-      expect(words(await part('temperatures'))).toContain(NOTHING_MEASURED);
     });
   });
 
@@ -271,24 +258,21 @@ describe('HotWater', () => {
 
   describe('when a call fails', () => {
     // two readings of one call, each in a card of its own: each card explains itself
-    it('says in both cards why the temperatures are missing, and leaves the demand alone', async () => {
+    it('says in the card of the tank why the temperatures are missing, and leaves the others alone', async () => {
       fail(temperatures, new ApiError('server', 502));
       answer(demand, { active: false });
+      answer(pump, { running: false });
       await fixture.whenStable();
 
-      const alerts = [...(fixture.nativeElement as HTMLElement).querySelectorAll('[role="alert"]')];
+      const card = (await part('temperatures'))!;
 
-      expect(alerts).toHaveLength(2);
-      for (const name of ['temperatures', 'circulation-card'] as const) {
-        const card = (await part(name))!;
-
-        expect(words(card.querySelector('[role="alert"]')), name).toContain(
-          'The service is not available right now (error 502).',
-        );
-        // no reading and a failure: the failure is the explanation, not "nothing measured yet"
-        expect(words(card), name).not.toContain(NOTHING_MEASURED);
-      }
+      expect(words(card.querySelector('[role="alert"]'))).toContain(
+        'The service is not available right now (error 502).',
+      );
+      // no reading and a failure: the failure is the explanation, not "nothing measured yet"
+      expect(words(card)).not.toContain(NOTHING_MEASURED);
       expect((await part('demand'))!.querySelector('[role="alert"]')).toBeNull();
+      expect((await part('circulation-card'))!.querySelector('[role="alert"]')).toBeNull();
     });
 
     it('keeps the last readings on screen next to the failure, marked as out of date', async () => {
@@ -298,14 +282,10 @@ describe('HotWater', () => {
       const shown = (await part('temperatures'))!;
 
       expect(words(await part('tank'))).toBe('44.8 °C');
-      expect(words(await part('circulation'))).toContain('29.8 °C');
       expect(words(shown.querySelector('[role="alert"]'))).toContain(
         'The server cannot be reached.',
       );
       expect(shown.querySelector('app-data-freshness')?.classList).toContain('freshness--stale');
-      expect(
-        (await part('circulation-card'))!.querySelector('app-data-freshness')?.classList,
-      ).toContain('freshness--stale');
     });
 
     it('says why the demand is not known', async () => {
@@ -343,20 +323,6 @@ describe('HotWater', () => {
       expect(line?.classList).toContain('tile__measured--old');
       // the reading itself stays: it is the last one there is
       expect(words(await part('tank'))).toBe('46.8 °C');
-    });
-
-    // one time for both sensors: the card of the circulation dates its reading the same way
-    it('says the same in the card of the circulation', async () => {
-      answer(temperatures, {
-        measuredAt: measured(7 * 60 + 5),
-        water: { temperature: 46.81 },
-        circulation: { temperature: 29.81 },
-      });
-
-      const line = (await part('circulation-card'))?.querySelector('[data-testid="measured"]');
-
-      expect(words(line)).toMatch(/Measured 7 min\.? ago - the sensor has not been read since\./);
-      expect(line?.classList).toContain('tile__measured--old');
     });
 
     it('does not call a reading of five minutes out of date', async () => {
@@ -408,7 +374,6 @@ describe('HotWater', () => {
 
     expect(words((fixture.nativeElement as HTMLElement).querySelector('h1'))).toBe('Woda');
     expect(words(await part('tank'))).toBe('44,8 °C');
-    expect(words(await part('circulation'))).toBe('29,8 °C');
     expect(words((await part('circulation-card'))!.querySelector('mat-card-title'))).toBe(
       'Cyrkulacja',
     );
@@ -629,6 +594,159 @@ describe('HotWater', () => {
 
       expect(words(await part('valve'))).toContain('No water valve is registered.');
       expect((await part('demand'))?.querySelector('mat-progress-bar')).toBeNull();
+    });
+  });
+
+  // HAS-406: the pump of the circulation - its state, a start without a question (owner, 2026-11-06)
+  describe('the circulation pump', () => {
+    const house = (secondsAgo: number) => houseTime(new Date(), secondsAgo).slice(0, 19);
+
+    async function el(name: string): Promise<HTMLElement | null> {
+      await fixture.whenStable();
+      return (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${name}"]`);
+    }
+
+    const startButton = async () => (await el('pump-start')) as HTMLButtonElement;
+    // disabledInteractive keeps the button focusable: Material marks it with aria-disabled
+    const disabled = (button: HTMLButtonElement) =>
+      button.disabled || button.getAttribute('aria-disabled') === 'true';
+
+    it('shows a running pump, since when, what started it and the return', async () => {
+      answer(pump, {
+        running: true,
+        since: house(65),
+        trigger: 'manual',
+        source: 'dashboard',
+        returnTemperature: 31.06,
+        tankTemperature: 41.94,
+        measuredAt: house(4),
+        lastRun: { startedAt: house(65), trigger: 'manual', source: 'dashboard' },
+      });
+
+      expect(words(await el('pump-state'))).toBe('cycle Running');
+      expect(words(await el('pump-since'))).toMatch(/^Started 1 min\.? ago$/);
+      expect(words(await el('pump-trigger'))).toBe('Started by: By hand (dashboard)');
+      expect(words(await el('pump-return'))).toBe('Return 31.1 °C');
+      expect(words(await el('pump-read'))).toMatch(/^Read /);
+      // the run going on is the state - not a "last run"
+      expect(await el('pump-last-run')).toBeNull();
+      expect(disabled(await startButton())).toBe(true);
+    });
+
+    // the scene of the Shelly cloud switches the pump too, until the automation (HAS-405)
+    it('says a pump on without a trigger was not started by the water service', async () => {
+      answer(pump, { running: true, since: house(30), measuredAt: house(4) });
+
+      expect(words(await el('pump-trigger'))).toBe('Started by: not by the water service');
+    });
+
+    it('shows a stopped pump with its last run and offers a start', async () => {
+      answer(pump, {
+        running: false,
+        returnTemperature: 33.69,
+        measuredAt: house(4),
+        lastRun: {
+          startedAt: house(10 * 60 + 5),
+          endedAt: house(7 * 60),
+          trigger: 'manual',
+          stoppedBy: 'limit',
+        },
+      });
+
+      expect(words(await el('pump-state'))).toBe('pause_circle Stopped');
+      expect(await el('pump-since')).toBeNull();
+      expect(words(await el('pump-last-run'))).toMatch(/^Last run 10 min\.? ago Time limit$/);
+      expect(disabled(await startButton())).toBe(false);
+    });
+
+    // the service leaves the whole read out once it is older than a minute: not known, never stopped
+    it('says not known for a read the service left out', async () => {
+      answer(pump, {});
+
+      expect(words(await el('pump-state'))).toBe('help State not known');
+      expect(words(await el('pump-return'))).toBe('Return not known');
+      expect(words(await el('pump-nothing'))).toContain(
+        'The pump has not been read for over a minute.',
+      );
+      expect(disabled(await startButton())).toBe(false);
+    });
+
+    it('starts the pump at once and reads it and the runs again after a moment', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout'] });
+      const readPump = vi.spyOn(pump, 'refresh');
+      const readRuns = vi.spyOn(runs, 'refresh');
+      answer(pump, { running: false, measuredAt: house(4) });
+
+      (await startButton()).click();
+      await fixture.whenStable();
+
+      expect(started).toBe(1);
+      expect((await el('circulation-card'))!.querySelector('mat-progress-bar')).toBeTruthy();
+      expect(disabled(await startButton())).toBe(true);
+      expect(readPump).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(CIRCULATION_READ_AFTER_MS);
+
+      expect(readPump).toHaveBeenCalled();
+      expect(readRuns).toHaveBeenCalled();
+      expect((await el('circulation-card'))!.querySelector('mat-progress-bar')).toBeNull();
+      vi.useRealTimers();
+    });
+
+    it.each([
+      [
+        'a cold tank',
+        new ApiError('client', 409, [{ message: 'Tank too cold', code: 'TANK_COLD' }]),
+        'The pump did not start. The water in the tank is too cold to run the circulation.',
+      ],
+      [
+        // DEVICE_FAILED is shared with the valve: here it is the pump that failed
+        'the Uni refusing it',
+        new ApiError('server', 502, [{ message: 'Device failed', code: 'DEVICE_FAILED' }]),
+        'The pump did not start. The pump refused the start or did not answer it.',
+      ],
+      [
+        // a start without an answer may have been carried out
+        'no answer',
+        new ApiError('network', 0),
+        'The start got no answer and may have been carried out.',
+      ],
+    ])('words a start that failed for %s, after reading the pump again', async (_, error, text) => {
+      vi.useFakeTimers({ toFake: ['setTimeout'] });
+      startAnswer = throwError(() => error);
+      answer(pump, { running: false, measuredAt: house(4) });
+
+      (await startButton()).click();
+      await vi.advanceTimersByTimeAsync(CIRCULATION_READ_AFTER_MS);
+
+      expect(words((await el('circulation-card'))!.querySelector('[role="alert"]'))).toContain(
+        text,
+      );
+      vi.useRealTimers();
+    });
+
+    // the start had no answer but was carried out: the notice goes once the pump is read running
+    it('drops the notice of a start without an answer once the pump runs', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout'] });
+      startAnswer = throwError(() => new ApiError('network', 0));
+      answer(pump, { running: false, measuredAt: house(4) });
+
+      (await startButton()).click();
+      await vi.advanceTimersByTimeAsync(CIRCULATION_READ_AFTER_MS);
+      expect((await el('circulation-card'))!.querySelector('[role="alert"]')).toBeTruthy();
+
+      answer(pump, { running: true, since: house(8), trigger: 'manual', measuredAt: house(2) });
+
+      expect((await el('circulation-card'))!.querySelector('[role="alert"]')).toBeNull();
+      vi.useRealTimers();
+    });
+
+    it('gives the runs of today to a card of their own, after the history', async () => {
+      await fixture.whenStable();
+      const card = (fixture.nativeElement as HTMLElement).querySelector('app-circulation-runs');
+
+      expect(card).toBeTruthy();
+      expect(card!.previousElementSibling?.tagName.toLowerCase()).toBe('app-water-history');
     });
   });
 });

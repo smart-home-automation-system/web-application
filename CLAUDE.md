@@ -521,7 +521,8 @@ e2e/              # Playwright tests
   - **The dashboard writes to the house in eight places now**: the heating switch, the two
     registries, and - from this view - the blinds and the lights (through `light-service` since HAS-292);
     the sixth is the periods of the heaters (HAS-357, the window of a room on the heating page); the seventh and the
-    eighth are the command of the water valve and the bills of the waterworks (HAS-323, the water page). (The blinds page adds the
+    eighth are the command of the water valve and the bills of the waterworks (HAS-323, the water page); the ninth the
+    start of the circulation pump (HAS-406, the water page). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
@@ -807,6 +808,20 @@ e2e/              # Playwright tests
   - **The gauge of the tank runs 20 - 80 °C** (owner, 2026-11-05: cold after a weekend away, up to 80 °C on a hot
     summer day): the ends of the scale at its ends and the band named once, under its middle - its two ends would
     stand on each other on a scale of 60 degrees.
+  - **The circulation pump** (HAS-406, `water-service` >= 0.13.0; `circulation-views.ts`, `circulation-runs.ts`): the
+    circulation card reads `GET /water/circulation` every 10 s - **its own call since this task**, so the owner's rule of
+    the two hot-water cards of one call no longer covers it: the tank card alone reads `/water/status/temperature` (the
+    overview tile still reads the circulation temperature from there). The service leaves the whole read out once it
+    is older than a minute: the pump is then "not known", never stopped. A pump on without `trigger` was not started by
+    the service (the scene of the Shelly cloud, until HAS-405). **"Start circulation" asks nothing** (owner,
+    2026-11-06 - a run of 3 minutes that stops by itself): `POST /water/circulation?source=dashboard` sent once, the
+    pump and the runs read again `CIRCULATION_READ_AFTER_MS` (2.5 s) later whatever the start came to; disabled while
+    the pump runs. `TANK_COLD` and the pump's own words for `DEVICE_FAILED` (shared with the valve in the service) are
+    `describeCirculationError`. **The runs of today are a wide card of their own** under the history (`CirculationRuns`,
+    `GET /water/circulation/runs` for midnight to midnight of the house, tagged with its day so yesterday never stands
+    under "today"); the page owns the resource and hands it in. A trigger or an end this version does not know is printed
+    as it came. The mock pump (`water.fixtures.ts`) runs 3 minutes after a start and ends by its limit; one run of the
+    morning is there from the start.
 - **The overview is one tile per call** (HAS-201, `features/overview/`): `DomainTile`
   (`shared/domain-tile/`, shared with the weather page since HAS-241, the styles of its content
   in `_tile-content.scss`, which the page that projects them `@use`s) tells

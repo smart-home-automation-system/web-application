@@ -112,7 +112,10 @@ import {
   createWaterBill,
   deleteWaterBill,
   replaceWaterBill,
+  startWaterCirculation,
   waterBills,
+  waterCirculation,
+  waterCirculationRuns,
   waterConsumption,
   waterTemperatures,
   waterValve,
@@ -635,6 +638,25 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: '/home/water/valve',
     reply: (request) =>
       commandWaterValve(request.params.get('state'), request.params.get('source')),
+  },
+  // HAS-406: the circulation pump; just after a start the service has read nothing and started no run
+  {
+    method: 'GET',
+    path: '/home/water/circulation',
+    reply: (_, fresh) => ({ status: 200, body: fresh ? {} : waterCirculation() }),
+  },
+  {
+    method: 'POST',
+    path: '/home/water/circulation',
+    reply: (request) => startWaterCirculation(request.params.get('source')),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/circulation/runs',
+    reply: (request, fresh) => ({
+      status: 200,
+      body: fresh ? [] : waterCirculationRuns(request.params.get('from'), request.params.get('to')),
+    }),
   },
   // HAS-318: the bills of the waterworks; before its first reading the service has none
   {

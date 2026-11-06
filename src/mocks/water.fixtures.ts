@@ -1,4 +1,6 @@
 import {
+  CirculationRun,
+  WaterCirculation,
   WaterConsumption,
   WaterHeatingDemand,
   WaterBill,
@@ -333,4 +335,131 @@ export function deleteWaterBill(id: string): MockReply {
   }
   bills = bills.filter((bill) => String(bill.id) !== id);
   return { status: 204, body: null };
+}
+
+/**
+ * The circulation pump of the mock house (HAS-406, the answers of `water-service` 0.13.0): stopped, the return cold;
+ * a start runs it for `MOCK_MAX_RUN_S` - the return starts to warm a minute in, as on the real pump on 2026-11-06, and
+ * does not reach its target in a run of three minutes, so the run ends by its limit. One run of the morning is there
+ * from the start. Everything is worked out from the clock when asked, so nothing needs a timer.
+ */
+const MOCK_MAX_RUN_S = 180;
+const MOCK_RETURN_IDLE = 26.44;
+const MOCK_RETURN_TARGET = 35;
+const MOCK_TANK = 41.94;
+
+interface MockRun {
+  readonly startedAt: number;
+  endedAt?: number;
+  readonly source: string;
+  stoppedBy?: string;
+  readonly returnAtStart: number;
+  returnAtEnd?: number;
+}
+
+let circulationRuns: MockRun[] = [];
+
+/** The morning run: started three hours ago, stopped by a warm return after 2 min 10 s. */
+function seedRuns(now: number): MockRun[] {
+  const startedAt = now - 3 * 60 * 60 * 1_000;
+  return [
+    {
+      startedAt,
+      endedAt: startedAt + 130_000,
+      source: 'dashboard',
+      stoppedBy: 'temperature',
+      returnAtStart: 28.19,
+      returnAtEnd: 35.06,
+    },
+  ];
+}
+
+export function resetCirculation(): void {
+  circulationRuns = [];
+}
+
+/** The return of a run `seconds` long: cold for a minute, then warming by 0.06 °C a second. */
+const returnAfter = (seconds: number): number =>
+  Math.round((MOCK_RETURN_IDLE + Math.max(0, seconds - 60) * 0.06) * 100) / 100;
+
+/** The runs as the clock has them now: a run past its limit ended by it. */
+function settledRuns(now: number): MockRun[] {
+  if (circulationRuns.length === 0) {
+    circulationRuns = seedRuns(now);
+  }
+  for (const run of circulationRuns) {
+    if (run.endedAt === undefined && now - run.startedAt >= MOCK_MAX_RUN_S * 1_000) {
+      run.endedAt = run.startedAt + MOCK_MAX_RUN_S * 1_000;
+      run.stoppedBy = returnAfter(MOCK_MAX_RUN_S) >= MOCK_RETURN_TARGET ? 'temperature' : 'limit';
+      run.returnAtEnd = returnAfter(MOCK_MAX_RUN_S);
+    }
+  }
+  return circulationRuns;
+}
+
+const atHouse = (instant: number): string => houseTime(new Date(instant), 0).slice(0, 19);
+
+function runAnswer(run: MockRun): CirculationRun {
+  return {
+    startedAt: atHouse(run.startedAt),
+    ...(run.endedAt === undefined ? {} : { endedAt: atHouse(run.endedAt) }),
+    trigger: 'manual',
+    source: run.source,
+    ...(run.stoppedBy === undefined ? {} : { stoppedBy: run.stoppedBy }),
+    returnAtStart: run.returnAtStart,
+    ...(run.returnAtEnd === undefined ? {} : { returnAtEnd: run.returnAtEnd }),
+  };
+}
+
+/** `GET /home/water/circulation`: the pump read 4 s ago. */
+export function waterCirculation(now: number = Date.now()): WaterCirculation {
+  const runs = settledRuns(now);
+  const going = runs.find((run) => run.endedAt === undefined);
+  const newest = runs.reduce<MockRun | undefined>(
+    (latest, run) => (latest === undefined || run.startedAt > latest.startedAt ? run : latest),
+    undefined,
+  );
+  return {
+    running: going !== undefined,
+    ...(going === undefined
+      ? {}
+      : { since: atHouse(going.startedAt), trigger: 'manual', source: going.source }),
+    // the loop cools down again soon after a run: a stopped pump reads the idle return
+    returnTemperature: going ? returnAfter((now - going.startedAt) / 1_000) : MOCK_RETURN_IDLE,
+    tankTemperature: MOCK_TANK,
+    measuredAt: atHouse(now - 4_000),
+    ...(newest === undefined ? {} : { lastRun: runAnswer(newest) }),
+  };
+}
+
+/** `POST /home/water/circulation?source=`: a run going on is answered as it is, a new one started - 202 with it. */
+export function startWaterCirculation(source: string | null, now: number = Date.now()): MockReply {
+  if (source !== null && !/^[a-z][a-z-]{0,19}$/.test(source)) {
+    return refusal(400, 'INVALID_COMMAND', 'Invalid command', `The source ${source} is not a word`);
+  }
+  const runs = settledRuns(now);
+  const going = runs.find((run) => run.endedAt === undefined);
+  const run = going ?? {
+    startedAt: now,
+    source: source ?? 'unknown',
+    returnAtStart: MOCK_RETURN_IDLE,
+  };
+  if (going === undefined) {
+    runs.push(run);
+  }
+  return { status: 202, body: runAnswer(run) };
+}
+
+/** `GET /home/water/circulation/runs?from=&to=`: the runs started in the range, newest first. */
+export function waterCirculationRuns(
+  from: string | null,
+  to: string | null,
+  now: number = Date.now(),
+): CirculationRun[] {
+  return settledRuns(now)
+    .map(runAnswer)
+    .filter(
+      (run) => (from === null || run.startedAt! >= from) && (to === null || run.startedAt! < to),
+    )
+    .reverse();
 }
