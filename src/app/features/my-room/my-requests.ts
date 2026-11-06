@@ -21,7 +21,7 @@ import { APP_CONFIG } from '../../core/config/app-config';
 import { ProfileStore } from '../../core/profile/profile-store';
 import { dayAwareFormat, houseDay } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
-import { MemberRequestsApi } from '../../data-access/household/member-requests-api';
+import { MemberRequestsApi, RequestChange } from '../../data-access/household/member-requests-api';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
@@ -33,6 +33,13 @@ import {
   requestTextProblem,
 } from '../household/member-rules';
 import { describeRequestError, toRequestLists } from './my-requests-views';
+
+/** What the card says of a change the service refused, by what it was. */
+const CHANGE_FAILED: Readonly<Record<RequestChange['kind'], MessageKey>> = {
+  add: 'requests.change.addFailed',
+  done: 'requests.change.doneFailed',
+  remove: 'requests.change.removeFailed',
+};
 
 /**
  * "Requests" on My room (HAS-411, epic HAS-407): the errands the household wrote for the member of the
@@ -117,11 +124,7 @@ export class MyRequests {
     const summary: MessageKey =
       failed.error.kind === 'network'
         ? 'requests.change.noAnswer'
-        : failed.change.kind === 'add'
-          ? 'requests.change.addFailed'
-          : failed.change.kind === 'done'
-            ? 'requests.change.doneFailed'
-            : 'requests.change.removeFailed';
+        : CHANGE_FAILED[failed.change.kind];
     return { ...failed, summary };
   });
 

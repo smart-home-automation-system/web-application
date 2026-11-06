@@ -1,4 +1,5 @@
-import { dayAwareFormat } from '../../core/time/house-date-time';
+/** How a time of a cycle is shown - `dayAwareFormat` of the house. */
+export { dayAwareFormat as cycleTimeFormat } from '../../core/time/house-date-time';
 import { ApiError } from '../../core/api/api-error';
 import { Appliance, FailedAcknowledgement } from '../../data-access/appliance/appliance-api';
 import { DisplayText, MessageKey } from '../../i18n/messages';
@@ -107,9 +108,6 @@ export function acknowledgeFailureOf(failure: FailedAcknowledgement): DisplayTex
     ? { key: 'appliances.acknowledgeNoAnswer' }
     : describeApplianceError(failure.error);
 }
-
-/** How a time of a cycle is shown - `dayAwareFormat` of the house. */
-export const cycleTimeFormat = dayAwareFormat;
 
 function stateOf(state: unknown): ApplianceState | undefined {
   return typeof state === 'string' && Object.hasOwn(APPLIANCE_STATE_LABELS, state)
