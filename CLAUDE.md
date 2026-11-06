@@ -962,12 +962,21 @@ e2e/              # Playwright tests
     100 UTF-16 units, one line: no `\p{Cc}`, `\p{Zl}`, `\p{Zp}`) - a rule changed there is changed here. The codes
     `NOT_FOUND_REQUEST`, `INVALID_REQUEST`, `MEMBER_SWITCHED_OFF`, `NOT_FOUND_HOUSEHOLD_MEMBER` have texts
     (`REQUEST_ERROR_TEXTS`, its test lists them).
+  - **"Written by you for the others"** (0.46.1, asked by the owner after the first real use: a request for another
+    member vanished from the card): `MemberRequestsApi.watchWrittenBy` reads the list (`?done=true`) of every other
+    profile, one after the other, every minute and right after an add for somebody else, as one answer - a list that
+    fails fails the whole of it; `toWrittenLists` keeps what the member of the profile wrote for somebody else, the
+    last written first, the ticked off folded. Only removal is offered there (ticking off is the recipient's), one
+    at a time, the lists read again. The service has no read by author: `GET /household/requests?pending=true` holds
+    only what is not texted yet. Its query is a JSON text of the author and the others, `asked` on the control.
   - **The recipients are the profiles** (`ProfileStore.members()`), the member of the profile first and chosen.
     The form is a `FormGroup`: a plain `<form>` under `ReactiveFormsModule` has no directive, and `ngSubmit`
     never comes (found by the unit test).
   - `my-room.spec` leaves the controls of this card out of its list of the page's controls - `my-requests.spec`
     names them; `profile-pages.spec` lets the read through. The mock (`requests.fixtures.ts`): Aurelia has two open
-    requests (one texted, one from Borys) and one done; refused as the service refuses; `resetRequests()`.
+    requests (one texted, one from Borys) and one done, and wrote one for Celina (open) and one Celina ticked off -
+    Celina, as no e2e test counts her controls; Borys wrote one for Aurelia, so the resident test counts its removal;
+    refused as the service refuses; `resetRequests()`.
   - The rule of "the time alone today, the date otherwise" is `dayAwareFormat` of `core/time/house-date-time.ts`
     since this task (`cycleTimeFormat` of the appliances points at it).
 - **The appliances page** (HAS-283, `features/appliances/`, the administrator's; route `/appliances`, after the

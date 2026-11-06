@@ -1,5 +1,5 @@
-import { Injectable, Signal, effect, inject, signal, untracked } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, Signal, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Observable, concatMap, from, of, reduce } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { ApiError, toApiError } from '../../core/api/api-error';
@@ -55,6 +55,29 @@ export interface MemberRequestsControl extends QueryResource<
   /** Ticked off by `by`, the member of the profile. */
   done(id: number, by: string): void;
   remove(id: number): void;
+}
+
+/** A removal of a request written for another member that failed. */
+export interface FailedWrittenRemoval {
+  readonly id: number;
+  readonly error: ApiError;
+}
+
+/**
+ * What the member of the profile wrote for the others of the household (HAS-411): the lists of those
+ * members read together, each request as the service answers it - `member` is its recipient. Only
+ * removal is offered: ticking off is the recipient's.
+ */
+export interface WrittenRequestsControl extends QueryResource<
+  string | undefined,
+  readonly MemberRequest[] | null
+> {
+  /** The question asked now - the answer and the error on screen are those of this one only. */
+  readonly asked: Signal<string | undefined>;
+  /** The id whose removal is on its way. */
+  readonly removing: Signal<number | undefined>;
+  readonly failure: Signal<FailedWrittenRemoval | undefined>;
+  remove(recipient: string, id: number): void;
 }
 
 /**
@@ -152,6 +175,76 @@ export class MemberRequestsApi {
             this.api.delete<unknown>(`${pathOf(owner)}/requests/${id}`),
           );
         }
+      },
+    };
+  }
+
+  /**
+   * The lists of `recipients()` - `GET .../requests?done=true` of each, one after the other - as one
+   * answer; the caller picks what `author` wrote. The service has no read by author: its read of the
+   * whole household (`?pending=true`) holds only what is not texted yet. A list that fails fails the
+   * whole answer - half of what was written is no answer to "what did I write". No call while there is
+   * no author or nobody to write for.
+   */
+  watchWrittenBy(
+    author: () => string | undefined,
+    recipients: () => readonly string[],
+  ): WrittenRequestsControl {
+    // a text, so that the same question is the same value
+    const query = computed(() => {
+      const writer = author();
+      const others = recipients();
+      return writer === undefined || others.length === 0
+        ? undefined
+        : JSON.stringify([writer, ...others]);
+    });
+    const requests = queryResource(
+      query,
+      (asked): Observable<readonly MemberRequest[] | null> => {
+        if (asked === undefined) {
+          return of(null);
+        }
+        const [, ...others] = JSON.parse(asked) as string[];
+        return from(others).pipe(
+          concatMap((name) =>
+            this.api.get<readonly MemberRequest[] | null>(`${pathOf(name)}/requests`, {
+              done: 'true',
+            }),
+          ),
+          reduce<readonly MemberRequest[] | null, MemberRequest[]>(
+            (all, list) => [...all, ...(Array.isArray(list) ? list : [])],
+            [],
+          ),
+        );
+      },
+      { intervalMs: POLL_EVERY_MS },
+    );
+    const removing = signal<number | undefined>(undefined);
+    const failure = signal<FailedWrittenRemoval | undefined>(undefined);
+    effect(() => {
+      query();
+      untracked(() => failure.set(undefined));
+    });
+
+    return {
+      ...requests,
+      asked: query,
+      removing: removing.asReadonly(),
+      failure: failure.asReadonly(),
+      remove: (recipient, id) => {
+        if (removing() !== undefined) {
+          return;
+        }
+        removing.set(id);
+        failure.set(undefined);
+        const readAgain = () => void requests.refresh().then(() => removing.set(undefined));
+        this.api.delete<unknown>(`${pathOf(recipient)}/requests/${id}`).subscribe({
+          error: (failed: unknown) => {
+            failure.set({ id, error: toApiError(failed) });
+            readAgain();
+          },
+          complete: readAgain,
+        });
       },
     };
   }

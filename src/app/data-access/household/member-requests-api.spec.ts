@@ -3,7 +3,12 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { MemberRequest, MemberRequestsApi, MemberRequestsControl } from './member-requests-api';
+import {
+  MemberRequest,
+  MemberRequestsApi,
+  MemberRequestsControl,
+  WrittenRequestsControl,
+} from './member-requests-api';
 
 const BREAD: MemberRequest = { id: 1, member: 'Ola', text: 'Bread', author: 'Ola' };
 const DONE: MemberRequest = { ...BREAD, doneAt: '2026-11-06T09:00:00', doneBy: 'Ola' };
@@ -145,6 +150,134 @@ describe('MemberRequestsApi', () => {
     expect(requests.value()).toEqual({ query: undefined, answer: null });
     requests.done(1, 'Ola');
     requests.remove(1);
+    http.expectNone(() => true);
+  });
+});
+
+describe('MemberRequestsApi.watchWrittenBy', () => {
+  let http: HttpTestingController;
+  let written: WrittenRequestsControl;
+  const author = signal<string | undefined>('Ola');
+  const others = signal<readonly string[]>(['Borys', 'Celina']);
+
+  const FOR_BORYS: MemberRequest = { id: 7, member: 'Borys', text: 'Bulbs', author: 'Ola' };
+  const FOR_CELINA: MemberRequest = { id: 9, member: 'Celina', text: 'Stamps', author: 'Ola' };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    author.set('Ola');
+    others.set(['Borys', 'Celina']);
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    http = TestBed.inject(HttpTestingController);
+    written = TestBed.runInInjectionContext(() =>
+      TestBed.inject(MemberRequestsApi).watchWrittenBy(author, others),
+    );
+  });
+
+  afterEach(() => {
+    http.verify();
+    vi.useRealTimers();
+  });
+
+  function listOf(name: string) {
+    return http.expectOne({
+      method: 'GET',
+      url: `/home/household/member/${name}/requests?done=true`,
+    });
+  }
+
+  /** The lists of the others, one after the other. */
+  function answerTheOthers(
+    borys: readonly MemberRequest[] | null,
+    celina: readonly MemberRequest[] | null,
+  ): void {
+    vi.advanceTimersByTime(1);
+    listOf('Borys').flush(borys);
+    listOf('Celina').flush(celina);
+  }
+
+  it('reads the list of every other member, one after the other, as one answer', () => {
+    vi.advanceTimersByTime(1);
+    listOf('Borys').flush([FOR_BORYS]);
+    // the next list is asked only once the one before answered
+    listOf('Celina').flush([FOR_CELINA]);
+
+    expect(written.asked()).toBe('["Ola","Borys","Celina"]');
+    expect(written.value()).toEqual({
+      query: '["Ola","Borys","Celina"]',
+      answer: [FOR_BORYS, FOR_CELINA],
+    });
+  });
+
+  // a list that is no list is no requests - never a broken screen
+  it('takes an answer that is no list as no requests', () => {
+    answerTheOthers(null, [FOR_CELINA]);
+
+    expect(written.value()?.answer).toEqual([FOR_CELINA]);
+  });
+
+  // half of what was written is no answer to "what did I write"
+  it('fails the whole answer when one list fails', () => {
+    vi.advanceTimersByTime(1);
+    listOf('Borys').flush([FOR_BORYS]);
+    listOf('Celina').flush(
+      { errors: [{ message: 'boom' }] },
+      { status: 500, statusText: 'Server Error' },
+    );
+
+    expect(written.error()?.status).toBe(500);
+    expect(written.value()).toBeUndefined();
+  });
+
+  it('removes a request from the list of its recipient and reads them all again', async () => {
+    answerTheOthers([FOR_BORYS], [FOR_CELINA]);
+
+    written.remove('Celina', 9);
+    expect(written.removing()).toBe(9);
+    http
+      .expectOne({ method: 'DELETE', url: '/home/household/member/Celina/requests/9' })
+      .flush(null, { status: 204, statusText: 'No Content' });
+    answerTheOthers([FOR_BORYS], []);
+    await Promise.resolve();
+
+    expect(written.value()?.answer).toEqual([FOR_BORYS]);
+    expect(written.removing()).toBeUndefined();
+    expect(written.failure()).toBeUndefined();
+  });
+
+  it('keeps a refused removal with its id and reads them all again', async () => {
+    answerTheOthers([FOR_BORYS], [FOR_CELINA]);
+
+    written.remove('Borys', 7);
+    written.remove('Celina', 9);
+    http
+      .expectOne({ method: 'DELETE', url: '/home/household/member/Borys/requests/7' })
+      .flush({ errors: [{ message: 'boom' }] }, { status: 500, statusText: 'Server Error' });
+    // the second press, while the first was on its way, was ignored
+    http.expectNone({ method: 'DELETE', url: '/home/household/member/Celina/requests/9' });
+    answerTheOthers([FOR_BORYS], [FOR_CELINA]);
+    await Promise.resolve();
+
+    expect(written.failure()?.id).toBe(7);
+    expect(written.removing()).toBeUndefined();
+  });
+
+  it('asks for nothing while there is no author or nobody else', () => {
+    answerTheOthers([], []);
+    others.set([]);
+    TestBed.tick();
+    vi.advanceTimersByTime(1);
+    expect(written.asked()).toBeUndefined();
+
+    author.set(undefined);
+    others.set(['Borys']);
+    TestBed.tick();
+    vi.advanceTimersByTime(1);
+
+    expect(written.asked()).toBeUndefined();
+    expect(written.value()?.answer).toBeNull();
     http.expectNone(() => true);
   });
 });

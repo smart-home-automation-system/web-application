@@ -63,6 +63,51 @@ export function toRequestLists(
   };
 }
 
+/** A request the member of the profile wrote for somebody else. */
+export interface WrittenView extends RequestView {
+  /** Whose list it is on. */
+  readonly recipient: string;
+}
+
+export interface WrittenLists {
+  /** Open, the last written first - the one just added on top. */
+  readonly open: readonly WrittenView[];
+  /** Done in the last 30 days, the last ticked off first. */
+  readonly done: readonly WrittenView[];
+}
+
+/**
+ * What `me` wrote for the others, out of their lists read together: the author is `me` and the recipient
+ * somebody else (what one writes for oneself is on one's own list). Names compared whatever their case.
+ */
+export function toWrittenLists(
+  answer: readonly MemberRequest[] | null | undefined,
+  me: string | undefined,
+): WrittenLists {
+  const mine = (name: unknown) =>
+    me !== undefined && typeof name === 'string' && name.toLowerCase() === me.toLowerCase();
+  const views = (answer ?? [])
+    .filter(
+      (request) =>
+        isId(request.id) &&
+        typeof request.text === 'string' &&
+        request.text !== '' &&
+        mine(request.author) &&
+        textOf(request.member) !== undefined &&
+        !mine(request.member),
+    )
+    .map((request) => ({ ...toView(request, me), recipient: request.member as string }));
+  const latestFirst = (a?: string, b?: string) => (b ?? '').localeCompare(a ?? '');
+  return {
+    open: views
+      .filter((view) => view.doneAt === undefined)
+      .sort((a, b) => latestFirst(a.createdAt, b.createdAt)),
+    done: views
+      .filter((view) => view.doneAt !== undefined)
+      .sort((a, b) => latestFirst(a.doneAt, b.doneAt)),
+  };
+}
+
 function toView(request: MemberRequest, me: string | undefined): RequestView {
   return {
     id: request.id,

@@ -1800,6 +1800,11 @@ export const pl: Messages = {
     doneList: 'Zrobione w ostatnich 30 dniach ({{ count }})',
     doneAt: 'zrobione {{ time }}',
     doneBy: 'odhaczył(a):',
+    written: {
+      title: 'Wpisane przez Ciebie dla innych',
+      for: 'dla:',
+      none: 'Nic z tego, co wpisano dla innych, nie czeka.',
+    },
     form: {
       recipient: 'Dla kogo',
       text: 'Co jest potrzebne',

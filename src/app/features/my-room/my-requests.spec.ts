@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import {
@@ -12,6 +12,7 @@ import { ApiError } from '../../core/api/api-error';
 import { ProfileStore } from '../../core/profile/profile-store';
 import {
   FailedRequestChange,
+  FailedWrittenRemoval,
   MemberRequest,
   RequestChange,
 } from '../../data-access/household/member-requests-api';
@@ -40,12 +41,40 @@ const LIST: MemberRequest[] = [
   },
 ];
 
+// what Ola wrote for the others, out of their lists read together
+const WRITTEN: MemberRequest[] = [
+  { id: 7, member: 'Borys', text: 'Bulbs', author: 'Ola', createdAt: '2026-11-06T08:00:00' },
+  { id: 8, member: 'Borys', text: 'Not hers', author: 'Celina', createdAt: '2026-11-06T09:00:00' },
+  {
+    id: 9,
+    member: 'Celina',
+    text: 'Stamps',
+    author: 'Ola',
+    createdAt: '2026-11-06T09:20:00',
+    sentAt: '2026-11-06T09:25:00',
+  },
+  {
+    id: 10,
+    member: 'Celina',
+    text: 'Envelopes',
+    author: 'ola',
+    createdAt: '2026-11-03T10:00:00',
+    doneAt: '2026-11-05T18:00:00',
+    doneBy: 'Celina',
+  },
+];
+
 describe('MyRequests', () => {
   let fixture: ComponentFixture<MyRequests>;
   let requests: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
   let asked: () => string | undefined;
   let calls: string[];
   let taken: boolean;
+  let written: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
+  let writtenAsked: () => string | undefined;
+  let writtenReads: number;
+  const removing = signal<number | undefined>(undefined);
+  const writtenFailure = signal<FailedWrittenRemoval | undefined>(undefined);
   const changing = signal<RequestChange | undefined>(undefined);
   const failure = signal<FailedRequestChange | undefined>(undefined);
   const added = signal<string | undefined>(undefined);
@@ -59,6 +88,10 @@ describe('MyRequests', () => {
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
     requests = fakeQueryResource();
+    written = fakeQueryResource();
+    writtenReads = 0;
+    removing.set(undefined);
+    writtenFailure.set(undefined);
     calls = [];
     taken = true;
     changing.set(undefined);
@@ -87,6 +120,25 @@ describe('MyRequests', () => {
                 remove: (id: number) => calls.push(`remove ${id}`),
               };
             },
+            watchWrittenBy: (author: () => string | undefined, others: () => readonly string[]) => {
+              const query = computed(() => {
+                const writer = author();
+                return writer === undefined ? undefined : [writer, ...others()].join(',');
+              });
+              writtenAsked = query;
+              return {
+                ...written,
+                refresh: () => {
+                  writtenReads++;
+                  return Promise.resolve();
+                },
+                asked: query,
+                removing,
+                failure: writtenFailure,
+                remove: (recipient: string, id: number) =>
+                  calls.push(`remove ${id} of ${recipient}`),
+              };
+            },
           },
         },
       ],
@@ -111,6 +163,12 @@ describe('MyRequests', () => {
   async function shown(list: readonly MemberRequest[] | null = LIST): Promise<void> {
     await fixture.whenStable();
     answerQuery(requests, asked(), list);
+    await fixture.whenStable();
+  }
+
+  async function writtenShown(list: readonly MemberRequest[] | null = WRITTEN): Promise<void> {
+    await shown();
+    answerQuery(written, writtenAsked(), list);
     await fixture.whenStable();
   }
 
@@ -275,6 +333,84 @@ describe('MyRequests', () => {
     expect(card().querySelector('[role="alert"]')).toBeNull();
   });
 
+  it('reads the lists of the others for what the member of the profile wrote', async () => {
+    await fixture.whenStable();
+    expect(writtenAsked()).toBe('Ola,Borys,Celina');
+  });
+
+  it('lists what the member of the profile wrote for the others, the last written first', async () => {
+    await writtenShown();
+
+    const lines = [...byTestId('written-open')!.querySelectorAll('li')].map((line) =>
+      words(line).replace(/ delete$/, ''),
+    );
+    // only what Ola wrote, never another author's; the name compared whatever its case
+    expect(lines).toEqual([
+      'Stamps for Celina 09:20 sms texted 09:25',
+      'Bulbs for Borys 08:00 goes by SMS at 08:00',
+    ]);
+    byTestId<HTMLButtonElement>('written-done-toggle')!.click();
+    await fixture.whenStable();
+    expect(words(byTestId('written-done'))).toBe(
+      'Envelopes for Celina done 5 Nov 2026, 18:00 by Celina',
+    );
+  });
+
+  it('says that nothing written for the others waits', async () => {
+    await writtenShown([]);
+
+    expect(words(byTestId('written-none'))).toBe('Nothing you wrote for the others is waiting.');
+  });
+
+  it('removes a request written for another from the list it is on', async () => {
+    await writtenShown();
+    card()
+      .querySelector<HTMLButtonElement>('[data-request="9"] [data-testid="written-remove"]')!
+      .click();
+
+    expect(calls).toEqual(['remove 9 of Celina']);
+  });
+
+  it('tells a failed removal next to the request written for another', async () => {
+    writtenFailure.set({ id: 7, error: new ApiError('server', 500, [{ message: 'boom' }]) });
+    await writtenShown();
+
+    expect(words(card().querySelector('[data-request="7"] [role="alert"]'))).toContain(
+      'The request was not removed.',
+    );
+    expect(card().querySelector('[data-request="9"] [role="alert"]')).toBeNull();
+  });
+
+  it('reads what was written for the others again once a request for another was added', async () => {
+    await writtenShown();
+    (card().querySelector('mat-select') as HTMLElement).click();
+    await fixture.whenStable();
+    (document.querySelectorAll('mat-option')[1] as HTMLElement).click();
+    await type('Milk');
+    await submit();
+
+    expect(calls).toEqual(['add Borys "Milk" by Ola']);
+    expect(writtenReads).toBe(1);
+  });
+
+  it('does not read them again after a request for oneself', async () => {
+    await writtenShown();
+    await type('Milk');
+    await submit();
+
+    expect(writtenReads).toBe(0);
+  });
+
+  // the error of the lists of the others is the section's, under its heading
+  it('tells a failed read of the others in the section', async () => {
+    await shown();
+    failQuery(written, writtenAsked(), new ApiError('server', 500, [{ message: 'boom' }]));
+    await fixture.whenStable();
+
+    expect(byTestId('written-requests')!.querySelector('[role="alert"]')).not.toBeNull();
+    expect(byTestId('written-open')).toBeNull();
+  });
+
   // the controls of the card, in words - a new one fails this on purpose
   it('names exactly what can be pressed', async () => {
     await shown();
@@ -293,5 +429,14 @@ describe('MyRequests', () => {
       'request-text',
       'request-add',
     ]);
+  });
+
+  it('names exactly what can be pressed in the section of the others', async () => {
+    await writtenShown();
+
+    const controls = [
+      ...byTestId('written-requests')!.querySelectorAll('button, input, [role="combobox"]'),
+    ].map((control) => control.getAttribute('aria-label') ?? control.getAttribute('data-testid'));
+    expect(controls).toEqual(['Remove the request', 'Remove the request', 'written-done-toggle']);
   });
 });

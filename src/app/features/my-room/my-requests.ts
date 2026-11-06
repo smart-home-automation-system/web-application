@@ -32,7 +32,7 @@ import {
   normaliseRequestText,
   requestTextProblem,
 } from '../household/member-rules';
-import { describeRequestError, toRequestLists } from './my-requests-views';
+import { describeRequestError, toRequestLists, toWrittenLists } from './my-requests-views';
 
 /** What the card says of a change the service refused, by what it was. */
 const CHANGE_FAILED: Readonly<Record<RequestChange['kind'], MessageKey>> = {
@@ -98,6 +98,27 @@ export class MyRequests {
       .map((member) => member.name)
       .filter((name) => name.toLowerCase() !== me?.toLowerCase());
     return me === undefined ? others : [me, ...others];
+  });
+
+  /** What the member of the profile wrote for the others - so that what was added can be seen. */
+  protected readonly written = inject(MemberRequestsApi).watchWrittenBy(this.me, () =>
+    this.recipients().slice(1),
+  );
+  protected readonly writtenLists = computed(() => {
+    const answered = this.written.value();
+    const asked = this.written.asked();
+    return answered !== undefined && asked !== undefined && answered.query === asked
+      ? toWrittenLists(answered.answer, this.me())
+      : undefined;
+  });
+  protected readonly writtenSettled = computed(() => {
+    const asked = this.written.asked();
+    return asked !== undefined && this.written.settledFor()?.query === asked;
+  });
+  protected readonly writtenDoneShown = signal(false);
+  protected readonly writtenFailure = computed(() => {
+    const failed = this.written.failure();
+    return failed === undefined || failed.error.hasCode('NOT_FOUND_REQUEST') ? undefined : failed;
   });
 
   protected readonly recipient = new FormControl<string>('', { nonNullable: true });
@@ -171,7 +192,19 @@ export class MyRequests {
     const taken = await this.requests.add(recipient, normaliseRequestText(this.text.value), me);
     if (taken) {
       this.text.reset('');
+      if (recipient.toLowerCase() !== me.toLowerCase()) {
+        // what was written for another shows in its own list, read again now
+        void this.written.refresh();
+      }
     }
+  }
+
+  protected removeWritten(recipient: string, id: number): void {
+    this.written.remove(recipient, id);
+  }
+
+  protected toggleWrittenDone(): void {
+    this.writtenDoneShown.update((shown) => !shown);
   }
 
   protected done(id: number): void {
