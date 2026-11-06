@@ -109,6 +109,8 @@ describe('profiles in the application', () => {
           request.url.startsWith('/home/light/rooms/') ||
           // HAS-346: the chores of the member this month, under the rooms
           request.url === '/home/appliance/reports/members' ||
+          // HAS-411: the requests of the member, in the row of the household
+          /^\/home\/household\/member\/[^/]+\/requests$/.test(request.url) ||
           (request.url === '/home/device/registry' && request.params.has('room'))),
     );
     // the overview of the administrator reads one call per tile - the state of the switch among

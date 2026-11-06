@@ -10,6 +10,7 @@ import {
   oneAppliance,
 } from './appliances.fixtures';
 import { pushConfig, removePushSubscription, storePushSubscription } from './push.fixtures';
+import { addRequest, markRequestDone, memberRequests, removeRequest } from './requests.fixtures';
 import { blindsByRoom, moveBlind, moveBlindTo, moveRoom, pauseBlind } from './blinds.fixtures';
 import { calendarDays } from './calendar.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
@@ -298,6 +299,29 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: /^\/home\/household\/member\/([^/]+)\/push-subscriptions$/,
     reply: (request, _fresh, [name]) =>
       removePushSubscription(decodeURIComponent(name), request.params.get('endpoint')),
+  },
+  // HAS-411: the household requests of a member (database-service 0.22.0)
+  {
+    method: 'GET',
+    path: /^\/home\/household\/member\/([^/]+)\/requests$/,
+    reply: (request, fresh, [name]) =>
+      memberRequests(decodeURIComponent(name), request.params.get('done') === 'true', fresh),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/household\/member\/([^/]+)\/requests$/,
+    reply: (request, _fresh, [name]) => addRequest(decodeURIComponent(name), request.body),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/household\/member\/([^/]+)\/requests\/([^/]+)\/done$/,
+    reply: (request, _fresh, [name, id]) =>
+      markRequestDone(decodeURIComponent(name), id, request.params.get('member')),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/household\/member\/([^/]+)\/requests\/([^/]+)$/,
+    reply: (_request, _fresh, [name, id]) => removeRequest(decodeURIComponent(name), id),
   },
   { method: 'POST', path: '/home/household/member', reply: (request) => addMember(request.body) },
   {

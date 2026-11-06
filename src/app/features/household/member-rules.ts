@@ -80,3 +80,29 @@ export function rule(
 ): ValidatorFn {
   return validator((text) => problem(text, others()));
 }
+
+/**
+ * The text of a household request (HAS-411), a copy of `MemberRequestRules` of `database-service` 0.22.0
+ * and of `MemberRequest.text` of `smart-home-sdk` 1.17.0: without the spaces around it, something else
+ * than spaces in it, at most 100 UTF-16 units (what a JavaScript string counts, and `@Size`), one line -
+ * no line break, tab or other control character. A rule changed there is changed here.
+ */
+export const REQUEST_TEXT_MAX_LENGTH = 100;
+
+const NOT_ONE_LINE = /[\p{Cc}\p{Zl}\p{Zp}]/u;
+
+/** A request as it is sent: without the spaces around it. */
+export function normaliseRequestText(text: string): string {
+  return text.trim();
+}
+
+export function requestTextProblem(text: string): MessageKey | undefined {
+  const request = normaliseRequestText(text);
+  if (request === '') {
+    return 'requests.problem.empty';
+  }
+  if (request.length > REQUEST_TEXT_MAX_LENGTH) {
+    return 'requests.problem.tooLong';
+  }
+  return NOT_ONE_LINE.test(request) ? 'requests.problem.oneLine' : undefined;
+}

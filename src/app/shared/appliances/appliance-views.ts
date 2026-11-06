@@ -1,3 +1,5 @@
+/** How a time of a cycle is shown - `dayAwareFormat` of the house. */
+export { dayAwareFormat as cycleTimeFormat } from '../../core/time/house-date-time';
 import { ApiError } from '../../core/api/api-error';
 import { Appliance, FailedAcknowledgement } from '../../data-access/appliance/appliance-api';
 import { DisplayText, MessageKey } from '../../i18n/messages';
@@ -105,18 +107,6 @@ export function acknowledgeFailureOf(failure: FailedAcknowledgement): DisplayTex
   return failure.error.kind === 'network'
     ? { key: 'appliances.acknowledgeNoAnswer' }
     : describeApplianceError(failure.error);
-}
-
-const TIME_ONLY: Intl.DateTimeFormatOptions = { timeStyle: 'short' };
-const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
-
-/**
- * How a time of a cycle (a house wall-clock text) is shown: the time alone on the day of the house
- * it is today, with the date on any other - a dishwasher that finished last night and still waits
- * is not "since 23:40" of today. `today` is `houseDay` of the house now.
- */
-export function cycleTimeFormat(text: string, today: string): Intl.DateTimeFormatOptions {
-  return text.startsWith(`${today}T`) ? TIME_ONLY : DATE_AND_TIME;
 }
 
 function stateOf(state: unknown): ApplianceState | undefined {

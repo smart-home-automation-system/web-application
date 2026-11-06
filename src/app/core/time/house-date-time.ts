@@ -83,6 +83,18 @@ export function houseWallClock(value: HouseDateTime): number {
   return wallClockAsUtc(value);
 }
 
+const TIME_ONLY: Intl.DateTimeFormatOptions = { timeStyle: 'short' };
+const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
+
+/**
+ * How a house wall-clock text is shown: the time alone on the day of the house it is today, with the
+ * date on any other - a dishwasher that finished last night is not "since 23:40" of today. `today` is
+ * `houseDay` of the house now.
+ */
+export function dayAwareFormat(text: string, today: string): Intl.DateTimeFormatOptions {
+  return text.startsWith(`${today}T`) ? TIME_ONLY : DATE_AND_TIME;
+}
+
 /** The calendar day the clocks of the house show at the instant, as `2026-10-08`. */
 export function houseDay(instant: number, timeZone: string): string {
   return new Date(wallClockIn(timeZone, instant)).toISOString().slice(0, 10);
