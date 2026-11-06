@@ -1,0 +1,96 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="runs card--domain" data-testid="circulation-runs">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>history</mat-icon></div>
+      <mat-card-title>{{ t('hotWater.circulation.runs.title') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="runs().lastUpdated()" [stale]="runs().stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (waiting()) {
+        <mat-progress-bar
+          mode="indeterminate"
+          [attr.aria-label]="t('hotWater.circulation.runs.loading')"
+        />
+      } @else {
+        @let list = rows();
+        @if (list !== undefined && list.length > 0) {
+          <div class="table">
+            <table data-testid="run-list">
+              <caption class="visually-hidden">
+                {{
+                  t('hotWater.circulation.runs.caption')
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ t('hotWater.circulation.runs.started') }}</th>
+                  <th scope="col">{{ t('hotWater.circulation.runs.trigger') }}</th>
+                  <th scope="col">{{ t('hotWater.circulation.runs.length') }}</th>
+                  <th scope="col">{{ t('hotWater.circulation.runs.ended') }}</th>
+                  <th scope="col">{{ t('hotWater.circulation.runs.returnTemperature') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (run of list; track $index) {
+                  <tr data-testid="run">
+                    <td class="number" data-testid="run-started">
+                      {{ run.startedAt | houseDateTime: time }}
+                    </td>
+                    <td data-testid="run-trigger">
+                      @if (run.trigger !== undefined) {
+                        {{ triggerText(run.trigger) | displayText }}
+                      } @else {
+                        {{ t('water.unknown') }}
+                      }
+                      @if (run.source !== undefined) {
+                        <span class="source">({{ run.source }})</span>
+                      }
+                    </td>
+                    <td class="number" data-testid="run-length">
+                      @if (run.seconds !== undefined) {
+                        {{ durationText(run.seconds) | displayText }}
+                      } @else if (run.endedAt === undefined) {
+                        {{ t('hotWater.circulation.ongoing') }}
+                      } @else {
+                        {{ t('water.unknown') }}
+                      }
+                    </td>
+                    <td data-testid="run-ended">
+                      @if (run.stoppedBy !== undefined) {
+                        {{ stoppedByText(run.stoppedBy) | displayText }}
+                      } @else if (run.endedAt === undefined) {
+                        {{ t('hotWater.circulation.ongoing') }}
+                      } @else {
+                        {{ t('water.unknown') }}
+                      }
+                    </td>
+                    <td class="number" data-testid="run-return">
+                      @if (run.returnAtStart !== undefined) {
+                        {{ run.returnAtStart | localNumber: oneDecimal }} °C
+                      } @else {
+                        {{ t('water.unknown') }}
+                      }
+                      @if (run.returnAtEnd !== undefined) {
+                        → {{ run.returnAtEnd | localNumber: oneDecimal }} °C
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else if (list !== undefined) {
+          <p class="detail" data-testid="runs-none">{{ t('hotWater.circulation.runs.none') }}</p>
+        } @else if (answered()) {
+          <p class="detail" data-testid="runs-unknown">
+            {{ t('hotWater.circulation.runs.notKnown') }}
+          </p>
+        }
+        <app-api-error-strip [error]="runs().error()" [describeWith]="describeWater" />
+      }
+    </mat-card-content>
+  </mat-card>
+</ng-container>

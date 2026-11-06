@@ -58,6 +58,7 @@ describe('translations', () => {
       'profiles.role.admin',
       'presence.duration.minutes',
       'appliances.page.minutes',
+      'hotWater.circulation.duration',
       // names of products and of a technology, and an abbreviation both languages use
       'devices.device.generation',
       'devices.device.bluetooth',

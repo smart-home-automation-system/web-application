@@ -596,7 +596,8 @@ test.describe('hot water', () => {
     await expect(temperatures).toContainText(
       'Heated once it drops below 38 °C, until it is above 42 °C.',
     );
-    await expect(page.getByTestId('circulation')).toContainText('29.8 °C');
+    await expect(page.getByTestId('pump-state')).toHaveText(/Stopped/);
+    await expect(page.getByTestId('pump-return')).toHaveText(/Return\s+26\.4 °C/);
     await expect(page.getByTestId('demand')).toContainText('Warm enough');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
@@ -624,7 +625,7 @@ test.describe('hot water', () => {
     page,
   }, testInfo) => {
     await page.goto('/water');
-    await expect(page.getByTestId('circulation')).toContainText('29.8 °C');
+    await expect(page.getByTestId('pump-state')).toHaveText(/Stopped/);
     await expect(page.getByTestId('demand')).toContainText('Warm enough');
 
     const box = async (name: string) => (await page.getByTestId(name).boundingBox())!;
@@ -653,11 +654,13 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    for (const card of ['temperatures', 'circulation-card']) {
-      await expect(page.getByTestId(card)).toContainText('No temperature has been measured yet.');
-    }
+    await expect(page.getByTestId('temperatures')).toContainText(
+      'No temperature has been measured yet.',
+    );
+    // the pump read nothing yet: not known, never stopped (HAS-406)
+    await expect(page.getByTestId('pump-state')).toHaveText(/State not known/);
+    await expect(page.getByTestId('circulation-runs')).toContainText('No run today.');
     await expect(page.getByTestId('tank')).toHaveCount(0);
-    await expect(page.getByTestId('circulation')).toHaveCount(0);
     await expect(page.getByRole('meter')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(page.getByTestId('offline-notice')).toBeHidden();
@@ -669,15 +672,46 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    // seven calls - the valve, the totals and the consumption (HAS-322), the bills (HAS-323), the temperatures, the
-    // demand and the history - in eight cards: the tank and the circulation come from one call and each tells its failure
+    // nine calls in nine cards - the valve, the totals and the consumption (HAS-322), the bills (HAS-323), the
+    // temperatures, the demand, the history, the pump and its runs of today (HAS-406)
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(8);
+    await expect(alerts).toHaveCount(9);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }
     await expect(page.getByText('Mock scenario')).toHaveCount(0);
     await expect(page.getByTestId('tank')).toHaveCount(0);
+  });
+
+  // HAS-406: a start without a question (owner, 2026-11-06); the pump is read again and the run is listed
+  test('starts the circulation pump and lists the run of today', async ({ page }) => {
+    await page.goto('/water');
+    const card = page.getByTestId('circulation-card');
+    await expect(page.getByTestId('pump-state')).toHaveText(/Stopped/);
+
+    await card.getByRole('button', { name: 'Start circulation' }).click();
+
+    await expect(page.getByTestId('pump-state')).toHaveText(/Running/);
+    await expect(page.getByTestId('pump-trigger')).toHaveText(
+      /Started by:\s+By hand\s+\(dashboard\)/,
+    );
+    await expect(card.getByRole('button', { name: 'Start circulation' })).toBeDisabled();
+    const run = page.getByTestId('circulation-runs').getByTestId('run').first();
+    await expect(run).toContainText('By hand (dashboard)');
+    await expect(run.getByTestId('run-ended')).toHaveText('going on');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('tells a start the house did not carry out', async ({ page }) => {
+    await useScenario(page, 'writes-fail');
+    await page.goto('/water');
+    const card = page.getByTestId('circulation-card');
+    await expect(page.getByTestId('pump-state')).toHaveText(/Stopped/);
+
+    await card.getByRole('button', { name: 'Start circulation' }).click();
+
+    await expect(card.getByRole('alert')).toContainText('The pump did not start.');
+    await expect(page.getByTestId('pump-state')).toHaveText(/Stopped/);
   });
 
   test('fits a phone without horizontal scrolling', async ({ page }) => {
