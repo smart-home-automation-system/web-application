@@ -184,11 +184,17 @@ dashboards:
   refuses what `water-service` refuses, and removed after a question. Then the hot water:
 - **Hot water**: the temperature of the water in the tank on a gauge from 20 to 80 °C - the water
   of a year, cold after a weekend away, hot from the sun in summer - with the band it is kept in
-  (heated once it drops below 38 °C, until it is above 42 °C), the temperature of the
-  circulation, **when the sensors were read** - a reading older than 6 minutes is marked out of
-  date, because the service repeats its last one while the sensor is silent - whether the water
-  asks to be heated, and **the history of both temperatures** over the last 24 hours, 7 or 30
-  days, on the band the tank is kept in.
+  (heated once it drops below 38 °C, until it is above 42 °C), **when the sensors were read** - a
+  reading older than 6 minutes is marked out of date, because the service repeats its last one
+  while the sensor is silent - whether the water asks to be heated, and **the history of the tank
+  and the circulation** over the last 24 hours, 7 or 30 days, on the band the tank is kept in.
+- **The circulation pump** (HAS-406, `water-service` >= 0.13.0): running, stopped or not known
+  (the service leaves out a read older than a minute), since when and what started it - by hand,
+  or "not by the water service" for the scene of the Shelly cloud - the return temperature and the
+  last run; **"Start circulation"** starts a run at once, with no question (a run of at most
+  3 minutes that stops by itself), and reads the pump again 2.5 s later. A tank too cold is told
+  in words. Under the history, **the runs of today**: when each started, what started it, how long
+  it went, how it ended and the return at its start and end.
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
@@ -286,9 +292,10 @@ dashboards:
   the temperature of the room in the heating ends there. Nothing is shown as done before the
   registry says so, and one change is made at a time.
 
-The hot water, the boiler room and the presence are read-only. The water page writes in two places
-(HAS-323): the command of the valve, after a question, and the bills of the waterworks; after every
-write it reads again, and only that answer moves the page.
+The hot water, the boiler room and the presence are read-only. The water page writes in three places:
+the command of the valve, after a question, and the bills of the waterworks (HAS-323), and the start
+of the circulation pump (HAS-406); after every write it reads again, and only that answer moves the
+page.
 
 Every view stands in the **middle of the page**, with its title in the top left corner, and the
 cards of a row are of one size (HAS-266).
