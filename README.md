@@ -238,6 +238,13 @@ dashboards:
   or the last three - with what was confirmed away from home, former members, the muted cycles and those
   without a recorded presence told apart; on My room the card **"Mine this month"** with the same figures
   of the member of the profile. From the report of `appliance-service` 0.9.0.
+- **The requests of the household** (HAS-411): on My room, for every member, the card **"Requests"** - the
+  errands the household wrote for the member of the profile, with who wrote them, when, and whether the SMS of
+  08:00 already carried them (notification-service 0.9.0); each ticked off with "Done" or removed, those done in
+  the last 30 days folded under the list. A form writes a request for anybody of the household - the member of
+  the profile chosen first - one line of up to 100 characters, checked before it is sent as
+  `database-service` checks it. Nothing optimistic: after a change the list is read again. Needs
+  `database-service` 0.22.0; against an older one the card shows the failure and the rest of the page works.
 - **The tag page** (HAS-346, `/t`): what a phone held to the NFC tag on an appliance opens -
   `/t?picc_data=…&cmac=…`, the read of an NTAG 424 DNA (HAS-343, programmed per
   `docs/nfc-tag-programming.pdf` of deployment-tools). It claims the chore of that appliance at once for
@@ -533,6 +540,10 @@ Endpoints used today:
 | `GET` | `/home/household/push-config` | The public VAPID key of the house (HAS-284), read when the notifications of a device are switched on or made anew; `{}` when the deployment has none, and the card says the house sends none yet. Needs `database-service` 0.18.0 or later |
 | `PUT` | `/home/household/member/{name}/push-subscriptions` | Stores the Web Push subscription of this browser for the member (`endpoint`, `keys`, `userAgent`) - an upsert by the endpoint; also at every start while switched on. `409 MEMBER_SWITCHED_OFF` has a text of its own |
 | `DELETE` | `/home/household/member/{name}/push-subscriptions?endpoint=` | Removes it when the switch is turned off, after the browser ended it |
+| `GET` | `/home/household/member/{name}/requests?done=true` | The requests of the member of the profile - open, and done in the last 30 days (my room, HAS-411), every 60 s and right after a change. Needs `database-service` 0.22.0 |
+| `POST` | `/home/household/member/{name}/requests` | Writes a request for that member: body `{text, author}`, the author the member of the profile; the text checked first as the service checks it |
+| `PUT` | `/home/household/member/{name}/requests/{id}/done?member=` | Ticks a request off as the member of the profile; the list is read again |
+| `DELETE` | `/home/household/member/{name}/requests/{id}` | Removes a request; `NOT_FOUND_REQUEST` counts as removed. The codes `INVALID_REQUEST`, `MEMBER_SWITCHED_OFF` and `NOT_FOUND_HOUSEHOLD_MEMBER` have texts |
 | `GET` | `/home/appliance` | The appliances of the household with their state, `finishedAt` and `awaitingSince` (the notice of every page, my room, overview), polled every 30 s and right after an acknowledgement. Needs `appliance-service` 0.3.0 and `api-gateway-service` 0.9.0 or later |
 | `POST` | `/home/appliance/{id}/acknowledge?member=` | Marks a finished appliance as emptied (the notice, my room) - without `member` for the administrator's "Mute the reminders" on the notice (HAS-346: the cycle is nobody's chore); on my room also one still finishing (HAS-348, `appliance-service` 0.5.0: the cycle is then never announced) by the member of the profile in use, whom the household messages then name (HAS-347, `appliance-service` 0.4.0); the list is read again, the answer is not used. `409 NOTHING_TO_ACKNOWLEDGE`, `404 NOT_FOUND_APPLIANCE` and `400 UNKNOWN_MEMBER` have texts of their own |
 | `GET` | `/home/appliance/reports/members?from=&to=` | The chores per member of whole months of the house (the appliances page, My room), every 60 s; `INVALID_RANGE` has a text. Needs `appliance-service` 0.9.0 |
