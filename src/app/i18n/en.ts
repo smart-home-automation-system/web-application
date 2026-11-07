@@ -1921,6 +1921,7 @@ export const en = {
       gateway: 'gateway',
       point: 'point {{ point }}',
       bluetooth: 'Bluetooth',
+      gree: 'Gree',
       noBinding: 'The registry does not say how this device is reached.',
       edit: 'Edit',
       putIntoUse: 'Let the services use',
@@ -1961,6 +1962,10 @@ export const en = {
       serial: 'Serial number',
       serialHint: 'As on the label of the inverter: capitals and digits',
       inverterAddress: 'Address of the dongle',
+      greeAddress: 'Address of the unit',
+      greeAddressHint: 'Reserved for the unit in DHCP',
+      greeMac: 'MAC of the unit',
+      greeMacHint: 'As the unit gives it: 12 characters 0-9 and a-f, for example 02005e0000a1',
       optional: 'Optional',
       registration: 'Registration number of the dongle',
       registrationHint: 'Optional - the password of the local API of the SolaX dongle',
@@ -2012,6 +2017,9 @@ export const en = {
       registration: 'A registration number is 5 to 20 capital letters and digits.',
       loggerSerial: 'The serial of the logger is a whole number from 1 to 4294967295.',
       serialTaken: 'An inverter with this serial number is already registered.',
+      greeMac: 'The MAC of a unit is 12 characters 0-9 and a-f.',
+      greeMacTaken: 'An air conditioner with this MAC is already registered.',
+      greeAddressTaken: 'An air conditioner at this address is already registered.',
     },
     // what the registry refuses, by the code of its answer
     error: {
@@ -2034,6 +2042,7 @@ export const en = {
       appliance: 'Appliance',
       inverter: 'Inverter',
       waterValve: 'Water valve',
+      airConditioner: 'Air conditioner',
     },
     lightKind: {
       relay: 'switched',
@@ -2047,6 +2056,7 @@ export const en = {
     vendor: {
       shelly: 'Shelly',
       eaton: 'Eaton',
+      gree: 'Gree',
       other: 'Other',
     },
     binding: {
@@ -2054,6 +2064,7 @@ export const en = {
       eaton: 'Eaton, through the AMX system',
       bthome: 'Bluetooth',
       inverter: 'Inverter, read by the energy service',
+      gree: 'Gree, on the network',
     },
   },
   household: {

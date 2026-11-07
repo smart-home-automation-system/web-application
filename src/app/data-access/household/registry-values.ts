@@ -39,7 +39,7 @@ export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
- * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.16.0) - copies, like the ones above,
+ * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.18.0) - copies, like the ones above,
  * and under the same rule: they are what the administration of the devices offers, and what
  * the registry already holds is shown and sent back as it is.
  */
@@ -61,6 +61,9 @@ export const DEVICE_KINDS = [
   'inverter',
   // HAS-313 (smart-home-sdk 1.16.0, HAS-311): the smart valve on the water main, a Shelly read by water-service
   'water valve',
+  // HAS-392 (smart-home-sdk 1.18.0, HAS-377): an indoor unit of an air conditioner driven by aircon-service,
+  // reached by its gree binding alone
+  'air conditioner',
 ] as const;
 
 export type DeviceKind = (typeof DEVICE_KINDS)[number];
@@ -82,7 +85,8 @@ export const PLACEMENTS = ['external', 'internal'] as const;
 
 export type Placement = (typeof PLACEMENTS)[number];
 
-export const VENDORS = ['shelly', 'eaton', 'other'] as const;
+// gree (HAS-392, smart-home-sdk 1.18.0): the vendor of the air conditioners, reached by the gree binding alone
+export const VENDORS = ['shelly', 'eaton', 'gree', 'other'] as const;
 
 export type Vendor = (typeof VENDORS)[number];
 

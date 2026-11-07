@@ -1,4 +1,4 @@
-import { SmartDevice } from '../../data-access/devices/device-registry-api';
+import { DeviceDetails, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { DEVICE_KINDS } from '../../data-access/household/registry-values';
 import {
   addressProblem,
@@ -11,12 +11,14 @@ import {
   channelNeeded,
   channelsOf,
   generationsOf,
+  greeMacProblem,
   chosenProblem,
   deviceIdProblem,
   isZone,
   loggerSerialOf,
   loggerSerialProblem,
   nameProblem,
+  normaliseGreeMac,
   openingSensorsOf,
   optionalAddressProblem,
   pointOf,
@@ -76,6 +78,8 @@ describe('the rules of a device', () => {
     ['inverter', ['inverter']],
     // HAS-313: the water valve is a Shelly on the network
     ['water valve', ['shelly']],
+    // HAS-392: an air conditioner is reached by its gree binding alone
+    ['air conditioner', ['gree']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });
@@ -87,8 +91,8 @@ describe('the rules of a device', () => {
   });
 
   // the registry decides about a kind this version has never heard of - but the inverter binding is
-  // the part of the inverter alone
-  it('offer every binding but the inverter one for a kind they do not know', () => {
+  // the part of the inverter alone, the gree binding of the air conditioner
+  it('offer every binding but the inverter and the gree one for a kind they do not know', () => {
     expect(bindingsOf('wind sensor')).toEqual(['shelly', 'eaton', 'bthome']);
   });
 
@@ -99,6 +103,8 @@ describe('the rules of a device', () => {
     expect(vendorsOf('bthome')).toEqual(['shelly', 'other']);
     // an inverter is of none of the vendors the registry names
     expect(vendorsOf('inverter')).toEqual(['other']);
+    // a Gree unit is of the vendor gree, and nothing else is (HAS-377)
+    expect(vendorsOf('gree')).toEqual(['gree']);
   });
 
   // HAS-260: the registry takes a zone (200 to 299) as the channel of a presence sensor alone
@@ -341,6 +347,61 @@ describe('the rules of a device', () => {
       expect(sameDevice(linked, { ...details, openingSensors: [9, 14] })).toBe(true);
       expect(sameDevice(linked, { ...details, openingSensors: [14, 9] })).toBe(false);
       expect(sameDevice(linked, details)).toBe(false);
+    });
+  });
+
+  // HAS-392: the bounds of GreeBinding of smart-home-sdk 1.18.0, the unique indexes of database-service 0.23.0
+  describe('about an air conditioner', () => {
+    it.each([
+      ['02005e0000a1', undefined],
+      [' 02005E0000A1 ', undefined],
+      ['02:00:5e:00:00:a1', undefined],
+      ['02-00-5E-00-00-A1', undefined],
+      ['02005e0000a', 'devices.problem.greeMac'],
+      ['02005e0000a1f', 'devices.problem.greeMac'],
+      ['02005e0000g1', 'devices.problem.greeMac'],
+      ['', 'devices.problem.greeMac'],
+    ])('judges the MAC "%s"', (mac, problem) => {
+      expect(greeMacProblem(mac)).toBe(problem);
+    });
+
+    it('sends the MAC as the unit gives it', () => {
+      expect(normaliseGreeMac(' 02:00:5E:00:00:A1 ')).toBe('02005e0000a1');
+    });
+
+    it('finds the MAC or the address another unit has', () => {
+      const unit: SmartDevice = {
+        id: 67,
+        kind: 'air conditioner',
+        vendor: 'gree',
+        gree: { address: '192.0.2.59', mac: '02005e0000a1' },
+      };
+      expect(bindingTaken({ gree: { address: '192.0.2.60', mac: '02005e0000a1' } }, [unit])).toBe(
+        'devices.problem.greeMacTaken',
+      );
+      expect(bindingTaken({ gree: { address: '192.0.2.59', mac: '02005e0000a2' } }, [unit])).toBe(
+        'devices.problem.greeAddressTaken',
+      );
+      expect(
+        bindingTaken({ gree: { address: '192.0.2.60', mac: '02005e0000a2' } }, [unit]),
+      ).toBeUndefined();
+      expect(bindingOf(unit)).toBe('gree');
+    });
+
+    it('sees a changed binding of a unit as a change', () => {
+      const unit: SmartDevice = {
+        name: 'Air conditioner',
+        room: 'office',
+        kind: 'air conditioner',
+        enabled: true,
+        vendor: 'gree',
+        gree: { address: '192.0.2.59', mac: '02005e0000a1' },
+      };
+      const details = { ...unit } as DeviceDetails;
+      expect(sameDevice(unit, details)).toBe(true);
+      expect(
+        sameDevice(unit, { ...details, gree: { address: '192.0.2.60', mac: '02005e0000a1' } }),
+      ).toBe(false);
     });
   });
 

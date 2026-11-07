@@ -62,8 +62,10 @@ describe('translations', () => {
       // names of products and of a technology, and an abbreviation both languages use
       'devices.device.generation',
       'devices.device.bluetooth',
+      'devices.device.gree',
       'devices.vendor.shelly',
       'devices.vendor.eaton',
+      'devices.vendor.gree',
       'devices.binding.bthome',
       // a number, and the word of the button of a blind both languages use
       'rooms.pieces',

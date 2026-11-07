@@ -1902,6 +1902,7 @@ export const pl: Messages = {
       gateway: 'bramka',
       point: 'punkt {{ point }}',
       bluetooth: 'Bluetooth',
+      gree: 'Gree',
       noBinding: 'Rejestr nie mówi, jak dotrzeć do tego urządzenia.',
       edit: 'Edytuj',
       putIntoUse: 'Pozwól serwisom używać',
@@ -1942,6 +1943,10 @@ export const pl: Messages = {
       serial: 'Numer seryjny',
       serialHint: 'Jak na tabliczce falownika: wielkie litery i cyfry',
       inverterAddress: 'Adres modułu komunikacyjnego',
+      greeAddress: 'Adres jednostki',
+      greeAddressHint: 'Zarezerwowany dla jednostki w DHCP',
+      greeMac: 'MAC jednostki',
+      greeMacHint: 'Tak, jak podaje go jednostka: 12 znaków 0-9 i a-f, na przykład 02005e0000a1',
       optional: 'Nieobowiązkowe',
       registration: 'Numer rejestracyjny modułu',
       registrationHint: 'Nieobowiązkowe - hasło lokalnego API modułu SolaX',
@@ -1992,6 +1997,9 @@ export const pl: Messages = {
       registration: 'Numer rejestracyjny to od 5 do 20 wielkich liter i cyfr.',
       loggerSerial: 'Numer loggera to liczba całkowita od 1 do 4294967295.',
       serialTaken: 'Falownik o tym numerze seryjnym jest już zarejestrowany.',
+      greeMac: 'MAC jednostki to 12 znaków 0-9 i a-f.',
+      greeMacTaken: 'Klimatyzator o tym adresie MAC jest już zarejestrowany.',
+      greeAddressTaken: 'Klimatyzator pod tym adresem jest już zarejestrowany.',
     },
     // what the registry refuses, by the code of its answer
     error: {
@@ -2014,6 +2022,7 @@ export const pl: Messages = {
       appliance: 'Urządzenie AGD',
       inverter: 'Falownik',
       waterValve: 'Zawór wody',
+      airConditioner: 'Klimatyzator',
     },
     lightKind: {
       relay: 'przełączane',
@@ -2027,6 +2036,7 @@ export const pl: Messages = {
     vendor: {
       shelly: 'Shelly',
       eaton: 'Eaton',
+      gree: 'Gree',
       other: 'Inny',
     },
     binding: {
@@ -2034,6 +2044,7 @@ export const pl: Messages = {
       eaton: 'Eaton, przez system AMX',
       bthome: 'Bluetooth',
       inverter: 'Falownik, odczytywany przez serwis energii',
+      gree: 'Gree w sieci',
     },
   },
   household: {

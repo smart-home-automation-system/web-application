@@ -25,14 +25,17 @@ export const POINT_MIN = 1;
 export const POINT_MAX = 99;
 
 /**
- * The four ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
- * the part of the kind inverter and of no other kind.
+ * The five ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
+ * the part of the kind inverter and of no other kind, the gree binding (HAS-377) of the air conditioner.
  */
-export const BINDINGS = ['shelly', 'eaton', 'bthome', 'inverter'] as const;
+export const BINDINGS = ['shelly', 'eaton', 'bthome', 'inverter', 'gree'] as const;
 export type Binding = (typeof BINDINGS)[number];
 
-/** The ways a device of a kind this version does not know can be reached: the registry decides. */
-const ANY_BUT_INVERTER: readonly Binding[] = ['shelly', 'eaton', 'bthome'];
+/**
+ * The ways a device of a kind this version does not know can be reached: the registry decides - never
+ * the binding of an inverter or of an air conditioner, which belong to their kinds.
+ */
+const ANY_OTHER: readonly Binding[] = ['shelly', 'eaton', 'bthome'];
 
 /** The bounds of `InverterBinding`: capitals and digits, and how long each text is. */
 const INVERTER_TEXT = /^[A-Z0-9]+$/;
@@ -43,6 +46,8 @@ export const LOGGER_SERIAL_MAX = 4_294_967_295;
 const IPV4 =
   /^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$/;
 const DEVICE_ID = /^[A-Za-z0-9_-]{3,50}$/;
+/** The MAC of a Gree unit as the unit gives it (`GreeBinding`): 12 hexadecimal digits, lowercase. */
+const GREE_MAC = /^[0-9a-f]{12}$/;
 
 /**
  * The bindings a device of a kind can be reached through. What moves and what lights is wired
@@ -50,7 +55,8 @@ const DEVICE_ID = /^[A-Za-z0-9_-]{3,50}$/;
  * only reports: a wall transmitter of the AMX system or an input of a Shelly. A sensor is
  * whatever reports it; the weather station is read through a Bluetooth gateway, and such a
  * gateway is itself a Shelly.
- * An inverter is reached by its inverter binding alone, and no other kind by that one (HAS-326).
+ * An inverter is reached by its inverter binding alone, and no other kind by that one (HAS-326); an air
+ * conditioner by its gree binding alone (HAS-377, the rule of `gree` in `DeviceRules` of database-service 0.23.0).
  * A sensor, and a kind this version does not know, are offered the other three: the registry decides.
  */
 export function bindingsOf(kind: string): readonly Binding[] {
@@ -68,8 +74,10 @@ export function bindingsOf(kind: string): readonly Binding[] {
       return ['shelly'];
     case 'inverter':
       return ['inverter'];
+    case 'air conditioner':
+      return ['gree'];
     default:
-      return ANY_BUT_INVERTER;
+      return ANY_OTHER;
   }
 }
 
@@ -108,7 +116,9 @@ export function generationsOf(kind: string, held?: number): readonly number[] {
     kind === 'water valve'
       ? GENERATIONS.filter((generation) => generation >= FIRST_GENERATION_ON_MQTT)
       : GENERATIONS;
-  return held === undefined || offered.includes(held) ? offered : [...offered, held].sort((a, b) => a - b);
+  return held === undefined || offered.includes(held)
+    ? offered
+    : [...offered, held].sort((a, b) => a - b);
 }
 
 /**
@@ -129,7 +139,7 @@ export function bindingOf(device: SmartDevice): Binding | undefined {
  * The vendors a device reached through a binding can have: an Eaton device is reached through
  * a gateway of the AMX system and nothing else is, the binding of a Shelly is a Shelly's, and
  * a Bluetooth sensor is of any vendor but Eaton; an inverter is of none of the vendors the
- * registry names.
+ * registry names; a Gree unit is of the vendor gree, and nothing else is (HAS-377).
  */
 export function vendorsOf(binding: Binding): readonly string[] {
   switch (binding) {
@@ -141,6 +151,8 @@ export function vendorsOf(binding: Binding): readonly string[] {
       return ['shelly', 'other'];
     case 'inverter':
       return ['other'];
+    case 'gree':
+      return ['gree'];
   }
 }
 
@@ -192,6 +204,18 @@ export function loggerSerialOf(text: string): number | undefined {
   }
   const serial = Number(digits);
   return serial >= 1 && serial <= LOGGER_SERIAL_MAX ? serial : undefined;
+}
+
+/**
+ * The MAC of a Gree unit as it is sent: lowercase and without separators - the form the unit gives in
+ * every answer. Written with colons or dashes, as a router lists it, it is the same address.
+ */
+export function normaliseGreeMac(text: string): string {
+  return text.trim().toLowerCase().replaceAll(':', '').replaceAll('-', '');
+}
+
+export function greeMacProblem(text: string): MessageKey | undefined {
+  return GREE_MAC.test(normaliseGreeMac(text)) ? undefined : 'devices.problem.greeMac';
 }
 
 /** A name as it is sent: without the spaces around it. */
@@ -260,10 +284,17 @@ export function bluetoothAddressProblem(text: string): MessageKey | undefined {
  * `others`: every other device of the registry - without the one being changed.
  */
 export function bindingTaken(
-  device: Pick<DeviceDetails, 'shelly' | 'eaton' | 'bthome' | 'inverter'>,
+  device: Pick<DeviceDetails, 'shelly' | 'eaton' | 'bthome' | 'inverter' | 'gree'>,
   others: readonly SmartDevice[],
 ): MessageKey | undefined {
-  const { shelly, eaton, bthome, inverter } = device;
+  const { shelly, eaton, bthome, inverter, gree } = device;
+  // one device per MAC and one per address of a Gree unit (devices_gree_mac_uq, devices_gree_address_uq)
+  if (gree !== undefined && others.some((other) => other.gree?.mac === gree.mac)) {
+    return 'devices.problem.greeMacTaken';
+  }
+  if (gree !== undefined && others.some((other) => other.gree?.address === gree.address)) {
+    return 'devices.problem.greeAddressTaken';
+  }
   // one device per serial number (devices_inverter_serial_number_uq)
   if (
     inverter !== undefined &&
@@ -345,6 +376,8 @@ export function sameDevice(before: SmartDevice, details: DeviceDetails): boolean
       device.inverter?.registrationNumber,
       device.inverter?.loggerSerial,
       device.inverter?.batterySerialNumber,
+      device.gree?.address,
+      device.gree?.mac,
       device.lightKind,
       device.placement,
       device.positioning,

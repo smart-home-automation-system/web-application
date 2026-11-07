@@ -351,6 +351,16 @@ const AT_THE_START: readonly StoredDevice[] = [
     vendor: 'other',
     inverter: { brand: 'sofar', serialNumber: 'MOCKF0000000001', loggerSerial: 1234567890 },
   },
+  // the air conditioner of sanctum (HAS-392): a locally administered MAC, an address of the documentation range
+  {
+    id: 67,
+    name: 'Air conditioner',
+    room: 'sanctum',
+    kind: 'air conditioner',
+    enabled: true,
+    vendor: 'gree',
+    gree: { address: '192.0.2.87', mac: '02005e0000a5' },
+  },
   // the water valve of the garage (HAS-313): a Shelly X of generation 3, an invented id, an address of the documentation range
   {
     id: 66,
@@ -472,7 +482,7 @@ function deviceOf(body: unknown): Draft | undefined {
   if (!isRecord(body)) {
     return undefined;
   }
-  const { name, room, kind, enabled, vendor, shelly, eaton, bthome, inverter } = body;
+  const { name, room, kind, enabled, vendor, shelly, eaton, bthome, inverter, gree } = body;
   const { lightKind, placement, positioning, openingSensors } = body;
   if (typeof name !== 'string' || name.length < 3 || name.length > 50) {
     return undefined;
@@ -505,6 +515,7 @@ function deviceOf(body: unknown): Draft | undefined {
     eaton: eatonOf(eaton),
     bthome: bthomeOf(bthome),
     inverter: inverterOf(inverter),
+    gree: greeOf(gree),
   };
   if (Object.values(bindings).includes(null)) {
     return undefined;
@@ -519,6 +530,7 @@ function deviceOf(body: unknown): Draft | undefined {
     ...(bindings.eaton ? { eaton: bindings.eaton } : {}),
     ...(bindings.bthome ? { bthome: bindings.bthome } : {}),
     ...(bindings.inverter ? { inverter: bindings.inverter } : {}),
+    ...(bindings.gree ? { gree: bindings.gree } : {}),
     ...(lightKind === undefined ? {} : { lightKind }),
     ...(placement === undefined ? {} : { placement }),
     ...(positioning === undefined ? {} : { positioning }),
@@ -592,7 +604,8 @@ function inverterOf(value: unknown): SmartDevice['inverter'] | null {
   if (!isRecord(value) || !oneOf(value['brand'], INVERTER_BRANDS)) {
     return null;
   }
-  const { brand, serialNumber, address, registrationNumber, loggerSerial, batterySerialNumber } = value;
+  const { brand, serialNumber, address, registrationNumber, loggerSerial, batterySerialNumber } =
+    value;
   const text = (one: unknown, least: number, most: number) =>
     typeof one === 'string' && INVERTER_TEXT.test(one) && one.length >= least && one.length <= most;
   if (!text(serialNumber, 5, 40)) {
@@ -614,10 +627,31 @@ function inverterOf(value: unknown): SmartDevice['inverter'] | null {
     brand,
     serialNumber: serialNumber as string,
     ...(address === undefined ? {} : { address: address as string }),
-    ...(registrationNumber === undefined ? {} : { registrationNumber: registrationNumber as string }),
+    ...(registrationNumber === undefined
+      ? {}
+      : { registrationNumber: registrationNumber as string }),
     ...(loggerSerial === undefined ? {} : { loggerSerial }),
-    ...(batterySerialNumber === undefined ? {} : { batterySerialNumber: batterySerialNumber as string }),
+    ...(batterySerialNumber === undefined
+      ? {}
+      : { batterySerialNumber: batterySerialNumber as string }),
   };
+}
+
+/** `GreeBinding`: the address of the unit and its MAC, as the unit gives it - both needed. */
+function greeOf(value: unknown): SmartDevice['gree'] | null {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    return null;
+  }
+  const { address, mac } = value;
+  return typeof address === 'string' &&
+    IPV4.test(address) &&
+    typeof mac === 'string' &&
+    /^[0-9a-f]{12}$/.test(mac)
+    ? { address, mac }
+    : null;
 }
 
 function whole(value: unknown, least: number, most: number): value is number {
@@ -641,17 +675,18 @@ function refusalOf(device: Draft, self: StoredDevice | undefined): MockReply | u
 
 /** `DeviceRules` of `database-service`, in its words. */
 function brokenRuleOf(device: Draft): string | undefined {
-  const given = (['shelly', 'eaton', 'bthome', 'inverter'] as const).filter(
+  const given = (['shelly', 'eaton', 'bthome', 'inverter', 'gree'] as const).filter(
     (binding) => device[binding] !== undefined,
   );
   if (given.length !== 1) {
-    return `A device is reached through exactly one binding - shelly, eaton, bthome or inverter - and this one has ${
+    return `A device is reached through exactly one binding - shelly, eaton, bthome, inverter or gree - and this one has ${
       given.length === 0 ? 'none' : given.join(' and ')
     }`;
   }
   const [binding] = given;
   if (
     (device.vendor === 'eaton') !== (binding === 'eaton') ||
+    (device.vendor === 'gree') !== (binding === 'gree') ||
     (binding === 'shelly' && device.vendor !== 'shelly') ||
     (binding === 'inverter' && device.vendor !== 'other')
   ) {
@@ -692,7 +727,11 @@ function brokenRuleOf(device: Draft): string | undefined {
     return `placement and positioning describe blinds, not a device of the kind [${device.kind}]`;
   }
   const inverter = device.inverter;
-  if (inverter !== undefined && inverter.brand !== 'solax' && inverter.registrationNumber !== undefined) {
+  if (
+    inverter !== undefined &&
+    inverter.brand !== 'solax' &&
+    inverter.registrationNumber !== undefined
+  ) {
     return `registrationNumber is the one of a SolaX dongle, not of an inverter of the brand [${inverter.brand}]`;
   }
   if (inverter !== undefined && inverter.brand !== 'sofar' && inverter.loggerSerial !== undefined) {
@@ -733,6 +772,8 @@ function possibleBindingsOf(kind: string): readonly string[] {
       return ['shelly'];
     case 'inverter':
       return ['inverter'];
+    case 'air conditioner':
+      return ['gree'];
     default:
       return ['shelly', 'eaton', 'bthome'];
   }
@@ -740,7 +781,13 @@ function possibleBindingsOf(kind: string): readonly string[] {
 
 /** The unique indexes of the registry, in the words of its answer. */
 function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string | undefined {
-  const { shelly, eaton, bthome, inverter } = device;
+  const { shelly, eaton, bthome, inverter, gree } = device;
+  if (gree !== undefined && others.some((one) => one.gree?.mac === gree.mac)) {
+    return `A device is already registered for the Gree unit with the MAC [${gree.mac}]`;
+  }
+  if (gree !== undefined && others.some((one) => one.gree?.address === gree.address)) {
+    return `A device is already registered for the Gree unit at [${gree.address}]`;
+  }
   if (
     inverter !== undefined &&
     others.some((one) => one.inverter?.serialNumber === inverter.serialNumber)

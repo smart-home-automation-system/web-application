@@ -49,6 +49,18 @@ export interface InverterBinding {
 }
 
 /**
+ * An indoor unit of an air conditioner (`GreeBinding` of `smart-home-sdk` 1.18.0, HAS-377): driven by
+ * `aircon-service` over the local protocol of Gree, by unicast UDP to its address. The key of a unit is
+ * never part of it.
+ */
+export interface GreeBinding {
+  /** The IPv4 address of the unit, reserved for it in DHCP. */
+  readonly address?: string;
+  /** The MAC as the unit gives it: 12 hexadecimal digits, lowercase, without separators. */
+  readonly mac?: string;
+}
+
+/**
  * A device as the registry holds it (`GET /home/device/registry`, `SmartDevice` of
  * `smart-home-sdk` 1.8.0 - `openingSensors` since 1.11.0 - served by `database-service` and
  * routed by the gateway from 0.5.0).
@@ -89,6 +101,8 @@ export interface SmartDevice {
   readonly bthome?: BthomeBinding;
   /** An inverter only (HAS-326) - its binding. */
   readonly inverter?: InverterBinding;
+  /** An air conditioner only (HAS-377) - its binding. */
+  readonly gree?: GreeBinding;
   /** A light only: `relay`, `dimmer` or `rgbw`. */
   readonly lightKind?: string;
   /** Blinds only: `external` or `internal`. */
@@ -124,6 +138,7 @@ export interface DeviceDetails {
   readonly eaton?: EatonBinding;
   readonly bthome?: BthomeBinding;
   readonly inverter?: InverterBinding;
+  readonly gree?: GreeBinding;
   readonly lightKind?: string;
   readonly placement?: string;
   readonly positioning?: boolean;
@@ -171,6 +186,7 @@ const KNOWN_FIELDS: readonly string[] = [
   'eaton',
   'bthome',
   'inverter',
+  'gree',
   'lightKind',
   'placement',
   'positioning',
@@ -220,7 +236,8 @@ export class DeviceRegistryApi {
    */
   watchKind(kind: string): PollingResource<readonly SmartDevice[] | null> {
     return pollingResource(
-      () => this.api.get<readonly SmartDevice[] | null>('/device/registry', { kind, enabled: 'true' }),
+      () =>
+        this.api.get<readonly SmartDevice[] | null>('/device/registry', { kind, enabled: 'true' }),
       { intervalMs: POLL_REGISTRY_EVERY_MS },
     );
   }
@@ -270,6 +287,7 @@ const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
     'loggerSerial',
     'batterySerialNumber',
   ] satisfies readonly (keyof InverterBinding)[],
+  gree: ['address', 'mac'] satisfies readonly (keyof GreeBinding)[],
 };
 
 /**

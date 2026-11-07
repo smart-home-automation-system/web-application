@@ -132,6 +132,11 @@
                         <span class="code">{{ address }}</span>
                       }
                     }
+                    @case ('gree') {
+                      <span>{{ t('devices.device.gree') }}</span>
+                      <span class="code device__id">{{ device.gree?.mac }}</span>
+                      <span class="code">{{ device.gree?.address }}</span>
+                    }
                     @default {
                       <span>{{ t('devices.device.noBinding') }}</span>
                     }

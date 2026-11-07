@@ -208,6 +208,43 @@
             }
           </mat-form-field>
         }
+        @case ('gree') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.greeAddress') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="15"
+              data-testid="gree-address"
+              [formControl]="greeAddress"
+            />
+            <mat-hint>{{ t('devices.form.greeAddressHint') }}</mat-hint>
+            @if (problemOf(greeAddress); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.greeMac') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="17"
+              data-testid="gree-mac"
+              [formControl]="greeMac"
+            />
+            <mat-hint>{{ t('devices.form.greeMacHint') }}</mat-hint>
+            @if (problemOf(greeMac); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+        }
         @case ('inverter') {
           <div class="form__group" role="group" [attr.aria-labelledby]="id + '-brand'">
             <h3 class="form__label" [id]="id + '-brand'">{{ t('devices.form.brand') }}</h3>
