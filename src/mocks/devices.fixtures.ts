@@ -792,6 +792,24 @@ function greeTakenOf(
     : undefined;
 }
 
+/** A channel of a Shelly by its address or by its id (a device without a channel counts as one). */
+function shellyTakenOf(
+  shelly: NonNullable<SmartDevice['shelly']>,
+  others: readonly StoredDevice[],
+): string | undefined {
+  const channel = shelly.channel === undefined ? '' : `, channel ${shelly.channel}`;
+  const sameChannel = others.filter(
+    (one) => one.shelly !== undefined && one.shelly.channel === shelly.channel,
+  );
+  if (sameChannel.some((one) => one.shelly?.address === shelly.address)) {
+    return `A device is already registered for the Shelly at [${shelly.address}]${channel}`;
+  }
+  return shelly.deviceId !== undefined &&
+    sameChannel.some((one) => one.shelly?.deviceId === shelly.deviceId)
+    ? `A device is already registered for the Shelly with the id [${shelly.deviceId}]${channel}`
+    : undefined;
+}
+
 /** The unique indexes of the registry, in the words of its answer. */
 function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string | undefined {
   const { shelly, eaton, bthome, inverter, gree } = device;
@@ -805,20 +823,9 @@ function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string 
   ) {
     return `A device is already registered for the inverter with the serial number [${inverter.serialNumber}]`;
   }
-  if (shelly !== undefined) {
-    const channel = shelly.channel === undefined ? '' : `, channel ${shelly.channel}`;
-    const sameChannel = others.filter(
-      (one) => one.shelly !== undefined && one.shelly.channel === shelly.channel,
-    );
-    if (sameChannel.some((one) => one.shelly?.address === shelly.address)) {
-      return `A device is already registered for the Shelly at [${shelly.address}]${channel}`;
-    }
-    if (
-      shelly.deviceId !== undefined &&
-      sameChannel.some((one) => one.shelly?.deviceId === shelly.deviceId)
-    ) {
-      return `A device is already registered for the Shelly with the id [${shelly.deviceId}]${channel}`;
-    }
+  const shellyTaken = shelly === undefined ? undefined : shellyTakenOf(shelly, others);
+  if (shellyTaken !== undefined) {
+    return shellyTaken;
   }
   if (
     eaton !== undefined &&
