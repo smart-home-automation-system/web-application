@@ -1,4 +1,10 @@
-import { DEVICE_KINDS, INVERTER_BRANDS, OFFERED_KINDS, ROOM_NAMES } from './registry-values';
+import {
+  DEVICE_KINDS,
+  INVERTER_BRANDS,
+  OFFERED_KINDS,
+  ROOM_NAMES,
+  VENDORS,
+} from './registry-values';
 
 describe('ROOM_NAMES', () => {
   // HAS-289: the corridor upstairs was the one room written hall_up; RoomName of
@@ -13,7 +19,7 @@ describe('ROOM_NAMES', () => {
   });
 });
 
-// The values of smart-home-sdk 1.15.0 written out (DeviceKind, InverterBrand - HAS-326): a value added
+// The values of smart-home-sdk 1.18.0 written out (DeviceKind, InverterBrand - HAS-326, SmartVendor - HAS-377): a value added
 // to the SDK is added here and to the copy together, so that it is offered
 describe('the copies of the SDK', () => {
   it('know every kind of DeviceKind', () => {
@@ -30,7 +36,13 @@ describe('the copies of the SDK', () => {
       'appliance',
       'inverter',
       'water valve',
+      'air conditioner',
     ]);
+  });
+
+  // HAS-392: gree, the vendor of the air conditioners (smart-home-sdk 1.18.0)
+  it('know every vendor of SmartVendor', () => {
+    expect(VENDORS).toEqual(['shelly', 'eaton', 'gree', 'other']);
   });
 
   it('know every brand of InverterBrand', () => {

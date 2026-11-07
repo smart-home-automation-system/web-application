@@ -289,7 +289,8 @@ dashboards:
   with what it is and how it is reached: the address, channel and
   MQTT id of a Shelly, the gateway and point of an Eaton device, the address of a Bluetooth
   sensor, the brand, serial and address of an inverter (HAS-341), and the water valve as a Shelly of generation 2 or
-  later on the channel 0 (HAS-313). And the forms to register a device, change one, switch one off and on for the
+  later on the channel 0 (HAS-313), the MAC and address of an air conditioner of the vendor Gree (HAS-392, from
+  `database-service` >= 0.23.0 - the MAC as the unit gives it, written with colons or dashes or without). And the forms to register a device, change one, switch one off and on for the
   services, and remove one. Blinds are given **the sensors of their own window** (HAS-290), picked
   from the opening sensors of the registry - none means a window that counts as closed; a sensor
   that blinds still name is not offered for removal. **The kind decides what the form asks for**: the ways such a device
