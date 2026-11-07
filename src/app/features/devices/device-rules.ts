@@ -288,12 +288,9 @@ export function bindingTaken(
   others: readonly SmartDevice[],
 ): MessageKey | undefined {
   const { shelly, eaton, bthome, inverter, gree } = device;
-  // one device per MAC and one per address of a Gree unit (devices_gree_mac_uq, devices_gree_address_uq)
-  if (gree !== undefined && others.some((other) => other.gree?.mac === gree.mac)) {
-    return 'devices.problem.greeMacTaken';
-  }
-  if (gree !== undefined && others.some((other) => other.gree?.address === gree.address)) {
-    return 'devices.problem.greeAddressTaken';
+  const unitTaken = gree === undefined ? undefined : greeTaken(gree, others);
+  if (unitTaken !== undefined) {
+    return unitTaken;
   }
   // one device per serial number (devices_inverter_serial_number_uq)
   if (
@@ -328,6 +325,19 @@ export function bindingTaken(
     return 'devices.problem.bluetoothAddressTaken';
   }
   return undefined;
+}
+
+/** One device per MAC and one per address of a Gree unit (devices_gree_mac_uq, devices_gree_address_uq). */
+function greeTaken(
+  gree: NonNullable<DeviceDetails['gree']>,
+  others: readonly SmartDevice[],
+): MessageKey | undefined {
+  if (others.some((other) => other.gree?.mac === gree.mac)) {
+    return 'devices.problem.greeMacTaken';
+  }
+  return others.some((other) => other.gree?.address === gree.address)
+    ? 'devices.problem.greeAddressTaken'
+    : undefined;
 }
 
 /**

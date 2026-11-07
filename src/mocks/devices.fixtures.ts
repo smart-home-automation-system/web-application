@@ -779,14 +779,25 @@ function possibleBindingsOf(kind: string): readonly string[] {
   }
 }
 
+/** The two unique indexes of a Gree unit, in the words of the registry. */
+function greeTakenOf(
+  gree: NonNullable<SmartDevice['gree']>,
+  others: readonly StoredDevice[],
+): string | undefined {
+  if (others.some((one) => one.gree?.mac === gree.mac)) {
+    return `A device is already registered for the Gree unit with the MAC [${gree.mac}]`;
+  }
+  return others.some((one) => one.gree?.address === gree.address)
+    ? `A device is already registered for the Gree unit at [${gree.address}]`
+    : undefined;
+}
+
 /** The unique indexes of the registry, in the words of its answer. */
 function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string | undefined {
   const { shelly, eaton, bthome, inverter, gree } = device;
-  if (gree !== undefined && others.some((one) => one.gree?.mac === gree.mac)) {
-    return `A device is already registered for the Gree unit with the MAC [${gree.mac}]`;
-  }
-  if (gree !== undefined && others.some((one) => one.gree?.address === gree.address)) {
-    return `A device is already registered for the Gree unit at [${gree.address}]`;
+  const unitTaken = gree === undefined ? undefined : greeTakenOf(gree, others);
+  if (unitTaken !== undefined) {
+    return unitTaken;
   }
   if (
     inverter !== undefined &&
