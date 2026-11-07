@@ -60,9 +60,11 @@ import {
   bluetoothAddressProblem,
   chosenProblem,
   deviceIdProblem,
+  greeMacProblem,
   loggerSerialOf,
   loggerSerialProblem,
   nameProblem,
+  normaliseGreeMac,
   normaliseName,
   openingSensorsOf,
   optionalAddressProblem,
@@ -195,6 +197,15 @@ export class SmartDeviceForm implements OnInit {
     nonNullable: true,
     validators: validator(batterySerialProblem),
   });
+  // an air conditioner (HAS-392): the address of the unit and its MAC, both needed
+  protected readonly greeAddress = new FormControl('', {
+    nonNullable: true,
+    validators: validator(addressProblem),
+  });
+  protected readonly greeMac = new FormControl('', {
+    nonNullable: true,
+    validators: validator(greeMacProblem),
+  });
   /** The brand decides which of the two numbers of its link the form asks for. */
   protected readonly brand = signal<string>(INVERTER_BRANDS[0]);
 
@@ -323,7 +334,15 @@ export class SmartDeviceForm implements OnInit {
       }
     });
     // what was found taken was found for the binding as it was then
-    for (const control of [this.address, this.deviceId, this.point, this.bluetooth, this.serial]) {
+    for (const control of [
+      this.address,
+      this.deviceId,
+      this.point,
+      this.bluetooth,
+      this.serial,
+      this.greeAddress,
+      this.greeMac,
+    ]) {
       control.valueChanges.subscribe(() => this.taken.set(undefined));
     }
   }
@@ -356,6 +375,8 @@ export class SmartDeviceForm implements OnInit {
     const logger = device.inverter?.loggerSerial;
     this.loggerSerial.setValue(logger === undefined ? '' : String(logger));
     this.batterySerial.setValue(device.inverter?.batterySerialNumber ?? '');
+    this.greeAddress.setValue(device.gree?.address ?? '');
+    this.greeMac.setValue(device.gree?.mac ?? '');
     this.lightKind.set(device.lightKind);
     this.placement.set(device.placement);
     this.positioning.set(device.positioning);
@@ -432,6 +453,8 @@ export class SmartDeviceForm implements OnInit {
           this.brand() === 'solax' ? this.registration : this.loggerSerial,
           this.batterySerial,
         ];
+      case 'gree':
+        return [this.greeAddress, this.greeMac];
     }
   }
 
@@ -484,6 +507,14 @@ export class SmartDeviceForm implements OnInit {
         : {}),
       ...(binding === 'bthome' ? { bthome: { address: normaliseMac(this.bluetooth.value) } } : {}),
       ...(binding === 'inverter' ? { inverter: this.inverterBinding() } : {}),
+      ...(binding === 'gree'
+        ? {
+            gree: {
+              address: this.greeAddress.value.trim(),
+              mac: normaliseGreeMac(this.greeMac.value),
+            },
+          }
+        : {}),
       ...(kind === 'light' && lightKind !== undefined ? { lightKind } : {}),
       ...(kind === 'blinds' && placement !== undefined ? { placement } : {}),
       ...(kind === 'blinds' && positioning !== undefined ? { positioning } : {}),

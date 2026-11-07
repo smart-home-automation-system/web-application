@@ -635,7 +635,9 @@ describe('Devices', () => {
     const garage = await openRoom('garage', 'Add');
     const form = garage.querySelector<HTMLElement>('app-smart-device-form')!;
     const toggles = (group: string): string[] =>
-      [...form.querySelectorAll(`[data-testid="${group}"] mat-button-toggle`)].map((one) => text(one));
+      [...form.querySelectorAll(`[data-testid="${group}"] mat-button-toggle`)].map((one) =>
+        text(one),
+      );
     const chosen = (group: string): string =>
       text(form.querySelector(`[data-testid="${group}"] .mat-button-toggle-checked`));
 
@@ -675,6 +677,102 @@ describe('Devices', () => {
     await settled();
     answerTheRegistryWith([]);
     await settled();
+  });
+
+  // HAS-392 (smart-home-sdk 1.18.0, the rule of gree in DeviceRules of database-service 0.23.0): an air conditioner
+  // is reached by its gree binding alone, of the vendor gree - the form offers nothing else; the MAC is sent as the
+  // unit gives it, whatever separators it was written with
+  it('registers an air conditioner with its address and MAC, and shows how it is reached', async () => {
+    answerTheRegistryWith([]);
+    const office = await openRoom('office', 'Add');
+    const form = office.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Air conditioner');
+    choose(form, 'kind', 'air conditioner');
+    await settled();
+    expect(form.querySelector('[data-testid="binding"] button')).toBeNull();
+    expect(text(form)).toContain('Gree, on the network');
+    type(form.querySelector<HTMLInputElement>('[data-testid="gree-address"]')!, '192.0.2.59');
+    type(form.querySelector<HTMLInputElement>('[data-testid="gree-mac"]')!, '02:00:5E:00:00:A1');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    const request = http.expectOne({ method: 'POST', url: '/home/device/registry' });
+    expect(request.request.body).toEqual({
+      name: 'Air conditioner',
+      room: 'office',
+      kind: 'air conditioner',
+      enabled: true,
+      vendor: 'gree',
+      gree: { address: '192.0.2.59', mac: '02005e0000a1' },
+    });
+    request.flush({});
+    await settled();
+    answerTheRegistryWith([
+      {
+        id: 67,
+        name: 'Air conditioner',
+        room: 'office',
+        kind: 'air conditioner',
+        enabled: true,
+        vendor: 'gree',
+        gree: { address: '192.0.2.59', mac: '02005e0000a1' },
+      },
+    ]);
+    await settled();
+    const shown = office.querySelector('[data-device="67"]');
+    expect(text(shown)).toContain('Air conditioner');
+    expect(text(shown)).toContain('02005e0000a1');
+    expect(text(shown)).toContain('192.0.2.59');
+  });
+
+  // the form of a registered unit holds its address and MAC, and saved unchanged it makes no call
+  it('opens a registered air conditioner with its binding, and makes no call when nothing changed', async () => {
+    answerTheRegistryWith([
+      {
+        id: 67,
+        name: 'Air conditioner',
+        room: 'office',
+        kind: 'air conditioner',
+        enabled: true,
+        vendor: 'gree',
+        gree: { address: '192.0.2.59', mac: '02005e0000a1' },
+      },
+    ]);
+    await openRoom('office');
+    button(row(67), 'Edit')!.click();
+    fixture.detectChanges();
+    const form = row(67).querySelector<HTMLElement>('app-smart-device-form')!;
+    expect(form.querySelector<HTMLInputElement>('[data-testid="gree-address"]')!.value).toBe(
+      '192.0.2.59',
+    );
+    expect(form.querySelector<HTMLInputElement>('[data-testid="gree-mac"]')!.value).toBe(
+      '02005e0000a1',
+    );
+
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    fixture.detectChanges();
+
+    http.expectNone({ method: 'PUT', url: '/home/device/registry/67' });
+    expect(row(67).querySelector('app-smart-device-form')).toBeNull();
+  });
+
+  // a MAC that is not one never leaves the form
+  it('does not send an air conditioner whose MAC is not one', async () => {
+    answerTheRegistryWith([]);
+    const office = await openRoom('office', 'Add');
+    const form = office.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Air conditioner');
+    choose(form, 'kind', 'air conditioner');
+    await settled();
+    type(form.querySelector<HTMLInputElement>('[data-testid="gree-address"]')!, '192.0.2.59');
+    type(form.querySelector<HTMLInputElement>('[data-testid="gree-mac"]')!, '02005e0000');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    http.expectNone({ method: 'POST', url: '/home/device/registry' });
+    expect(text(form)).toContain('The MAC of a unit is 12 characters 0-9 and a-f.');
   });
 
   it('switches a device off with the operation made for it, and shows what the registry says', async () => {

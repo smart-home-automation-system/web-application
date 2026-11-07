@@ -999,7 +999,7 @@ e2e/              # Playwright tests
     three missed reads (90 s) breaks the line. `shownHistory` takes the period as a function too, read
     lazily, because the card gets it as an input.
   - The mock registry holds the three appliances (ids 61-63, the ids of the mock of appliance-service): the
-    devices page counts them (28 devices with the two inverters of HAS-341 and the water valve of HAS-313). The mock answers 30 days of cycles in a rhythm per appliance (one of
+    devices page counts them (29 devices with the two inverters of HAS-341, the water valve of HAS-313 and the air conditioner of HAS-392). The mock answers 30 days of cycles in a rhythm per appliance (one of
     the dishwasher without its energy) and a power curve every 30 s with a washing pause and the turns of a
     dryer after its end.
   - The photo `appliances` (a laundry room with the washing machine, the dryer, a smart plug and a dishwasher,
@@ -1074,7 +1074,7 @@ e2e/              # Playwright tests
     settles by "opusty"); a month without a closed day has no figures; "in the grid now" is `stored` of the
     last month with a day (`storedNow`).
   - The mock house is a bright afternoon (`energy.fixtures.ts`): phase B overloaded, one SOFAR fault, the SolaX
-    cloud silent; the mock registry holds the two inverters (ids 64, 65) and the water valve (66, HAS-313) - the devices page counts 28.
+    cloud silent; the mock registry holds the two inverters (ids 64, 65), the water valve (66, HAS-313) and the air conditioner of sanctum (67, HAS-392) - the devices page counts 29.
   - **The charge of the battery** (HAS-342, `EnergyControl` in `energy-control.ts`, its own four cards in the section
     under the flow): the charge, the automation, the planned outages and the charges of 30 days. **These are writes to
     the real inverter** (`POST` / `DELETE /energy/battery/charge`) - no question by the owner's choice, except the cancel
@@ -1106,6 +1106,13 @@ e2e/              # Playwright tests
     only (`channelNeeded`: no "None", an effect puts it on 0) and the generations from the second on
     (`generationsOf`, an effect moves it there) - so it never sends what the registry refuses. A valve the
     registry holds otherwise keeps its channel and generation on offer. The mock refuses the same.
+  - **The registry knows the kind `air conditioner` and the vendor `gree`** (HAS-392, `smart-home-sdk` 1.18.0, the
+    rule of `gree` in `DeviceRules` of `database-service` 0.23.0): `bindingsOf` gives it the `gree` binding alone and
+    `vendorsOf('gree')` the vendor `gree` alone - both ways, as Eaton; a kind this version does not know is never
+    offered the binding of an inverter or of a unit. The form asks for the address and the MAC (`greeMacProblem`:
+    12 hex digits; `normaliseGreeMac` sends it lowercase without separators, the form the unit gives); one unit per
+    MAC and one per address (`bindingTaken`). **The dashboard moves before the first unit is registered** (HAS-393):
+    a version before it reads a stored unit with a binding it does not know.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

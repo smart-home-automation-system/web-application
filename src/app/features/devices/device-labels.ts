@@ -24,6 +24,7 @@ export const KIND_LABELS: Readonly<Record<DeviceKind, MessageKey>> = {
   appliance: 'devices.kind.appliance',
   inverter: 'devices.kind.inverter',
   'water valve': 'devices.kind.waterValve',
+  'air conditioner': 'devices.kind.airConditioner',
 };
 
 /** Names of Material Symbols. */
@@ -40,6 +41,7 @@ const KIND_ICONS: Readonly<Record<DeviceKind, string>> = {
   appliance: 'local_laundry_service',
   inverter: 'solar_power',
   'water valve': 'valve',
+  'air conditioner': 'ac_unit',
 };
 
 export const LIGHT_KIND_LABELS: Readonly<Record<LightKind, MessageKey>> = {
@@ -56,6 +58,7 @@ export const PLACEMENT_LABELS: Readonly<Record<Placement, MessageKey>> = {
 export const VENDOR_LABELS: Readonly<Record<Vendor, MessageKey>> = {
   shelly: 'devices.vendor.shelly',
   eaton: 'devices.vendor.eaton',
+  gree: 'devices.vendor.gree',
   other: 'devices.vendor.other',
 };
 
@@ -64,6 +67,7 @@ export const BINDING_LABELS: Readonly<Record<Binding, MessageKey>> = {
   eaton: 'devices.binding.eaton',
   bthome: 'devices.binding.bthome',
   inverter: 'devices.binding.inverter',
+  gree: 'devices.binding.gree',
 };
 
 /**
