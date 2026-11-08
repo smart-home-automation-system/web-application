@@ -302,7 +302,7 @@ export class AirconApi {
   /** The filter of a unit cleaned: its hours start again at 0 (HAS-391). */
   filterCleaned(id: number): Observable<void> {
     return this.api
-      .post<unknown>(`/aircon/${id}/filter-cleaned`, undefined)
+      .post<unknown>(`/aircon/${id}/filter-cleaned`)
       .pipe(map(() => undefined));
   }
 

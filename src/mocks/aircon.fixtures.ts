@@ -385,27 +385,22 @@ export function airconPowerSamples(
       body: { errors: [{ message: 'Plug not found', code: 'NOT_FOUND_PLUG' }] },
     };
   }
-  const start = from === null ? NaN : Date.parse(from + 'Z');
-  const end = to === null ? NaN : Date.parse(to + 'Z');
-  if (!(start < end) || end - start > 31 * 86_400_000) {
+  const start = instantOf(from);
+  const end = instantOf(to);
+  if (Number.isNaN(start) || Number.isNaN(end) || start >= end || end - start > 31 * DAY_MS) {
     return {
       status: 400,
       body: { errors: [{ message: 'Invalid range', code: 'INVALID_RANGE' }] },
     };
   }
-  const length = end - start;
-  const bucket =
-    length <= 2 * 86_400_000 ? 300_000 : length <= 8 * 86_400_000 ? 1_800_000 : 7_200_000;
-  const gapFrom = end - 2 * 3_600_000;
+  const bucket = bucketOf(end - start);
+  const gapFrom = end - 2 * HOUR_MS;
   const buckets: AirconPowerBucket[] = [];
   for (let at = start; at < end; at += bucket) {
-    if (at >= gapFrom && at < gapFrom + 3_600_000) {
+    if (at >= gapFrom && at < gapFrom + HOUR_MS) {
       continue;
     }
-    const hour = new Date(at).getUTCHours();
-    const running = plug === 'indoor' ? hour >= 13 && hour < 18 : hour >= 0 && hour < 6;
-    const base = running ? (plug === 'indoor' ? 600 : 400) : plug === 'indoor' ? 18 : 5;
-    const avg = Math.round((base + ((at / bucket) % 7) * (running ? 12 : 0.3)) * 10) / 10;
+    const avg = drawOf(plug, at, bucket);
     buckets.push({
       at: new Date(at).toISOString().slice(0, 19),
       avg,
@@ -414,6 +409,33 @@ export function airconPowerSamples(
     });
   }
   return { status: 200, body: buckets };
+}
+
+const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
+
+/** A wall-clock time of the house on the UTC timeline; NaN for none. */
+function instantOf(text: string | null): number {
+  return text === null ? Number.NaN : Date.parse(text + 'Z');
+}
+
+/** The bucket the service chooses for a range: 5 min up to 2 days, 30 min up to 8, 2 h beyond. */
+function bucketOf(length: number): number {
+  if (length <= 2 * DAY_MS) {
+    return 300_000;
+  }
+  return length <= 8 * DAY_MS ? 1_800_000 : 7_200_000;
+}
+
+/** What a plug draws in a bucket: the indoor one runs in the afternoons, the sanctum one in the nights. */
+function drawOf(plug: 'indoor' | 'sanctum', at: number, bucket: number): number {
+  const hour = new Date(at).getUTCHours();
+  const indoor = plug === 'indoor';
+  const running = indoor ? hour >= 13 && hour < 18 : hour < 6;
+  const runningWatts = indoor ? 600 : 400;
+  const standbyWatts = indoor ? 18 : 5;
+  const base = running ? runningWatts : standbyWatts;
+  return Math.round((base + ((at / bucket) % 7) * (running ? 12 : 0.3)) * 10) / 10;
 }
 
 export function airconPowerCycle(): PowerCycleState {

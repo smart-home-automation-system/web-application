@@ -122,11 +122,7 @@ export class AirconRuns {
   protected readonly shown = computed(() => {
     const answered = this.runs.value();
     const range = this.range();
-    if (
-      answered === undefined ||
-      answered.query.from !== range.from ||
-      answered.query.to !== range.to
-    ) {
+    if (answered?.query.from !== range.from || answered.query.to !== range.to) {
       return undefined;
     }
     // the newest first, whatever order the service answers in; the times are of the house, so text compares

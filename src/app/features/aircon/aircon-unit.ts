@@ -46,7 +46,7 @@ type Panel = 'none' | 'rule' | 'removeRule' | 'cleaned' | 'runs';
 
 /** The number a field of the rule form holds - a comma taken as a point; NaN for anything else. */
 function numberOf(text: string | null): number {
-  return text === null || text.trim() === '' ? NaN : Number(text.replace(',', '.'));
+  return text === null || text.trim() === '' ? Number.NaN : Number(text.replace(',', '.'));
 }
 
 /**
