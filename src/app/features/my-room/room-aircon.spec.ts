@@ -68,7 +68,9 @@ describe('RoomAircon', () => {
   }
 
   function press(testId: string): void {
-    (card()!.querySelector(`[data-testid="${testId}"]`) as HTMLButtonElement).click();
+    const control = card()!.querySelector(`[data-testid="${testId}"]`)!;
+    // a toggle of a group is its inner button
+    ((control.querySelector('button') ?? control) as HTMLButtonElement).click();
   }
 
   it('asks for the room it is given', async () => {

@@ -2,9 +2,35 @@
   @let one = unit();
   @let label = name() ?? one.name ?? t('aircon.unnamed');
   <div class="unit__head">
-    <mat-icon class="unit__icon" [attr.data-state]="state()" aria-hidden="true">ac_unit</mat-icon>
     <span class="unit__name">{{ label }}</span>
-    <output class="unit__state" data-testid="aircon-state"
+    <!-- on / off: the state the unit reported is the one selected; a unit not read selects neither -->
+    <mat-button-toggle-group
+      class="power"
+      hideSingleSelectionIndicator
+      data-testid="aircon-power"
+      [value]="one.power"
+      [disabled]="busy()"
+      [attr.aria-label]="t('aircon.powerLabel') + ' ' + label"
+      (change)="turn($event.value)"
+    >
+      <mat-button-toggle [value]="true" data-testid="aircon-on"
+        >{{ t('aircon.on')
+        }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-button-toggle
+      >
+      <mat-button-toggle [value]="false" data-testid="aircon-off"
+        >{{ t('aircon.off')
+        }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-button-toggle
+      >
+    </mat-button-toggle-group>
+  </div>
+
+  <!-- the state at a glance: tinted in the colour of the domain while on, plain while off, dashed
+       while not known - the word says it too, the colour is never the only sign -->
+  <p class="status" [attr.data-state]="state()">
+    <mat-icon class="status__icon" aria-hidden="true">{{
+      state() === 'on' ? (MODE_ICONS_BY_WORD[one.mode ?? ''] ?? 'ac_unit') : 'power_settings_new'
+    }}</mat-icon>
+    <output class="status__text" data-testid="aircon-state"
       >{{ t(STATE_LABELS[state()]) }}
       @if (state() === 'on') {
         @if (one.mode !== undefined) {
@@ -15,29 +41,7 @@
         }
       }
     </output>
-    <span class="unit__commands">
-      <button
-        matButton="outlined"
-        type="button"
-        data-testid="aircon-on"
-        [disabled]="busy()"
-        (click)="turn(true)"
-      >
-        {{ t('aircon.on') }}
-        <span class="visually-hidden">{{ label }}</span>
-      </button>
-      <button
-        matButton="outlined"
-        type="button"
-        data-testid="aircon-off"
-        [disabled]="busy()"
-        (click)="turn(false)"
-      >
-        {{ t('aircon.off') }}
-        <span class="visually-hidden">{{ label }}</span>
-      </button>
-    </span>
-  </div>
+  </p>
 
   <p class="note">
     @if (one.roomTemperature !== undefined) {
