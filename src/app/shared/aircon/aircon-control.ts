@@ -71,6 +71,7 @@ import {
   styleUrl: './aircon-control.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   preserveWhitespaces: true,
+  host: { '[class.level]': 'level()' },
   providers: [
     { provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } },
   ],
@@ -83,6 +84,12 @@ export class AirconControl {
   readonly commands = input.required<DeviceCommands<number>>();
   /** Reads the units again after a command. */
   readonly refresh = input.required<() => Promise<void>>();
+  /**
+   * Set where cards stand side by side (the page of the units): the seven rows of the control - the name, the
+   * state, the notes, the modes, the settings, the switches, a failure - join the subgrid of the card, so each
+   * row stands level with the same row of its neighbours whatever the notes above it say.
+   */
+  readonly level = input(false);
 
   private readonly api = inject(AirconApi);
 

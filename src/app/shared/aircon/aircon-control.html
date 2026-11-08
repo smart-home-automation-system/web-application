@@ -43,82 +43,87 @@
     </output>
   </p>
 
-  <p class="note">
-    @if (one.roomTemperature !== undefined) {
-      {{ t('aircon.sensor', { value: one.roomTemperature }) }}
-    } @else {
-      {{ t('aircon.sensorUnknown') }}
-    }
-    @if (one.compressorRunning === true) {
-      · <span data-testid="aircon-compressor">{{ t('aircon.compressor') }}</span>
-    }
-    @if (one.updatedAt | houseAge; as age) {
-      · {{ t('aircon.read') }} {{ age }}
-    }
-    @if (one.reachable === false) {
-      ·
-      <span class="warning" data-testid="aircon-unreachable"
-        >{{ t('aircon.unreachable') }}
-        @if (one.unreachableSince | houseAge; as since) {
-          {{ since }}
-        }
-      </span>
-    }
-  </p>
-
-  @if (one.window; as window) {
-    @if (window.restoreUntil !== undefined) {
-      <p class="note warning" data-testid="aircon-window-hold">
-        {{ t('aircon.window.held', { time: (window.restoreUntil | houseDateTime: TIME) }) }}
-      </p>
-    } @else if (window.state === 'open') {
-      <p class="note" data-testid="aircon-window-open">
-        {{ t('aircon.window.open') }}
-        @if (window.openSince | houseAge; as since) {
-          {{ since }}
-        }
-      </p>
-    }
-  }
-  @if (one.minimumRestoredAt !== undefined) {
-    <p class="note" data-testid="aircon-minimum">
-      {{
-        t('aircon.minimumRestored', {
-          value: COOLING_MIN,
-          time: (one.minimumRestoredAt | houseDateTime: TIME),
-        })
-      }}
+  <!-- the notes, one group: one line or several, the controls under them stand where they stand -->
+  <div class="info">
+    <p class="note">
+      @if (one.roomTemperature !== undefined) {
+        {{ t('aircon.sensor', { value: one.roomTemperature }) }}
+      } @else {
+        {{ t('aircon.sensorUnknown') }}
+      }
+      @if (one.compressorRunning === true) {
+        · <span data-testid="aircon-compressor">{{ t('aircon.compressor') }}</span>
+      }
+      @if (one.updatedAt | houseAge; as age) {
+        · {{ t('aircon.read') }} {{ age }}
+      }
+      @if (one.reachable === false) {
+        ·
+        <span class="warning" data-testid="aircon-unreachable"
+          >{{ t('aircon.unreachable') }}
+          @if (one.unreachableSince | houseAge; as since) {
+            {{ since }}
+          }
+        </span>
+      }
     </p>
-  }
-  @if (one.lastCommandConfirmed === false) {
-    <p class="note warning" data-testid="aircon-unconfirmed">{{ t('aircon.unconfirmed') }}</p>
-  }
+
+    @if (one.window; as window) {
+      @if (window.restoreUntil !== undefined) {
+        <p class="note warning" data-testid="aircon-window-hold">
+          {{ t('aircon.window.held', { time: (window.restoreUntil | houseDateTime: TIME) }) }}
+        </p>
+      } @else if (window.state === 'open') {
+        <p class="note" data-testid="aircon-window-open">
+          {{ t('aircon.window.open') }}
+          @if (window.openSince | houseAge; as since) {
+            {{ since }}
+          }
+        </p>
+      }
+    }
+    @if (one.minimumRestoredAt !== undefined) {
+      <p class="note" data-testid="aircon-minimum">
+        {{
+          t('aircon.minimumRestored', {
+            value: COOLING_MIN,
+            time: (one.minimumRestoredAt | houseDateTime: TIME),
+          })
+        }}
+      </p>
+    }
+    @if (one.lastCommandConfirmed === false) {
+      <p class="note warning" data-testid="aircon-unconfirmed">{{ t('aircon.unconfirmed') }}</p>
+    }
+  </div>
 
   @if (known()) {
     <!-- the mode: the five of the service; a mode this version does not know selects none. The words
          go on a narrow card (the icon stays, the word for a screen reader and in the tooltip) -->
-    <mat-button-toggle-group
-      class="modes"
-      hideSingleSelectionIndicator
-      data-testid="aircon-mode"
-      [value]="knownMode()"
-      [disabled]="busy()"
-      [attr.aria-label]="t('aircon.modeLabel') + ' ' + label"
-      (change)="setMode($event.value)"
-    >
-      @for (mode of MODES; track mode) {
-        <mat-button-toggle
-          [value]="mode"
-          [matTooltip]="t(MODE_LABELS[mode])"
-          matTooltipTouchGestures="off"
-        >
-          <span class="mode"
-            ><mat-icon class="mode__icon" aria-hidden="true">{{ MODE_ICONS[mode] }}</mat-icon
-            ><span class="mode__label">{{ t(MODE_LABELS[mode]) }}</span></span
+    <div class="modes-box">
+      <mat-button-toggle-group
+        class="modes"
+        hideSingleSelectionIndicator
+        data-testid="aircon-mode"
+        [value]="knownMode()"
+        [disabled]="busy()"
+        [attr.aria-label]="t('aircon.modeLabel') + ' ' + label"
+        (change)="setMode($event.value)"
+      >
+        @for (mode of MODES; track mode) {
+          <mat-button-toggle
+            [value]="mode"
+            [matTooltip]="t(MODE_LABELS[mode])"
+            matTooltipTouchGestures="off"
           >
-        </mat-button-toggle>
-      }
-    </mat-button-toggle-group>
+            <span class="mode"
+              ><mat-icon class="mode__icon" aria-hidden="true">{{ MODE_ICONS[mode] }}</mat-icon
+              ><span class="mode__label">{{ t(MODE_LABELS[mode]) }}</span></span
+            >
+          </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
 
     <div class="settings">
       <!-- the target by a degree: 16-30 °C, cooling never below 22 °C -->

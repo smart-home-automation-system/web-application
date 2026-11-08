@@ -894,6 +894,14 @@ e2e/              # Playwright tests
     the rules, the plugs and the power cycle. The draw of each plug (`AirconPowerChart`, `watchPowerSamples`, a
     `queryResource`) and the changes of a unit (`AirconRuns`, `watchRuns`, made only while open) have a call each and
     tell it on their card. The units in the order of `FLOORS`; a room by its identifier.
+  - **The five units in one row, every row of the cards level** (owner, 2026-11-08: no card taller than another, no button
+    lower than its neighbour's): the columns follow the width of the page (container queries: 1 / 2 / 3 / 5), and every
+    card takes fourteen rows of the grid of the page through subgrids down to its content - the header, the seven rows of
+    `AirconControl` with `level` (name, state, notes as one group, modes, settings, switches, a failure), the words and the
+    button of the filter and of the rule as rows of their own, the changes, what is open. **No `container-type` on anything
+    in that chain** - its layout containment turns the subgrid off (found on this page): the modes are measured by
+    `.modes-box`. Below 240 px the five modes share the width of the card (the one selector into a toggle of Material,
+    `::ng-deep` in that container query).
   - **A card per unit** (`AirconUnitCard`): `AirconControl` of My room, the filter, the rule, the changes - **one thing open
     at a time** (`panel`). The rule is `undefined` while the rules are not known ("not known", no editor), `null` for a unit
     without one ("No rule").

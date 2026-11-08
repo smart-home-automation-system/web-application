@@ -1,6 +1,8 @@
 // One air conditioner in a frame of its own, as a light and a blind are on My room
 :host {
   container-type: inline-size;
+  // stretched to the height of a neighbour (the page of the units), its rows stay at the top
+  align-content: start;
   display: grid;
   gap: 8px;
   padding: 8px 10px 10px;
@@ -101,6 +103,11 @@
   font-size: 18px;
 }
 
+// the modes are measured by a box of their own: a container on the host would turn the subgrid of `level` off
+.modes-box {
+  container-type: inline-size;
+}
+
 // the words of the five modes take about 340 px in English and 510 px in Polish, icons included
 @mixin mode-label-hidden {
   position: absolute;
@@ -146,10 +153,77 @@
 
 .fan {
   width: 12em;
+  max-width: 100%;
 }
 
 .switches {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
+}
+
+// A narrow card (the five units in one row of the page of the units, HAS-395): the five modes share its
+// width. Material keeps the padding of a toggle out of its variables, so its label is reached once, here.
+@container (max-width: 240px) {
+  .modes {
+    display: flex;
+    justify-self: stretch;
+  }
+
+  .modes .mat-button-toggle {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  :host ::ng-deep .modes .mat-button-toggle-label-content {
+    padding: 0 2px;
+  }
+}
+
+// The notes are one group, whatever their number of lines
+.info {
+  display: grid;
+  gap: 8px;
+}
+
+// Cards side by side (the page of the units, `level`): the seven rows join the subgrid of the card, each
+// thing in a row of its own, so the modes, the settings and the switches stand level across the row
+:host(.level) {
+  container-type: normal;
+  grid-row: span 7;
+  grid-template-rows: subgrid;
+  row-gap: 8px;
+}
+
+:host(.level) .unit__head {
+  grid-row: 1;
+}
+
+:host(.level) .status {
+  grid-row: 2;
+}
+
+:host(.level) .info {
+  grid-row: 3;
+  align-self: start;
+}
+
+:host(.level) .modes-box,
+:host(.level) [data-testid='aircon-not-read'] {
+  grid-row: 4;
+  align-self: start;
+}
+
+:host(.level) .settings {
+  grid-row: 5;
+}
+
+:host(.level) .switches {
+  grid-row: 6;
+  align-self: start;
+}
+
+:host(.level) .failure {
+  grid-row: 7;
+  align-self: start;
 }

@@ -11,7 +11,7 @@ test('lists every unit by room with its filter and its rule, then the plugs and 
 }) => {
   await page.goto('/aircon');
   const units = page.getByTestId('units').locator('[data-unit]');
-  await expect(units).toHaveCount(4);
+  await expect(units).toHaveCount(5);
   // the order of the house: the office and the bedroom upstairs, the sanctum outside
   await expect(units.first()).toHaveAttribute('data-unit', '140');
   await expect(units.last()).toHaveAttribute('data-unit', '144');
