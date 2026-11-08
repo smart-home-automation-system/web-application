@@ -1,4 +1,5 @@
 import { membersReport } from './chores.fixtures';
+import { airconAutomation, airconRoom, airconUnits, commandAircon } from './aircon.fixtures';
 import { HttpRequest } from '@angular/common/http';
 
 import {
@@ -535,6 +536,27 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/light/empty-house',
     reply: (_request, fresh) => ({ status: 200, body: emptyHouse(fresh) }),
+  },
+  // HAS-394: the air conditioners of aircon-service - every unit, a room of My room, a command, the automation
+  {
+    method: 'GET',
+    path: '/home/aircon',
+    reply: (_request, fresh) => ({ status: 200, body: airconUnits(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/aircon/automation',
+    reply: (_request, fresh) => ({ status: 200, body: airconAutomation(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/aircon\/rooms\/([^/]+)$/,
+    reply: (_request, fresh, [room]) => airconRoom(decodeURIComponent(room), fresh),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/aircon\/(\d+)$/,
+    reply: (request, _fresh, [id]) => commandAircon(id, request.body, request.params.get('source')),
   },
   // HAS-282: the appliances of appliance-service, and the acknowledgement of a finished one
   {

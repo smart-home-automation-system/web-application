@@ -1,0 +1,216 @@
+<ng-container *transloco="let t">
+  @let one = unit();
+  @let label = name() ?? one.name ?? t('aircon.unnamed');
+  <div class="unit__head">
+    <mat-icon class="unit__icon" [attr.data-state]="state()" aria-hidden="true">ac_unit</mat-icon>
+    <span class="unit__name">{{ label }}</span>
+    <span class="unit__state" data-testid="aircon-state" role="status"
+      >{{ t(STATE_LABELS[state()]) }}
+      @if (state() === 'on') {
+        @if (one.mode !== undefined) {
+          · {{ modeText(one.mode) | displayText }}
+        }
+        @if (one.targetTemperature !== undefined) {
+          · {{ t('aircon.target', { value: one.targetTemperature }) }}
+        }
+      }
+    </span>
+    <span class="unit__commands">
+      <button
+        matButton="outlined"
+        type="button"
+        data-testid="aircon-on"
+        [disabled]="busy()"
+        (click)="turn(true)"
+      >
+        {{ t('aircon.on') }}
+        <span class="visually-hidden">{{ label }}</span>
+      </button>
+      <button
+        matButton="outlined"
+        type="button"
+        data-testid="aircon-off"
+        [disabled]="busy()"
+        (click)="turn(false)"
+      >
+        {{ t('aircon.off') }}
+        <span class="visually-hidden">{{ label }}</span>
+      </button>
+    </span>
+  </div>
+
+  <p class="note">
+    @if (one.roomTemperature !== undefined) {
+      {{ t('aircon.sensor', { value: one.roomTemperature }) }}
+    } @else {
+      {{ t('aircon.sensorUnknown') }}
+    }
+    @if (one.compressorRunning === true) {
+      · <span data-testid="aircon-compressor">{{ t('aircon.compressor') }}</span>
+    }
+    @if (one.updatedAt | houseAge; as age) {
+      · {{ t('aircon.read') }} {{ age }}
+    }
+    @if (one.reachable === false) {
+      ·
+      <span class="warning" data-testid="aircon-unreachable"
+        >{{ t('aircon.unreachable') }}
+        @if (one.unreachableSince | houseAge; as since) {
+          {{ since }}
+        }
+      </span>
+    }
+  </p>
+
+  @if (one.window; as window) {
+    @if (window.restoreUntil !== undefined) {
+      <p class="note warning" data-testid="aircon-window-hold">
+        {{ t('aircon.window.held', { time: (window.restoreUntil | houseDateTime: TIME) }) }}
+      </p>
+    } @else if (window.state === 'open') {
+      <p class="note" data-testid="aircon-window-open">
+        {{ t('aircon.window.open') }}
+        @if (window.openSince | houseAge; as since) {
+          {{ since }}
+        }
+      </p>
+    }
+  }
+  @if (one.minimumRestoredAt !== undefined) {
+    <p class="note" data-testid="aircon-minimum">
+      {{
+        t('aircon.minimumRestored', {
+          value: COOLING_MIN,
+          time: (one.minimumRestoredAt | houseDateTime: TIME),
+        })
+      }}
+    </p>
+  }
+  @if (one.lastCommandConfirmed === false) {
+    <p class="note warning" data-testid="aircon-unconfirmed">{{ t('aircon.unconfirmed') }}</p>
+  }
+
+  @if (known()) {
+    <!-- the mode: the five of the service; a mode this version does not know selects none. The words
+         go on a narrow card (the icon stays, the word for a screen reader and in the tooltip) -->
+    <mat-button-toggle-group
+      class="modes"
+      hideSingleSelectionIndicator
+      data-testid="aircon-mode"
+      [value]="knownMode()"
+      [disabled]="busy()"
+      [attr.aria-label]="t('aircon.modeLabel') + ' ' + label"
+      (change)="setMode($event.value)"
+    >
+      @for (mode of MODES; track mode) {
+        <mat-button-toggle
+          [value]="mode"
+          [matTooltip]="t(MODE_LABELS[mode])"
+          matTooltipTouchGestures="off"
+        >
+          <span class="mode"
+            ><mat-icon class="mode__icon" aria-hidden="true">{{ MODE_ICONS[mode] }}</mat-icon
+            ><span class="mode__label">{{ t(MODE_LABELS[mode]) }}</span></span
+          >
+        </mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+
+    <div class="settings">
+      <!-- the target by a degree: 16-30 °C, cooling never below 22 °C -->
+      <span class="target" data-testid="aircon-target">
+        <button
+          matIconButton
+          type="button"
+          data-testid="aircon-target-down"
+          [disabled]="
+            busy() || one.targetTemperature === undefined || one.targetTemperature <= lowest()
+          "
+          [attr.aria-label]="t('aircon.targetDown') + ' ' + label"
+          (click)="step(-1)"
+        >
+          <mat-icon>remove</mat-icon>
+        </button>
+        <span class="target__value">
+          @if (one.targetTemperature !== undefined) {
+            {{ t('aircon.target', { value: one.targetTemperature }) }}
+          } @else {
+            {{ t('aircon.targetUnknown') }}
+          }
+        </span>
+        <button
+          matIconButton
+          type="button"
+          data-testid="aircon-target-up"
+          [disabled]="
+            busy() || one.targetTemperature === undefined || one.targetTemperature >= TARGET_MAX
+          "
+          [attr.aria-label]="t('aircon.targetUp') + ' ' + label"
+          (click)="step(1)"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+      </span>
+
+      <mat-form-field class="fan" subscriptSizing="dynamic">
+        <mat-label>{{ t('aircon.fanLabel') }}</mat-label>
+        <mat-select
+          data-testid="aircon-fan"
+          [value]="knownFan()"
+          [disabled]="busy()"
+          [placeholder]="one.fanSpeed === undefined ? '' : (fanText(one.fanSpeed) | displayText)"
+          (selectionChange)="setFan($event.value)"
+        >
+          @for (fan of FAN_SPEEDS; track fan) {
+            <mat-option [value]="fan">{{ t(FAN_LABELS[fan]) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="switches">
+      @if (one.quiet !== undefined) {
+        <mat-slide-toggle
+          data-testid="aircon-quiet"
+          [checked]="one.quiet"
+          [disabled]="busy() || noBoost()"
+          (toggleChange)="flip('quiet')"
+          >{{ t('aircon.quiet')
+          }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-slide-toggle
+        >
+      }
+      @if (one.turbo !== undefined) {
+        <mat-slide-toggle
+          data-testid="aircon-turbo"
+          [checked]="one.turbo"
+          [disabled]="busy() || noBoost()"
+          (toggleChange)="flip('turbo')"
+          >{{ t('aircon.turbo')
+          }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-slide-toggle
+        >
+      }
+      @if (one.sleep !== undefined) {
+        <mat-slide-toggle
+          data-testid="aircon-sleep"
+          [checked]="one.sleep"
+          [disabled]="busy()"
+          (toggleChange)="flip('sleep')"
+          >{{ t('aircon.sleep')
+          }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-slide-toggle
+        >
+      }
+    </div>
+  } @else {
+    <p class="note" data-testid="aircon-not-read">{{ t('aircon.notRead') }}</p>
+  }
+
+  @if (problem(); as reason) {
+    <p class="failure" role="alert" data-testid="aircon-problem">{{ t(PROBLEM_TEXTS[reason]) }}</p>
+  } @else if (commandState(); as command) {
+    @if (command.error) {
+      <p class="failure" role="alert" data-testid="aircon-failure">
+        {{ airconFailureOf(command) | displayText }}
+      </p>
+    }
+  }
+</ng-container>

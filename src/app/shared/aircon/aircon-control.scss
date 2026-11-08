@@ -1,0 +1,135 @@
+// One air conditioner in a frame of its own, as a light and a blind are on My room
+:host {
+  container-type: inline-size;
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+.unit__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.mat-icon.unit__icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &[data-state='on'] {
+    color: var(--app-domain-aircon);
+  }
+}
+
+.unit__name {
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface);
+}
+
+.unit__state {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.unit__commands {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.warning {
+  color: var(--mat-sys-on-error-container);
+}
+
+.failure {
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: var(--mat-sys-corner-small);
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-error-container);
+  background: var(--mat-sys-error-container);
+}
+
+// the five modes on one line: an icon and its word on a wide card, the icon alone on a narrow one
+.modes {
+  justify-self: start;
+}
+
+.mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mat-icon.mode__icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+// the words of the five modes take about 340 px in English and 510 px in Polish, icons included
+@mixin mode-label-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@container (max-width: 340px) {
+  .mode__label {
+    @include mode-label-hidden;
+  }
+}
+
+@container (max-width: 510px) {
+  :host-context(html[lang='pl']) .mode__label {
+    @include mode-label-hidden;
+  }
+}
+
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.target {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.target__value {
+  min-width: 5.5em;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.fan {
+  width: 12em;
+}
+
+.switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}

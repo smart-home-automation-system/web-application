@@ -94,6 +94,16 @@ export const en = {
       acting: 'the empty house is acted on',
       watchingOnly: 'the empty house is watched only',
     },
+    // HAS-394: the air conditioners of the house
+    aircon: {
+      title: 'Air conditioning',
+      on: 'On',
+      off: 'Off',
+      unknown: 'Not known',
+      unreachable: 'Not answering',
+      emptyHouseActed: 'Switched off for the empty house at {{ time }}',
+      gridActed: 'Switched off for the lost grid at {{ time }}',
+    },
     // HAS-282: what the appliances do
     appliances: {
       running: 'Running',
@@ -1664,6 +1674,71 @@ export const en = {
       notFoundRule: 'The room has no rule.',
     },
   },
+  // HAS-394: the air conditioners of aircon-service - My room and the overview
+  aircon: {
+    loading: 'Loading the air conditioners',
+    none: 'No air conditioner is registered.',
+    unreadable: 'The answer of the air conditioning service could not be read.',
+    unnamed: 'Air conditioner',
+    noRoom: 'no room',
+    on: 'On',
+    off: 'Off',
+    state: {
+      on: 'On',
+      off: 'Off',
+      unknown: 'Not known',
+    },
+    mode: {
+      auto: 'Auto',
+      cool: 'Cooling',
+      dry: 'Drying',
+      fan: 'Fan',
+      heat: 'Heating',
+    },
+    fan: {
+      auto: 'Auto',
+      low: 'Low',
+      mediumLow: 'Medium low',
+      medium: 'Medium',
+      mediumHigh: 'Medium high',
+      high: 'High',
+    },
+    modeLabel: 'Mode',
+    fanLabel: 'Fan',
+    target: '{{ value }} °C',
+    targetUnknown: 'Target not known',
+    targetDown: 'Lower the target',
+    targetUp: 'Raise the target',
+    quiet: 'Quiet',
+    turbo: 'Turbo',
+    sleep: 'Sleep',
+    sensor: 'Its sensor {{ value }} °C',
+    sensorUnknown: 'Its sensor not read',
+    compressor: 'compressor running',
+    read: 'read',
+    unreachable: 'stopped answering',
+    notRead:
+      'The unit has not been read since the service started - its settings are not known yet.',
+    window: {
+      open: 'The window of the room was opened',
+      held: 'Stopped by the open window - set back if it closes before {{ time }}',
+    },
+    minimumRestored:
+      'Cooling was raised to {{ value }} °C at {{ time }} - it never goes below that.',
+    unconfirmed: 'The last command was not confirmed by the unit.',
+    commandFailed: 'The command got no answer - it may have been carried out all the same.',
+    problem: {
+      targetRange: 'The target is 16 to 30 °C.',
+      coolingMinimum: 'Cooling never goes below 22 °C.',
+      boostMode: 'Turbo and quiet are not for drying or the fan.',
+    },
+    error: {
+      notFound: 'The air conditioner is not in the device registry any more.',
+      invalidCommand: 'The air conditioning service refused the command.',
+      deviceFailed: 'The unit did not answer the command - it may have taken it all the same.',
+      registryUnavailable: 'The air conditioning service could not read the device registry.',
+    },
+  },
   // HAS-284: the Web Push of this device - My room and the settings
   push: {
     title: 'Notifications on this device',
@@ -1864,6 +1939,10 @@ export const en = {
       title: 'Lights',
       automation: 'Automatic lighting of the room',
       note: 'The rules of the lights are set by the administrator; the switch stops them in this room until it is switched on again.',
+    },
+    aircon: {
+      title: 'Air conditioning',
+      note: 'The rules of the air conditioners are set by the administrator; a change made here holds them off the unit for 30 minutes.',
     },
     sensors: {
       title: 'Sensors',
@@ -2208,6 +2287,7 @@ export const en = {
     light: 'Lights',
     appliance: 'Appliances',
     energy: 'Energy',
+    aircon: 'Air conditioning',
   },
   // names of the seasons, as a label and inside a sentence
   season: {

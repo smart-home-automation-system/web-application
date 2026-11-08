@@ -115,29 +115,34 @@ $domains: (
   ),
   // the weather outside: the green of a garden, apart from the teal of the devices
   weather: (
-    #4d7c0f,
-    #bef264,
-  ),
+      #4d7c0f,
+      #bef264,
+    ),
   // the blinds: a rose of evening light, apart from the warm orange of the heating
   blinds: (
-    #be123c,
-    #fda4af,
-  ),
+      #be123c,
+      #fda4af,
+    ),
   // the lights: the yellow of a lit lamp, apart from the amber of the boiler room
   light: (
-    #8a6a00,
-    #fde047,
-  ),
+      #8a6a00,
+      #fde047,
+    ),
   // the appliances: the fuchsia of a laundry room light, apart from the rose of the blinds
   appliance: (
-    #a21caf,
-    #f0abfc,
-  ),
+      #a21caf,
+      #f0abfc,
+    ),
   // the energy of the house: the indigo of a spark, apart from the violet of the household
   energy: (
-    #4338ca,
-    #a5b4fc,
-  ),
+      #4338ca,
+      #a5b4fc,
+    ),
+  // the air conditioning: the sky of cool air, apart from the blue of the water and the teal of the devices
+  aircon: (
+      #0369a1,
+      #7dd3fc,
+    ),
 );
 
 $_white: #ffffff;
@@ -352,7 +357,10 @@ $_neutral: (
   // photo under (HAZE_TOP, HAZE_TINT) - change one here and change it there.
   --app-haze-top: light-dark(#{rgba($_page-light, 0.45)}, #{rgba($_page-dark, 0.66)});
   --app-haze-bottom: light-dark(#{rgba($_page-light, 0.6)}, #{rgba($_page-dark, 0.82)});
-  --app-haze-tint: light-dark(transparent, color-mix(in srgb, var(--mat-sys-primary) 10%, transparent));
+  --app-haze-tint: light-dark(
+    transparent,
+    color-mix(in srgb, var(--mat-sys-primary) 10%, transparent)
+  );
 
   // The domains, and the colour of an icon or text on a domain colour.
   @each $name, $pair in $domains {

@@ -93,6 +93,16 @@ export const pl: Messages = {
       acting: 'pusty dom jest obsługiwany',
       watchingOnly: 'pusty dom jest tylko obserwowany',
     },
+    // HAS-394: the air conditioners of the house
+    aircon: {
+      title: 'Klimatyzacja',
+      on: 'Pracują',
+      off: 'Wyłączone',
+      unknown: 'Nieznany stan',
+      unreachable: 'Nie odpowiadają',
+      emptyHouseActed: 'Wyłączone o {{ time }}, bo nikogo nie ma w domu',
+      gridActed: 'Wyłączone o {{ time }} z powodu braku prądu z sieci',
+    },
     appliances: {
       running: 'Pracuje',
       waiting: 'Czeka na opróżnienie',
@@ -1650,6 +1660,70 @@ export const pl: Messages = {
       notFoundRule: 'Pomieszczenie nie ma reguły.',
     },
   },
+  // HAS-394: the air conditioners of aircon-service - My room and the overview
+  aircon: {
+    loading: 'Wczytywanie klimatyzatorów',
+    none: 'Żaden klimatyzator nie jest zarejestrowany.',
+    unreadable: 'Nie udało się odczytać odpowiedzi usługi klimatyzacji.',
+    unnamed: 'Klimatyzator',
+    noRoom: 'bez pokoju',
+    on: 'Włącz',
+    off: 'Wyłącz',
+    state: {
+      on: 'Włączony',
+      off: 'Wyłączony',
+      unknown: 'Nieznany stan',
+    },
+    mode: {
+      auto: 'Auto',
+      cool: 'Chłodzenie',
+      dry: 'Osuszanie',
+      fan: 'Wentylator',
+      heat: 'Grzanie',
+    },
+    fan: {
+      auto: 'Auto',
+      low: 'Niski',
+      mediumLow: 'Średnio niski',
+      medium: 'Średni',
+      mediumHigh: 'Średnio wysoki',
+      high: 'Wysoki',
+    },
+    modeLabel: 'Tryb',
+    fanLabel: 'Nawiew',
+    target: '{{ value }} °C',
+    targetUnknown: 'Nastawa nieznana',
+    targetDown: 'Obniż nastawę',
+    targetUp: 'Podnieś nastawę',
+    quiet: 'Cichy',
+    turbo: 'Turbo',
+    sleep: 'Sen',
+    sensor: 'Jego czujnik {{ value }} °C',
+    sensorUnknown: 'Jego czujnik nieodczytany',
+    compressor: 'sprężarka pracuje',
+    read: 'odczyt',
+    unreachable: 'przestał odpowiadać',
+    notRead: 'Jednostka nie była odczytana od startu usługi - jej ustawienia nie są jeszcze znane.',
+    window: {
+      open: 'Okno pokoju otwarto',
+      held: 'Zatrzymany przez otwarte okno - wróci, jeśli okno zamknie się przed {{ time }}',
+    },
+    minimumRestored:
+      'Chłodzenie podniesiono do {{ value }} °C o {{ time }} - nigdy nie schodzi niżej.',
+    unconfirmed: 'Jednostka nie potwierdziła ostatniego polecenia.',
+    commandFailed: 'Polecenie zostało bez odpowiedzi - mogło zostać wykonane mimo to.',
+    problem: {
+      targetRange: 'Nastawa to od 16 do 30 °C.',
+      coolingMinimum: 'Chłodzenie nigdy nie schodzi poniżej 22 °C.',
+      boostMode: 'Turbo i tryb cichy nie działają przy osuszaniu ani wentylatorze.',
+    },
+    error: {
+      notFound: 'Klimatyzatora nie ma już w rejestrze urządzeń.',
+      invalidCommand: 'Usługa klimatyzacji odrzuciła polecenie.',
+      deviceFailed: 'Jednostka nie odpowiedziała na polecenie - mogła je mimo to wykonać.',
+      registryUnavailable: 'Usługa klimatyzacji nie mogła odczytać rejestru urządzeń.',
+    },
+  },
   // the names of the registry are English (Dishwasher): no word here takes the gender of a name
   push: {
     title: 'Powiadomienia na tym urządzeniu',
@@ -1846,6 +1920,10 @@ export const pl: Messages = {
       title: 'Światła',
       automation: 'Automatyczne oświetlenie pokoju',
       note: 'Reguły świateł ustawia administrator; przełącznik wstrzymuje je w tym pokoju, dopóki nie zostanie włączony ponownie.',
+    },
+    aircon: {
+      title: 'Klimatyzacja',
+      note: 'Reguły klimatyzatorów ustawia administrator; zmiana zrobiona tutaj wstrzymuje je dla jednostki na 30 minut.',
     },
     sensors: {
       title: 'Czujniki',
@@ -2186,6 +2264,7 @@ export const pl: Messages = {
     light: 'Światła',
     appliance: 'AGD',
     energy: 'Energia',
+    aircon: 'Klimatyzacja',
   },
   season: {
     spring: 'Wiosna',
