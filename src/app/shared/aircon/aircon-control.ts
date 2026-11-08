@@ -24,10 +24,10 @@ import {
   COOLING_MIN,
   NO_BOOST_MODES,
   TARGET_MAX,
+  CommandProblem,
   commandProblem,
   lowestTarget,
 } from '../../data-access/aircon/aircon-command-rules';
-import { CommandProblem } from '../../data-access/aircon/aircon-command-rules';
 import { DisplayTextPipe } from '../display-text/display-text.pipe';
 import { HouseAgePipe } from '../house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';

@@ -178,13 +178,14 @@ export function airconRoom(room: string, fresh: boolean): MockReply {
     : { status: 200, body: inRoom.map((unit) => replyOf(unit, fresh, now)) };
 }
 
-export function airconAutomation(fresh: boolean): AirconAutomation {
-  return fresh
-    ? { emptyHouse: {}, grid: {} }
-    : {
-        emptyHouse: { empty: false, since: houseTime(new Date(), 50_405) },
-        grid: { state: 'present' },
-      };
+/** The automation just after a start of the service: nothing read yet. */
+export const AIRCON_AUTOMATION_FRESH: AirconAutomation = { emptyHouse: {}, grid: {} };
+
+export function airconAutomation(): AirconAutomation {
+  return {
+    emptyHouse: { empty: false, since: houseTime(new Date(), 50_405) },
+    grid: { state: 'present' },
+  };
 }
 
 /** A command as `aircon-service` takes it: the unit answers or not, the rules refuse what they refuse. */

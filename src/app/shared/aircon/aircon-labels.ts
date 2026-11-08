@@ -38,7 +38,10 @@ export function fanText(fan: string): DisplayText {
 export type AirconState = 'on' | 'off' | 'unknown';
 
 export function airconStateOf(unit: AirconUnit): AirconState {
-  return unit.power === true ? 'on' : unit.power === false ? 'off' : 'unknown';
+  if (unit.power === undefined) {
+    return 'unknown';
+  }
+  return unit.power ? 'on' : 'off';
 }
 
 export const AIRCON_STATE_LABELS: Readonly<Record<AirconState, MessageKey>> = {

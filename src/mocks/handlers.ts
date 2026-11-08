@@ -1,5 +1,11 @@
 import { membersReport } from './chores.fixtures';
-import { airconAutomation, airconRoom, airconUnits, commandAircon } from './aircon.fixtures';
+import {
+  AIRCON_AUTOMATION_FRESH,
+  airconAutomation,
+  airconRoom,
+  airconUnits,
+  commandAircon,
+} from './aircon.fixtures';
 import { HttpRequest } from '@angular/common/http';
 
 import {
@@ -546,7 +552,10 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
   {
     method: 'GET',
     path: '/home/aircon/automation',
-    reply: (_request, fresh) => ({ status: 200, body: airconAutomation(fresh) }),
+    reply: (_request, fresh) => ({
+      status: 200,
+      body: fresh ? AIRCON_AUTOMATION_FRESH : airconAutomation(),
+    }),
   },
   {
     method: 'GET',
