@@ -107,6 +107,7 @@ describe('profiles in the application', () => {
           request.url.startsWith('/home/blinds/rooms/') ||
           // HAS-268: the lights of the room and its rule
           request.url.startsWith('/home/light/rooms/') ||
+          request.url.startsWith('/home/aircon/rooms/') ||
           // HAS-346: the chores of the member this month, under the rooms
           request.url === '/home/appliance/reports/members' ||
           // HAS-411: the requests of the member, in the row of the household

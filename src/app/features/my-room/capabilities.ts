@@ -1,5 +1,6 @@
 import { Type } from '@angular/core';
 
+import { RoomAircon } from './room-aircon';
 import { RoomBlinds } from './room-blinds';
 import { RoomHeating } from './room-heating';
 import { RoomLights } from './room-lights';
@@ -9,8 +10,8 @@ import { RoomSensors } from './room-sensors';
  * Something a room can show or do, as a card of the "My room" page. The page knows none of them
  * by name: it renders whatever this list holds, in this order, and hands each card the room it
  * is for. Heating is the first; lighting and blinds (control), the opening, motion and presence
- * sensors (view) and the air conditioning get an entry here when their services exist - and are
- * absent from the page until then, without a placeholder.
+ * sensors (view) and, since HAS-394, the air conditioning (control). A new one gets an entry here
+ * when its service exists - and is absent from the page until then, without a placeholder.
  */
 export interface RoomCapability {
   /** Stable name of the capability, for tracking and tests. */
@@ -30,4 +31,6 @@ export const ROOM_CAPABILITIES: readonly RoomCapability[] = [
   // HAS-254: the blinds with their controls, and the sensors the registry places there
   { id: 'blinds', component: RoomBlinds },
   { id: 'sensors', component: RoomSensors },
+  // HAS-394: the air conditioners of the room with their controls
+  { id: 'aircon', component: RoomAircon },
 ];

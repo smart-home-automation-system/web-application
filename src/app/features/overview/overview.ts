@@ -22,6 +22,7 @@ import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
+import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { toRoomViews } from '../../shared/room-heating/room-views';
 import { toDeviceView } from '../boiler-room/boiler-device';
@@ -31,6 +32,9 @@ import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { blindsOf } from '../../shared/blinds/addressed-blind';
 import { summariseAppliances, toApplianceViews } from '../../shared/appliances/appliance-views';
 import { LightApi } from '../../data-access/light/light-api';
+import { AirconApi } from '../../data-access/aircon/aircon-api';
+import { modeText } from '../../shared/aircon/aircon-labels';
+import { summariseAircon } from '../../shared/aircon/aircon-summary';
 import {
   batteryDirectionLabel,
   gridDirectionLabel,
@@ -87,6 +91,7 @@ const GRID_WORDS = { in: 'import', out: 'export', idle: 'idle' } as const;
     HouseAgePipe,
     LocalNumberPipe,
     DomainTile,
+    DisplayTextPipe,
     PowerValue,
   ],
   templateUrl: './overview.html',
@@ -126,6 +131,12 @@ export class Overview {
   private readonly lightApi = inject(LightApi);
   protected readonly lights = this.lightApi.watchLights(60_000);
   protected readonly emptyHouse = this.lightApi.watchEmptyHouse();
+  // HAS-394: the air conditioners of the house, and what the automation switched off - two calls
+  private readonly airconApi = inject(AirconApi);
+  protected readonly aircon = this.airconApi.watchUnits();
+  protected readonly airconAutomation = this.airconApi.watchAutomation();
+  protected readonly airconSummary = computed(() => summariseAircon(this.aircon.value()));
+  protected readonly modeText = modeText;
   // HAS-282: the resource of the notice of the shell - one poller, so the two never disagree
   protected readonly appliances = inject(ApplianceStore).appliances;
   // HAS-341: the energy at a glance, once a minute - the flows, the battery and the grid as the

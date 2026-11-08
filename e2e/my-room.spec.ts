@@ -168,14 +168,20 @@ test.describe('a resident with two rooms', () => {
     // the lights card two, its lights and its rule (HAS-268), the sensors card two, the registry and
     // the occupancy (HAS-369); the blinds, the lights, the sensors and the appliances are shown for the
     // failure - nobody knows then if there are any; so is the card of the chores of the member (HAS-346)
-    // and that of the requests (HAS-411)
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(10);
+    // and that of the requests (HAS-411), and the air conditioning (HAS-394)
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(11);
     await expect(page.getByTestId('my-requests').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('room-sensors').getByRole('alert')).toHaveCount(2);
     await expect(page.getByTestId('my-chores').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('appliances').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('room-lights').getByRole('alert')).toHaveCount(2);
-    for (const card of ['room-heating', 'room-blinds', 'room-sensors', 'room-lights']) {
+    for (const card of [
+      'room-heating',
+      'room-blinds',
+      'room-sensors',
+      'room-lights',
+      'room-aircon',
+    ]) {
       await expect(page.getByTestId(card).getByRole('alert').first()).toContainText(
         'The service is not available right now (error 502).',
       );
@@ -319,6 +325,53 @@ test.describe('the lights of the room', () => {
 
       await automation.click();
       await expect(automation).toHaveAttribute('aria-checked', 'true');
+    });
+  });
+});
+
+// HAS-394: the air conditioner of the room, pressable by the membership of the room
+test.describe('the air conditioner of the room', () => {
+  test.describe('for a resident with a unit in the room', () => {
+    test.use({ profile: 'resident-two-rooms' });
+
+    test('switches the unit held by the open window and raises its target, reading it back', async ({
+      page,
+    }) => {
+      await page.goto('/room');
+      const unit = page.getByTestId('room-aircon').locator('[data-unit="143"]');
+
+      await expect(unit.getByTestId('aircon-state')).toHaveText('Off');
+      await expect(unit.getByTestId('aircon-window-hold')).toContainText(
+        'Stopped by the open window',
+      );
+
+      await unit.getByRole('button', { name: 'On Air conditioner' }).click();
+      await expect(unit.getByTestId('aircon-state')).toHaveText('On · Cooling · 24 °C');
+      await expect(unit.getByTestId('aircon-window-hold')).toHaveCount(0);
+
+      await unit.getByRole('button', { name: 'Raise the target Air conditioner' }).click();
+      await expect(unit.getByTestId('aircon-state')).toHaveText('On · Cooling · 25 °C');
+    });
+
+    test('shows no card for a room without a unit', async ({ page }) => {
+      await page.goto('/room');
+      await expect(page.getByTestId('room-aircon')).toBeVisible();
+
+      await page.getByTestId('room-switcher').getByRole('radio', { name: 'wardrobe' }).click();
+      await expect(page.getByTestId('room-temperature')).toBeVisible();
+      await expect(page.getByTestId('room-aircon')).toHaveCount(0);
+    });
+
+    test('tells a command that was not carried out and leaves the unit as it is', async ({
+      page,
+    }) => {
+      await useScenario(page, 'writes-fail');
+      await page.goto('/room');
+      const unit = page.getByTestId('room-aircon').locator('[data-unit="143"]');
+
+      await unit.getByRole('button', { name: 'On Air conditioner' }).click();
+      await expect(unit.getByTestId('aircon-failure')).toBeVisible();
+      await expect(unit.getByTestId('aircon-state')).toHaveText('Off');
     });
   });
 });

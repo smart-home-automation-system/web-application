@@ -253,9 +253,9 @@ e2e/              # Playwright tests
   the code stays a failure; **the choice of a room that is gone is forgotten in an effect**, not
   hidden by a computed (hidden, it pulled the page back by itself when the room returned -
   found in review, the lesson of the heating switch again); and **nothing about a room can be
-  pressed but its blinds and its lights** (owner, 2026-10-18, HAS-254; HAS-268) - `my-room.spec`
-  lists every control there is, the blind controls and their pause switch by name, and a new one
-  fails that test on purpose. The cards: heating (with the windows of the room and the hold of its
+  pressed but its blinds, its lights and its air conditioner** (owner, 2026-10-18, HAS-254; HAS-268;
+  HAS-394) - `my-room.spec` lists every control there is, the blind controls and their pause switch by
+  name, `room-aircon.spec` those of a unit, and a new one fails that test on purpose. The cards: heating (with the windows of the room and the hold of its
   heating, as on the heating page), **lights** (`RoomLights`, HAS-268 - below), **blinds**
   (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, HAS-369: the motion and
   presence sensors of `GET /device/registry?room=` and what they sense from
@@ -522,7 +522,8 @@ e2e/              # Playwright tests
     registries, and - from this view - the blinds and the lights (through `light-service` since HAS-292);
     the sixth is the periods of the heaters (HAS-357, the window of a room on the heating page); the seventh and the
     eighth are the command of the water valve and the bills of the waterworks (HAS-323, the water page); the ninth the
-    start of the circulation pump (HAS-406, the water page); the tenth the household requests (HAS-411, My room - every
+    start of the circulation pump (HAS-406, the water page); the eleventh the commands of the air conditioners (HAS-394, My room - every member, the units of the rooms of
+    their profile); the tenth the household requests (HAS-411, My room - every
     member writes for anybody, ticks off and removes on their own list). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
@@ -854,8 +855,33 @@ e2e/              # Playwright tests
   tiles "Rooms" and "Temperature sensors" are gone (the first led to the heating page under the
   name of the rooms view). An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
-  the overview through the real routes lets its fifteen reads through with `isOverviewRead` (the energy tile four of them, HAS-341, HAS-373)
+  the overview through the real routes lets its seventeen reads through with `isOverviewRead` (the energy tile four of them, HAS-341, HAS-373;
+  the air conditioning tile two, HAS-394)
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
+- **The air conditioners** (HAS-394, `AirconApi` in `data-access/aircon/`, `aircon-service` >= 0.5.0; epic HAS-376):
+  the card `RoomAircon` of My room - a capability of a room, `GET /aircon/rooms/{room}` every 10 s, **no card for a
+  room without a unit** (the 404 `NOT_FOUND_ROOM`, an empty list) nor while the first answer is on its way - and the
+  tile `tile-aircon` of the overview (`GET /aircon` and `/aircon/automation` once a minute, the second told in
+  `tileFailures`; units on by room with their mode, how many do not answer, what the empty house or a lost grid
+  switched off). What to keep:
+  - **One unit is `AirconControl`** (`shared/aircon/`, for the page of the units of HAS-395 too): on and off, the mode
+    (a toggle group - an icon and its word on a wide card, the icon alone below 340 px in English and 510 px in Polish,
+    the word kept for a screen reader and in the tooltip), the target by a degree, the fan (`mat-select`), quiet /
+    turbo / sleep (`mat-slide-toggle` with `disableToggleValue`). **A unit without `power` is not known**: no settings
+    are offered, never "off".
+  - **`aircon-command-rules.ts` is a copy of `CommandRules` of `aircon-service`** - 16-30 °C, cooling never below
+    22 °C (judged when the command sets the mode or the target), turbo and quiet not in `dry` or `fan`; its test runs the
+    cases of the service; **a rule changed there is changed here**. A command it refuses is not sent, the reason is told;
+    the minus stops at the lowest target of the mode, and choosing cooling below 22 °C sends 22 °C with the mode.
+  - **No optimistic state**: `DeviceCommands` per unit, then `airconReadBack` - a read at once and one 2.5 s later
+    (the service confirms by its own read 2 s after the 202). A command without an answer may have been carried out.
+  - The codes `NOT_FOUND_AIRCON`, `INVALID_COMMAND`, `DEVICE_FAILED`, `REGISTRY_UNAVAILABLE` have texts in
+    `aircon-labels.ts` (its test lists them); a mode or a fan speed this version does not know is printed as it came.
+  - **The air conditioner is a third control of a room** (HAS-394: every member controls the unit of their room, like the
+    lights and the blinds) - `room-aircon.spec` names its controls; `profile-pages.spec` lets `/home/aircon/rooms/` through.
+  - The mock units (`aircon.fixtures.ts`): the office cools at 23 °C (the compressor running, the minimum restored once),
+    the bedroom is off and held by its open window, the unit of tobi does not answer, the sanctum heats; a command
+    changes the next read and is refused as the service refuses it; `resetAircon()`.
 - **The appliances are one resource for the whole application** (HAS-282, `ApplianceStore` in
   `data-access/appliance/`, `GET /appliance` of `appliance-service` every 30 s): the notice of the
   shell, the card of My room and the tile of the overview read the same `watchAppliances()`, so
@@ -1340,7 +1366,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` / `-appliance` with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` / `-appliance` / `-energy` / `-aircon` (the sky of cool air, HAS-394) with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves

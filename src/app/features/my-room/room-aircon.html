@@ -1,0 +1,32 @@
+<ng-container *transloco="let t">
+  @if (shown()) {
+    <mat-card appearance="outlined" class="aircon card--domain" data-testid="room-aircon">
+      <mat-card-header>
+        <div mat-card-avatar class="domain-badge"><mat-icon>ac_unit</mat-icon></div>
+        <mat-card-title>{{ t('myRoom.aircon.title') }}</mat-card-title>
+        <mat-card-subtitle>
+          <app-data-freshness [lastUpdated]="answer.lastUpdated()" [stale]="answer.stale()" />
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="aircon__content">
+        <app-api-error-strip
+          [error]="none() ? undefined : answer.error()"
+          [describeWith]="describeError"
+        />
+        <ul class="aircon__list">
+          @for (row of units() ?? []; track row.unit.id) {
+            <li [attr.data-unit]="row.unit.id">
+              <app-aircon-control
+                [unit]="row.unit"
+                [name]="row.name"
+                [commands]="commands"
+                [refresh]="refresh"
+              />
+            </li>
+          }
+        </ul>
+        <p class="aircon__note">{{ t('myRoom.aircon.note') }}</p>
+      </mat-card-content>
+    </mat-card>
+  }
+</ng-container>

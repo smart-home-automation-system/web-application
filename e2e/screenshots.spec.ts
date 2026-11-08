@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(17, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(19, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -222,7 +222,9 @@ for (const language of ['en', 'pl'] as const) {
           if (scenario === 'default') {
             await expect(page.getByText(TEXTS[language].warmEnough)).toBeVisible();
             // the history and the consumption are drawn before the picture is taken
-            await expect(page.getByTestId('water-history').locator('.chart__plot svg')).toBeVisible();
+            await expect(
+              page.getByTestId('water-history').locator('.chart__plot svg'),
+            ).toBeVisible();
             await expect(page.getByTestId('consumption').locator('.chart__plot svg')).toBeVisible();
           }
           await photoIsShown(page);
@@ -432,6 +434,17 @@ for (const language of ['en', 'pl'] as const) {
           await expect(sensors.getByTestId('motion-now')).toBeVisible();
           await sensors.screenshot({
             path: shot(testInfo.project.name, scheme, language, 'my-room-sensors'),
+          });
+        });
+
+        // HAS-394: the air conditioner of the office - cooling at 23 °C, the compressor running
+        test('my room, the air conditioner', async ({ page }, testInfo) => {
+          await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+          await page.goto('/room');
+          const aircon = page.getByTestId('room-aircon');
+          await expect(aircon.getByTestId('aircon-compressor')).toBeVisible();
+          await aircon.screenshot({
+            path: shot(testInfo.project.name, scheme, language, 'my-room-aircon'),
           });
         });
       });

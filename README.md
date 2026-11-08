@@ -219,9 +219,13 @@ dashboards:
   dimmer and the colour of an rgbw light, "All off", and the rule of the room in a few words with
   **the switch of the resident**, which stops the automatic lighting of the room until it is
   switched on again (no card for a room without lights; the rules themselves stay the
-  administrator's). The heating is read-only; setting a temperature or a schedule is not part of
-  this application for anybody yet, and will be the administrator's alone. The blinds and the
-  lights are the only controls of a room - and for a member the household registry grants the permission
+  administrator's). Since HAS-394 also **the air conditioner of the room** (`aircon-service` >= 0.5.0): on
+  or off with its mode and target, the reading of its own sensor, whether the compressor runs, the open
+  window that holds it and until when it is set back, whether it answers - and on / off, the mode, the
+  target by a degree (cooling never below 22 °C, as the service refuses it), the fan and quiet / turbo /
+  sleep, each read back (no card for a room without a unit). The heating is read-only; setting a temperature or a schedule is not part of
+  this application for anybody yet, and will be the administrator's alone. The blinds, the
+  lights and the air conditioner are the only controls of a room - and for a member the household registry grants the permission
   `heating_switch`: that member also gets the switch of the heating of the whole house here,
   the same card as on the heating dashboard. Under the rooms, for every member, **the appliances
   of the household** (HAS-282): the washing machine, the dryer and the dishwasher with their state,
@@ -536,6 +540,10 @@ Endpoints used today:
 | `POST` | `/home/blinds/schedules/{id}/enable`, `/disable` | Switches a schedule on or off (blinds); the schedules are read again |
 | `GET` | `/home/calendar/days?from=&to=` | The days of the next 60 days of the house (blinds: the holidays on weekdays), every 15 min. Needs `database-service` 0.14.0 or later |
 | `GET` | `/home/light` | Every light by room with its state, brightness, reachability and `heldUntil` (rooms), polled every 10 s and right after every command. Needs `light-service` 0.6.0 and `api-gateway-service` 0.8.0 or later |
+| `GET` | `/home/aircon` | Every air conditioner with its state (overview tile, HAS-394), polled every minute |
+| `GET` | `/home/aircon/automation` | When the empty house or a lost grid last switched the units off (overview tile), polled every minute |
+| `GET` | `/home/aircon/rooms/{room}` | The units of a room (my room, HAS-394), polled every 10 s; a 404 with the code `NOT_FOUND_ROOM` means no card |
+| `POST` | `/home/aircon/{id}?source=dashboard` | A command to a unit - power, mode, target, fan, quiet, turbo, sleep (my room); checked against a copy of `CommandRules` first; the units are read again at once and 2.5 s later |
 | `POST` | `/home/light/{id}?turn=on\|off&source=dashboard`, `/home/light/{id}/brightness?value=1..100&source=dashboard` | Switches a light by its registry id, sets the brightness of a dimmer or an rgbw light (rooms). The rules engine holds a light changed from here; the lights are read again |
 | `GET` | `/home/light/rooms/{room}/rules` | The rule of a room (my room: every 60 s; the editor of the rule: once, and again after a save); `404 NOT_FOUND_RULE` is a room without one. Needs `light-service` 0.6.0 or later |
 | `PUT` / `DELETE` | `/home/light/rooms/{room}/rules` | Writes the rule of a room whole, or removes it (the editor of the rule, HAS-267); the rule is read again, the answer of the write is not used. `INVALID_RULE` names what the service refused only in `details`, which is never shown - the editor checks every rule of the service first |

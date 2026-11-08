@@ -1,0 +1,28 @@
+// the units of the room one under the other, each in its own frame (`app-aircon-control`), the
+// layout of the lights card
+:host {
+  display: contents;
+}
+
+.aircon {
+  --app-domain: var(--app-domain-aircon);
+}
+
+.aircon__content {
+  display: grid;
+  gap: 10px;
+}
+
+.aircon__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aircon__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

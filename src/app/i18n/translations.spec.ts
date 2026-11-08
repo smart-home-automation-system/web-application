@@ -66,6 +66,11 @@ describe('translations', () => {
       'devices.vendor.shelly',
       'devices.vendor.eaton',
       'devices.vendor.gree',
+      // HAS-394: a temperature, and the words of the remote of a Gree unit both languages use
+      'aircon.target',
+      'aircon.mode.auto',
+      'aircon.fan.auto',
+      'aircon.turbo',
       'devices.binding.bthome',
       // a number, and the word of the button of a blind both languages use
       'rooms.pieces',

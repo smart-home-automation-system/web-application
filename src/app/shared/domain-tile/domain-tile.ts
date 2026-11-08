@@ -23,7 +23,8 @@ export type TileDomain =
   | 'blinds'
   | 'light'
   | 'appliance'
-  | 'energy';
+  | 'energy'
+  | 'aircon';
 
 /**
  * A card about one call of one domain of the house - a tile of the overview, whose title leads to

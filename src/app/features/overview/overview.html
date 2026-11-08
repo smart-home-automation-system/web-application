@@ -186,7 +186,11 @@
             [class.tile__detail--alert]="valveOutOfDate()"
             data-testid="valve-measured"
           >
-            {{ t(valveOutOfDate() ? 'water.valve.reportedOutOfDate' : 'water.valve.reported', { age }) }}
+            {{
+              t(valveOutOfDate() ? 'water.valve.reportedOutOfDate' : 'water.valve.reported', {
+                age,
+              })
+            }}
           </p>
         }
       } @else if (!valve.error()) {
@@ -519,6 +523,84 @@
       } @else if (!appliances.error()) {
         <p class="tile__detail">{{ t('appliances.unreadable') }}</p>
       }
+    </app-domain-tile>
+
+    <!-- HAS-394: the air conditioners - what is on, by room with its mode, what does not answer, and
+         what the automation switched off; nothing here commands a unit: the overview changes nothing -->
+    <app-domain-tile
+      heading="overview.aircon.title"
+      icon="ac_unit"
+      domain="aircon"
+      waitingLabel="aircon.loading"
+      [resource]="aircon"
+      data-testid="tile-aircon"
+    >
+      @if (airconSummary(); as count) {
+        @if (count.total === 0) {
+          <p class="tile__detail">{{ t('aircon.none') }}</p>
+        } @else {
+          <dl class="tile__rows">
+            <div class="tile__row" data-state="on">
+              <dt>{{ t('overview.aircon.on') }}</dt>
+              <dd>
+                <strong>{{ count.on }}</strong>
+              </dd>
+            </div>
+            <div class="tile__row" data-state="off">
+              <dt>{{ t('overview.aircon.off') }}</dt>
+              <dd>
+                <strong>{{ count.off }}</strong>
+              </dd>
+            </div>
+            @if (count.unknown > 0) {
+              <div class="tile__row" data-state="unknown">
+                <dt>{{ t('overview.aircon.unknown') }}</dt>
+                <dd>
+                  <strong class="tile__quiet">{{ count.unknown }}</strong>
+                </dd>
+              </div>
+            }
+            @if (count.unreachable > 0) {
+              <div class="tile__row" data-state="unreachable" data-testid="aircon-unreachable">
+                <dt>{{ t('overview.aircon.unreachable') }}</dt>
+                <dd>
+                  <strong>{{ count.unreachable }}</strong>
+                </dd>
+              </div>
+            }
+          </dl>
+          <!-- a line per unit that is on: its room as the registry names it, its mode, its target -->
+          @for (unit of count.running; track unit.id) {
+            <p class="tile__detail" data-testid="aircon-running">
+              {{ unit.room ?? t('aircon.noRoom') }}:
+              @if (unit.mode !== undefined) {
+                {{ modeText(unit.mode) | displayText }}
+              }
+              @if (unit.targetTemperature !== undefined) {
+                {{ t('aircon.target', { value: unit.targetTemperature }) }}
+              }
+            </p>
+          }
+        }
+      } @else if (!aircon.error()) {
+        <p class="tile__detail">{{ t('aircon.unreadable') }}</p>
+      }
+      <!-- the automation: its own call, told apart from the units -->
+      @if (airconAutomation.value(); as automation) {
+        @if (automation.emptyHouse?.actedAt; as acted) {
+          <p class="tile__detail" data-testid="aircon-empty-house">
+            {{ t('overview.aircon.emptyHouseActed', { time: acted | houseDateTime }) }}
+          </p>
+        }
+        @if (automation.grid?.actedAt; as acted) {
+          <p class="tile__detail" data-testid="aircon-grid">
+            {{ t('overview.aircon.gridActed', { time: acted | houseDateTime }) }}
+          </p>
+        }
+      }
+      <div tileFailures>
+        <app-api-error-strip [error]="airconAutomation.error()" />
+      </div>
     </app-domain-tile>
 
     <!-- HAS-341: the energy now - the panels, the house, the battery, the grid; the grid lost in red -->
