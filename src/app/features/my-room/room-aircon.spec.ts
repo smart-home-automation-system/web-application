@@ -32,7 +32,6 @@ describe('RoomAircon', () => {
   let refused: ApiError | undefined;
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     room = fakeResource();
     room.refresh = vi.fn(() => Promise.resolve());
     sent = [];
@@ -59,8 +58,6 @@ describe('RoomAircon', () => {
     fixture = TestBed.createComponent(RoomAircon);
     fixture.componentRef.setInput('room', 'office');
   });
-
-  afterEach(() => vi.useRealTimers());
 
   function card(): HTMLElement | null {
     return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="room-aircon"]');
@@ -155,7 +152,7 @@ describe('RoomAircon', () => {
   });
 
   // a command as a change by hand, read back at once and 2.5 s later; only the reads move the card
-  it('sends a command and reads the room again twice', async () => {
+  it('sends a command and reads the room again twice', { timeout: 10_000 }, async () => {
     answer(room, [OFFICE]);
     await fixture.whenStable();
 
@@ -164,7 +161,8 @@ describe('RoomAircon', () => {
 
     expect(sent).toEqual([{ id: 140, command: { targetTemperature: 24 } }]);
     expect(room.refresh).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(2_500);
+    // the second read on the real clock: faked timers stall the scheduler of Angular in CI
+    await new Promise((resolve) => setTimeout(resolve, 2_600));
     expect(room.refresh).toHaveBeenCalledTimes(2);
     expect(words(card()!.querySelector('[data-testid="aircon-state"]'))).toBe(
       'On · Cooling · 23 °C',
