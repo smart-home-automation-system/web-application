@@ -59,6 +59,14 @@ const pages: Page[] = [
     loadComponent: () => import('./features/energy/energy').then((m) => m.Energy),
   },
   {
+    // the air conditioners (HAS-395, the administrator's): every unit with its rule and filter, the plugs,
+    // the power cycle of the indoor units and the draw of each plug
+    path: 'aircon',
+    title: 'nav.aircon',
+    data: { background: 'aircon' },
+    loadComponent: () => import('./features/aircon/aircon').then((m) => m.Aircon),
+  },
+  {
     // every room of the house, its devices, and the lights and blinds controlled from it (HAS-232)
     path: 'rooms',
     title: 'nav.rooms',

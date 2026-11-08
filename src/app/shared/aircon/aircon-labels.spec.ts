@@ -15,6 +15,12 @@ describe('the words of the air conditioners', () => {
       'INVALID_COMMAND',
       'DEVICE_FAILED',
       'REGISTRY_UNAVAILABLE',
+      'INVALID_RULE',
+      'NOT_FOUND_RULE',
+      'AIRCON_RUNNING',
+      'POWER_CYCLE_IN_PROGRESS',
+      'INVALID_RANGE',
+      'NOT_FOUND_PLUG',
     ]);
   });
 

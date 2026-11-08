@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+.page {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+}
+
+.units,
+.power {
+  display: grid;
+  gap: 16px;
+  width: min(100%, 1480px);
+  align-items: stretch;
+}
+
+// cards of one size in both rows: one a row on a phone, three at 1440 px
+.units {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  align-items: start;
+}
+
+.power {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+}
+
+.note {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}

@@ -1,0 +1,159 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="power card--domain" data-testid="plugs">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>power</mat-icon></div>
+      <mat-card-title>{{ t('aircon.page.plugs.title') }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="power__content">
+      @if (shown(); as list) {
+        @if (list.length === 0) {
+          <p class="note">{{ t('aircon.page.plugs.none') }}</p>
+        }
+        @for (plug of list; track $index) {
+          <section class="plug" [attr.data-plug]="plug.plug">
+            <h3 class="plug__name">
+              @switch (plug.plug) {
+                @case ('indoor') {
+                  {{ t('aircon.page.plugs.indoor') }}
+                }
+                @case ('sanctum') {
+                  {{ t('aircon.page.plugs.sanctum') }}
+                }
+                @default {
+                  {{ plug.plug ?? t('aircon.page.plugs.unnamed') }}
+                }
+              }
+            </h3>
+            <dl class="facts">
+              <div>
+                <dt>{{ t('aircon.page.plugs.now') }}</dt>
+                <dd>
+                  @if (plug.power !== undefined) {
+                    {{ plug.power | localNumber: WATTS }} W
+                  } @else {
+                    {{ t('aircon.page.plugs.unknown') }}
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>{{ t('aircon.page.plugs.compressor') }}</dt>
+                <dd>
+                  {{
+                    t(
+                      plug.compressorRunning === true
+                        ? 'aircon.page.plugs.running'
+                        : plug.compressorRunning === false
+                          ? 'aircon.page.plugs.idle'
+                          : 'aircon.page.plugs.unknown'
+                    )
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>{{ t('aircon.page.plugs.today') }}</dt>
+                <dd>
+                  @if (plug.todayKwh !== undefined) {
+                    {{ plug.todayKwh | localNumber: KWH }} kWh
+                  } @else {
+                    –
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>{{ t('aircon.page.plugs.week') }}</dt>
+                <dd>
+                  @if (plug.last7DaysKwh !== undefined) {
+                    {{ plug.last7DaysKwh | localNumber: KWH }} kWh
+                  } @else {
+                    –
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>{{ t('aircon.page.plugs.month') }}</dt>
+                <dd>
+                  @if (plug.last30DaysKwh !== undefined) {
+                    {{ plug.last30DaysKwh | localNumber: KWH }} kWh
+                  } @else {
+                    –
+                  }
+                </dd>
+              </div>
+            </dl>
+            @if (plug.reachable === false) {
+              <p class="warning">{{ t('aircon.page.plugs.unreachable') }}</p>
+            }
+            @if (plug.output === false) {
+              <p class="warning">{{ t('aircon.page.plugs.outputOff') }}</p>
+            }
+          </section>
+        }
+      } @else {
+        <p class="note">{{ t('aircon.page.plugs.notKnown') }}</p>
+      }
+
+      <!-- the power cycle of the indoor plug: offered only while the service allows it -->
+      <section class="cycle" data-testid="power-cycle">
+        <h3 class="plug__name">{{ t('aircon.page.cycle.title') }}</h3>
+        @let now = cycle();
+        @if (now === undefined || now === null) {
+          <p class="note">{{ t('aircon.page.cycle.unknown') }}</p>
+        } @else {
+          @if (now.allowed === true) {
+            @if (asking()) {
+              <div class="question" data-testid="cycle-question">
+                <span>{{ t('aircon.page.cycle.question') }}</span>
+                <button #safeAnswer matButton type="button" (click)="asking.set(false)">
+                  {{ t('aircon.page.cancel') }}
+                </button>
+                <button
+                  matButton="filled"
+                  type="button"
+                  data-testid="cycle-confirm"
+                  [disabled]="state()?.sending === true"
+                  (click)="start()"
+                >
+                  {{ t('aircon.page.cycle.confirm') }}
+                </button>
+              </div>
+            } @else {
+              <p class="note">{{ t('aircon.page.cycle.explain') }}</p>
+              <button
+                matButton="outlined"
+                type="button"
+                data-testid="cycle-start"
+                [disabled]="state()?.sending === true"
+                (click)="ask()"
+              >
+                <mat-icon>restart_alt</mat-icon>{{ t('aircon.page.cycle.start') }}
+              </button>
+            }
+          } @else {
+            <!-- the reason is the service's English, printed as it came -->
+            <p class="note" data-testid="cycle-refused">
+              {{ t('aircon.page.cycle.notNow') }}
+              @if (now.reason) {
+                {{ literal(now.reason) | displayText }}
+              }
+            </p>
+          }
+          @if (now.lastRun; as last) {
+            <p class="note" data-testid="cycle-last">
+              {{ t('aircon.page.cycle.last') }}
+              @if (last.startedAt) {
+                {{ last.startedAt | houseDateTime: WHEN }} ·
+              }
+              {{ cycleResultText(last.result) | displayText }}
+              @if (last.requestedBy) {
+                · {{ last.requestedBy }}
+              }
+            </p>
+          }
+        }
+        @if (state()?.error) {
+          <p class="failure" role="alert">{{ airconFailureOf(state()!) | displayText }}</p>
+        }
+      </section>
+    </mat-card-content>
+  </mat-card>
+</ng-container>

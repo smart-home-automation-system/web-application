@@ -2,9 +2,18 @@ import { membersReport } from './chores.fixtures';
 import {
   AIRCON_AUTOMATION_FRESH,
   airconAutomation,
+  airconFilterCleaned,
+  airconPower,
+  airconPowerCycle,
+  airconPowerSamples,
   airconRoom,
+  airconRules,
+  airconRuns,
   airconUnits,
   commandAircon,
+  deleteAirconRule,
+  saveAirconRule,
+  startAirconPowerCycle,
 } from './aircon.fixtures';
 import { HttpRequest } from '@angular/common/http';
 
@@ -566,6 +575,61 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'POST',
     path: /^\/home\/aircon\/(\d+)$/,
     reply: (request, _fresh, [id]) => commandAircon(id, request.body, request.params.get('source')),
+  },
+  // HAS-395: the page of the units - the rules, the plugs, the power cycle, the filters, the runs
+  {
+    method: 'GET',
+    path: '/home/aircon/rules',
+    reply: (_request, fresh) => ({ status: 200, body: airconRules(fresh) }),
+  },
+  {
+    method: 'PUT',
+    path: /^\/home\/aircon\/(\d+)\/rules$/,
+    reply: (request, _fresh, [id]) => saveAirconRule(id, request.body),
+  },
+  {
+    method: 'DELETE',
+    path: /^\/home\/aircon\/(\d+)\/rules$/,
+    reply: (_request, _fresh, [id]) => deleteAirconRule(id),
+  },
+  {
+    method: 'GET',
+    path: '/home/aircon/power',
+    reply: (_request, fresh) => ({ status: 200, body: airconPower(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/aircon/power/samples',
+    reply: (request, fresh) =>
+      fresh
+        ? { status: 200, body: [] }
+        : airconPowerSamples(request.params.get('plug'), from(request), to(request)),
+  },
+  {
+    method: 'GET',
+    path: '/home/aircon/power-cycle',
+    reply: (_request, fresh) => ({
+      status: 200,
+      body: fresh
+        ? { allowed: false, reason: 'The draw of the indoor plug is not known' }
+        : airconPowerCycle(),
+    }),
+  },
+  {
+    method: 'POST',
+    path: '/home/aircon/power-cycle',
+    reply: (request) => startAirconPowerCycle(request.params.get('member')),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/aircon\/(\d+)\/filter-cleaned$/,
+    reply: (_request, _fresh, [id]) => airconFilterCleaned(id),
+  },
+  {
+    method: 'GET',
+    path: /^\/home\/aircon\/(\d+)\/runs$/,
+    reply: (request, fresh, [id]) =>
+      fresh ? { status: 200, body: [] } : airconRuns(id, from(request)),
   },
   // HAS-282: the appliances of appliance-service, and the acknowledgement of a finished one
   {

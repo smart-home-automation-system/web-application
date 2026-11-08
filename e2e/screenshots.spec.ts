@@ -580,6 +580,30 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the air conditioners (HAS-395): every unit with its filter and rule, the plugs and their draw
+      test('aircon', async ({ page }, testInfo) => {
+        await page.goto('/aircon');
+        await expect(
+          page.getByRole('main').locator('mat-progress-bar[mode="indeterminate"]'),
+        ).toHaveCount(0);
+        await expect(page.locator('.chart__plot svg')).toHaveCount(2);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'aircon'),
+          fullPage: true,
+        });
+      });
+
+      // the editor of the rule of a unit open (HAS-395)
+      test('aircon rule', async ({ page }, testInfo) => {
+        await page.goto('/aircon');
+        const sanctum = page.locator('[data-unit="144"]');
+        await sanctum.getByTestId('rule-edit').click();
+        await expect(sanctum.getByTestId('rule-form')).toBeVisible();
+        await sanctum.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'aircon-rule'),
+        });
+      });
+
       // the page an NFC tag opens (HAS-346): the claim recorded, and the question of a browser that
       // knows nobody (its own context, no remembered profile)
       test('tag page', async ({ page, browser }, testInfo) => {

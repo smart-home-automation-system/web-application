@@ -523,7 +523,8 @@ e2e/              # Playwright tests
     the sixth is the periods of the heaters (HAS-357, the window of a room on the heating page); the seventh and the
     eighth are the command of the water valve and the bills of the waterworks (HAS-323, the water page); the ninth the
     start of the circulation pump (HAS-406, the water page); the eleventh the commands of the air conditioners (HAS-394, My room - every member, the units of the rooms of
-    their profile); the tenth the household requests (HAS-411, My room - every
+    their profile; HAS-395 adds their rules, the filter cleaned and the power cycle of the indoor plug on the page of
+    the units); the tenth the household requests (HAS-411, My room - every
     member writes for anybody, ticks off and removes on their own list). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
@@ -886,6 +887,35 @@ e2e/              # Playwright tests
   - The mock units (`aircon.fixtures.ts`): the office cools at 23 °C (the compressor running, the minimum restored once),
     the bedroom is off and held by its open window, the unit of tobi does not answer, the sanctum heats; a command
     changes the next read and is refused as the service refuses it; `resetAircon()`.
+- **The page of the air conditioners** (HAS-395, `features/aircon/`, the administrator's; route `/aircon` after the energy
+  in the menu, photo `aircon` - a home office with a split unit, tones `0-235`; `aircon-service` >= 0.10.0, the filters from
+  0.11.0). What to keep:
+  - **Four calls, told once** in `SourcesStrip`: the units (every 10 s here - the page commands them, `watchUnits(10_000)`),
+    the rules, the plugs and the power cycle. The draw of each plug (`AirconPowerChart`, `watchPowerSamples`, a
+    `queryResource`) and the changes of a unit (`AirconRuns`, `watchRuns`, made only while open) have a call each and
+    tell it on their card. The units in the order of `FLOORS`; a room by its identifier.
+  - **A card per unit** (`AirconUnitCard`): `AirconControl` of My room, the filter, the rule, the changes - **one thing open
+    at a time** (`panel`). The rule is `undefined` while the rules are not known ("not known", no editor), `null` for a unit
+    without one ("No rule").
+  - **`aircon-rule-rules.ts` is a copy of `RuleRules` of `aircon-service`** - the threshold 20-30 °C by 0.5, the hysteresis
+    0.5-3 by 0.5, the target 22-30 whole, never above the threshold; its test runs the cases of the service; **a rule
+    changed there is changed here**. A rule is sent whole (`PUT` replaces it), a field takes a comma.
+  - **Every write reads back what it changed and closes its form only when taken** (`AirconUnitCard.write`: `DeviceCommands`
+    sets the outcome after the read-back, so the card learns it from the call itself) - a refused one keeps what was
+    typed, next to the reason. `NOT_FOUND_RULE` on a removal counts as removed. A unit command reads the units and the
+    power cycle (whether it is allowed depends on the units); a power cycle reads the cycle, the plugs and the units.
+  - **The power cycle is offered only while the service allows it** (`allowed` of `GET /aircon/power-cycle`), after a
+    question; its `reason` is the service's English, printed as it came (a literal). The question goes for good once
+    it is no longer allowed (an effect). It names the member of the profile (`?member=`).
+  - **The safe answer takes the focus** (`#safeAnswer`, `afterNextRender`): `cdkFocusInitial` works only in a dialog.
+  - **Copied facts**: `COMPRESSOR_STANDBY_WATTS` (20 W, `aircon.plugs.standby-watts`), the buckets of 5 minutes of the
+    samples (up to two days, so `POWER_PRESETS` are 24 and 48 hours).
+  - The codes `INVALID_RULE`, `NOT_FOUND_RULE`, `AIRCON_RUNNING`, `POWER_CYCLE_IN_PROGRESS`, `INVALID_RANGE`,
+    `NOT_FOUND_PLUG` have texts in `aircon-labels.ts`; a source of a change or a result of a cycle this version does not
+    know is printed as it came (`sourceText`, `cycleResultText`).
+  - The mock (`aircon.fixtures.ts`): the sanctum keeps its room below 25 °C with the frost protection on, the office has a
+    rule that does not keep it cool; the power cycle is refused while an indoor unit is on and done at once otherwise;
+    the plugs draw by the units that are on; the samples have a gap of an hour.
 - **The appliances are one resource for the whole application** (HAS-282, `ApplianceStore` in
   `data-access/appliance/`, `GET /appliance` of `appliance-service` every 30 s): the notice of the
   shell, the card of My room and the tile of the overview read the same `watchAppliances()`, so
