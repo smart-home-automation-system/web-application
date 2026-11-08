@@ -1,0 +1,132 @@
+// The cards of a row stand level (owner, 2026-11-08): each takes fourteen rows of the grid of the page - the
+// header, the seven rows of the unit (`AirconControl` with `level`), the filter and the rule (words, then the
+// button), the changes and what is open - through subgrids down to its content, so a row of the page is as tall
+// as its tallest card and every line is level with its neighbours.
+:host {
+  display: grid;
+  grid-row: span 14;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  margin-bottom: 16px;
+}
+
+// Material lays a card out as a flex column, and its styles come after ours: the class of the card is named
+.unit.mat-mdc-card {
+  --app-domain: var(--app-domain-aircon);
+
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  box-sizing: border-box;
+}
+
+mat-card-header {
+  grid-row: 1;
+  padding: 12px 12px 0;
+}
+
+.unit__content {
+  display: grid;
+  grid-row: 2 / -1;
+  grid-template-rows: subgrid;
+  row-gap: 10px;
+  padding: 8px 12px 12px;
+}
+
+.panel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.line {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 2px 8px;
+}
+
+.line button {
+  grid-row: 2;
+  grid-column: 2;
+  justify-self: start;
+  margin-inline-start: -12px;
+}
+
+.mat-icon.line__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.line__text {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.warning {
+  color: var(--mat-sys-on-error-container);
+}
+
+.question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border-radius: var(--mat-sys-corner-small);
+  background: color-mix(in srgb, var(--mat-sys-primary-container) 40%, transparent);
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}
+
+.failure {
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: var(--mat-sys-corner-small);
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-error-container);
+  background: var(--mat-sys-error-container);
+}
+
+.rule-form {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+.rule-form__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8em, 1fr));
+  gap: 8px;
+}
+
+.rule-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.runs-toggle {
+  justify-self: start;
+  align-self: start;
+}
+
+// The words of a line and its button are two rows of the subgrid of the card: words on two lines in one card
+// never move the button below the buttons of its neighbours
+.line-box {
+  display: contents;
+}

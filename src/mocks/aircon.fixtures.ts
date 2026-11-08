@@ -1,4 +1,16 @@
-import { AirconAutomation, AirconCommand, AirconUnit } from '../app/data-access/aircon/aircon-api';
+import {
+  AirconAutomation,
+  AirconCommand,
+  AirconPlug,
+  AirconPowerBucket,
+  AirconRule,
+  AirconRuleBody,
+  AirconRun,
+  AirconUnit,
+  PowerCycleRun,
+  PowerCycleState,
+} from '../app/data-access/aircon/aircon-api';
+import { ruleProblem } from '../app/data-access/aircon/aircon-rule-rules';
 import { commandProblem } from '../app/data-access/aircon/aircon-command-rules';
 import { MockReply } from './handlers';
 import { houseTime } from './house-time';
@@ -32,6 +44,7 @@ interface StoredUnit {
   window?: { state: string; openSecondsAgo?: number; hold?: boolean; restoreInSeconds?: number };
   compressorRunning?: boolean;
   filterHours: number;
+  filterCleanedAt?: string;
 }
 
 const AT_THE_START: readonly StoredUnit[] = [
@@ -87,6 +100,25 @@ const AT_THE_START: readonly StoredUnit[] = [
     unreachableSecondsAgo: 725,
     filterHours: 3.1,
   },
+  // the fifth unit of the house (HAS-395: five cards in one row), off and at rest
+  {
+    id: 142,
+    name: 'Air conditioner',
+    room: 'livia',
+    power: false,
+    mode: 'cool',
+    targetTemperature: 24,
+    roomTemperature: 22,
+    fanSpeed: 'auto',
+    quiet: false,
+    turbo: false,
+    sleep: false,
+    reachable: true,
+    lastCommandConfirmed: true,
+    window: { state: 'closed' },
+    compressorRunning: false,
+    filterHours: 45.2,
+  },
   {
     id: 144,
     name: 'Air conditioner',
@@ -110,6 +142,7 @@ let units: StoredUnit[] = structuredClone([...AT_THE_START]);
 /** The units as they started - for a unit test that changed them. */
 export function resetAircon(): void {
   units = structuredClone([...AT_THE_START]);
+  resetAirconPage();
 }
 
 function replyOf(unit: StoredUnit, fresh: boolean, now: Date): AirconUnit {
@@ -158,7 +191,11 @@ function replyOf(unit: StoredUnit, fresh: boolean, now: Date): AirconUnit {
           },
         }),
     ...(unit.compressorRunning === undefined ? {} : { compressorRunning: unit.compressorRunning }),
-    filter: { hoursSince: unit.filterHours, due: unit.filterHours >= 200 },
+    filter: {
+      hoursSince: unit.filterHours,
+      ...(unit.filterCleanedAt === undefined ? {} : { cleanedAt: unit.filterCleanedAt }),
+      due: unit.filterHours >= 200,
+    },
   };
 }
 
@@ -224,4 +261,266 @@ export function commandAircon(id: string, body: unknown, source: string | null):
   }
   unit.compressorRunning = unit.power && unit.mode !== 'fan';
   return { status: 202, body: null };
+}
+
+// ---- HAS-395: the page of the units - the rules, the plugs, the power cycle, the filters, the runs ----
+
+const RULES_AT_THE_START: readonly AirconRule[] = [
+  {
+    unitId: 144,
+    keepBelow: { enabled: true, threshold: 25, hysteresis: 1, target: 22 },
+    heatBySchedule: { enabled: true },
+    updatedAt: '2026-11-08T10:49:31.87895',
+  },
+  {
+    unitId: 140,
+    keepBelow: { enabled: false, threshold: 26, hysteresis: 1, target: 24 },
+    heatBySchedule: { enabled: false },
+    updatedAt: '2026-11-07T21:15:27.067918',
+  },
+];
+
+let rules: AirconRule[] = structuredClone([...RULES_AT_THE_START]);
+let cycles: PowerCycleRun[] = [
+  {
+    startedAt: '2026-11-08T12:38:31.544497',
+    finishedAt: '2026-11-08T12:38:46.859405',
+    requestedBy: 'Aurelia',
+    result: 'done',
+  },
+];
+
+/** The rules, the cycles and the filters as they started - for a unit test that changed them. */
+export function resetAirconPage(): void {
+  rules = structuredClone([...RULES_AT_THE_START]);
+  cycles = cycles.slice(-1);
+}
+
+const notFoundAircon = (): MockReply => ({
+  status: 404,
+  body: { errors: [{ message: 'Air conditioner not found', code: 'NOT_FOUND_AIRCON' }] },
+});
+
+export function airconRules(fresh: boolean): readonly AirconRule[] {
+  return fresh ? [] : rules;
+}
+
+/** A rule written whole, refused as `RuleRules` refuses it. */
+export function saveAirconRule(id: string, body: unknown): MockReply {
+  const unitId = Number(id);
+  if (!units.some((unit) => unit.id === unitId)) {
+    return notFoundAircon();
+  }
+  const rule = body as AirconRuleBody;
+  if (rule?.keepBelow === undefined || ruleProblem(rule) !== undefined) {
+    return {
+      status: 400,
+      body: { errors: [{ message: 'Invalid rule', code: 'INVALID_RULE' }] },
+    };
+  }
+  const stored: AirconRule = { unitId, ...rule, updatedAt: houseTime(new Date(), 0) };
+  rules = [...rules.filter((one) => one.unitId !== unitId), stored];
+  return { status: 200, body: stored };
+}
+
+export function deleteAirconRule(id: string): MockReply {
+  const unitId = Number(id);
+  if (!rules.some((one) => one.unitId === unitId)) {
+    return {
+      status: 404,
+      body: { errors: [{ message: 'Rule not found', code: 'NOT_FOUND_RULE' }] },
+    };
+  }
+  rules = rules.filter((one) => one.unitId !== unitId);
+  return { status: 204, body: null };
+}
+
+/** The filter of a unit cleaned: its hours at 0. */
+export function airconFilterCleaned(id: string): MockReply {
+  const unit = units.find((candidate) => String(candidate.id) === id);
+  if (unit === undefined) {
+    return notFoundAircon();
+  }
+  unit.filterHours = 0;
+  unit.filterCleanedAt = houseTime(new Date(), 0);
+  return { status: 204, body: null };
+}
+
+/** The indoor plug draws what its four units ask; the sanctum one its single unit. */
+export function airconPower(fresh: boolean): readonly AirconPlug[] {
+  const now = new Date();
+  if (fresh) {
+    return [
+      { plug: 'indoor', rooms: ['office', 'livia', 'tobi', 'bedroom'], relay: true },
+      { plug: 'sanctum', rooms: ['sanctum'], relay: false },
+    ];
+  }
+  const indoorOn = units.some((unit) => unit.room !== 'sanctum' && unit.power && unit.reachable);
+  const sanctumOn = units.some((unit) => unit.room === 'sanctum' && unit.power);
+  return [
+    {
+      plug: 'indoor',
+      rooms: ['office', 'livia', 'tobi', 'bedroom'],
+      relay: true,
+      power: indoorOn ? 612.4 : 18.3,
+      voltage: 231.6,
+      current: indoorOn ? 2.874 : 1.054,
+      output: true,
+      compressorRunning: indoorOn,
+      reachable: true,
+      updatedAt: houseTime(now, 12),
+      todayKwh: 3.2,
+      last7DaysKwh: 21.5,
+      last30DaysKwh: 80.1,
+    },
+    {
+      plug: 'sanctum',
+      rooms: ['sanctum'],
+      relay: false,
+      power: sanctumOn ? 412.0 : 5.4,
+      voltage: 232.0,
+      current: sanctumOn ? 1.9 : 0.324,
+      compressorRunning: sanctumOn,
+      reachable: true,
+      updatedAt: houseTime(now, 14),
+      todayKwh: 1.4,
+      last7DaysKwh: 6.8,
+    },
+  ];
+}
+
+/**
+ * The power of a plug in the buckets the service chooses: 5 min up to 2 days, 30 min up to 8, 2 h beyond. The
+ * indoor plug runs in the afternoons, the sanctum one in the nights; the hour before last is missing.
+ */
+export function airconPowerSamples(
+  plug: string | null,
+  from: string | null,
+  to: string | null,
+): MockReply {
+  if (plug !== 'indoor' && plug !== 'sanctum') {
+    return {
+      status: 404,
+      body: { errors: [{ message: 'Plug not found', code: 'NOT_FOUND_PLUG' }] },
+    };
+  }
+  const start = instantOf(from);
+  const end = instantOf(to);
+  if (Number.isNaN(start) || Number.isNaN(end) || start >= end || end - start > 31 * DAY_MS) {
+    return {
+      status: 400,
+      body: { errors: [{ message: 'Invalid range', code: 'INVALID_RANGE' }] },
+    };
+  }
+  const bucket = bucketOf(end - start);
+  const gapFrom = end - 2 * HOUR_MS;
+  const buckets: AirconPowerBucket[] = [];
+  for (let at = start; at < end; at += bucket) {
+    if (at >= gapFrom && at < gapFrom + HOUR_MS) {
+      continue;
+    }
+    const avg = drawOf(plug, at, bucket);
+    buckets.push({
+      at: new Date(at).toISOString().slice(0, 19),
+      avg,
+      min: Math.round(avg * 0.9 * 10) / 10,
+      max: Math.round(avg * 1.1 * 10) / 10,
+    });
+  }
+  return { status: 200, body: buckets };
+}
+
+const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
+
+/** A wall-clock time of the house on the UTC timeline; NaN for none. */
+function instantOf(text: string | null): number {
+  return text === null ? Number.NaN : Date.parse(text + 'Z');
+}
+
+/** The bucket the service chooses for a range: 5 min up to 2 days, 30 min up to 8, 2 h beyond. */
+function bucketOf(length: number): number {
+  if (length <= 2 * DAY_MS) {
+    return 300_000;
+  }
+  return length <= 8 * DAY_MS ? 1_800_000 : 7_200_000;
+}
+
+/** What a plug draws in a bucket: the indoor one runs in the afternoons, the sanctum one in the nights. */
+function drawOf(plug: 'indoor' | 'sanctum', at: number, bucket: number): number {
+  const hour = new Date(at).getUTCHours();
+  const indoor = plug === 'indoor';
+  const running = indoor ? hour >= 13 && hour < 18 : hour < 6;
+  const runningWatts = indoor ? 600 : 400;
+  const standbyWatts = indoor ? 18 : 5;
+  const base = running ? runningWatts : standbyWatts;
+  return Math.round((base + ((at / bucket) % 7) * (running ? 12 : 0.3)) * 10) / 10;
+}
+
+export function airconPowerCycle(): PowerCycleState {
+  const indoorOn = units.find((unit) => unit.room !== 'sanctum' && unit.power && unit.reachable);
+  const last = cycles.at(-1);
+  return {
+    allowed: indoorOn === undefined,
+    ...(indoorOn === undefined ? {} : { reason: `Air conditioner ${indoorOn.id} is on` }),
+    ...(last === undefined ? {} : { lastRun: last }),
+  };
+}
+
+/** A power cycle as the service runs it - here done at once; refused while an indoor unit is on. */
+export function startAirconPowerCycle(member: string | null): MockReply {
+  const state = airconPowerCycle();
+  if (!state.allowed) {
+    return {
+      status: 409,
+      body: { errors: [{ message: 'Air conditioner running', code: 'AIRCON_RUNNING' }] },
+    };
+  }
+  const at = houseTime(new Date(), 0);
+  cycles = [
+    ...cycles,
+    {
+      startedAt: at,
+      finishedAt: at,
+      ...(member === null ? {} : { requestedBy: member }),
+      result: 'done',
+    },
+  ];
+  return { status: 202, body: null };
+}
+
+/** The changes of a unit today: the first read, the remote, a rule, the window. */
+export function airconRuns(id: string, from: string | null): MockReply {
+  const unit = units.find((candidate) => String(candidate.id) === id);
+  if (unit === undefined) {
+    return notFoundAircon();
+  }
+  const day = (from ?? '2026-11-08T00:00:00').slice(0, 10);
+  const runs: AirconRun[] = [
+    {
+      at: `${day}T07:02:10`,
+      power: true,
+      mode: unit.mode,
+      targetTemperature: unit.targetTemperature,
+      fanSpeed: 'auto',
+      source: 'remote',
+    },
+    {
+      at: `${day}T09:15:00`,
+      power: false,
+      mode: unit.mode,
+      targetTemperature: unit.targetTemperature,
+      fanSpeed: 'auto',
+      source: 'window',
+    },
+    {
+      at: `${day}T13:40:22`,
+      power: true,
+      mode: unit.mode,
+      targetTemperature: unit.targetTemperature,
+      fanSpeed: 'auto',
+      source: 'rule',
+    },
+  ];
+  return { status: 200, body: runs };
 }

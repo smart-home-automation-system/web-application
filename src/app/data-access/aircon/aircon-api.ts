@@ -3,6 +3,8 @@ import { Observable, map } from 'rxjs';
 
 import { ApiClient } from '../../core/api/api-client';
 import { PollingResource, pollingResource } from '../../core/api/polling-resource';
+import { QueryResource, queryResource } from '../../core/api/query-resource';
+import { HistoryRange } from '../../core/time/history-range';
 
 /** The modes of a unit, the words of `aircon-service`. */
 export const AIRCON_MODES = ['auto', 'cool', 'dry', 'fan', 'heat'] as const;
@@ -92,6 +94,86 @@ export interface AirconAutomation {
   };
 }
 
+/** The rule of a unit (HAS-386), as stored: keep the room below a threshold, and the frost protection (HAS-387). */
+export interface AirconRule {
+  readonly unitId?: number;
+  readonly keepBelow?: {
+    readonly enabled?: boolean;
+    /** °C by 0.5. */
+    readonly threshold?: number;
+    readonly hysteresis?: number;
+    /** Whole °C, the target of the cooling. */
+    readonly target?: number;
+  };
+  readonly heatBySchedule?: { readonly enabled?: boolean };
+  readonly updatedAt?: string;
+}
+
+/** A rule as written whole (`PUT /home/aircon/{id}/rules`). */
+export interface AirconRuleBody {
+  readonly keepBelow: {
+    readonly enabled: boolean;
+    readonly threshold: number;
+    readonly hysteresis: number;
+    readonly target: number;
+  };
+  readonly heatBySchedule: { readonly enabled: boolean };
+}
+
+/** One plug that feeds the units (HAS-390): what it draws now and the energy; a field not known is left out. */
+export interface AirconPlug {
+  /** `indoor`, `sanctum`. */
+  readonly plug?: string;
+  readonly rooms?: readonly string[];
+  /** Whether the plug has a relay - only the indoor one is power cycled. */
+  readonly relay?: boolean;
+  readonly power?: number;
+  readonly voltage?: number;
+  readonly current?: number;
+  readonly output?: boolean;
+  readonly compressorRunning?: boolean;
+  readonly reachable?: boolean;
+  readonly updatedAt?: string;
+  readonly todayKwh?: number;
+  readonly last7DaysKwh?: number;
+  readonly last30DaysKwh?: number;
+}
+
+/** One bucket of the power of a plug (`GET /home/aircon/power/samples`): W. */
+export interface AirconPowerBucket {
+  readonly at?: string;
+  readonly avg?: number;
+  readonly min?: number;
+  readonly max?: number;
+}
+
+/** A power cycle as stored (HAS-390). */
+export interface PowerCycleRun {
+  readonly startedAt?: string;
+  readonly finishedAt?: string;
+  readonly requestedBy?: string;
+  /** `running`, `done`, `failed`. */
+  readonly result?: string;
+}
+
+/** Whether the indoor plug may be power cycled now, why not, and the last cycle. */
+export interface PowerCycleState {
+  readonly allowed?: boolean;
+  readonly reason?: string;
+  readonly lastRun?: PowerCycleRun;
+}
+
+/** One change of a unit (`GET /home/aircon/{id}/runs`, HAS-391) with who made it. */
+export interface AirconRun {
+  readonly at?: string;
+  readonly power?: boolean;
+  readonly mode?: string;
+  readonly targetTemperature?: number;
+  readonly fanSpeed?: string;
+  /** `first-read`, `remote`, `dashboard`, `rule`, `window`, `empty-house`, `grid-outage`, `minimum-restored`. */
+  readonly source?: string;
+}
+
 /**
  * A command to a unit (`POST /home/aircon/{id}`, HAS-382): only the fields given are set, the rest
  * stays as the unit has it.
@@ -110,6 +192,8 @@ export interface AirconCommand {
 const POLL_ROOM_EVERY_MS = 10_000;
 /** The units of the house and the automation, for the tile of the overview. */
 const POLL_HOUSE_EVERY_MS = 60_000;
+/** The plugs and the power cycle: read every 30 s by the service. */
+const POLL_POWER_EVERY_MS = 30_000;
 
 /**
  * The air conditioners of `aircon-service` (epic HAS-376) - five Gree units over their local
@@ -133,10 +217,12 @@ export class AirconApi {
     );
   }
 
-  /** Every unit of the registry. Call in an injection context. */
-  watchUnits(): PollingResource<readonly AirconUnit[] | null> {
+  /** Every unit of the registry - once a minute, or as often as a page that commands them asks. Call in an injection context. */
+  watchUnits(
+    intervalMs: number = POLL_HOUSE_EVERY_MS,
+  ): PollingResource<readonly AirconUnit[] | null> {
     return pollingResource(() => this.api.get<readonly AirconUnit[] | null>('/aircon'), {
-      intervalMs: POLL_HOUSE_EVERY_MS,
+      intervalMs,
     });
   }
 
@@ -155,5 +241,80 @@ export class AirconApi {
     return this.api
       .post<unknown>(`/aircon/${id}`, command, { source: 'dashboard' })
       .pipe(map(() => undefined));
+  }
+  /** The rule of every unit that has one (HAS-386, the page of the units). Call in an injection context. */
+  watchRules(): PollingResource<readonly AirconRule[] | null> {
+    return pollingResource(() => this.api.get<readonly AirconRule[] | null>('/aircon/rules'), {
+      intervalMs: POLL_HOUSE_EVERY_MS,
+    });
+  }
+
+  /** Writes the rule of a unit whole - it acts on the house within the minute. Answers the rule stored. */
+  saveRule(id: number, body: AirconRuleBody): Observable<void> {
+    return this.api.put<unknown>(`/aircon/${id}/rules`, body).pipe(map(() => undefined));
+  }
+
+  /** Removes the rule of a unit. */
+  deleteRule(id: number): Observable<void> {
+    return this.api.delete<unknown>(`/aircon/${id}/rules`).pipe(map(() => undefined));
+  }
+
+  /** The two plugs that feed the units: the draw now and the energy (HAS-390). Call in an injection context. */
+  watchPower(): PollingResource<readonly AirconPlug[] | null> {
+    return pollingResource(() => this.api.get<readonly AirconPlug[] | null>('/aircon/power'), {
+      intervalMs: POLL_POWER_EVERY_MS,
+    });
+  }
+
+  /**
+   * The power of one plug in buckets for a range of the house (at most 31 days; the service chooses the bucket -
+   * 5 minutes up to 2 days). The plug is read when a call is made. Call in an injection context.
+   */
+  watchPowerSamples(
+    plug: () => string,
+    range: () => HistoryRange,
+  ): QueryResource<HistoryRange, readonly AirconPowerBucket[] | null> {
+    return queryResource(
+      range,
+      (asked) =>
+        this.api.get<readonly AirconPowerBucket[] | null>('/aircon/power/samples', {
+          plug: plug(),
+          ...asked,
+        }),
+      { intervalMs: POLL_HOUSE_EVERY_MS },
+    );
+  }
+
+  /** Whether the indoor plug may be power cycled now, and the last cycle. Call in an injection context. */
+  watchPowerCycle(): PollingResource<PowerCycleState | null> {
+    return pollingResource(() => this.api.get<PowerCycleState | null>('/aircon/power-cycle'), {
+      intervalMs: POLL_POWER_EVERY_MS,
+    });
+  }
+
+  /** Switches the indoor plug off and on again - the four indoor units; `member` is stored with the cycle. */
+  startPowerCycle(member: string | undefined): Observable<void> {
+    return this.api
+      .post<unknown>('/aircon/power-cycle', undefined, member === undefined ? {} : { member })
+      .pipe(map(() => undefined));
+  }
+
+  /** The filter of a unit cleaned: its hours start again at 0 (HAS-391). */
+  filterCleaned(id: number): Observable<void> {
+    return this.api
+      .post<unknown>(`/aircon/${id}/filter-cleaned`)
+      .pipe(map(() => undefined));
+  }
+
+  /** The changes of a unit in a range, with who made them (HAS-391). Call in an injection context. */
+  watchRuns(
+    id: () => number,
+    range: () => HistoryRange,
+  ): QueryResource<HistoryRange, readonly AirconRun[] | null> {
+    return queryResource(
+      range,
+      (asked) => this.api.get<readonly AirconRun[] | null>(`/aircon/${id()}/runs`, { ...asked }),
+      { intervalMs: POLL_HOUSE_EVERY_MS },
+    );
   }
 }

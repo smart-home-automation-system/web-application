@@ -2,6 +2,7 @@ import { ApiError } from '../../core/api/api-error';
 import { CommandState } from '../../core/api/device-commands';
 import { AirconFanSpeed, AirconMode, AirconUnit } from '../../data-access/aircon/aircon-api';
 import { CommandProblem } from '../../data-access/aircon/aircon-command-rules';
+import { RuleProblem } from '../../data-access/aircon/aircon-rule-rules';
 import { DisplayText, MessageKey } from '../../i18n/messages';
 import { describeApiError } from '../api-error/describe-api-error';
 
@@ -61,6 +62,13 @@ export const AIRCON_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   INVALID_COMMAND: 'aircon.error.invalidCommand',
   DEVICE_FAILED: 'aircon.error.deviceFailed',
   REGISTRY_UNAVAILABLE: 'aircon.error.registryUnavailable',
+  // HAS-395: the page of the units - a rule, a power cycle, a history
+  INVALID_RULE: 'aircon.error.invalidRule',
+  NOT_FOUND_RULE: 'aircon.error.notFoundRule',
+  AIRCON_RUNNING: 'aircon.error.airconRunning',
+  POWER_CYCLE_IN_PROGRESS: 'aircon.error.powerCycleInProgress',
+  INVALID_RANGE: 'aircon.error.invalidRange',
+  NOT_FOUND_PLUG: 'aircon.error.notFoundPlug',
 };
 
 export function describeAirconError(error: ApiError): DisplayText {
@@ -82,3 +90,46 @@ export const COMMAND_PROBLEM_TEXTS: Readonly<Record<CommandProblem, MessageKey>>
   coolingMinimum: 'aircon.problem.coolingMinimum',
   boostMode: 'aircon.problem.boostMode',
 };
+
+/** Why a rule is not sent, in the words of the rules of `aircon-service`. */
+export const RULE_PROBLEM_TEXTS: Readonly<Record<RuleProblem, MessageKey>> = {
+  threshold: 'aircon.rule.problem.threshold',
+  hysteresis: 'aircon.rule.problem.hysteresis',
+  target: 'aircon.rule.problem.target',
+  targetAboveThreshold: 'aircon.rule.problem.targetAboveThreshold',
+};
+
+const RUN_SOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
+  'first-read': 'aircon.source.firstRead',
+  remote: 'aircon.source.remote',
+  dashboard: 'aircon.source.dashboard',
+  rule: 'aircon.source.rule',
+  window: 'aircon.source.window',
+  'empty-house': 'aircon.source.emptyHouse',
+  'grid-outage': 'aircon.source.gridOutage',
+  'minimum-restored': 'aircon.source.minimumRestored',
+};
+
+/** Who made a change of a unit; a word this version does not know is printed as it came. */
+export function sourceText(source: string | undefined): DisplayText {
+  if (source === undefined) {
+    return { key: 'aircon.source.unknown' };
+  }
+  const key = RUN_SOURCE_LABELS[source];
+  return key === undefined ? { literal: source } : { key };
+}
+
+const CYCLE_RESULT_LABELS: Readonly<Record<string, MessageKey>> = {
+  running: 'aircon.cycle.result.running',
+  done: 'aircon.cycle.result.done',
+  failed: 'aircon.cycle.result.failed',
+};
+
+/** What a power cycle came to; a word this version does not know is printed as it came. */
+export function cycleResultText(result: string | undefined): DisplayText {
+  if (result === undefined) {
+    return { key: 'aircon.cycle.result.unknown' };
+  }
+  const key = CYCLE_RESULT_LABELS[result];
+  return key === undefined ? { literal: result } : { key };
+}

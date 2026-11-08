@@ -84,6 +84,18 @@ dashboards:
   target, power and margin; the planned outages of Tauron with the start the charge would have and "No charge
   for this one"; the charges of the last 30 days. These are writes to the real inverter - no question but the
   one above, read again at once and 2.5 s later.
+- **Air conditioning** (HAS-395, the administrator's, `/aircon`, from `aircon-service` >= 0.10.0; the filters
+  from 0.11.0): every unit by room, a card each - the unit with its controls as on My room; **its filter** - the
+  hours of work since it was cleaned and "Cleaned" after a question (the hours start again at 0); **its rule** in a
+  few words with the editor - keep the room below a threshold (20-30 °C by 0.5, a hysteresis of 0.5-3 °C, cooling
+  at 22-30 °C, never above the threshold - a copy of the rules of the service, so nothing it would refuse is sent)
+  and the frost protection by the heating schedule, saved whole and read back, removed after a question; and its
+  changes of the last 24 hours with who made them (the remote, the dashboard, a rule, the window, the empty house, a
+  lost grid). Under them the two plugs that feed the units - what each draws now, whether its compressor runs, the
+  energy of today, 7 and 30 days - with **the power cycle of the indoor units**: offered only while the service
+  allows it (no indoor unit on, the plug at rest), after a question, its refusal printed as the service words it,
+  the last cycle with who asked for it; and the draw of each plug over 24 or 48 hours with the line of 20 W above
+  which a compressor runs.
 - **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
   each kind of thing in it - temperature, heating, lights (a bulb each), blinds (a position each,
   the door first), motion, presence sensors, openings (windows and doors), the rest - and a window
@@ -543,7 +555,14 @@ Endpoints used today:
 | `GET` | `/home/aircon` | Every air conditioner with its state (overview tile, HAS-394), polled every minute |
 | `GET` | `/home/aircon/automation` | When the empty house or a lost grid last switched the units off (overview tile), polled every minute |
 | `GET` | `/home/aircon/rooms/{room}` | The units of a room (my room, HAS-394), polled every 10 s; a 404 with the code `NOT_FOUND_ROOM` means no card |
-| `POST` | `/home/aircon/{id}?source=dashboard` | A command to a unit - power, mode, target, fan, quiet, turbo, sleep (my room); checked against a copy of `CommandRules` first; the units are read again at once and 2.5 s later |
+| `POST` | `/home/aircon/{id}?source=dashboard` | A command to a unit - power, mode, target, fan, quiet, turbo, sleep (my room, air conditioning); checked against a copy of `CommandRules` first; the units are read again at once and 2.5 s later |
+| `GET` | `/home/aircon/rules` | The rule of every unit (air conditioning, HAS-395), polled every minute and read again after a write |
+| `PUT`, `DELETE` | `/home/aircon/{id}/rules` | Writes the rule of a unit whole (checked against a copy of `RuleRules` first) or removes it after a question (air conditioning); a removal answered `NOT_FOUND_RULE` counts as removed |
+| `POST` | `/home/aircon/{id}/filter-cleaned` | The filter of a unit cleaned, after a question (air conditioning); the units are read again. Needs `aircon-service` 0.11.0 or later |
+| `GET` | `/home/aircon/{id}/runs?from=&to=` | The changes of a unit over the last 24 hours with who made them (air conditioning), asked only while they are open, then every minute |
+| `GET` | `/home/aircon/power` | The two plugs of the units - power now, compressor, the energy of today, 7 and 30 days (air conditioning), polled every 30 s |
+| `GET` | `/home/aircon/power/samples?plug=&from=&to=` | The draw of one plug in buckets over 24 or 48 hours (air conditioning), asked when the period changes, then every minute |
+| `GET`, `POST` | `/home/aircon/power-cycle` | Whether the indoor plug may be power cycled now and the last cycle, polled every 30 s; the cycle itself after a question, with the member of the profile (air conditioning). Needs `aircon-service` 0.10.0 or later |
 | `POST` | `/home/light/{id}?turn=on\|off&source=dashboard`, `/home/light/{id}/brightness?value=1..100&source=dashboard` | Switches a light by its registry id, sets the brightness of a dimmer or an rgbw light (rooms). The rules engine holds a light changed from here; the lights are read again |
 | `GET` | `/home/light/rooms/{room}/rules` | The rule of a room (my room: every 60 s; the editor of the rule: once, and again after a save); `404 NOT_FOUND_RULE` is a room without one. Needs `light-service` 0.6.0 or later |
 | `PUT` / `DELETE` | `/home/light/rooms/{room}/rules` | Writes the rule of a room whole, or removes it (the editor of the rule, HAS-267); the rule is read again, the answer of the write is not used. `INVALID_RULE` names what the service refused only in `details`, which is never shown - the editor checks every rule of the service first |

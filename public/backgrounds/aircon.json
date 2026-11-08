@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 2560,
+    "height": 1440
+  },
+  "tones": {
+    "black": 0,
+    "white": 235
+  },
+  "files": {
+    "aircon-2560.webp": {
+      "bytes": 238358,
+      "quality": 82
+    },
+    "aircon-1280.webp": {
+      "bytes": 105816,
+      "quality": 82
+    }
+  },
+  "darkest": "#070b0c",
+  "lightest": "#ddebb8",
+  "top": {
+    "darkest": "#3a4b22",
+    "lightest": "#bdc3cb"
+  }
+}

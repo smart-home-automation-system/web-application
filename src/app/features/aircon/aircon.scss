@@ -1,0 +1,54 @@
+:host {
+  display: block;
+}
+
+.page {
+  container-type: inline-size;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+}
+
+.units,
+.power {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  align-items: stretch;
+}
+
+// The five units of the house in one row on a desktop (owner, 2026-11-08), counted by the width of the page:
+// one a row on a phone, two, three, then all five. The cards take fourteen rows each and keep their own space
+// below (`margin-bottom` of a card), so there is no gap between the rows of the grid.
+.units {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+}
+
+@container (min-width: 600px) {
+  .units {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 860px) {
+  .units {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1080px) {
+  .units {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.power {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+}
+
+.note {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface);
+}

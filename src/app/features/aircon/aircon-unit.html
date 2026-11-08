@@ -1,0 +1,229 @@
+<ng-container *transloco="let t">
+  @let one = unit();
+  <mat-card appearance="outlined" class="unit card--domain" [attr.data-unit]="one.id">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>ac_unit</mat-icon></div>
+      <!-- the room by its identifier; the name of the registry stands in the control under it -->
+      <mat-card-title>{{ one.room ?? t('aircon.noRoom') }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="unit__content">
+      <app-aircon-control
+        [unit]="one"
+        [name]="one.name"
+        [commands]="commands()"
+        [refresh]="refresh()"
+        [level]="true"
+      />
+
+      <!-- the filter: hours of work since its cleaning, counted by the service every 10 minutes -->
+      <div class="line-box">
+        <div class="line" data-testid="filter">
+          <mat-icon class="line__icon" aria-hidden="true">air</mat-icon>
+          <span class="line__text" [class.warning]="one.filter?.due === true">
+            @if (one.filter?.hoursSince !== undefined) {
+              {{
+                t('aircon.page.filter.hours', {
+                  hours: (one.filter!.hoursSince! | localNumber: HOURS),
+                })
+              }}
+              @if (one.filter?.cleanedAt; as cleaned) {
+                {{ t('aircon.page.filter.since', { day: (cleaned | houseDateTime: DAY) }) }}
+              } @else {
+                {{ t('aircon.page.filter.sinceHistory') }}
+              }
+              @if (one.filter?.due === true) {
+                · {{ t('aircon.page.filter.due') }}
+              }
+            } @else {
+              {{ t('aircon.page.filter.unknown') }}
+            }
+          </span>
+          <button
+            matButton
+            type="button"
+            data-testid="filter-cleaned"
+            [disabled]="busy() || panel() === 'cleaned'"
+            (click)="toggle('cleaned')"
+          >
+            {{ t('aircon.page.filter.cleaned') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- the rule: keep the room below a threshold, and the frost protection -->
+      @let stored = rule();
+      <div class="line-box">
+        <div class="line" data-testid="rule">
+          <mat-icon class="line__icon" aria-hidden="true">rule</mat-icon>
+          <span class="line__text">
+            @if (stored === undefined) {
+              {{ t('aircon.page.rule.unknown') }}
+            } @else if (stored === null) {
+              {{ t('aircon.page.rule.none') }}
+            } @else {
+              @if (
+                stored.keepBelow?.enabled === true &&
+                stored.keepBelow.threshold !== undefined &&
+                stored.keepBelow.target !== undefined
+              ) {
+                {{
+                  t('aircon.page.rule.keepBelow', {
+                    threshold: (stored.keepBelow!.threshold! | localNumber: DEGREES),
+                    target: stored.keepBelow!.target!,
+                  })
+                }}
+              } @else if (stored.keepBelow?.enabled === false) {
+                {{ t('aircon.page.rule.keepBelowOff') }}
+              } @else {
+                <!-- missing is never off: a part of the rule the answer leaves out is not known -->
+                {{ t('aircon.page.rule.keepBelowUnknown') }}
+              }
+              ·
+              {{
+                t(
+                  stored.heatBySchedule?.enabled === true
+                    ? 'aircon.page.rule.frostOn'
+                    : stored.heatBySchedule?.enabled === false
+                      ? 'aircon.page.rule.frostOff'
+                      : 'aircon.page.rule.frostUnknown'
+                )
+              }}
+            }
+          </span>
+          @if (stored !== undefined) {
+            <button
+              matButton
+              type="button"
+              data-testid="rule-edit"
+              [disabled]="busy()"
+              (click)="toggle('rule')"
+            >
+              {{ t(stored === null ? 'aircon.page.rule.write' : 'aircon.page.rule.edit') }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- the changes of 24 hours: asked for only while open -->
+      <button
+        matButton
+        type="button"
+        class="runs-toggle"
+        data-testid="runs-toggle"
+        [attr.aria-expanded]="panel() === 'runs'"
+        (click)="toggle('runs')"
+      >
+        <mat-icon>{{ panel() === 'runs' ? 'expand_less' : 'history' }}</mat-icon
+        >{{ t('aircon.page.runs.title') }}
+      </button>
+
+      <!-- what is open below the lines: one thing at a time, so the lines above stand level across the row -->
+      <div class="panel">
+        @if (panel() === 'cleaned') {
+          <div class="question" data-testid="filter-question">
+            <span>{{ t('aircon.page.filter.question') }}</span>
+            <button #safeAnswer matButton type="button" (click)="toggle('cleaned')">
+              {{ t('aircon.page.cancel') }}
+            </button>
+            <button matButton="filled" type="button" [disabled]="busy()" (click)="cleaned()">
+              {{ t('aircon.page.filter.confirm') }}
+            </button>
+          </div>
+        }
+        @if (filterState()?.error) {
+          <p class="failure" role="alert">{{ airconFailureOf(filterState()!) | displayText }}</p>
+        }
+        @if (panel() === 'rule') {
+          <form
+            class="rule-form"
+            data-testid="rule-form"
+            [formGroup]="form"
+            (ngSubmit)="saveRule()"
+          >
+            <mat-slide-toggle formControlName="keepBelow">{{
+              t('aircon.page.rule.keepBelowLabel')
+            }}</mat-slide-toggle>
+            <div class="rule-form__fields">
+              <mat-form-field subscriptSizing="dynamic">
+                <mat-label>{{ t('aircon.page.rule.threshold') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="decimal"
+                  formControlName="threshold"
+                  data-testid="rule-threshold"
+                />
+                <span matTextSuffix>°C</span>
+              </mat-form-field>
+              <mat-form-field subscriptSizing="dynamic">
+                <mat-label>{{ t('aircon.page.rule.hysteresis') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="decimal"
+                  formControlName="hysteresis"
+                  data-testid="rule-hysteresis"
+                />
+                <span matTextSuffix>°C</span>
+              </mat-form-field>
+              <mat-form-field subscriptSizing="dynamic">
+                <mat-label>{{ t('aircon.page.rule.target') }}</mat-label>
+                <input
+                  matInput
+                  inputmode="numeric"
+                  formControlName="target"
+                  data-testid="rule-target"
+                />
+                <span matTextSuffix>°C</span>
+              </mat-form-field>
+            </div>
+            <mat-slide-toggle formControlName="heatBySchedule">{{
+              t('aircon.page.rule.frostLabel')
+            }}</mat-slide-toggle>
+            <p class="note">{{ t('aircon.page.rule.note') }}</p>
+            @if (problem(); as reason) {
+              <p class="failure" role="alert" data-testid="rule-problem">
+                {{ t(PROBLEM_TEXTS[reason]) }}
+              </p>
+            }
+            <div class="rule-form__actions">
+              <button matButton="filled" type="submit" data-testid="rule-save" [disabled]="busy()">
+                {{ t('aircon.page.rule.save') }}
+              </button>
+              <button matButton type="button" (click)="toggle('rule')">
+                {{ t('aircon.page.cancel') }}
+              </button>
+              @if (stored) {
+                <button
+                  matButton
+                  type="button"
+                  data-testid="rule-remove"
+                  (click)="toggle('removeRule')"
+                >
+                  {{ t('aircon.page.rule.remove') }}
+                </button>
+              }
+            </div>
+          </form>
+        }
+        @if (panel() === 'removeRule') {
+          <div class="question" data-testid="rule-question">
+            <span>{{ t('aircon.page.rule.removeQuestion') }}</span>
+            <button #safeAnswer matButton type="button" (click)="toggle('removeRule')">
+              {{ t('aircon.page.cancel') }}
+            </button>
+            <button matButton="filled" type="button" [disabled]="busy()" (click)="removeRule()">
+              {{ t('aircon.page.rule.remove') }}
+            </button>
+          </div>
+        }
+        @if (ruleState()?.error) {
+          <p class="failure" role="alert" data-testid="rule-failure">
+            {{ airconFailureOf(ruleState()!) | displayText }}
+          </p>
+        }
+        @if (panel() === 'runs' && one.id !== undefined) {
+          <app-aircon-runs [unitId]="one.id" />
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+</ng-container>

@@ -63,6 +63,7 @@ describe('translations', () => {
       'devices.device.generation',
       'devices.device.bluetooth',
       'devices.device.gree',
+      'aircon.page.plugs.sanctum',
       'devices.vendor.shelly',
       'devices.vendor.eaton',
       'devices.vendor.gree',

@@ -1,0 +1,35 @@
+<ng-container *transloco="let t">
+  <header class="page-header">
+    <h1>{{ t('aircon.page.title') }}</h1>
+  </header>
+
+  <div class="page">
+    <app-sources-strip [sources]="sources" domain="aircon" loadingLabel="aircon.page.loading" />
+
+    @if (shown(); as list) {
+      @if (list.length === 0) {
+        <p class="note">{{ t('aircon.none') }}</p>
+      } @else {
+        <div class="units" data-testid="units">
+          @for (unit of list; track unit.id) {
+            <app-aircon-unit
+              [unit]="unit"
+              [rule]="ruleOf(unit.id)"
+              [commands]="commands"
+              [refresh]="refresh"
+              [ruleCommands]="ruleCommands"
+              [filterCommands]="filterCommands"
+              [refreshRules]="refreshRules"
+            />
+          }
+        </div>
+      }
+    }
+
+    <div class="power">
+      <app-aircon-power [plugs]="plugs()" [cycle]="cycleState()" [refreshCycle]="refreshCycle" />
+      <app-aircon-power-chart plug="indoor" name="aircon.page.plugs.indoor" [period]="period" />
+      <app-aircon-power-chart plug="sanctum" name="aircon.page.plugs.sanctum" [period]="period" />
+    </div>
+  </div>
+</ng-container>

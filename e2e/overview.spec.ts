@@ -63,7 +63,7 @@ test.describe('overview', () => {
     // HAS-394: the air conditioners counted, the unit that does not answer, a line per unit that is on
     const aircon = page.getByTestId('tile-aircon');
     await expect(aircon).toContainText(/On\s+2/);
-    await expect(aircon).toContainText(/Off\s+2/);
+    await expect(aircon).toContainText(/Off\s+3/);
     await expect(aircon.getByTestId('aircon-unreachable')).toContainText(/Not answering\s+1/);
     await expect(aircon.getByTestId('aircon-running')).toHaveText([
       'office: Cooling 23 °C',
