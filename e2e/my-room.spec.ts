@@ -345,7 +345,7 @@ test.describe('the air conditioner of the room', () => {
         'Stopped by the open window',
       );
 
-      await unit.getByRole('button', { name: 'On Air conditioner' }).click();
+      await unit.getByRole('radio', { name: 'On Air conditioner' }).click();
       await expect(unit.getByTestId('aircon-state')).toHaveText('On · Cooling · 24 °C');
       await expect(unit.getByTestId('aircon-window-hold')).toHaveCount(0);
 
@@ -369,7 +369,7 @@ test.describe('the air conditioner of the room', () => {
       await page.goto('/room');
       const unit = page.getByTestId('room-aircon').locator('[data-unit="143"]');
 
-      await unit.getByRole('button', { name: 'On Air conditioner' }).click();
+      await unit.getByRole('radio', { name: 'On Air conditioner' }).click();
       await expect(unit.getByTestId('aircon-failure')).toBeVisible();
       await expect(unit.getByTestId('aircon-state')).toHaveText('Off');
     });

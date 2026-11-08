@@ -15,34 +15,54 @@
   gap: 6px 10px;
 }
 
-.mat-icon.unit__icon {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
-  color: var(--mat-sys-on-surface-variant);
-
-  &[data-state='on'] {
-    color: var(--app-domain-aircon);
-  }
-}
-
 .unit__name {
   font: var(--mat-sys-title-small);
   letter-spacing: var(--mat-sys-title-small-tracking);
   color: var(--mat-sys-on-surface);
 }
 
-.unit__state {
-  font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface-variant);
-  font-variant-numeric: tabular-nums;
+.power {
+  margin-left: auto;
 }
 
-.unit__commands {
-  display: inline-flex;
-  gap: 6px;
-  margin-left: auto;
+// the state at a glance (owner, 2026-11-08: on the phone the state was not to be read): a strip
+// tinted with the domain while on, an outline while off, a dashed one while not known
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 60%, transparent);
+  border-radius: var(--mat-sys-corner-small);
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+
+  &[data-state='on'] {
+    border-color: var(--app-domain-aircon);
+    background: color-mix(in srgb, var(--app-domain-aircon) 18%, transparent);
+  }
+
+  &[data-state='off'] {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &[data-state='unknown'] {
+    border-style: dashed;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.mat-icon.status__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+}
+
+.status[data-state='on'] .mat-icon.status__icon {
+  color: var(--app-domain-aircon);
 }
 
 .note {

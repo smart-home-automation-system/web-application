@@ -96,6 +96,8 @@ export class AirconControl {
     fan: 'mode_fan',
     heat: 'sunny',
   };
+  /** The icon of a mode by its word; a word this version does not know has none. */
+  protected readonly MODE_ICONS_BY_WORD: Readonly<Record<string, string>> = this.MODE_ICONS;
   protected readonly FAN_LABELS = AIRCON_FAN_LABELS;
   protected readonly STATE_LABELS = AIRCON_STATE_LABELS;
   protected readonly PROBLEM_TEXTS = COMMAND_PROBLEM_TEXTS;

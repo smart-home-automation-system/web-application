@@ -864,7 +864,11 @@ e2e/              # Playwright tests
   tile `tile-aircon` of the overview (`GET /aircon` and `/aircon/automation` once a minute, the second told in
   `tileFailures`; units on by room with their mode, how many do not answer, what the empty house or a lost grid
   switched off). What to keep:
-  - **One unit is `AirconControl`** (`shared/aircon/`, for the page of the units of HAS-395 too): on and off, the mode
+  - **One unit is `AirconControl`** (`shared/aircon/`, for the page of the units of HAS-395 too). **The state is read at a
+    glance** (owner, 2026-11-08, on the iPhone: on or off was not to be told): a strip under the name - tinted with
+    `--app-domain-aircon` and the icon of the mode while on, an outline while off, dashed while not known, always with
+    the word - and on / off as a toggle group whose selected toggle is the reported power (neither for a unit not read;
+    their role is `radio`). Then the mode
     (a toggle group - an icon and its word on a wide card, the icon alone below 340 px in English and 510 px in Polish,
     the word kept for a screen reader and in the tooltip), the target by a degree, the fan (`mat-select`), quiet /
     turbo / sleep (`mat-slide-toggle` with `disableToggleValue`). **A unit without `power` is not known**: no settings

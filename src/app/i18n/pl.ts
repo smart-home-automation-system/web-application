@@ -1667,8 +1667,8 @@ export const pl: Messages = {
     unreadable: 'Nie udało się odczytać odpowiedzi usługi klimatyzacji.',
     unnamed: 'Klimatyzator',
     noRoom: 'bez pokoju',
-    on: 'Włącz',
-    off: 'Wyłącz',
+    on: 'Włączony',
+    off: 'Wyłączony',
     state: {
       on: 'Włączony',
       off: 'Wyłączony',
@@ -1689,6 +1689,7 @@ export const pl: Messages = {
       mediumHigh: 'Średnio wysoki',
       high: 'Wysoki',
     },
+    powerLabel: 'Zasilanie',
     modeLabel: 'Tryb',
     fanLabel: 'Nawiew',
     target: '{{ value }} °C',

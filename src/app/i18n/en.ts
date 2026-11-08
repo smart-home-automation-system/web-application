@@ -1703,6 +1703,7 @@ export const en = {
       mediumHigh: 'Medium high',
       high: 'High',
     },
+    powerLabel: 'Power',
     modeLabel: 'Mode',
     fanLabel: 'Fan',
     target: '{{ value }} °C',
