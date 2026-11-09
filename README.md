@@ -223,7 +223,7 @@ dashboards:
   stream of the cloud open while the switch is on and the page shown, so the flow moves as it happens. The salt over
   90 days with the regenerations marked as dashed lines and the litres per day of this month through the softener
   beside the water meter are cards of the row of the consumption; the alerts the iQua cloud keeps, coloured by their
-  level - the salt in amber -, the sixth card of the first row.
+  level - the salt in amber -, the sixth card of the first row: the newest four, the older ones counted.
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
