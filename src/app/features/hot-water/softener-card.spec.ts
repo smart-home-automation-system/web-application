@@ -116,7 +116,7 @@ describe('SoftenerCard', () => {
 
   // a regeneration only after a question, the softener read again whatever the command came to
   it('asks before a regeneration tonight, sends it once and reads the softener again', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
     answer(softener, { salt: { levelPercent: 40 }, regeneration: { status: 'none' } });
     const refresh = vi.spyOn(softener, 'refresh');
 
@@ -143,7 +143,7 @@ describe('SoftenerCard', () => {
 
   // the codes of the commands worded in both languages
   it('words a refused command by its code, in English and in Polish', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
     commandAnswer = throwError(
       () => new ApiError('client', 409, [{ message: 'Command too soon', code: 'COMMAND_TOO_SOON' }]),
     );
