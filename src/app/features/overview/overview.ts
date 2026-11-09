@@ -126,6 +126,11 @@ export class Overview {
   // failures of the tile
   protected readonly softener = inject(SoftenerApi).watchSoftener();
   protected readonly softenerView = computed(() => toSoftenerView(this.softener.value(), this.zone));
+  /** The softener not read yet (503 SOFTENER_UNAVAILABLE) is no failure of the tile: nothing is said of the salt. */
+  protected readonly softenerFailure = computed(() => {
+    const error = this.softener.error();
+    return error?.hasCode('SOFTENER_UNAVAILABLE') ? undefined : error;
+  });
   protected readonly describeWater = describeWaterError;
   protected readonly boiler = inject(BoilerApi).watchStatus();
   protected readonly presence = inject(PresenceApi).watchNow();

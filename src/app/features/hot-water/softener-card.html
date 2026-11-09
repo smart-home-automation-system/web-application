@@ -137,7 +137,7 @@
               </p>
               <mat-slide-toggle
                 [checked]="liveOn()"
-                (change)="toggleLive($event.checked)"
+                (change)="$event.checked ? startLive() : switchLiveOff()"
                 data-testid="softener-live"
                 >{{ t('softener.live.switch') }}</mat-slide-toggle
               >
@@ -276,10 +276,12 @@
               <span>{{ t(outOfDate() ? 'softener.readOutOfDate' : 'softener.read', { age }) }}</span>
             }
           </p>
+        } @else if (notReadYet()) {
+          <p class="softener__unknown" data-testid="softener-not-read">{{ t('water.error.softenerUnavailable') }}</p>
         } @else if (!softener.error()) {
           <p class="softener__unknown">{{ t('softener.noReading') }}</p>
         }
-        <app-api-error-strip [error]="softener.error()" [describeWith]="describe" />
+        <app-api-error-strip [error]="readFailure()" [describeWith]="describe" />
       }
     </mat-card-content>
   </mat-card>

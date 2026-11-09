@@ -576,9 +576,10 @@ test.describe('the water softener', () => {
     await useScenario(page, 'no-readings');
     await page.goto('/water');
 
-    await expect(page.getByTestId('softener')).toContainText(
+    await expect(page.getByTestId('softener-not-read')).toHaveText(
       'The softener has not been read from the iQua cloud yet.',
     );
+    await expect(page.getByTestId('softener').getByRole('alert')).toHaveCount(0);
   });
 });
 
@@ -662,12 +663,14 @@ test.describe('hot water', () => {
 
   test('draws the marker inside the band while the water is in it', async ({ page }) => {
     await page.goto('/water');
-    const band = page.locator('.gauge__band');
+    // the gauge of the tank - the salt of the softener has one too (HAS-402)
+    const tank = page.getByTestId('temperatures');
+    const band = tank.locator('.gauge__band');
     await expect(band).toBeVisible();
 
     const [bandBox, markerBox] = await Promise.all([
       band.boundingBox(),
-      page.locator('.gauge__marker').boundingBox(),
+      tank.locator('.gauge__marker').boundingBox(),
     ]);
     const marker = markerBox!.x + markerBox!.width / 2;
 
@@ -730,10 +733,11 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    // nine calls in nine cards - the valve, the totals and the consumption (HAS-322), the bills (HAS-323), the
-    // temperatures, the demand, the history, the pump and its runs of today (HAS-406)
+    // fifteen calls - the valve, the totals and the consumption (HAS-322), the bills (HAS-323), the temperatures, the
+    // demand, the history, the pump and its runs of today (HAS-406), and the softener (HAS-402): its state, the salt
+    // and the regenerations, the days and the meter, the alerts of the cloud
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(9);
+    await expect(alerts).toHaveCount(15);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }

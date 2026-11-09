@@ -100,6 +100,10 @@ export class SoftenerCard {
 
   protected readonly softenerView = computed(() => toSoftenerView(this.softener.value(), this.zone));
   protected readonly known = computed(() => hasSoftenerReading(this.softenerView()));
+  /** 503 SOFTENER_UNAVAILABLE: the service has not read the cloud since its start - not read yet, no failure. */
+  protected readonly notReadYet = computed(() => this.softener.error()?.hasCode('SOFTENER_UNAVAILABLE') === true);
+  /** A failure of the read to tell in the card; not read yet is told in words instead. */
+  protected readonly readFailure = computed(() => (this.notReadYet() ? undefined : this.softener.error()));
   protected readonly outOfDate = computed(() => isSoftenerOutOfDate(this.softenerView(), this.ticker.now()));
   protected readonly saltLevel = computed(() => saltLevelOf(this.softenerView().saltPercent));
   protected readonly describe = describeWaterError;
@@ -198,16 +202,8 @@ export class SoftenerCard {
     });
   }
 
-  /** The switch of the live flow: on opens the stream and holds it while the page is open, off closes it. */
-  protected toggleLive(on: boolean): void {
-    if (on) {
-      this.startLive();
-    } else {
-      this.stopLive(true);
-    }
-  }
-
-  private startLive(): void {
+  /** The switch of the live flow on: opens the stream and holds it while the page is open. */
+  protected startLive(): void {
     if (this.liveOn()) {
       return;
     }
@@ -246,7 +242,12 @@ export class SoftenerCard {
     });
   }
 
-  /** The switch off: the timers stopped and - when asked, and the stream was on - the stream closed. */
+  /** The switch of the live flow off: the stream closed. */
+  protected switchLiveOff(): void {
+    this.stopLive(true);
+  }
+
+  /** The timers stopped and - when asked, and the stream was on - the stream closed. */
   private stopLive(close: boolean): void {
     clearInterval(this.liveRenewal);
     clearInterval(this.liveRead);

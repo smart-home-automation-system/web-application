@@ -215,7 +215,7 @@
       }
       <div tileFailures>
         <app-api-error-strip [error]="todayConsumption.error()" [describeWith]="describeWater" />
-        <app-api-error-strip [error]="softener.error()" [describeWith]="describeWater" />
+        <app-api-error-strip [error]="softenerFailure()" [describeWith]="describeWater" />
       </div>
     </app-domain-tile>
 

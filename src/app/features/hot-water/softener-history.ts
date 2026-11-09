@@ -9,8 +9,8 @@ import { LanguageStore } from '../../core/i18n/language-store';
 import { HistoryRange, sameRange } from '../../core/time/history-range';
 import { houseDay } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
-import { SoftenerApi } from '../../data-access/water/softener-api';
-import { ConsumptionQuery, WaterApi } from '../../data-access/water/water-api';
+import { SoftenerApi, SoftenerDay } from '../../data-access/water/softener-api';
+import { ConsumptionQuery, WaterApi, WaterConsumption } from '../../data-access/water/water-api';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { BarSeries, BarsChart } from '../../shared/history-chart/bars-chart';
@@ -54,6 +54,28 @@ export function daysIn(range: HistoryRange): string[] {
     days.push(new Date(at).toISOString().slice(0, 10));
   }
   return days;
+}
+
+/** The litres through the softener by day, `YYYY-MM-DD`; a day without a number left out. */
+export function litresBySoftenerDay(days: readonly SoftenerDay[] | null | undefined): Map<string, number> {
+  const litres = new Map<string, number>();
+  for (const entry of days ?? []) {
+    if (typeof entry.day === 'string' && typeof entry.litres === 'number') {
+      litres.set(entry.day, entry.litres);
+    }
+  }
+  return litres;
+}
+
+/** The litres of the water meter by day (its m³ x 1000), from the buckets of a month; a bucket without a volume left out. */
+export function litresByMeterDay(consumption: WaterConsumption | null | undefined): Map<string, number> {
+  const litres = new Map<string, number>();
+  for (const bucket of consumption?.buckets ?? []) {
+    if (typeof bucket.at === 'string' && typeof bucket.volume === 'number') {
+      litres.set(bucket.at.slice(0, 10), Math.round(bucket.volume * 1_000));
+    }
+  }
+  return litres;
 }
 
 /**
@@ -146,22 +168,8 @@ export class SoftenerHistory {
     this.language();
     const days = this.days.value();
     const meter = this.meter.value();
-    const softener = new Map<string, number>();
-    if (days?.query === this.month()) {
-      for (const entry of days.answer ?? []) {
-        if (typeof entry.day === 'string' && typeof entry.litres === 'number') {
-          softener.set(entry.day, entry.litres);
-        }
-      }
-    }
-    const metered = new Map<string, number>();
-    if (meter?.query === this.consumptionQuery()) {
-      for (const bucket of meter.answer?.buckets ?? []) {
-        if (typeof bucket.at === 'string' && typeof bucket.volume === 'number') {
-          metered.set(bucket.at.slice(0, 10), Math.round(bucket.volume * 1_000));
-        }
-      }
-    }
+    const softener = litresBySoftenerDay(days?.query === this.month() ? days.answer : undefined);
+    const metered = litresByMeterDay(meter?.query === this.consumptionQuery() ? meter.answer : undefined);
     if (softener.size === 0 && metered.size === 0) {
       return [];
     }

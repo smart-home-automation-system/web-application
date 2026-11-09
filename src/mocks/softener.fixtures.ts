@@ -144,11 +144,19 @@ export function commandSoftener(when: string | null, cancel: boolean, now: numbe
     return refusal(400, 'INVALID_COMMAND', 'Invalid valve command', `when must be now or tonight, not '${when}'`);
   }
   lastCommandAt = now;
-  regeneration = cancel ? 'none' : when === 'tonight' ? 'scheduled' : 'running';
+  let command = 'regenerate now';
+  regeneration = 'running';
+  if (cancel) {
+    command = 'cancel the scheduled regeneration';
+    regeneration = 'none';
+  } else if (when === 'tonight') {
+    command = 'regenerate tonight';
+    regeneration = 'scheduled';
+  }
   return {
     status: 202,
     body: {
-      command: cancel ? 'cancel the scheduled regeneration' : when === 'tonight' ? 'regenerate tonight' : 'regenerate now',
+      command,
       status: 'success',
       message: 'Command sent',
       sentAt: houseTime(new Date(now), 0).slice(0, 19),
