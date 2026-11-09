@@ -52,17 +52,19 @@ test.describe('the history of the hot water', () => {
     await page.goto('/water');
     const card = page.getByTestId('water-history');
     await drawn(card);
-    // where the card under the history stands on the page - measured from the title, since the shell scrolls a
-    // container of its own - read in the frame the progress bar is shown in
+    // on a phone the circulation stands between the two: drawn too before anything is measured
+    await drawn(page.getByTestId('circulation-history'));
+    // how far under the top of the history the card after it stands - from the history, not from the title: the
+    // cards above may still be loading on a slow machine - read in the frame the progress bar is shown in
     const runsTop = () =>
       document.querySelector('app-circulation-runs')!.getBoundingClientRect().top -
-      document.querySelector('.page-header')!.getBoundingClientRect().top;
+      document.querySelector('[data-testid="water-history"]')!.getBoundingClientRect().top;
     const before = await page.evaluate(runsTop);
     const whileWaiting = page.waitForFunction(
       () =>
         document.querySelector('[data-testid="water-history"] mat-progress-bar')
           ? document.querySelector('app-circulation-runs')!.getBoundingClientRect().top -
-            document.querySelector('.page-header')!.getBoundingClientRect().top
+            document.querySelector('[data-testid="water-history"]')!.getBoundingClientRect().top
           : false,
       undefined,
       { polling: 'raf' },
