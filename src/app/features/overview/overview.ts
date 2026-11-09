@@ -14,7 +14,9 @@ import {
   PRESENCE_CHECK_IS_LATE_AFTER_MS,
   PresenceApi,
 } from '../../data-access/presence/presence-api';
+import { SoftenerApi } from '../../data-access/water/softener-api';
 import { ConsumptionQuery, WaterApi } from '../../data-access/water/water-api';
+import { toSoftenerView } from '../hot-water/softener-views';
 import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
 import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
@@ -120,6 +122,10 @@ export class Overview {
     { equal: (a, b) => a.at === b.at },
   );
   protected readonly todayConsumption = this.waterApi.watchConsumption(this.todayQuery);
+  // HAS-402: the salt of the softener and the days it lasts - a third call of the water tile, its failure in the
+  // failures of the tile
+  protected readonly softener = inject(SoftenerApi).watchSoftener();
+  protected readonly softenerView = computed(() => toSoftenerView(this.softener.value(), this.zone));
   protected readonly describeWater = describeWaterError;
   protected readonly boiler = inject(BoilerApi).watchStatus();
   protected readonly presence = inject(PresenceApi).watchNow();

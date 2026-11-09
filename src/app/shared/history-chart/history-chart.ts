@@ -69,6 +69,8 @@ export class HistoryChart {
   /** What the picture shows, for whoever cannot see it. */
   readonly label = input.required<string>();
   readonly band = input<ChartBand>();
+  /** Moments marked across the chart (HAS-402), on the wall-clock timeline of the house. */
+  readonly marks = input<readonly number[]>([]);
   readonly unit = input('°C');
   /** A logarithmic value axis; every value has to be above zero. */
   readonly logarithmic = input(false);
@@ -105,6 +107,7 @@ export class HistoryChart {
       from: this.from(),
       to: this.to(),
       band: this.band(),
+      marks: this.marks(),
       unit: this.unit(),
       locale: this.locale(),
       logarithmic: this.logarithmic(),

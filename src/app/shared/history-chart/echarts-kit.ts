@@ -3,6 +3,7 @@ import {
   GridComponent,
   LegendComponent,
   MarkAreaComponent,
+  MarkLineComponent,
   TooltipComponent,
 } from 'echarts/components';
 import { init, use } from 'echarts/core';
@@ -21,6 +22,8 @@ use([
   GridComponent,
   LegendComponent,
   MarkAreaComponent,
+  // the regenerations of the softener on its salt (HAS-402)
+  MarkLineComponent,
   TooltipComponent,
   SVGRenderer,
 ]);

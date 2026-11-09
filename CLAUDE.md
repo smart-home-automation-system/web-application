@@ -825,6 +825,44 @@ e2e/              # Playwright tests
     under "today"); the page owns the resource and hands it in. A trigger or an end this version does not know is printed
     as it came. The mock pump (`water.fixtures.ts`) runs 3 minutes after a start and ends by its limit; one run of the
     morning is there from the start.
+  - **The water softener** (HAS-402, epic HAS-396, `water-service` >= 0.15.0 for the state, 0.16.0 its history, 0.17.0
+    the alerts, 0.18.0 the regeneration, 0.19.0 the live flow; `data-access/water/softener-api.ts`, `softener-views.ts`,
+    `softener-card`, `softener-history`, `softener-alerts`): a section under the circulation runs, its `aria-label` the
+    name - the card carries the title. What is easy to break:
+    - **Read once by `toSoftenerView`** for the card and the overview tile: a field the answer leaves out is not known,
+      **a flag never clear** (a dashed chip "not known"), a day that is no `YYYY-MM-DD` and a time that is no date-time of
+      the house not known. The age is `measuredAt`, out of date past `SOFTENER_OUT_OF_DATE_MS` (10 minutes: two reads of
+      the five minutes of the service missed - **a copy** of `water.softener.cloud.interval`) or when the service says
+      `stale`. The words of the cloud for the regeneration: `none`, `scheduled`, `regenerating` (and two guesses for a
+      running one - the words of a regeneration going on were not seen yet, 2026-11-09); another word is printed as it came.
+    - **The salt gauge is the gauge of the tank** (`TemperatureGauge` has a `unit` since this task): 0 - 100 %, the band
+      20 - 100 % (`SALT_LOW_PERCENT`, the level the iQua application colours); below it a warning on the strip of an
+      error. The salt is counted down by the softener from what was entered, not measured.
+    - **The hardness in mg/l CaCO₃, the gpg of the device in a tooltip** (the owner reads 205 PPM in the iQua application;
+      the assumption of the task, to confirm with the owner on the page).
+    - **The regeneration** (`POST` / `DELETE /water/softener/regeneration`): "Regenerate now" and "tonight" while none
+      is planned, "now" and the cancel while one is scheduled, nothing while one goes on; **always after a question**,
+      "Keep as it is" focused, the question cleared for good when its command is no longer offered; sent once, the
+      softener read again `SOFTENER_READ_AFTER_MS` (2.5 s) later whatever it came to. The new state reaches the page only
+      with the next read of the service (5 minutes) - the card keeps polling every 30 s.
+    - **The live flow** (`PUT` / `DELETE /water/softener/live`): a switch that is the page's alone - on, it opens the
+      stream and renews it every `SOFTENER_LIVE_RENEW_MS` (4 minutes, a minute before the 5 of `water.softener.live-for` -
+      **a copy**) and reads the softener every 5 s; off, or the page left, closes it. A failed open (`LIVE_THROTTLED`) is
+      told and the switch goes off - nothing to close. Without the stream the card says the flow is what the cloud last had.
+    - **The history is two cards of two calls each** (an exception to "one resource, one card", as the tile of the water):
+      the salt of 90 days (`lastDays`, ending with the midnight after today; the service gives a bucket of a day) with the
+      regenerations of those days as **marks** - `HistoryChart` has a `marks` input since this task (`markLine` of the first
+      line, thin dashed, no words in the picture, `MarkLineComponent` in `echarts-kit`); a row is stored on a change only,
+      so the salt line is drawn through every day without a point. The litres per day of **this month** through the
+      softener (`/softener/days`) beside the water meter (`/consumption?range=month`, m³ x 1000); a day not read has no
+      bar. The freshness is the first call's, a failure of either told in the card.
+    - **The alerts of the cloud** (`/water/softener/alerts`): at most 8, newest first, coloured by the level the cloud
+      gives (`alertLevelOf`: critical on the strip of an error, a warning outlined, the rest plain); title and message are
+      the cloud's English words, as it sent them.
+    - The codes it words: `SOFTENER_UNAVAILABLE`, `SOFTENER_COMMAND_FAILED`, `REGENERATION_IN_PROGRESS`,
+      `COMMAND_TOO_SOON`, `LIVE_THROTTLED` (`water-errors.ts`). The overview tile "Water" has the salt and the days it
+      lasts as a third call, its failure in `tileFailures`. The mock softener (`softener.fixtures.ts`): 25 % salt, 31 days
+      of the salt going down, five regenerations, two alerts, the regeneration and the live stream as the service answers.
 - **The overview is one tile per call** (HAS-201, `features/overview/`): `DomainTile`
   (`shared/domain-tile/`, shared with the weather page since HAS-241, the styles of its content
   in `_tile-content.scss`, which the page that projects them `@use`s) tells
@@ -856,8 +894,8 @@ e2e/              # Playwright tests
   tiles "Rooms" and "Temperature sensors" are gone (the first led to the heating page under the
   name of the rooms view). An input of a component must not be called `title`: written as a plain
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
-  the overview through the real routes lets its seventeen reads through with `isOverviewRead` (the energy tile four of them, HAS-341, HAS-373;
-  the air conditioning tile two, HAS-394)
+  the overview through the real routes lets its eighteen reads through with `isOverviewRead` (the energy tile four of them, HAS-341, HAS-373;
+  the air conditioning tile two, HAS-394; the salt of the softener on the water tile, HAS-402)
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
 - **The air conditioners** (HAS-394, `AirconApi` in `data-access/aircon/`, `aircon-service` >= 0.5.0; epic HAS-376):
   the card `RoomAircon` of My room - a capability of a room, `GET /aircon/rooms/{room}` every 10 s, **no card for a

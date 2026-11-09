@@ -1,0 +1,140 @@
+// the rows of a value and its name, shared with the tiles of the overview
+@use '../../shared/domain-tile/tile-content';
+
+// The water softener (HAS-402): one card as wide as the row of the water page - the salt, the water, the regeneration -
+// three columns on a wide screen, one on a phone.
+:host {
+  display: block;
+}
+
+.softener {
+  --app-domain: var(--app-domain-water);
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.softener__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.softener__heading {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-small);
+}
+
+.softener__gauge {
+  display: block;
+  margin-bottom: 8px;
+}
+
+// on the tinted strip of an error, whose text colour is made for it - the error red alone does not reach 4.5:1 on glass
+.softener__warning,
+.tile__measured--old {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  mat-icon {
+    flex: none;
+  }
+}
+
+.softener__state {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-large);
+}
+
+// when the cloud was read - the age of the reading, which the freshness of the call is not
+.tile__measured {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.softener__unknown,
+.softener__note {
+  margin: 8px 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+// the flags of the softener as chips: raised on the strip of an error, clear plain, not known hatched in words
+.softener__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.softener__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 999px;
+  font: var(--mat-sys-label-medium);
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.softener__flag--raised {
+  border-color: var(--mat-sys-error);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.softener__flag--unknown {
+  border-style: dashed;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.softener__commands,
+.softener__answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+// a fieldset, named by its question: none of the frame of a form field
+.softener__question {
+  min-inline-size: 0;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    padding: 0;
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+mat-slide-toggle {
+  display: block;
+  margin-top: 8px;
+}

@@ -145,6 +145,13 @@ mat-card-content {
   margin-inline: auto;
 }
 
+// the water softener (HAS-402): a heading of its own over its cards, as wide as the row
+.softener-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 // the command of the valve (HAS-323): its buttons, or the question that comes before it
 .valve__commands,
 .valve__answers {

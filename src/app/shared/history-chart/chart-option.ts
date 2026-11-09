@@ -28,6 +28,12 @@ export interface ChartInput {
   readonly from: number;
   readonly to: number;
   readonly band?: ChartBand;
+  /**
+   * Moments marked across the chart - the regenerations of the softener on its salt (HAS-402): thin dashed vertical
+   * lines, on the wall-clock timeline of the house, with no words in the picture; the caller says next to the chart
+   * what they are.
+   */
+  readonly marks?: readonly number[];
   /** The unit written after every value, `°C`; empty for a value without a known unit. */
   readonly unit: string;
   readonly locale: string;
@@ -320,6 +326,7 @@ export function gapSpan(from: number, to: number, locale: string): string {
 
 function seriesOf(input: ChartInput, colors: ChartColors) {
   const band = input.band;
+  const marks = input.marks ?? [];
   return (line: ChartLine, index: number) =>
     line.bars
       ? {
@@ -343,6 +350,17 @@ function seriesOf(input: ChartInput, colors: ChartColors) {
           symbolSize: 2.5,
           lineStyle: { width: 2, type: line.dashed ? 'dashed' : 'solid' },
           emphasis: { disabled: true },
+          ...(index === 0 && marks.length > 0
+            ? {
+                markLine: {
+                  silent: true,
+                  symbol: 'none',
+                  label: { show: false },
+                  lineStyle: { color: colors.text, type: 'dashed', width: 1, opacity: 0.6 },
+                  data: marks.map((at) => ({ xAxis: at })),
+                },
+              }
+            : {}),
           ...(index === 0 && band !== undefined
             ? {
                 markArea: {

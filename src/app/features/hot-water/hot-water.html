@@ -440,4 +440,11 @@
   <app-water-bills class="wide" />
   <app-water-history class="wide" />
   <app-circulation-runs class="wide" [runs]="runs" [day]="today()" />
+
+  <!-- the water softener (HAS-402): its state and commands, its history, the alerts of its cloud -->
+  <section class="wide softener-section" [attr.aria-label]="t('softener.title')">
+    <app-softener-card />
+    <app-softener-history />
+    <app-softener-alerts />
+  </section>
 </ng-container>

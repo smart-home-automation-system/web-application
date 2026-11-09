@@ -35,11 +35,11 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
       <!-- the ends of the scale at its ends, the band under its middle: on a scale of 60 degrees the two
            ends of a band of 4 would stand on each other -->
       <div class="gauge__scale" aria-hidden="true">
-        <span class="gauge__end">{{ min() | localNumber }} °C</span>
+        <span class="gauge__end">{{ min() | localNumber }} {{ unit() }}</span>
         <span class="gauge__band-label" [style.left.%]="(at(low()) + at(high())) / 2"
-          >{{ low() | localNumber }}–{{ high() | localNumber }} °C</span
+          >{{ low() | localNumber }}–{{ high() | localNumber }} {{ unit() }}</span
         >
-        <span class="gauge__end gauge__end--max">{{ max() | localNumber }} °C</span>
+        <span class="gauge__end gauge__end--max">{{ max() | localNumber }} {{ unit() }}</span>
       </div>
     </div>
   `,
@@ -121,6 +121,8 @@ export class TemperatureGauge {
   readonly min = input(20);
   readonly max = input(80);
   /** The name of the meter and its reading, for a screen reader. */
+  /** The unit after the ends of the scale and the band - `%` for the salt of the softener (HAS-402). */
+  readonly unit = input('°C');
   readonly label = input.required<string>();
   readonly valueText = input.required<string>();
 

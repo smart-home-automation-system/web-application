@@ -90,6 +90,8 @@ describe('translations', () => {
       'energy.source.solax',
       'energy.source.sofar',
       'energy.alerts.kind.alarm',
+      // a per cent of salt, written the same in both languages (HAS-402)
+      'softener.salt.value',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

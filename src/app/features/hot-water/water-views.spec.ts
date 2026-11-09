@@ -152,6 +152,11 @@ describe('water views', () => {
         'INVALID_COMMAND',
         'DEVICE_FAILED',
         'TANK_COLD',
+        'SOFTENER_UNAVAILABLE',
+        'SOFTENER_COMMAND_FAILED',
+        'REGENERATION_IN_PROGRESS',
+        'COMMAND_TOO_SOON',
+        'LIVE_THROTTLED',
       ]);
       expect(
         describeWaterError(

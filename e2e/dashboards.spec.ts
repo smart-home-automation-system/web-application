@@ -524,6 +524,64 @@ test.describe('the water of the house', () => {
   });
 });
 
+// HAS-402: the water softener on the water page - its state, its history, the alerts of its cloud, a regeneration
+// after a question and the live flow
+test.describe('the water softener', () => {
+  test('shows the salt, the water, the regeneration, the history and the alerts of the cloud', async ({ page }) => {
+    await page.goto('/water');
+
+    const softener = page.getByTestId('softener');
+    await expect(softener.getByTestId('softener-salt-days')).toHaveText('Lasts 18 days');
+    await expect(softener.getByTestId('softener-used-today')).toHaveText('Used today 214 l');
+    await expect(softener.getByTestId('softener-hardness')).toHaveText('Hardness of the water 205 mg/l CaCO₃');
+    await expect(softener.getByTestId('softener-regeneration-state')).toHaveText('No regeneration planned');
+    await expect(softener.getByTestId('softener-measured')).toContainText('Read from the cloud');
+    await expect(page.getByTestId('softener-salt-history').locator('.chart__plot svg')).toBeVisible();
+    await expect(page.getByTestId('softener-regeneration-marks')).toHaveText('Regenerations: 5');
+    await expect(page.getByTestId('softener-days').locator('.chart__plot svg')).toBeVisible();
+    const alerts = page.getByTestId('softener-alerts');
+    await expect(alerts.locator('[data-level="warning"]')).toContainText('Low Salt');
+    await expect(alerts.locator('[data-level="critical"]')).toContainText('Disconnected');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('schedules a regeneration after a question, and offers its cancel', async ({ page }) => {
+    await page.goto('/water');
+    const softener = page.getByTestId('softener');
+
+    await softener.getByTestId('softener-tonight').click();
+    await expect(softener.locator('legend')).toHaveText('Schedule a regeneration for tonight?');
+    await expect(softener.getByRole('button', { name: 'Keep as it is' })).toBeFocused();
+    await softener.getByTestId('softener-confirm').click();
+
+    await expect(softener.getByTestId('softener-regeneration-state')).toHaveText(
+      'A regeneration is scheduled for tonight',
+    );
+    await expect(softener.getByTestId('softener-cancel')).toBeVisible();
+  });
+
+  test('shows the flow live while the switch is on', async ({ page }) => {
+    await page.goto('/water');
+    const softener = page.getByTestId('softener');
+    await expect(softener.getByTestId('softener-flow')).toHaveText('Flow 0.0 l/min');
+
+    await softener.getByTestId('softener-live').getByRole('switch').click();
+
+    await expect(softener.getByTestId('softener-flow')).toHaveText('Flow 6.4 l/min');
+    await expect(softener.getByTestId('softener-flow-note')).toContainText('Live until');
+  });
+
+  // just after a start water-service has not read the cloud: the code worded, never zeros
+  test('words a softener not read yet', async ({ page }) => {
+    await useScenario(page, 'no-readings');
+    await page.goto('/water');
+
+    await expect(page.getByTestId('softener')).toContainText(
+      'The softener has not been read from the iQua cloud yet.',
+    );
+  });
+});
+
 // HAS-323: the writes of the water page - the valve after a question, the bills of the waterworks
 test.describe('the valve and the bills', () => {
   test('closes and opens the valve, each after a question', async ({ page }) => {

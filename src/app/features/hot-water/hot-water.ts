@@ -34,6 +34,9 @@ import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { CirculationRuns } from './circulation-runs';
+import { SoftenerAlerts } from './softener-alerts';
+import { SoftenerCard } from './softener-card';
+import { SoftenerHistory } from './softener-history';
 import { stoppedByText, toCirculationView, todayRange, triggerText } from './circulation-views';
 import { TemperatureGauge } from './temperature-gauge';
 import { WaterBills } from './water-bills';
@@ -104,6 +107,9 @@ let nextQuestion = 0;
     TranslocoDirective,
     ApiErrorStrip,
     CirculationRuns,
+    SoftenerAlerts,
+    SoftenerCard,
+    SoftenerHistory,
     DataFreshness,
     DisplayTextPipe,
     HouseAgePipe,

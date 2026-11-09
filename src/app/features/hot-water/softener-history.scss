@@ -1,0 +1,51 @@
+// The history of the softener (HAS-402): the salt and the water per day side by side on a wide screen, one under the
+// other on a phone - each as tall as the other.
+:host {
+  display: block;
+}
+
+.softener-history {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  mat-card {
+    --app-domain: var(--app-domain-water);
+
+    height: 100%;
+    box-sizing: border-box;
+  }
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.softener-history__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--mat-sys-body-medium);
+}
+
+.softener-history__name {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.softener-history__note,
+.softener-history__empty {
+  margin: 8px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}

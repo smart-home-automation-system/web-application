@@ -138,6 +138,16 @@ import {
   waterValve,
 } from './water.fixtures';
 import {
+  closeSoftenerLive,
+  commandSoftener,
+  openSoftenerLive,
+  softener,
+  softenerAlerts,
+  softenerDays,
+  softenerHistory,
+  softenerRegenerations,
+} from './softener.fixtures';
+import {
   STATION_STATUS_BEFORE_FIRST_READING,
   currentWeather,
   stationStatus,
@@ -805,6 +815,66 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: '/home/water/status/active',
     reply: () => ({ status: 200, body: WATER_HEATING_DEMAND }),
   },
+  // HAS-402: the water softener; just after a start the service has not read the cloud yet - 503, an empty history
+  {
+    method: 'GET',
+    path: '/home/water/softener',
+    reply: (_, fresh) =>
+      fresh
+        ? {
+            status: 503,
+            body: {
+              errors: [
+                {
+                  code: 'SOFTENER_UNAVAILABLE',
+                  message: 'Water softener unavailable',
+                  details: 'The water softener has not been read from the iQua cloud yet',
+                },
+              ],
+            },
+          }
+        : { status: 200, body: softener() },
+  },
+  {
+    method: 'GET',
+    path: '/home/water/softener/history',
+    reply: (request, fresh) =>
+      history(
+        fresh
+          ? { metric: 'saltLevel', points: [] }
+          : softenerHistory(request.params.get('from'), request.params.get('to')),
+      ),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/softener/regenerations',
+    reply: (_, fresh) => ({ status: 200, body: fresh ? [] : softenerRegenerations() }),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/softener/days',
+    reply: (request, fresh) => ({
+      status: 200,
+      body: fresh ? [] : softenerDays(request.params.get('from'), request.params.get('to')),
+    }),
+  },
+  {
+    method: 'GET',
+    path: '/home/water/softener/alerts',
+    reply: (_, fresh) => ({ status: 200, body: fresh ? [] : softenerAlerts() }),
+  },
+  {
+    method: 'POST',
+    path: '/home/water/softener/regeneration',
+    reply: (request) => commandSoftener(request.params.get('when'), false),
+  },
+  {
+    method: 'DELETE',
+    path: '/home/water/softener/regeneration',
+    reply: () => commandSoftener(null, true),
+  },
+  { method: 'PUT', path: '/home/water/softener/live', reply: () => openSoftenerLive() },
+  { method: 'DELETE', path: '/home/water/softener/live', reply: () => closeSoftenerLive() },
   {
     method: 'GET',
     path: '/home/boiler/status',
