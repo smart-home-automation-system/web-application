@@ -42,7 +42,8 @@ dashboards:
   are and how many are being heated, the coldest and the warmest room with the age of each reading,
   and a **red blinking light** by its title while a temperature sensor is silent; the switch itself
   is on the heating page only. Then the hot water, the water of the house (HAS-322: the valve of the
-  garage open or closed, its flow and the litres used today), the boiler room, who is at home - with a warning
+  garage open or closed, its flow and the litres used today, and since HAS-402 the salt of the softener and the days
+  it lasts), the boiler room, who is at home - with a warning
   when the detection has not checked for more than five minutes - the weather (temperature, dew
   point, wind and gusts, rain, daylight), the blinds (HAS-254: how many are open, closed, moving
   and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
@@ -207,6 +208,15 @@ dashboards:
   3 minutes that stops by itself), and reads the pump again 2.5 s later. A tank too cold is told
   in words. Under the history, **the runs of today**: when each started, what started it, how long
   it went, how it ended and the return at its start and end.
+- **The water softener** (HAS-402, `water-service` >= 0.15.0 - 0.19.0): the salt on a gauge from 0 to 100 % with the
+  days it lasts and the day it runs out (a warning below 20 %), the water used today, the daily average and the treated
+  water left, the hardness in mg/l of CaCO₃ (the gpg set on the softener in a tooltip), the last regeneration, how many
+  there were and whether one is scheduled or going on, the flags of the softener as chips (a flag the cloud leaves out
+  is "not known", never clear) and the age of the reading. **"Regenerate now" / "Regenerate tonight"** and **"Cancel the
+  regeneration"** while one is scheduled, each after a question; **"Live flow"** holds the live stream of the cloud
+  open while the switch is on and the page shown, so the flow moves as it happens. Under it the salt over 90 days with
+  the regenerations marked as dashed lines, the litres per day of this month through the softener beside the water
+  meter, and the alerts the iQua cloud keeps, coloured by their level.
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
@@ -319,10 +329,10 @@ dashboards:
   the temperature of the room in the heating ends there. Nothing is shown as done before the
   registry says so, and one change is made at a time.
 
-The hot water, the boiler room and the presence are read-only. The water page writes in three places:
-the command of the valve, after a question, and the bills of the waterworks (HAS-323), and the start
-of the circulation pump (HAS-406); after every write it reads again, and only that answer moves the
-page.
+The hot water, the boiler room and the presence are read-only. The water page writes in four places:
+the command of the valve, after a question, and the bills of the waterworks (HAS-323), the start
+of the circulation pump (HAS-406), and the regeneration of the softener, after a question, with its
+live flow (HAS-402); after every write it reads again, and only that answer moves the page.
 
 Every view stands in the **middle of the page**, with its title in the top left corner, and the
 cards of a row are of one size (HAS-266).
