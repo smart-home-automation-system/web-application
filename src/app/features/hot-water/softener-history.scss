@@ -20,6 +20,7 @@ mat-card-content {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  padding: 8px 12px 12px;
 }
 
 // the chart and its foot at the bottom of the card, on the line of the chart of the consumption next to it
@@ -38,10 +39,6 @@ mat-card-content {
 
 mat-card-header {
   padding: 12px 12px 0;
-}
-
-mat-card-content {
-  padding: 8px 12px 12px;
 }
 
 .softener-history__facts {

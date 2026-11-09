@@ -159,7 +159,7 @@ export class SoftenerSalt {
     const answered = this.regenerations.value();
     const starts = answered?.query === this.saltRange() ? (answered.answer ?? []).map((one) => one.startedAt) : [];
     // the latest start - not the first of the list, whatever order the service answers in
-    return starts.filter((start): start is string => typeof start === 'string').sort().at(-1);
+    return starts.filter((start): start is string => typeof start === 'string').sort((a, b) => a.localeCompare(b)).at(-1);
   });
 }
 
