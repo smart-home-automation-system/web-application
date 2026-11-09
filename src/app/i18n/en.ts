@@ -600,6 +600,7 @@ export const en = {
       loading: 'Reading the alerts…',
       none: 'The cloud keeps no alerts of the softener.',
       unread: 'new',
+      more: 'And {{ count }} older in the iQua application.',
     },
   },
   boilerRoom: {

@@ -37,6 +37,11 @@
               </li>
             }
           </ul>
+          @if (hidden() > 0) {
+            <p class="softener-alerts__empty" data-testid="softener-alerts-more">
+              {{ t('softener.alerts.more', { count: hidden() }) }}
+            </p>
+          }
         }
       }
       <app-api-error-strip [error]="alerts.error()" [describeWith]="describe" />

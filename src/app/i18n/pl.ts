@@ -595,6 +595,7 @@ export const pl: Messages = {
       loading: 'Odczyt alertów…',
       none: 'Chmura nie ma alertów zmiękczacza.',
       unread: 'nowy',
+      more: 'Starszych w aplikacji iQua: {{ count }}.',
     },
   },
   boilerRoom: {

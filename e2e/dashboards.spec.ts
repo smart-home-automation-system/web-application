@@ -569,6 +569,21 @@ test.describe('the water softener', () => {
     await expect(softener.getByTestId('softener-cancel')).toBeVisible();
   });
 
+  // the keyboard: Escape answers no, and the focus comes back to the button the question was asked from
+  test('gives the focus back to the command after the question', async ({ page }) => {
+    await page.goto('/water');
+    const tonight = page.getByTestId('softener').getByTestId('softener-tonight');
+
+    await tonight.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog').getByTestId('confirm-cancel')).toBeFocused();
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(tonight).toBeFocused();
+    await expect(page.getByTestId('softener-regeneration-state')).toHaveText('No regeneration planned');
+  });
+
   test('shows the flow live while the switch is on', async ({ page }) => {
     await page.goto('/water');
     const softener = page.getByTestId('softener');

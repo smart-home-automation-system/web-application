@@ -132,7 +132,8 @@ describe('SoftenerCard', () => {
     // the safe answer is the one the window focuses (the DOM of the tests lays nothing out, so the focus itself is
     // checked in the browser test)
     expect((await inWindow('confirm-cancel'))!.hasAttribute('cdkfocusinitial')).toBe(true);
-    expect((await button('softener-now'))!.disabled).toBe(true);
+    // disabledInteractive: still focusable, so the window gives the focus back to it
+    expect((await button('softener-now'))!.getAttribute('aria-disabled')).toBe('true');
     expect(regenerated).toEqual([]);
     (await inWindow('confirm-yes'))!.click();
     await fixture.whenStable();
@@ -152,7 +153,7 @@ describe('SoftenerCard', () => {
 
     expect(await inWindow('softener-question')).toBeNull();
     expect(regenerated).toEqual([]);
-    expect((await button('softener-now'))!.disabled).toBe(false);
+    expect((await button('softener-now'))!.getAttribute('aria-disabled')).not.toBe('true');
   });
 
   // the rule of the heating switch: a question with nothing left to ask goes by itself

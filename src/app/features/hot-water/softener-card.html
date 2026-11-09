@@ -284,6 +284,7 @@
                     <button
                       mat-stroked-button
                       type="button"
+                      disabledInteractive
                       (click)="ask(command)"
                       [disabled]="commanding() || question() !== undefined"
                       [attr.data-testid]="'softener-' + command"

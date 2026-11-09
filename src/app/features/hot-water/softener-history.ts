@@ -157,8 +157,9 @@ export class SoftenerSalt {
   /** The start of the newest regeneration of the 90 days; `undefined` without one. */
   protected readonly lastRegeneration = computed(() => {
     const answered = this.regenerations.value();
-    const newest = answered?.query === this.saltRange() ? answered.answer?.[0]?.startedAt : undefined;
-    return typeof newest === 'string' ? newest : undefined;
+    const starts = answered?.query === this.saltRange() ? (answered.answer ?? []).map((one) => one.startedAt) : [];
+    // the latest start - not the first of the list, whatever order the service answers in
+    return starts.filter((start): start is string => typeof start === 'string').sort().at(-1);
   });
 }
 

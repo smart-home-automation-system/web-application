@@ -56,9 +56,8 @@ export const CONFIRM_DIALOG_SIZE = { width: 'min(440px, calc(100vw - 32px))' } a
     }
 
     /* one or two lines of a question: room enough for them, never a scroll bar (owner, 2026-11-09 - the content of
-       Material scrolled by a pixel of the tight line height) */
+       Material scrolled by a pixel of the tight line height); it still scrolls when a question does not fit at all */
     .confirm__content {
-      overflow: visible;
       padding-block: 8px 20px;
     }
 

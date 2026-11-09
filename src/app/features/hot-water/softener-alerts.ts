@@ -46,4 +46,6 @@ export class SoftenerAlerts {
       level: alertLevelOf(alert),
     })),
   );
+  /** The alerts past the ones shown - counted, never dropped unseen. */
+  protected readonly hidden = computed(() => Math.max(0, (this.alerts.value() ?? []).length - SOFTENER_ALERTS_SHOWN));
 }
