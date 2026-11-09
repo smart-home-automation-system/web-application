@@ -5,6 +5,22 @@
   --app-domain: var(--app-domain-water);
 }
 
+// the chart and its foot keep their place while another day or range is asked for (owner, 2026-11-09): the cards of
+// the second row of the water page are of one height, and a shorter consumption card shrank the whole row
+:host {
+  --app-frame-body-min-height: 324px; // the chart (280 px), its foot (36 px) and the space between (8 px)
+
+  @media (max-width: 640px) {
+    --app-frame-body-min-height: 264px; // the same with the chart of a phone (220 px)
+  }
+}
+
+// the facts and the note under the chart: as tall as the feet of the two cards next to it in the second row of the
+// water page, so that the three charts stand on one line (owner, 2026-11-09)
+.chart__foot {
+  min-height: 36px;
+}
+
 // the day of the range above the periods: a step, the calendar, a step, and the name of the range
 .period {
   display: flex;

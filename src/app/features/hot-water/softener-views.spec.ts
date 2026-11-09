@@ -110,6 +110,12 @@ describe('softener views', () => {
     expect(alertLevelOf({})).toBe('info');
   });
 
+  // the salt in amber, apart from a fault (owner, 2026-11-09) - whatever level the cloud gives it
+  it('tells the salt alert apart by its type', () => {
+    expect(alertLevelOf({ type: 'low_salt', level: 'warning' })).toBe('salt');
+    expect(alertLevelOf({ type: 'Salt', level: 'critical' })).toBe('salt');
+  });
+
   it('marks the start of every regeneration on the wall clock, a start it cannot read left out', () => {
     expect(
       regenerationMarks([

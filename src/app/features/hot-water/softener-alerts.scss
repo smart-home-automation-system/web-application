@@ -4,8 +4,12 @@
   display: block;
 }
 
+// a card of the first row of the water page (owner, 2026-11-09): as tall as its neighbours
 .softener-alerts {
   --app-domain: var(--app-domain-water);
+
+  height: 100%;
+  box-sizing: border-box;
 }
 
 mat-card-header {
@@ -41,6 +45,12 @@ mat-card-content {
 .softener-alerts__item--critical {
   background: var(--mat-sys-error-container);
   color: var(--mat-sys-on-error-container);
+}
+
+// an alert of the salt: amber, as on the card of the softener (owner, 2026-11-09)
+.softener-alerts__item--salt {
+  background: var(--app-warning-container);
+  color: var(--app-on-warning-container);
 }
 
 .softener-alerts__item--warning {

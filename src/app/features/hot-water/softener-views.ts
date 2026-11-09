@@ -150,8 +150,14 @@ export function saltLevelOf(percent: number | undefined): 'out' | 'low' | 'ok' |
 /** Below this the gauge of the salt is drawn as low - the level the iQua application colours. */
 export const SALT_LOW_PERCENT = 20;
 
-/** The level of an alert of the cloud as the list colours it; words this version does not know are plain. */
-export function alertLevelOf(alert: SoftenerAlert): 'critical' | 'warning' | 'info' {
+/**
+ * The level of an alert of the cloud as the list colours it; words this version does not know are plain. An alert of
+ * the salt (`low_salt`, `salt_level_2`, ...) is `salt` - amber, whatever level the cloud gives it (info).
+ */
+export function alertLevelOf(alert: SoftenerAlert): 'critical' | 'warning' | 'salt' | 'info' {
+  if (text(alert.type)?.toLowerCase().includes('salt')) {
+    return 'salt';
+  }
   const level = text(alert.level)?.toLowerCase();
   if (level === 'critical' || level === 'error') {
     return 'critical';

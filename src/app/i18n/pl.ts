@@ -433,17 +433,20 @@ export const pl: Messages = {
     measured: 'Pomiar {{ age }}',
     measuredOutOfDate: 'Pomiar {{ age }} - od tego czasu czujnik nie został odczytany.',
     history: {
-      title: 'Historia temperatur',
       tank: 'Zasobnik',
       circulation: 'Cyrkulacja',
       band: 'utrzymywana w',
       bandNote:
         'Zacienione: zakres, w którym utrzymywany jest zasobnik, {{ low }} – {{ high }} °C.',
-      chart: 'Wykres temperatury zasobnika i cyrkulacji w wybranym okresie',
+      tankTitle: 'Temperatura zasobnika',
+      circulationTitle: 'Temperatura cyrkulacji',
+      tankChart: 'Wykres temperatury zasobnika w wybranym okresie',
+      circulationChart: 'Wykres temperatury cyrkulacji w wybranym okresie',
     },
     tank: {
       title: 'Woda w zasobniku',
-      band: 'Grzana, gdy spadnie poniżej {{ low }} °C, aż przekroczy {{ high }} °C.',
+      // twarda spacja między liczbą a jednostką: nie rozdzielą się na końcu wiersza (właściciel, 2026-11-09)
+      band: 'Grzana poniżej {{ low }}\u00a0°C, do {{ high }}\u00a0°C.',
       gauge: 'Temperatura wody na tle zakresu, w którym jest utrzymywana',
       gaugeValue: '{{ value }} °C; utrzymywana między {{ low }} a {{ high }} °C',
     },
@@ -527,7 +530,7 @@ export const pl: Messages = {
       flow: 'Przepływ',
       hardness: 'Twardość wody',
       hardnessGpg: '{{ gpg }} gpg, ustawione w zmiękczaczu',
-      flowFrozen: 'Przepływ to ostatnia wartość z chmury - włącz przepływ na żywo, żeby widzieć zmiany.',
+      flowFrozen: 'Ostatnia wartość z chmury.',
     },
     live: {
       switch: 'Przepływ na żywo',
@@ -576,6 +579,7 @@ export const pl: Messages = {
       noSalt: 'Nie zapisano jeszcze poziomu soli.',
       saltChart: 'Poziom soli w zmiękczaczu z ostatnich 90 dni, z zaznaczonymi regeneracjami',
       saltLine: 'Sól',
+      saltNow: 'Sól teraz',
       regenerations: 'Regeneracje: {{ count }}',
       marksNote: 'Przerywane linie oznaczają regeneracje.',
       daysTitle: 'Woda dziennie w tym miesiącu',

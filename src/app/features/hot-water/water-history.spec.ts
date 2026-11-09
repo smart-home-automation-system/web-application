@@ -55,6 +55,8 @@ describe('WaterHistory', () => {
       ],
     });
     fixture = TestBed.createComponent(WaterHistory);
+    // the card of the tank; the circulation has a card of its own (owner, 2026-11-09)
+    fixture.componentRef.setInput('line', 'water');
   });
 
   afterEach(() => vi.useRealTimers());
@@ -92,12 +94,14 @@ describe('WaterHistory', () => {
     expect(charts.drawn).toHaveLength(0);
   });
 
-  it('draws both temperatures over the range that was asked for', async () => {
+  it('draws the temperature of the tank over the range that was asked for', async () => {
     answerQuery(history, asked(), DAY);
     await settle();
 
     const drawn = charts.drawn[0] as { xAxis: { min: number; max: number } };
-    expect(charts.lines().map((line) => line.name)).toEqual(['Tank', 'Circulation']);
+    expect(words(card().querySelector('mat-card-title'))).toBe('Temperature of the tank');
+    expect(card().querySelector('[data-testid="water-history"]')).toBeTruthy();
+    expect(charts.lines().map((line) => line.name)).toEqual(['Tank']);
     expect(drawn.xAxis.min).toBe(at('2026-10-09T19:00:00'));
     expect(drawn.xAxis.max).toBe(at('2026-10-10T19:00:00'));
   });
@@ -147,7 +151,7 @@ describe('WaterHistory', () => {
     await settle();
 
     expect(words(card().querySelector('[data-testid="history-facts"]'))).toBe(
-      'Tank 45.9 – 46.8 °C Circulation 26.4 – 27.1 °C',
+      'Tank 45.9 – 46.8 °C',
     );
   });
 
@@ -156,7 +160,7 @@ describe('WaterHistory', () => {
     await settle();
 
     expect(card().querySelector('.chart__plot')?.getAttribute('aria-label')).toBe(
-      'Chart of the temperature of the tank and of the circulation over the chosen period',
+      'Chart of the temperature of the tank over the chosen period',
     );
   });
 
@@ -178,14 +182,36 @@ describe('WaterHistory', () => {
     expect(card().querySelector('[data-testid="history-empty"]')).toBeTruthy();
   });
 
-  it('draws a line that is there when the other is missing from every point', async () => {
-    answerQuery(history, asked(), {
-      ...DAY,
-      points: [{ at: '2026-10-10T18:00:00', water: 46.81 }],
-    });
-    await settle();
+  describe('the card of the circulation', () => {
+    beforeEach(() => fixture.componentRef.setInput('line', 'circulation'));
 
-    expect(charts.lines().map((line) => line.name)).toEqual(['Tank']);
+    it('draws the circulation alone, without the band of the tank', async () => {
+      answerQuery(history, asked(), DAY);
+      await settle();
+
+      const drawn = charts.drawn[0] as { series: { markArea?: unknown }[] };
+      expect(words(card().querySelector('mat-card-title'))).toBe('Temperature of the circulation');
+      expect(card().querySelector('[data-testid="circulation-history"]')).toBeTruthy();
+      expect(charts.lines().map((line) => line.name)).toEqual(['Circulation']);
+      expect(drawn.series[0].markArea).toBeUndefined();
+      expect(words(card().querySelector('[data-testid="history-facts"]'))).toBe(
+        'Circulation 26.4 – 27.1 °C',
+      );
+      expect(card().querySelector('.chart__plot')?.getAttribute('aria-label')).toBe(
+        'Chart of the temperature of the circulation over the chosen period',
+      );
+    });
+
+    it('says there is no reading when only the tank was measured', async () => {
+      answerQuery(history, asked(), {
+        ...DAY,
+        points: [{ at: '2026-10-10T18:00:00', water: 46.81 }],
+      });
+      await settle();
+
+      expect(card().querySelector('[data-testid="history-empty"]')).toBeTruthy();
+      expect(charts.drawn).toHaveLength(0);
+    });
   });
 
   describe('another period', () => {
@@ -299,8 +325,8 @@ describe('WaterHistory', () => {
     answerQuery(history, asked(), DAY);
     await settle();
 
-    expect(words(card().querySelector('mat-card-title'))).toBe('Historia temperatur');
-    expect(charts.lines().map((line) => line.name)).toEqual(['Zasobnik', 'Cyrkulacja']);
+    expect(words(card().querySelector('mat-card-title'))).toBe('Temperatura zasobnika');
+    expect(charts.lines().map((line) => line.name)).toEqual(['Zasobnik']);
     expect(words(card().querySelector('[data-testid="history-facts"]'))).toContain(
       '45,9 – 46,8 °C',
     );

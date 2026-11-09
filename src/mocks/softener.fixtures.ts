@@ -48,14 +48,15 @@ export function softener(now: Date = new Date()): Softener {
       totalLitres: 425_526,
       flowLitresPerMinute: live ? 6.4 : 0,
     },
-    salt: { levelPercent: 25, daysLeft: 18, outOfSaltDate: dayOf(now.getTime() + 18 * DAY_MS) },
+    // low on purpose: the amber warning of the salt and its flag are seen in the mock house (HAS-402)
+    salt: { levelPercent: 15, daysLeft: 18, outOfSaltDate: dayOf(now.getTime() + 18 * DAY_MS) },
     regeneration: { daysSinceLast: 2, lastAt: dayOf(now.getTime() - 2 * DAY_MS), total: 156, status: regeneration },
     hardnessGpg: 12,
     hardnessMgCaco3: 205.4,
     daysInOperation: 917,
     signalDbm: -70,
     alerts: {
-      lowSalt: false,
+      lowSalt: true,
       leak: false,
       excessiveWaterUse: false,
       shutoffValve: false,
@@ -67,12 +68,12 @@ export function softener(now: Date = new Date()): Softener {
   };
 }
 
-/** The salt over a range: a refill to 100 % 30 days ago, then about 2.5 % a day down to 25 %, a point a day. */
+/** The salt over a range: a refill to 100 % 30 days ago, then about 2.8 % a day down to 15 %, a point a day. */
 export function softenerHistory(from: string | null, to: string | null, now: Date = new Date()): SoftenerHistory {
   const points = [];
   for (let days = 30; days >= 0; days--) {
     const at = now.getTime() - days * DAY_MS;
-    const level = Math.max(0, Math.round(100 - (30 - days) * 2.5));
+    const level = Math.max(0, Math.round(100 - ((30 - days) * 85) / 30));
     points.push({ at: `${dayOf(at)}T00:00:00`, avg: level, min: level, max: level });
   }
   return { metric: 'saltLevel', from: from ?? undefined, to: to ?? undefined, bucketSeconds: 86_400, points };

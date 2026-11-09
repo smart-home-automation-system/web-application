@@ -1,24 +1,39 @@
-// The history of the softener (HAS-402): the salt and the water per day side by side on a wide screen, one under the
-// other on a phone - each as tall as the other.
+// the rows of a value and its name, shared with the tiles of the overview
+@use '../../shared/domain-tile/tile-content';
+
+// The history of the softener (HAS-402): the salt and the water per day, each a card in the second row of the water
+// page, as tall as its row (owner, 2026-11-09).
 :host {
   display: block;
 }
 
-.softener-history {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+mat-card {
+  --app-domain: var(--app-domain-water);
 
-  @media (min-width: 900px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+}
 
-  mat-card {
-    --app-domain: var(--app-domain-water);
+mat-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
 
-    height: 100%;
-    box-sizing: border-box;
-  }
+// the chart and its foot at the bottom of the card, on the line of the chart of the consumption next to it
+// (owner, 2026-11-09): the cards of the row are of one height, and the feet of the three charts of one height
+.softener-history__chart {
+  margin-top: auto;
+}
+
+.chart__foot {
+  min-height: 36px;
+}
+
+.softener-history__summary {
+  margin-bottom: 12px;
 }
 
 mat-card-header {

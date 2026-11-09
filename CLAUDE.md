@@ -77,10 +77,20 @@ e2e/              # Playwright tests
   state is asked again too** (the page refreshes "rooms are being heated" when the switch has
   been read back); and `refresh()` lets go of whoever waits when the owner of the resource is
   destroyed.
-- **A control that changes the house asks first, in the card itself** - the button is replaced
-  by the question and two buttons, "Cancel" takes the focus, and the question goes away **for
-  good** when the state it was asked in goes (`shared/heating-switch`: cleared in an effect,
-  not hidden by a computed - a hidden question came back by itself with the next change). A template
+- **A control that changes the house asks first, in a window over the page - never inside a card**
+  (owner, 2026-11-09, HAS-402: a question in the card changed its size). The question is
+  `ConfirmDialog` (`shared/confirm-dialog/`, `CONFIRM_DIALOG_SIZE`, `autoFocus: 'first-tabbable'`):
+  an icon and a title, the question, the safe answer focused (`cdkFocusInitial`) and the command;
+  it answers `true` for the command only - the safe answer, Escape and a click outside are no. Its
+  content never scrolls (one or two lines, room enough for them). **Every window of the application
+  stands over a page darkened and blurred** (`.cdk-overlay-dark-backdrop` in `src/styles.scss`: 55 %
+  black, a 6 px blur), so it plainly is above everything and a click outside reads as closing it -
+  a new window is a `MatDialog` and gets that backdrop by itself; never a backdrop of its own. The
+  question goes away **for good** when the state it was asked in goes (an effect closes the window
+  with no answer - the hot-water valve and the softener; a hidden question came back by itself with
+  the next change), and the control that opened it is disabled while it is open. **The questions
+  still inside a card** (the heating switch, the editors, the removals, the power cycle of the air
+  conditioners) **move into the window with the next task that touches them.** A template
   reference must not carry the name of a method the template calls (`#cancel` next to
   `cancel()` does not compile).
 - **A report somebody can change the question of carries its question** (HAS-203, presence):
@@ -786,18 +796,37 @@ e2e/              # Playwright tests
     which a history does not.
   - The overview tile "Water" (`tile-valve`, next to the hot water) is two calls - the valve and the water of today -
     the second told in `tileFailures`.
-  - **The layout is the heating page's** (owner, 2026-11-05): a row of five cards of one size - the valve, the water
-    used, the tank, the demand, the circulation - in a grid of 1240 px (two a row from 640 px, three from 900 px, five
-    from 1240 px), the consumption, the bills and the history under it, as wide. **The water used is a card of its own**
+  - **The layout** (owner, 2026-11-05, reworked 2026-11-09 with HAS-402), in a page of 1800 px: a row of six cards of
+    one size - the valve, the water used, the tank, the demand, the circulation, the alerts of the softener - (two a row
+    from 640 px, three from 900 px, six from 1400 px); a row of three charts - the consumption, the water per day of
+    the softener, its salt - (`.row`, three from 1100 px); the softener card as wide; the history of the tank and the
+    history of the circulation, a card each (`.row--two`, two from 900 px - one call, `WaterHistory` with `line`); the
+    circulation runs; the bills at the bottom. What the owner set on the live page, each easy to undo by accident:
+    - **The cards of a row are of one height and the charts of a row on one line**: the chart of each card of the second
+      row sits at the bottom of its card (`margin-top: auto`) over a foot of one height (`.chart__foot`, 36 px).
+    - **Nothing moves while another period or day is asked for**: `HistoryFrame` puts what stands under its periods in a
+      `.frame__body` as tall as `--app-frame-body-min-height`, which the consumption (324 px: the chart, its foot and the
+      space between) and the history (320 px: the chart, the numbers and the note of the band) set - a card that shrank
+      to its progress bar moved its row and every row under it. A taller chart or foot changes that number too.
+    - **The commands of a card in its bottom right corner** (`margin-top: auto`, `justify-content: flex-end`): the valve,
+      the circulation and the regeneration of the softener, 13 px from the right and 17 px from the bottom.
+    - **A value in `on-surface`, its name in `on-surface-variant`** in the rows of the cards of the first row.
+    - **A card that says less than its height**: the rows of the water used in its middle, spaced 10 px and raised a few
+      pixels (`.tile__content--middle`); the state of the heating of the water centred across, on the line of the state
+      of the valve (`.tile__content--centre`) - centred in the height it stood apart from the title.
+    - **The band of the tank in one line**: "Heated below 38 °C, up to 42 °C." with a no-break space between a number
+      and its unit (written ` ` in the texts, never the bare character).
+    **The water used is a card of its own**
     (owner, HAS-323): today, this week, this month and this year (`watchConsumptionTotals`: four calls one after the
     other every 5 minutes, read as one, `at` left out so the service counts from its own today) and the counter of
     the valve - the counter alone says little (owner).
   - **The command of the valve** (HAS-323, `water-service` >= 0.12.0) - the one write that cuts the water of the
     whole house: the button offers the change of the state (both while it is not known), **always after a question**
-    that says so, "Cancel" focused; `POST /water/valve?state=&source=dashboard` sent once, the valve read again
+    that says so - `ConfirmDialog` over the page (`askValve`, testId `valve-question`), "Cancel" focused;
+    `POST /water/valve?state=&source=dashboard` sent once, the valve read again
     `VALVE_READ_AFTER_MS` (2.5 s) later whatever the command came to (an unanswered one may have been carried out),
-    and `lastCommandConfirmed: false` told on the card. A question with nothing left to ask goes by itself (the
-    valve reached that state, or is not known any more) - the rule of the heating switch.
+    and `lastCommandConfirmed: false` told on the card. A question with nothing left to ask closes its window by itself
+    (the valve reached that state, or is not known any more) - the rule of the heating switch.
   - **The bills** (HAS-323, `water-bills.ts`, `water-service` >= 0.9.0): newest first, measured and difference left
     out as "not measured" / "not known" when the service leaves them out; the difference coloured by its size
     (within 3 % plain, within 10 % outlined, more on the strip of an error). The form is **a copy of `BillRules`**
@@ -827,8 +856,13 @@ e2e/              # Playwright tests
     morning is there from the start.
   - **The water softener** (HAS-402, epic HAS-396, `water-service` >= 0.15.0 for the state, 0.16.0 its history, 0.17.0
     the alerts, 0.18.0 the regeneration, 0.19.0 the live flow; `data-access/water/softener-api.ts`, `softener-views.ts`,
-    `softener-card`, `softener-history`, `softener-alerts`): a section under the circulation runs, its `aria-label` the
-    name - the card carries the title. What is easy to break:
+    `softener-card`, `softener-history` - `SoftenerSalt` and `SoftenerDays` -, `softener-alerts`): the alerts are the sixth
+    card of the first row, the salt and the water per day two cards of the second, the softener card a row of its own.
+    What is easy to break:
+    - **The card is three columns of one height, no empty space** (owner, 2026-11-09): the salt (the age of the reading at
+      its bottom, the rest spread between its parts), the water (the live flow a panel that takes what is left of the
+      column), the regeneration (its rows, the hardness - a setting the regeneration depends on -, the flags, the
+      commands in the bottom right corner). A part added to a column is weighed against the other two.
     - **Read once by `toSoftenerView`** for the card and the overview tile: a field the answer leaves out is not known,
       **a flag never clear** (a dashed chip "not known"), a day that is no `YYYY-MM-DD` and a time that is no date-time of
       the house not known. The age is `measuredAt`, out of date past `SOFTENER_OUT_OF_DATE_MS` (10 minutes: two reads of
@@ -836,19 +870,24 @@ e2e/              # Playwright tests
       `stale`. The words of the cloud for the regeneration: `none`, `scheduled`, `regenerating` (and two guesses for a
       running one - the words of a regeneration going on were not seen yet, 2026-11-09); another word is printed as it came.
     - **The salt gauge is the gauge of the tank** (`TemperatureGauge` has a `unit` since this task): 0 - 100 %, the band
-      20 - 100 % (`SALT_LOW_PERCENT`, the level the iQua application colours); below it a warning on the strip of an
-      error. The salt is counted down by the softener from what was entered, not measured.
+      20 - 100 % (`SALT_LOW_PERCENT`, the level the iQua application colours); below it a warning in **amber**
+      (owner, 2026-11-09: the salt is no fault) - `--app-warning-container` / `--app-on-warning-container` of
+      `_seasons.scss`, a pair of `check:contrast`; the chip `lowSalt` and the salt alert of the cloud the same. The salt
+      is counted down by the softener from what was entered, not measured.
     - **The hardness in mg/l CaCO₃, the gpg of the device in a tooltip** (the owner reads 205 PPM in the iQua application;
       the assumption of the task, to confirm with the owner on the page).
     - **The regeneration** (`POST` / `DELETE /water/softener/regeneration`): "Regenerate now" and "tonight" while none
-      is planned, "now" and the cancel while one is scheduled, nothing while one goes on; **always after a question**,
-      "Keep as it is" focused, the question cleared for good when its command is no longer offered; sent once, the
+      is planned, "now" and the cancel while one is scheduled, nothing while one goes on; **always after a question** -
+      `ConfirmDialog` over the page (`ask`, testId `softener-question`), "Keep as it is" focused, the window closed with no
+      answer when its command is no longer offered; sent once, the
       softener read again `SOFTENER_READ_AFTER_MS` (2.5 s) later whatever it came to. The new state reaches the page only
       with the next read of the service (5 minutes) - the card keeps polling every 30 s.
     - **The live flow** (`PUT` / `DELETE /water/softener/live`): a switch that is the page's alone - on, it opens the
       stream and renews it every `SOFTENER_LIVE_RENEW_MS` (4 minutes, a minute before the 5 of `water.softener.live-for` -
       **a copy**) and reads the softener every 5 s; off, or the page left, closes it. A failed open (`LIVE_THROTTLED`) is
-      told and the switch goes off - nothing to close. Without the stream the card says the flow is what the cloud last had.
+      told and the switch goes off - nothing to close. The switch, the flow and how live it is are a panel of their own
+      (`softener-live-panel`), tinted in the colour of the water while the stream is open (owner, 2026-11-09); without
+      the stream it says the flow is the last value of the cloud.
     - **The history is two cards of two calls each** (an exception to "one resource, one card", as the tile of the water):
       the salt of 90 days (`lastDays`, ending with the midnight after today; the service gives a bucket of a day) with the
       regenerations of those days as **marks** - `HistoryChart` has a `marks` input since this task (`markLine` of the first
@@ -856,12 +895,13 @@ e2e/              # Playwright tests
       so the salt line is drawn through every day without a point. The litres per day of **this month** through the
       softener (`/softener/days`) beside the water meter (`/consumption?range=month`, m³ x 1000); a day not read has no
       bar. The freshness is the first call's, a failure of either told in the card.
-    - **The alerts of the cloud** (`/water/softener/alerts`): at most 8, newest first, coloured by the level the cloud
-      gives (`alertLevelOf`: critical on the strip of an error, a warning outlined, the rest plain); title and message are
-      the cloud's English words, as it sent them.
+    - **The alerts of the cloud** (`/water/softener/alerts`): a card of the first row, at most
+      `SOFTENER_ALERTS_SHOWN` (4), newest first, coloured by the level the cloud gives (`alertLevelOf`: critical on the
+      strip of an error, the salt in amber, a warning outlined, the rest plain); title and message are the cloud's
+      English words, as it sent them.
     - The codes it words: `SOFTENER_UNAVAILABLE`, `SOFTENER_COMMAND_FAILED`, `REGENERATION_IN_PROGRESS`,
       `COMMAND_TOO_SOON`, `LIVE_THROTTLED` (`water-errors.ts`). The overview tile "Water" has the salt and the days it
-      lasts as a third call, its failure in `tileFailures`. The mock softener (`softener.fixtures.ts`): 25 % salt, 31 days
+      lasts as a third call, its failure in `tileFailures`. The mock softener (`softener.fixtures.ts`): 15 % salt (low - the amber warning), 31 days
       of the salt going down, five regenerations, two alerts, the regeneration and the live stream as the service answers.
 - **The overview is one tile per call** (HAS-201, `features/overview/`): `DomainTile`
   (`shared/domain-tile/`, shared with the weather page since HAS-241, the styles of its content

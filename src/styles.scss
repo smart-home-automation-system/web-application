@@ -167,3 +167,10 @@ body {
   color: var(--app-on-domain);
   box-shadow: 0 8px 20px color-mix(in srgb, var(--app-domain) 45%, transparent);
 }
+
+// Behind a window (every MatDialog): the page darkened and blurred, so the window plainly stands over everything and a
+// click outside reads as closing it (owner, 2026-11-09) - the 32 % black of the CDK alone barely showed it.
+.cdk-overlay-dark-backdrop.cdk-overlay-backdrop-showing {
+  background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(6px);
+}

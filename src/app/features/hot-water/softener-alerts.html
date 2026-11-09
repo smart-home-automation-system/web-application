@@ -18,7 +18,7 @@
             @for (item of shown(); track $index) {
               <li class="softener-alerts__item" [class]="'softener-alerts__item--' + item.level" [attr.data-level]="item.level">
                 <mat-icon>{{
-                  item.level === 'critical' ? 'error' : item.level === 'warning' ? 'warning' : 'info'
+                  item.level === 'critical' ? 'error' : item.level === 'info' ? 'info' : 'warning'
                 }}</mat-icon>
                 <div class="softener-alerts__text">
                   <strong>{{ item.alert.title ?? item.alert.type }}</strong>

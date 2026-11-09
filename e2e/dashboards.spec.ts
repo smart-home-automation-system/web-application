@@ -540,7 +540,8 @@ test.describe('the water softener', () => {
     await expect(page.getByTestId('softener-regeneration-marks')).toHaveText('Regenerations: 5');
     await expect(page.getByTestId('softener-days').locator('.chart__plot svg')).toBeVisible();
     const alerts = page.getByTestId('softener-alerts');
-    await expect(alerts.locator('[data-level="warning"]')).toContainText('Low Salt');
+    // the salt in amber, apart from the warnings (owner, 2026-11-09)
+    await expect(alerts.locator('[data-level="salt"]')).toContainText('Low Salt');
     await expect(alerts.locator('[data-level="critical"]')).toContainText('Disconnected');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
@@ -549,10 +550,18 @@ test.describe('the water softener', () => {
     await page.goto('/water');
     const softener = page.getByTestId('softener');
 
+    await expect(softener.getByTestId('softener-tonight')).toBeVisible();
+    const height = (await softener.boundingBox())!.height;
     await softener.getByTestId('softener-tonight').click();
-    await expect(softener.locator('legend')).toHaveText('Schedule a regeneration for tonight?');
-    await expect(softener.getByRole('button', { name: 'Keep as it is' })).toBeFocused();
-    await softener.getByTestId('softener-confirm').click();
+    // the question is a window over the page; the card keeps its size (owner, 2026-11-09)
+    const question = page.getByRole('dialog');
+    await expect(question.getByTestId('softener-question')).toHaveText(
+      'Schedule a regeneration for tonight?',
+    );
+    await expect(question.getByRole('button', { name: 'Keep as it is' })).toBeFocused();
+    expect((await softener.boundingBox())!.height).toBe(height);
+    await question.getByTestId('confirm-yes').click();
+    await expect(question).toHaveCount(0);
 
     await expect(softener.getByTestId('softener-regeneration-state')).toHaveText(
       'A regeneration is scheduled for tonight',
@@ -565,10 +574,13 @@ test.describe('the water softener', () => {
     const softener = page.getByTestId('softener');
     await expect(softener.getByTestId('softener-flow')).toHaveText('Flow 0.0 l/min');
 
+    await expect(softener.getByTestId('softener-flow-note')).toHaveText('The last value the cloud had.');
+
     await softener.getByTestId('softener-live').getByRole('switch').click();
 
     await expect(softener.getByTestId('softener-flow')).toHaveText('Flow 6.4 l/min');
     await expect(softener.getByTestId('softener-flow-note')).toContainText('Live until');
+    await expect(softener.getByTestId('softener-live-panel')).toHaveClass(/softener__live--on/);
   });
 
   // just after a start water-service has not read the cloud: the code worded, never zeros
@@ -591,14 +603,22 @@ test.describe('the valve and the bills', () => {
     await expect(valve.getByTestId('valve-state')).toContainText('Open');
 
     await valve.getByTestId('valve-close').click();
-    await expect(valve.getByTestId('valve-question')).toContainText(
+    // a window over the page, "Cancel" focused; a click outside answers no (owner, 2026-11-09)
+    const question = page.getByRole('dialog');
+    await expect(question.getByTestId('valve-question')).toContainText(
       'It cuts the water of the whole house.',
     );
-    await valve.getByTestId('valve-confirm').click();
+    await expect(question.getByTestId('confirm-cancel')).toBeFocused();
+    await page.mouse.click(5, 5);
+    await expect(question).toHaveCount(0);
+    await expect(valve.getByTestId('valve-state')).toContainText('Open');
+
+    await valve.getByTestId('valve-close').click();
+    await question.getByTestId('confirm-yes').click();
     await expect(valve.getByTestId('valve-state')).toContainText('Closed');
 
     await valve.getByTestId('valve-open').click();
-    await valve.getByTestId('valve-confirm').click();
+    await question.getByTestId('confirm-yes').click();
     await expect(valve.getByTestId('valve-state')).toContainText('Open');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
@@ -653,7 +673,7 @@ test.describe('hot water', () => {
     const gauge = temperatures.getByRole('meter');
     await expect(gauge).toHaveAttribute('aria-valuetext', '40.6 °C; kept between 38 and 42 °C');
     await expect(temperatures).toContainText(
-      'Heated once it drops below 38 °C, until it is above 42 °C.',
+      'Heated below 38\u00a0°C, up to 42\u00a0°C.',
     );
     await expect(page.getByTestId('pump-state')).toHaveText(/Stopped/);
     await expect(page.getByTestId('pump-return')).toHaveText(/Return\s+26\.4 °C/);
@@ -733,11 +753,12 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    // fifteen calls - the valve, the totals and the consumption (HAS-322), the bills (HAS-323), the temperatures, the
-    // demand, the history, the pump and its runs of today (HAS-406), and the softener (HAS-402): its state, the salt
-    // and the regenerations, the days and the meter, the alerts of the cloud
+    // fifteen calls, sixteen cards that tell them - the valve, the totals and the consumption (HAS-322), the bills
+    // (HAS-323), the temperatures, the demand, the history in the cards of the tank and of the circulation (one call,
+    // a card each since 2026-11-09), the pump and its runs of today (HAS-406), and the softener (HAS-402): its state,
+    // the salt and the regenerations, the days and the meter, the alerts of the cloud
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(15);
+    await expect(alerts).toHaveCount(16);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }

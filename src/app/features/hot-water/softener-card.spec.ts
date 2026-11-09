@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Observable, of, throwError } from 'rxjs';
 
 import { FakeResource, answer, fakeResource, fail } from '../../../testing/fake-resource';
@@ -30,6 +31,7 @@ describe('SoftenerCard', () => {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         {
           provide: SoftenerApi,
           useValue: {
@@ -67,6 +69,11 @@ describe('SoftenerCard', () => {
   const row = async (id: string) => words((await card()).querySelector(`[data-testid="${id}"] dd`));
   const button = async (id: string) =>
     (await card()).querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
+  // the question is a window over the page, outside the card (owner, 2026-11-09)
+  const inWindow = async (id: string) => {
+    await fixture.whenStable();
+    return document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+  };
 
   it('shows the salt, the water, the hardness and the regeneration', async () => {
     answer(softener, {
@@ -121,14 +128,44 @@ describe('SoftenerCard', () => {
     const refresh = vi.spyOn(softener, 'refresh');
 
     (await button('softener-tonight'))!.click();
-    expect(words((await card()).querySelector('legend'))).toBe('Schedule a regeneration for tonight?');
+    expect(words(await inWindow('softener-question'))).toBe('Schedule a regeneration for tonight?');
+    // the safe answer is the one the window focuses (the DOM of the tests lays nothing out, so the focus itself is
+    // checked in the browser test)
+    expect((await inWindow('confirm-cancel'))!.hasAttribute('cdkfocusinitial')).toBe(true);
+    expect((await button('softener-now'))!.disabled).toBe(true);
     expect(regenerated).toEqual([]);
-    (await button('softener-confirm'))!.click();
+    (await inWindow('confirm-yes'))!.click();
     await fixture.whenStable();
 
     expect(regenerated).toEqual(['tonight']);
+    expect(await inWindow('softener-question')).toBeNull();
     await vi.advanceTimersByTimeAsync(SOFTENER_READ_AFTER_MS);
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it('sends nothing for "Keep as it is"', async () => {
+    answer(softener, { salt: { levelPercent: 40 }, regeneration: { status: 'none' } });
+
+    (await button('softener-now'))!.click();
+    (await inWindow('confirm-cancel'))!.click();
+    await fixture.whenStable();
+
+    expect(await inWindow('softener-question')).toBeNull();
+    expect(regenerated).toEqual([]);
+    expect((await button('softener-now'))!.disabled).toBe(false);
+  });
+
+  // the rule of the heating switch: a question with nothing left to ask goes by itself
+  it('closes the question once its command is no longer offered', async () => {
+    answer(softener, { salt: { levelPercent: 40 }, regeneration: { status: 'scheduled' } });
+    (await button('softener-cancel'))!.click();
+    expect(await inWindow('softener-question')).toBeTruthy();
+
+    answer(softener, { salt: { levelPercent: 40 }, regeneration: { status: 'none' } });
+    await fixture.whenStable();
+
+    expect(await inWindow('softener-question')).toBeNull();
+    expect(cancelled).toBe(0);
   });
 
   it('offers the cancel while a regeneration is scheduled, and nothing while one goes on', async () => {
@@ -150,8 +187,7 @@ describe('SoftenerCard', () => {
     answer(softener, { salt: { levelPercent: 40 }, regeneration: { status: 'scheduled' } });
 
     (await button('softener-cancel'))!.click();
-    await fixture.whenStable();
-    (await button('softener-confirm'))!.click();
+    (await inWindow('confirm-yes'))!.click();
     await vi.advanceTimersByTimeAsync(SOFTENER_READ_AFTER_MS);
 
     expect(cancelled).toBe(1);

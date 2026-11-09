@@ -29,12 +29,16 @@
                   [high]="100"
                   unit="%"
                   [label]="t('softener.salt.gauge')"
-                  [valueText]="t('softener.salt.value', { value: (view.saltPercent | localNumber: whole) })"
+                  [valueText]="
+                    t('softener.salt.value', { value: (view.saltPercent | localNumber: whole) })
+                  "
                 />
                 @if (saltLevel() === 'low' || saltLevel() === 'out') {
                   <p class="softener__warning" data-testid="softener-salt-low">
                     <mat-icon>warning</mat-icon>
-                    <span>{{ t(saltLevel() === 'out' ? 'softener.salt.out' : 'softener.salt.low') }}</span>
+                    <span>{{
+                      t(saltLevel() === 'out' ? 'softener.salt.out' : 'softener.salt.low')
+                    }}</span>
                   </p>
                 }
               } @else {
@@ -55,13 +59,35 @@
                   <dt>{{ t('softener.salt.runsOut') }}</dt>
                   <dd>
                     @if (view.outOfSaltDate !== undefined) {
-                      {{ view.outOfSaltDate + 'T00:00:00' | houseDateTime: { day: 'numeric', month: 'long', year: 'numeric' } }}
+                      {{
+                        view.outOfSaltDate + 'T00:00:00'
+                          | houseDateTime: { day: 'numeric', month: 'long', year: 'numeric' }
+                      }}
                     } @else {
                       {{ t('softener.notKnown') }}
                     }
                   </dd>
                 </div>
               </dl>
+              <p
+                class="tile__detail tile__measured"
+                [class.tile__measured--old]="outOfDate()"
+                data-testid="softener-measured"
+              >
+                @if (view.online === false || view.reachable === false) {
+                  <mat-icon>cloud_off</mat-icon>
+                  <span>{{
+                    t(view.online === false ? 'softener.offline' : 'softener.unreachable')
+                  }}</span>
+                } @else if (view.measuredAt | houseAge; as age) {
+                  @if (outOfDate()) {
+                    <mat-icon>warning</mat-icon>
+                  }
+                  <span>{{
+                    t(outOfDate() ? 'softener.readOutOfDate' : 'softener.read', { age })
+                  }}</span>
+                }
+              </p>
             </section>
 
             <!-- the water and the hardness -->
@@ -98,56 +124,52 @@
                     }
                   </dd>
                 </div>
-                <div class="tile__row" data-testid="softener-flow">
-                  <dt>{{ t('softener.water.flow') }}</dt>
-                  <dd>
-                    @if (view.flowLitresPerMinute !== undefined) {
-                      {{ view.flowLitresPerMinute | localNumber: oneDecimal }} l/min
-                    } @else {
-                      {{ t('softener.notKnown') }}
-                    }
-                  </dd>
-                </div>
-                <div class="tile__row" data-testid="softener-hardness">
-                  <dt>{{ t('softener.water.hardness') }}</dt>
-                  <dd>
-                    @if (view.hardnessMgCaco3 !== undefined) {
-                      <span
-                        [matTooltip]="
-                          view.hardnessGpg !== undefined
-                            ? t('softener.water.hardnessGpg', { gpg: (view.hardnessGpg | localNumber: oneDecimal) })
-                            : ''
-                        "
-                        >{{ view.hardnessMgCaco3 | localNumber: whole }} mg/l CaCO₃</span
-                      >
-                    } @else {
-                      {{ t('softener.notKnown') }}
-                    }
-                  </dd>
-                </div>
               </dl>
-              <p class="softener__note" data-testid="softener-flow-note">
-                {{
-                  view.live === true && view.liveUntil
-                    ? t('softener.live.until', {
-                        time: (view.liveUntil | houseDateTime: { hour: '2-digit', minute: '2-digit' }),
-                      })
-                    : t('softener.water.flowFrozen')
-                }}
-              </p>
-              <mat-slide-toggle
-                [checked]="liveOn()"
-                (change)="$event.checked ? startLive() : switchLiveOff()"
-                data-testid="softener-live"
-                >{{ t('softener.live.switch') }}</mat-slide-toggle
+              <!-- the live flow apart from the rest (owner, 2026-11-09): the switch, the flow and how live it is, in a panel of
+                   its own, tinted while the stream is open -->
+              <section
+                class="softener__live"
+                [class.softener__live--on]="liveOn()"
+                [attr.aria-label]="t('softener.live.switch')"
+                data-testid="softener-live-panel"
               >
-              @if (liveFailure(); as failure) {
-                <app-api-error-strip
-                  [error]="failure"
-                  [summary]="t('softener.live.failed')"
-                  [describeWith]="describe"
-                />
-              }
+                <mat-slide-toggle
+                  [checked]="liveOn()"
+                  (change)="$event.checked ? startLive() : switchLiveOff()"
+                  data-testid="softener-live"
+                  >{{ t('softener.live.switch') }}</mat-slide-toggle
+                >
+                <dl class="tile__rows">
+                  <div class="tile__row" data-testid="softener-flow">
+                    <dt>{{ t('softener.water.flow') }}</dt>
+                    <dd>
+                      @if (view.flowLitresPerMinute !== undefined) {
+                        {{ view.flowLitresPerMinute | localNumber: oneDecimal }} l/min
+                      } @else {
+                        {{ t('softener.notKnown') }}
+                      }
+                    </dd>
+                  </div>
+                </dl>
+                <p class="softener__note" data-testid="softener-flow-note">
+                  {{
+                    view.live === true && view.liveUntil
+                      ? t('softener.live.until', {
+                          time:
+                            (view.liveUntil
+                            | houseDateTime: { hour: '2-digit', minute: '2-digit' }),
+                        })
+                      : t('softener.water.flowFrozen')
+                  }}
+                </p>
+                @if (liveFailure(); as failure) {
+                  <app-api-error-strip
+                    [error]="failure"
+                    [summary]="t('softener.live.failed')"
+                    [describeWith]="describe"
+                  />
+                }
+              </section>
             </section>
 
             <!-- the regeneration and the flags of the softener -->
@@ -177,7 +199,10 @@
                   <dt>{{ t('softener.regeneration.last') }}</dt>
                   <dd>
                     @if (view.lastRegenerationAt !== undefined) {
-                      {{ view.lastRegenerationAt + 'T00:00:00' | houseDateTime: { day: 'numeric', month: 'long' } }}
+                      {{
+                        view.lastRegenerationAt + 'T00:00:00'
+                          | houseDateTime: { day: 'numeric', month: 'long' }
+                      }}
                     } @else {
                       {{ t('softener.notKnown') }}
                     }
@@ -193,18 +218,50 @@
                     }
                   </dd>
                 </div>
+                <div class="tile__row" data-testid="softener-hardness">
+                  <dt>{{ t('softener.water.hardness') }}</dt>
+                  <dd>
+                    @if (view.hardnessMgCaco3 !== undefined) {
+                      <span
+                        [matTooltip]="
+                          view.hardnessGpg !== undefined
+                            ? t('softener.water.hardnessGpg', {
+                                gpg: (view.hardnessGpg | localNumber: oneDecimal),
+                              })
+                            : ''
+                        "
+                        >{{ view.hardnessMgCaco3 | localNumber: whole }} mg/l CaCO₃</span
+                      >
+                    } @else {
+                      {{ t('softener.notKnown') }}
+                    }
+                  </dd>
+                </div>
               </dl>
 
-              <ul class="softener__flags" [attr.aria-label]="t('softener.flag.title')" data-testid="softener-flags">
+              <ul
+                class="softener__flags"
+                [attr.aria-label]="t('softener.flag.title')"
+                data-testid="softener-flags"
+              >
                 @for (flag of view.flags; track flag.flag) {
                   <li
                     class="softener__flag"
-                    [class.softener__flag--raised]="flag.raised === true"
+                    [class.softener__flag--raised]="flag.raised === true && flag.flag !== 'lowSalt'"
+                    [class.softener__flag--warning]="
+                      flag.raised === true && flag.flag === 'lowSalt'
+                    "
                     [class.softener__flag--unknown]="flag.raised === undefined"
                     [attr.data-flag]="flag.flag"
                   >
                     <mat-icon>{{
-                      flag.raised === true ? 'error' : flag.raised === false ? 'check' : 'help'
+                      flag.raised === true
+                        ? flag.flag === 'lowSalt'
+                          ? 'warning'
+                          : 'error'
+                        : flag.raised === false
+                          ? 'check'
+                          : 'help'
                     }}</mat-icon>
                     <span>{{ t(flag.label) }}</span>
                     <span class="visually-hidden">{{
@@ -220,27 +277,15 @@
                 }
               </ul>
 
-              @let asked = question();
-              @if (asked !== undefined) {
-                <fieldset class="softener__question" [attr.aria-describedby]="questionId">
-                  <legend [id]="questionId">{{ t(QUESTIONS[asked]) }}</legend>
-                  <div class="softener__answers">
-                    <button mat-stroked-button #keep type="button" (click)="question.set(undefined)" [disabled]="commanding()">
-                      {{ t('softener.question.keep') }}
-                    </button>
-                    <button mat-flat-button type="button" (click)="send(asked)" [disabled]="commanding()" data-testid="softener-confirm">
-                      {{ t(CONFIRMS[asked]) }}
-                    </button>
-                  </div>
-                </fieldset>
-              } @else if (commands().length > 0) {
+              <!-- the question before a command is a window over the page (owner, 2026-11-09) -->
+              @if (commands().length > 0) {
                 <div class="softener__commands">
                   @for (command of commands(); track command) {
                     <button
                       mat-stroked-button
                       type="button"
-                      (click)="question.set(command)"
-                      [disabled]="commanding()"
+                      (click)="ask(command)"
+                      [disabled]="commanding() || question() !== undefined"
                       [attr.data-testid]="'softener-' + command"
                     >
                       {{ t(COMMANDS[command]) }}
@@ -249,35 +294,30 @@
                 </div>
               }
               @if (commanding()) {
-                <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('softener.command.sending')" />
+                <mat-progress-bar
+                  mode="indeterminate"
+                  [attr.aria-label]="t('softener.command.sending')"
+                />
               }
               @if (commandFailure(); as failure) {
                 <app-api-error-strip
                   [error]="failure"
-                  [summary]="t(failure.kind === 'network' ? 'softener.command.noAnswer' : 'softener.command.failed')"
+                  [summary]="
+                    t(
+                      failure.kind === 'network'
+                        ? 'softener.command.noAnswer'
+                        : 'softener.command.failed'
+                    )
+                  "
                   [describeWith]="describe"
                 />
               }
             </section>
           </div>
-
-          <p
-            class="tile__detail tile__measured"
-            [class.tile__measured--old]="outOfDate()"
-            data-testid="softener-measured"
-          >
-            @if (view.online === false || view.reachable === false) {
-              <mat-icon>cloud_off</mat-icon>
-              <span>{{ t(view.online === false ? 'softener.offline' : 'softener.unreachable') }}</span>
-            } @else if (view.measuredAt | houseAge; as age) {
-              @if (outOfDate()) {
-                <mat-icon>warning</mat-icon>
-              }
-              <span>{{ t(outOfDate() ? 'softener.readOutOfDate' : 'softener.read', { age }) }}</span>
-            }
-          </p>
         } @else if (notReadYet()) {
-          <p class="softener__unknown" data-testid="softener-not-read">{{ t('water.error.softenerUnavailable') }}</p>
+          <p class="softener__unknown" data-testid="softener-not-read">
+            {{ t('water.error.softenerUnavailable') }}
+          </p>
         } @else if (!softener.error()) {
           <p class="softener__unknown">{{ t('softener.noReading') }}</p>
         }

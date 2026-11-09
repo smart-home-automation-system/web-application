@@ -11,8 +11,8 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
 import { alertLevelOf } from './softener-views';
 import { describeWaterError } from './water-errors';
 
-/** At most this many alerts of the cloud are listed - the page the service reads holds 20. */
-export const SOFTENER_ALERTS_SHOWN = 8;
+/** At most this many alerts of the cloud are listed - a card of the first row of the page; the service reads 20. */
+export const SOFTENER_ALERTS_SHOWN = 4;
 
 /**
  * The alerts the iQua cloud keeps of the softener (HAS-402, `GET /water/softener/alerts`, `water-service` >= 0.17.0):

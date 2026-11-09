@@ -3,14 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   computed,
   effect,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -36,13 +35,18 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { CirculationRuns } from './circulation-runs';
 import { SoftenerAlerts } from './softener-alerts';
 import { SoftenerCard } from './softener-card';
-import { SoftenerHistory } from './softener-history';
+import { SoftenerDays, SoftenerSalt } from './softener-history';
 import { stoppedByText, toCirculationView, todayRange, triggerText } from './circulation-views';
 import { TemperatureGauge } from './temperature-gauge';
 import { WaterBills } from './water-bills';
 import { WaterConsumptionCard } from './water-consumption';
 import { describeCirculationError, describeWaterError } from './water-errors';
 import { WaterHistory } from './water-history';
+import {
+  CONFIRM_DIALOG_SIZE,
+  ConfirmData,
+  ConfirmDialog,
+} from '../../shared/confirm-dialog/confirm-dialog';
 import { hasValveReading, isValveOutOfDate, toValveView, unitOf, volumeIn } from './water-views';
 
 /** The rows of the water of the running ranges in the card of the valve. */
@@ -94,8 +98,6 @@ export const VALVE_READ_AFTER_MS = 2_500;
  */
 export const CIRCULATION_READ_AFTER_MS = 2_500;
 
-let nextQuestion = 0;
-
 @Component({
   selector: 'app-hot-water',
   imports: [
@@ -109,7 +111,8 @@ let nextQuestion = 0;
     CirculationRuns,
     SoftenerAlerts,
     SoftenerCard,
-    SoftenerHistory,
+    SoftenerDays,
+    SoftenerSalt,
     DataFreshness,
     DisplayTextPipe,
     HouseAgePipe,
@@ -152,15 +155,13 @@ export class HotWater {
 
   // ---- the command of the valve (HAS-323) ----
 
-  /** The command asked about; the valve is closed or opened only once it is confirmed. */
+  /** The command asked about in the window over the page; the valve is closed or opened only once it is confirmed. */
   protected readonly valveQuestion = signal<'open' | 'close' | undefined>(undefined);
-  protected readonly valveQuestionId = `valve-question-${nextQuestion++}`;
+  private readonly dialog = inject(MatDialog);
+  private valveDialog?: MatDialogRef<ConfirmDialog, boolean>;
   /** A command was sent and the valve is being read again. */
   protected readonly commanding = signal(false);
   protected readonly commandFailure = signal<ApiError | undefined>(undefined);
-  private readonly keepValve = viewChild<unknown, ElementRef<HTMLElement>>('keepValve', {
-    read: ElementRef,
-  });
   private readonly destroyRef = inject(DestroyRef);
   /** The read of the valve after a command, waiting; cleared with the page. */
   private readAfterCommand?: ReturnType<typeof setTimeout>;
@@ -221,16 +222,14 @@ export class HotWater {
   });
 
   constructor() {
-    // the question takes the focus on "Cancel", the safe answer - an Enter pressed out of habit cuts no water
-    effect(() => this.keepValve()?.nativeElement.focus());
     // a question that has nothing left to ask goes: the valve reached that state by other means, or is not known
-    // any more - cleared, never hidden, or it would come back by itself (the rule of the heating switch)
+    // any more - the window closed with no answer (the rule of the heating switch)
     effect(() => {
       const asked = this.valveQuestion();
       const open = this.valveView().open;
       const settled = (asked === 'close' && open === false) || (asked === 'open' && open === true);
       if (asked !== undefined && !this.commanding() && (settled || !this.valveKnown())) {
-        this.valveQuestion.set(undefined);
+        this.valveDialog?.close(false);
       }
     });
     // a failed start goes once the pump is read running: a start without an answer was carried out after all, and
@@ -244,6 +243,40 @@ export class HotWater {
       this.destroyed = true;
       clearTimeout(this.readAfterCommand);
       clearTimeout(this.readAfterStart);
+      this.valveDialog?.close(false);
+    });
+  }
+
+  /**
+   * Asks before a command of the valve in a window over the page (owner, 2026-11-09: the card keeps its size) -
+   * "Cancel" focused; the command is sent only for the answer yes.
+   */
+  protected askValve(state: 'open' | 'close'): void {
+    if (this.valveQuestion() !== undefined || this.commanding()) {
+      return;
+    }
+    this.valveQuestion.set(state);
+    const close = state === 'close';
+    this.valveDialog = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, {
+      ...CONFIRM_DIALOG_SIZE,
+      data: {
+        icon: close ? 'block' : 'water_drop',
+        title: close ? 'water.valve.doClose' : 'water.valve.doOpen',
+        question: close ? 'water.valve.confirmClose' : 'water.valve.confirmOpen',
+        confirm: close ? 'water.valve.doClose' : 'water.valve.doOpen',
+        cancel: 'water.valve.cancel',
+        testId: 'valve-question',
+      },
+      // the first tabbable element - the one marked cdkFocusInitial, the cancel
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+    });
+    this.valveDialog.afterClosed().subscribe((confirmed) => {
+      this.valveDialog = undefined;
+      this.valveQuestion.set(undefined);
+      if (confirmed === true && !this.destroyed) {
+        this.command(state);
+      }
     });
   }
 

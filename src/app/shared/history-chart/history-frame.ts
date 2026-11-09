@@ -71,16 +71,18 @@ const PRESET_LABELS: Readonly<Record<HistoryPreset, MessageKey>> = {
         }
       </div>
 
-      @if (waiting()) {
-        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('history.loading')" />
-      } @else {
-        @if (!empty()) {
-          <ng-container [ngTemplateOutlet]="content()" />
-        } @else if (!error()) {
-          <p class="frame__note" data-testid="history-empty">{{ t('history.empty') }}</p>
+      <div class="frame__body">
+        @if (waiting()) {
+          <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('history.loading')" />
+        } @else {
+          @if (!empty()) {
+            <ng-container [ngTemplateOutlet]="content()" />
+          } @else if (!error()) {
+            <p class="frame__note" data-testid="history-empty">{{ t('history.empty') }}</p>
+          }
+          <app-api-error-strip [error]="error()" [describeWith]="describeWith()" />
         }
-        <app-api-error-strip [error]="error()" [describeWith]="describeWith()" />
-      }
+      </div>
     </ng-container>
   `,
   styleUrl: './history-frame.scss',

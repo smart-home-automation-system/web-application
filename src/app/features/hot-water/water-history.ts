@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -38,6 +38,12 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WaterHistory {
+  /**
+   * Which temperature the card draws (owner, 2026-11-09: two cards side by side in one row) - the tank, with the band it
+   * is kept in, or the circulation. Each card asks for its own period.
+   */
+  readonly line = input.required<'water' | 'circulation'>();
+
   private readonly transloco = inject(TranslocoService);
   private readonly language = inject(LanguageStore).language;
 
@@ -59,10 +65,11 @@ export class WaterHistory {
       color,
       points: toLine(answer?.points, answer?.bucketSeconds, (point) => point[key]),
     });
-    return [
-      line('water', 1, 'hotWater.history.tank'),
-      line('circulation', 2, 'hotWater.history.circulation'),
-    ].filter((one) => one.points.length > 0);
+    const drawn =
+      this.line() === 'water'
+        ? line('water', 1, 'hotWater.history.tank')
+        : line('circulation', 2, 'hotWater.history.circulation');
+    return [drawn].filter((one) => one.points.length > 0);
   });
 
   /** Per line its lowest and highest value: what the picture says, in numbers. */
@@ -75,8 +82,11 @@ export class WaterHistory {
 
   protected readonly bandLimits = HOT_WATER_BAND;
 
-  protected readonly band = computed((): ChartBand => {
+  /** The band the tank is kept in - on the chart of the tank only. */
+  protected readonly band = computed((): ChartBand | undefined => {
     this.language();
-    return { ...HOT_WATER_BAND, name: this.transloco.translate('hotWater.history.band') };
+    return this.line() === 'water'
+      ? { ...HOT_WATER_BAND, name: this.transloco.translate('hotWater.history.band') }
+      : undefined;
   });
 }

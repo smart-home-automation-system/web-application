@@ -2,15 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   computed,
   effect,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -38,6 +37,7 @@ import {
 } from './softener-views';
 import { TemperatureGauge } from './temperature-gauge';
 import { MessageKey } from '../../i18n/messages';
+import { CONFIRM_DIALOG_SIZE, ConfirmData, ConfirmDialog } from '../../shared/confirm-dialog/confirm-dialog';
 import { describeWaterError } from './water-errors';
 
 /** A command of the regeneration the card asks about before it is sent. */
@@ -49,8 +49,6 @@ export type RegenerationCommand = 'now' | 'tonight' | 'cancel';
  * the poll answering at once, not the proof; the card keeps polling.
  */
 export const SOFTENER_READ_AFTER_MS = 2_500;
-
-let nextQuestion = 0;
 
 /**
  * The water softener (HAS-402, epic HAS-396): the salt on a gauge with the days left and the day it runs out, the water
@@ -131,11 +129,12 @@ export class SoftenerCard {
 
   // ---- the regeneration (HAS-400) ----
 
+  /** The command asked about in the window over the page; sent only once it is confirmed. */
   protected readonly question = signal<RegenerationCommand | undefined>(undefined);
-  protected readonly questionId = `softener-question-${nextQuestion++}`;
+  private readonly dialog = inject(MatDialog);
+  private questionDialog?: MatDialogRef<ConfirmDialog, boolean>;
   protected readonly commanding = signal(false);
   protected readonly commandFailure = signal<ApiError | undefined>(undefined);
-  private readonly keep = viewChild<unknown, ElementRef<HTMLElement>>('keep', { read: ElementRef });
   private readAfterCommand?: ReturnType<typeof setTimeout>;
   private destroyed = false;
 
@@ -157,19 +156,47 @@ export class SoftenerCard {
   private liveRead?: ReturnType<typeof setInterval>;
 
   constructor() {
-    effect(() => this.keep()?.nativeElement.focus());
-    // a question with nothing left to ask goes for good: the command is no longer offered (a regeneration began, or
-    // the one to cancel is gone) - cleared, never hidden, or it would come back by itself (the rule of the heating switch)
+    // a question with nothing left to ask goes: the command is no longer offered (a regeneration began, or the one to
+    // cancel is gone) - the window closed with no answer (the rule of the heating switch)
     effect(() => {
       const asked = this.question();
       if (asked !== undefined && !this.commanding() && !this.commands().includes(asked)) {
-        this.question.set(undefined);
+        this.questionDialog?.close(false);
       }
     });
     this.destroyRef.onDestroy(() => {
       this.destroyed = true;
       clearTimeout(this.readAfterCommand);
       this.stopLive(true);
+      this.questionDialog?.close(false);
+    });
+  }
+
+  /** Asks before a command of the regeneration in a window over the page - the cancel focused; sent only for yes. */
+  protected ask(command: RegenerationCommand): void {
+    if (this.question() !== undefined || this.commanding()) {
+      return;
+    }
+    this.question.set(command);
+    this.questionDialog = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, {
+      ...CONFIRM_DIALOG_SIZE,
+      data: {
+        icon: command === 'cancel' ? 'event_busy' : 'autorenew',
+        title: this.COMMANDS[command],
+        question: this.QUESTIONS[command],
+        confirm: this.CONFIRMS[command],
+        cancel: 'softener.question.keep',
+        testId: 'softener-question',
+      },
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+    });
+    this.questionDialog.afterClosed().subscribe((confirmed) => {
+      this.questionDialog = undefined;
+      this.question.set(undefined);
+      if (confirmed === true && !this.destroyed) {
+        this.send(command);
+      }
     });
   }
 
