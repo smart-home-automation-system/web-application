@@ -542,7 +542,9 @@ test.describe('the water softener', () => {
     const alerts = page.getByTestId('softener-alerts');
     // the salt in amber, apart from the warnings (owner, 2026-11-09)
     await expect(alerts.locator('[data-level="salt"]')).toContainText('Low Salt');
-    await expect(alerts.locator('[data-level="critical"]')).toContainText('Disconnected');
+    // only what is not read in the iQua application (HAS-412): the connection lost, read there, is left out
+    await expect(alerts.locator('.softener-alerts__item')).toHaveCount(1);
+    await expect(alerts).not.toContainText('Disconnected');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 

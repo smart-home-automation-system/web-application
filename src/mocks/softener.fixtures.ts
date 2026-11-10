@@ -109,7 +109,7 @@ export function softenerDays(from: string | null, to: string | null, now: Date =
   return days;
 }
 
-/** Two alerts of the cloud: the salt, new; a connection lost and found, read. */
+/** Two alerts of the cloud: the salt, unread - on the card; a connection lost and found, read - left out of it. */
 export function softenerAlerts(now: Date = new Date()): SoftenerAlert[] {
   return [
     {

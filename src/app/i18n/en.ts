@@ -599,8 +599,9 @@ export const en = {
       title: 'Alerts of the iQua cloud',
       loading: 'Reading the alerts…',
       none: 'The cloud keeps no alerts of the softener.',
-      unread: 'new',
-      more: 'And {{ count }} older in the iQua application.',
+      noneNew: 'No new alerts.',
+      last: 'The last one {{ at }}.',
+      more: 'And {{ count }} more unread in the iQua application.',
     },
   },
   boilerRoom: {

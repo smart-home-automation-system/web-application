@@ -594,8 +594,9 @@ export const pl: Messages = {
       title: 'Alerty chmury iQua',
       loading: 'Odczyt alertów…',
       none: 'Chmura nie ma alertów zmiękczacza.',
-      unread: 'nowy',
-      more: 'Starszych w aplikacji iQua: {{ count }}.',
+      noneNew: 'Brak nowych alertów.',
+      last: 'Ostatni {{ at }}.',
+      more: 'Kolejne nieprzeczytane w aplikacji iQua: {{ count }}.',
     },
   },
   boilerRoom: {
