@@ -12,7 +12,16 @@
         <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('softener.alerts.loading')" />
       } @else if (alerts.value() !== undefined) {
         @if (shown().length === 0) {
-          <p class="softener-alerts__empty">{{ t('softener.alerts.none') }}</p>
+          <p class="softener-alerts__empty" data-testid="softener-alerts-none">
+            @if (alerts.value()?.length) {
+              {{ t('softener.alerts.noneNew') }}
+              @if (lastAt(); as at) {
+                {{ t('softener.alerts.last', { at: (at | houseDateTime: { day: 'numeric', month: 'short', year: 'numeric' }) }) }}
+              }
+            } @else {
+              {{ t('softener.alerts.none') }}
+            }
+          </p>
         } @else {
           <ul class="softener-alerts__list">
             @for (item of shown(); track $index) {
@@ -28,9 +37,6 @@
                   <span class="softener-alerts__meta">
                     @if (item.alert.at) {
                       {{ item.alert.at | houseDateTime: { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } }}
-                    }
-                    @if (item.alert.read === false) {
-                      · {{ t('softener.alerts.unread') }}
                     }
                   </span>
                 </div>

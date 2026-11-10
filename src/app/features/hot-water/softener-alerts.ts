@@ -11,14 +11,17 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
 import { alertLevelOf } from './softener-views';
 import { describeWaterError } from './water-errors';
 
-/** At most this many alerts of the cloud are listed - a card of the first row of the page; the service reads 20. */
+/** At most this many unread alerts of the cloud are listed - a card of the first row of the page; the service reads 20. */
 export const SOFTENER_ALERTS_SHOWN = 4;
 
 /**
  * The alerts the iQua cloud keeps of the softener (HAS-402, `GET /water/softener/alerts`, `water-service` >= 0.17.0):
- * the list of the iQua application, newest first, each coloured by its level - critical on the strip of an error,
- * a warning outlined, the rest plain. The title and the message are the words of the cloud, in English, as it sent
- * them; a field it left out is left out. One call, one card.
+ * the alerts not yet read in the iQua application (HAS-412, owner 2026-11-10 - an alert read there leaves the card
+ * within the five minutes the service keeps the list), newest first, each coloured by its level - critical on the
+ * strip of an error, a warning outlined, the rest plain. An alert the cloud sent without `read` is shown: missing is
+ * never taken for read. With none unread the card says so, with the date of the newest alert the cloud keeps. The
+ * title and the message are the words of the cloud, in English, as it sent them; a field it left out is left out.
+ * One call, one card.
  */
 @Component({
   selector: 'app-softener-alerts',
@@ -40,12 +43,16 @@ export class SoftenerAlerts {
   protected readonly alerts = inject(SoftenerApi).watchAlerts();
   protected readonly describe = describeWaterError;
 
+  /** The alerts not read in the iQua application, newest first as the service sends them. */
+  private readonly unread = computed(() => (this.alerts.value() ?? []).filter((alert) => alert.read !== true));
+
   protected readonly shown = computed(() =>
-    (this.alerts.value() ?? []).slice(0, SOFTENER_ALERTS_SHOWN).map((alert) => ({
-      alert,
-      level: alertLevelOf(alert),
-    })),
+    this.unread()
+      .slice(0, SOFTENER_ALERTS_SHOWN)
+      .map((alert) => ({ alert, level: alertLevelOf(alert) })),
   );
-  /** The alerts past the ones shown - counted, never dropped unseen. */
-  protected readonly hidden = computed(() => Math.max(0, (this.alerts.value() ?? []).length - SOFTENER_ALERTS_SHOWN));
+  /** The unread alerts past the ones shown - counted, never dropped unseen. */
+  protected readonly hidden = computed(() => Math.max(0, this.unread().length - SOFTENER_ALERTS_SHOWN));
+  /** The newest alert the cloud keeps, read or not - its date said while none is unread, so an empty card shows it works. */
+  protected readonly lastAt = computed(() => (this.alerts.value() ?? []).find((alert) => alert.at)?.at);
 }
