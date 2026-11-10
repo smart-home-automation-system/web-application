@@ -895,10 +895,14 @@ e2e/              # Playwright tests
       so the salt line is drawn through every day without a point. The litres per day of **this month** through the
       softener (`/softener/days`) beside the water meter (`/consumption?range=month`, m³ x 1000); a day not read has no
       bar. The freshness is the first call's, a failure of either told in the card.
-    - **The alerts of the cloud** (`/water/softener/alerts`): a card of the first row, at most
-      `SOFTENER_ALERTS_SHOWN` (4), newest first, coloured by the level the cloud gives (`alertLevelOf`: critical on the
-      strip of an error, the salt in amber, a warning outlined, the rest plain); title and message are the cloud's
-      English words, as it sent them.
+    - **The alerts of the cloud** (`/water/softener/alerts`): a card of the first row, **only the alerts not read in
+      the iQua application** (HAS-412, owner 2026-11-10 - `read !== true`, an alert without `read` is shown; reading
+      it in the application reaches the card within the 5-minute cache of water-service), at most
+      `SOFTENER_ALERTS_SHOWN` (4), newest first as the service sends them, the other unread counted, coloured by the
+      level the cloud gives (`alertLevelOf`: critical on the strip of an error, the salt in amber, a warning outlined,
+      the rest plain); title and message are the cloud's English words, as it sent them. None unread: "No new alerts"
+      with the date of the newest alert the cloud keeps; none at all: the cloud keeps none. No "new" marker - every
+      alert listed is unread.
     - The codes it words: `SOFTENER_UNAVAILABLE`, `SOFTENER_COMMAND_FAILED`, `REGENERATION_IN_PROGRESS`,
       `COMMAND_TOO_SOON`, `LIVE_THROTTLED` (`water-errors.ts`). The overview tile "Water" has the salt and the days it
       lasts as a third call, its failure in `tileFailures`. The mock softener (`softener.fixtures.ts`): 15 % salt (low - the amber warning), 31 days

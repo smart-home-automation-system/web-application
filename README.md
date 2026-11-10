@@ -222,8 +222,10 @@ dashboards:
   right corner, each after a question; **"Live flow"**, a panel of its own tinted while it is on, holds the live
   stream of the cloud open while the switch is on and the page shown, so the flow moves as it happens. The salt over
   90 days with the regenerations marked as dashed lines and the litres per day of this month through the softener
-  beside the water meter are cards of the row of the consumption; the alerts the iQua cloud keeps, coloured by their
-  level - the salt in amber -, the sixth card of the first row: the newest four, the older ones counted.
+  beside the water meter are cards of the row of the consumption; the alerts of the iQua cloud not yet read in the
+  iQua application, coloured by their level - the salt in amber -, the sixth card of the first row: the newest four
+  unread, the other unread ones counted; an alert read in the application leaves the card within five minutes, and
+  with none unread the card says so, with the date of the last alert.
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
