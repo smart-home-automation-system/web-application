@@ -39,6 +39,8 @@ export const OVERVIEW_READS: readonly string[] = [
   // HAS-322: the water tile - the valve and the water of today
   '/home/water/valve',
   '/home/water/consumption',
+  // HAS-402: the salt of the softener on the water tile
+  '/home/water/softener',
   // HAS-394: the air conditioning tile, two calls
   '/home/aircon',
   '/home/aircon/automation',

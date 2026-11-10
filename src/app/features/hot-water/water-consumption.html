@@ -64,6 +64,7 @@
             [decimals]="unit().decimals"
             [label]="t('water.consumption.label', { period: period() })"
           />
+          <div class="chart__foot">
           <ul class="chart__facts" data-testid="consumption-facts">
             <li data-testid="consumption-total">
               <span class="chart__name">{{ t('water.consumption.total') }}</span>
@@ -92,6 +93,7 @@
             </li>
           </ul>
           <p class="chart__note">{{ t('water.consumption.note') }}</p>
+          </div>
         </ng-template>
       </app-history-frame>
     </mat-card-content>

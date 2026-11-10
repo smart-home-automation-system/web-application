@@ -101,6 +101,8 @@ const PAIRS = [
   ['error', 'surface-container-high', TEXT],
   ['on-error', 'error', TEXT],
   ['on-error-container', 'error-container', TEXT],
+  // a warning that is no failure: the amber strip of the salt of the softener (HAS-402)
+  ['on-warning-container', 'warning-container', TEXT],
   // the snack bar
   ['inverse-on-surface', 'inverse-surface', TEXT],
   ['inverse-primary', 'inverse-surface', TEXT],

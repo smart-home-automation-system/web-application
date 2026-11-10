@@ -1,5 +1,21 @@
+// two cards of one row since 2026-11-09 (the tank, the circulation): as tall as each other
+:host {
+  display: block;
+  // the chart and what it says keep their place while another period is asked for (owner, 2026-11-09): a card that
+  // shrank to its progress bar moved the card next to it and the rows below - the chart (280 px), the numbers (8 + 15)
+  // and the note of the band (4 + 13), the tallest of the two cards
+  --app-frame-body-min-height: 320px;
+
+  @media (max-width: 640px) {
+    --app-frame-body-min-height: 260px;
+  }
+}
+
 .history {
   --app-domain: var(--app-domain-water);
+
+  height: 100%;
+  box-sizing: border-box;
 }
 
 // tighter than Material's 16 px all round, like the tiles above it

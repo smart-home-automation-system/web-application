@@ -1,5 +1,6 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 
 import { FakeQueryResource, fakeQueryResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
@@ -69,6 +70,7 @@ describe('HotWater', () => {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         {
           provide: WaterApi,
           useValue: {
@@ -168,7 +170,8 @@ describe('HotWater', () => {
       answer(temperatures, { water: { temperature: 40.5 } });
 
       expect(words(await part('temperatures'))).toContain(
-        'Heated once it drops below 38 °C, until it is above 42 °C.',
+        // words() turns every white space - the no-break ones too - into a plain space
+        'Heated below 38 °C, up to 42 °C.',
       );
     });
 
@@ -485,6 +488,11 @@ describe('HotWater', () => {
     describe('the command', () => {
       const button = async (name: string) =>
         (await part('valve'))!.querySelector(`[data-testid="${name}"]`) as HTMLButtonElement | null;
+      // the question is a window over the page, outside the card (owner, 2026-11-09)
+      const inWindow = async (name: string) => {
+        await fixture.whenStable();
+        return document.querySelector<HTMLElement>(`[data-testid="${name}"]`);
+      };
 
       it('offers to close an open valve, to open a closed one, and both while the state is not known', async () => {
         answer(valve, { state: 'open', measuredAt: house(8) });
@@ -503,18 +511,23 @@ describe('HotWater', () => {
       it('asks before it closes the valve, and sends nothing for a cancel', async () => {
         answer(valve, { state: 'open', measuredAt: house(8) });
 
+        const before = (await part('valve'))!.getBoundingClientRect().height;
         (await button('valve-close'))!.click();
-        const question = (await part('valve'))!.querySelector('[data-testid="valve-question"]');
+        const question = await inWindow('valve-question');
 
         expect(words(question)).toContain(
           'Close the water valve? It cuts the water of the whole house.',
         );
-        expect(question?.getAttribute('aria-labelledby')).toBe(question?.querySelector('p')?.id);
+        expect((await part('valve'))!.contains(question)).toBe(false);
+        expect((await part('valve'))!.getBoundingClientRect().height).toBe(before);
+        expect((await inWindow('confirm-cancel'))!.hasAttribute('cdkfocusinitial')).toBe(true);
+        expect((await button('valve-close'))!.getAttribute('aria-disabled')).toBe('true');
         expect(commanded).toEqual([]);
 
-        (await button('valve-cancel'))!.click();
+        (await inWindow('confirm-cancel'))!.click();
 
-        expect(await button('valve-close')).toBeTruthy();
+        expect(await inWindow('valve-question')).toBeNull();
+        expect((await button('valve-close'))!.getAttribute('aria-disabled')).not.toBe('true');
         expect(commanded).toEqual([]);
       });
 
@@ -525,7 +538,7 @@ describe('HotWater', () => {
         answer(valve, { state: 'open', measuredAt: house(8) });
 
         (await button('valve-close'))!.click();
-        (await button('valve-confirm'))!.click();
+        (await inWindow('confirm-yes'))!.click();
         await fixture.whenStable();
 
         expect(commanded).toEqual(['close']);
@@ -543,11 +556,11 @@ describe('HotWater', () => {
       it('drops the question once the valve is in the state asked for', async () => {
         answer(valve, { state: 'open', measuredAt: house(8) });
         (await button('valve-close'))!.click();
-        expect((await part('valve'))!.querySelector('[data-testid="valve-question"]')).toBeTruthy();
+        expect(await inWindow('valve-question')).toBeTruthy();
 
         answer(valve, { state: 'closed', measuredAt: house(8) });
 
-        expect((await part('valve'))!.querySelector('[data-testid="valve-question"]')).toBeNull();
+        expect(await inWindow('valve-question')).toBeNull();
         expect(await button('valve-open')).toBeTruthy();
         expect(commanded).toEqual([]);
       });
@@ -572,7 +585,7 @@ describe('HotWater', () => {
         answer(valve, { state: 'open', measuredAt: house(8) });
 
         (await button('valve-close'))!.click();
-        (await button('valve-confirm'))!.click();
+        (await inWindow('confirm-yes'))!.click();
         await vi.advanceTimersByTimeAsync(VALVE_READ_AFTER_MS);
 
         const text = words(await part('valve'));
@@ -746,7 +759,12 @@ describe('HotWater', () => {
       const card = (fixture.nativeElement as HTMLElement).querySelector('app-circulation-runs');
 
       expect(card).toBeTruthy();
-      expect(card!.previousElementSibling?.tagName.toLowerCase()).toBe('app-water-history');
+      // the history of the tank and of the circulation, two cards of one row (owner, 2026-11-09)
+      const history = card!.previousElementSibling;
+      expect(history?.classList).toContain('row--two');
+      expect(
+        [...history!.querySelectorAll('app-water-history')].map((one) => one.getAttribute('line')),
+      ).toEqual(['water', 'circulation']);
     });
   });
 });

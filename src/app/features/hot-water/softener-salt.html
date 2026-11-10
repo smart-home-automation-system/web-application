@@ -1,0 +1,75 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="card--domain" data-testid="softener-salt-history">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>show_chart</mat-icon></div>
+      <mat-card-title>{{ t('softener.history.saltTitle') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="salt.lastUpdated()" [stale]="salt.stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (saltWaiting()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('softener.history.loading')" />
+      } @else if (saltLines().length === 0) {
+        @if (!salt.error()) {
+          <p class="softener-history__empty">{{ t('softener.history.noSalt') }}</p>
+        }
+      } @else {
+        <!-- the salt in numbers: now and the last regeneration -->
+        <dl class="tile__rows tile__rows--big softener-history__summary" data-testid="softener-salt-summary">
+          <div class="tile__row">
+            <dt>{{ t('softener.history.saltNow') }}</dt>
+            <dd>
+              @if (saltNow() !== undefined) {
+                <strong>{{ saltNow() | localNumber: whole }} %</strong>
+              } @else {
+                {{ t('softener.notKnown') }}
+              }
+            </dd>
+          </div>
+          <div class="tile__row">
+            <dt>{{ t('softener.regeneration.last') }}</dt>
+            <dd>
+              @if (lastRegeneration(); as last) {
+                <strong>{{ last | houseDateTime: { day: 'numeric', month: 'long' } }}</strong>
+              } @else {
+                {{ t('softener.notKnown') }}
+              }
+            </dd>
+          </div>
+        </dl>
+        <div class="softener-history__chart">
+          @let axis = saltAxis();
+          @if (axis !== undefined) {
+            <app-history-chart
+              [lines]="saltLines()"
+              [from]="axis.from"
+              [to]="axis.to"
+              [marks]="marks()"
+              unit="%"
+              [decimals]="0"
+              [bounds]="{ min: 0, max: 100 }"
+              [label]="t('softener.history.saltChart')"
+            />
+          }
+          <div class="chart__foot">
+            <ul class="softener-history__facts" data-testid="softener-salt-facts">
+              @if (saltFacts(); as facts) {
+                <li>
+                  <span class="softener-history__name">{{ t('softener.history.saltLine') }}</span>
+                  <span>{{ facts.lowest | localNumber: whole }} – {{ facts.highest | localNumber: whole }} %</span>
+                </li>
+              }
+              <li data-testid="softener-regeneration-marks">
+                {{ t('softener.history.regenerations', { count: regenerationCount() }) }}
+              </li>
+            </ul>
+            <p class="softener-history__note">{{ t('softener.history.marksNote') }}</p>
+          </div>
+        </div>
+      }
+      <app-api-error-strip [error]="salt.error()" [describeWith]="describe" />
+      <app-api-error-strip [error]="regenerations.error()" [describeWith]="describe" />
+    </mat-card-content>
+  </mat-card>
+</ng-container>

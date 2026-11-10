@@ -1,0 +1,50 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="card--domain softener-alerts" data-testid="softener-alerts">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>notifications</mat-icon></div>
+      <mat-card-title>{{ t('softener.alerts.title') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="alerts.lastUpdated()" [stale]="alerts.stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (alerts.loading()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('softener.alerts.loading')" />
+      } @else if (alerts.value() !== undefined) {
+        @if (shown().length === 0) {
+          <p class="softener-alerts__empty">{{ t('softener.alerts.none') }}</p>
+        } @else {
+          <ul class="softener-alerts__list">
+            @for (item of shown(); track $index) {
+              <li class="softener-alerts__item" [class]="'softener-alerts__item--' + item.level" [attr.data-level]="item.level">
+                <mat-icon>{{
+                  item.level === 'critical' ? 'error' : item.level === 'info' ? 'info' : 'warning'
+                }}</mat-icon>
+                <div class="softener-alerts__text">
+                  <strong>{{ item.alert.title ?? item.alert.type }}</strong>
+                  @if (item.alert.message) {
+                    <span>{{ item.alert.message }}</span>
+                  }
+                  <span class="softener-alerts__meta">
+                    @if (item.alert.at) {
+                      {{ item.alert.at | houseDateTime: { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } }}
+                    }
+                    @if (item.alert.read === false) {
+                      · {{ t('softener.alerts.unread') }}
+                    }
+                  </span>
+                </div>
+              </li>
+            }
+          </ul>
+          @if (hidden() > 0) {
+            <p class="softener-alerts__empty" data-testid="softener-alerts-more">
+              {{ t('softener.alerts.more', { count: hidden() }) }}
+            </p>
+          }
+        }
+      }
+      <app-api-error-strip [error]="alerts.error()" [describeWith]="describe" />
+    </mat-card-content>
+  </mat-card>
+</ng-container>

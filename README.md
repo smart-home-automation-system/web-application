@@ -42,7 +42,8 @@ dashboards:
   are and how many are being heated, the coldest and the warmest room with the age of each reading,
   and a **red blinking light** by its title while a temperature sensor is silent; the switch itself
   is on the heating page only. Then the hot water, the water of the house (HAS-322: the valve of the
-  garage open or closed, its flow and the litres used today), the boiler room, who is at home - with a warning
+  garage open or closed, its flow and the litres used today, and since HAS-402 the salt of the softener and the days
+  it lasts), the boiler room, who is at home - with a warning
   when the detection has not checked for more than five minutes - the weather (temperature, dew
   point, wind and gusts, rain, daylight), the blinds (HAS-254: how many are open, closed, moving
   and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
@@ -178,28 +179,33 @@ dashboards:
   through, and is not in the week - it never heats. After every write the rooms are read again and
   only that answer moves the list. The switch of the house asks before it acts, and what it shows
   afterwards is what the house answers when asked again, never what was clicked.
-- **Water** (HAS-322, the hot-water page until then): a row of five cards of one size, as on the
-  heating page - **the water valve of the garage** (open or closed, the flow in l/min, the pressure in
+- **Water** (HAS-322, the hot-water page until then; laid out anew with HAS-402): a row of six cards of
+  one size - **the water valve of the garage** (open or closed, the flow in l/min, the pressure in
   bar, the water temperature, with the age of its newest report, out of date after 3 minutes, and
   **"Close the valve" / "Open the valve" after a question** that says it cuts the water of the whole
   house - HAS-323; the card reads the valve again 2.5 s after the command and says while the valve
   has not confirmed it), **the water used** (today, this week, this month, this year and the counter
   in m³), the tank, whether
   the water asks to be heated - **heating going on stands out on a strip in the colour of the
-  heating** - and the circulation - and under them **the consumption of the house**
+  heating** -, the circulation and the alerts of the softener - and under them, in a row of three charts on one
+  line, **the consumption of the house**
   by day (in hours), week and month (in days) and year (in months) as bars, in litres (a year in
   m³), with the total and the one of the range before; a day is chosen on a calendar or stepped back
-  and forth. A bucket the service did not watch has no bar, never 0. Then **the bills of the
-  waterworks** (HAS-323): newest first, each with what was billed, what the house measured over its
+  and forth. A bucket the service did not watch has no bar, never 0. Beside it the water per day and the salt
+  of the softener, under them the softener, the history of the tank and of the circulation, the runs of
+  today, and at the bottom **the bills of the waterworks** (HAS-323): newest first, each with what was billed, what the house measured over its
   period and how far apart they are - in m³ and per cent, a difference of 10 % or more on a red strip -
   with the amount and the meter reading when given; a bill is added and changed in a form that
-  refuses what `water-service` refuses, and removed after a question. Then the hot water:
+  refuses what `water-service` refuses, and removed after a question. **Every question is a window over the
+  page**, which is darkened and blurred under it - the card it was asked from keeps its size, and a click outside
+  answers no. **No card moves while another period or day is asked for**: a chart keeps its place while the
+  answer is on its way. Then the hot water:
 - **Hot water**: the temperature of the water in the tank on a gauge from 20 to 80 °C - the water
   of a year, cold after a weekend away, hot from the sun in summer - with the band it is kept in
   (heated once it drops below 38 °C, until it is above 42 °C), **when the sensors were read** - a
   reading older than 6 minutes is marked out of date, because the service repeats its last one
-  while the sensor is silent - whether the water asks to be heated, and **the history of the tank
-  and the circulation** over the last 24 hours, 7 or 30 days, on the band the tank is kept in.
+  while the sensor is silent - whether the water asks to be heated, and **the history of the tank**
+  (on the band it is kept in) **and of the circulation**, a card each, over the last 24 hours, 7 or 30 days.
 - **The circulation pump** (HAS-406, `water-service` >= 0.13.0): running, stopped or not known
   (the service leaves out a read older than a minute), since when and what started it - by hand,
   or "not by the water service" for the scene of the Shelly cloud - the return temperature and the
@@ -207,6 +213,17 @@ dashboards:
   3 minutes that stops by itself), and reads the pump again 2.5 s later. A tank too cold is told
   in words. Under the history, **the runs of today**: when each started, what started it, how long
   it went, how it ended and the return at its start and end.
+- **The water softener** (HAS-402, `water-service` >= 0.15.0 - 0.19.0): the salt on a gauge from 0 to 100 % with the
+  days it lasts and the day it runs out (an amber warning below 20 %), the water used today, the daily average and the
+  treated water left, the last regeneration, how many there were and whether one is scheduled or going on, the
+  hardness in mg/l of CaCO₃ (the gpg set on the softener in a tooltip), the flags of the softener as chips (a flag the
+  cloud leaves out is "not known", never clear) and the age of the reading - three columns of one height.
+  **"Regenerate now" / "Regenerate tonight"** and **"Cancel the regeneration"** while one is scheduled, in the bottom
+  right corner, each after a question; **"Live flow"**, a panel of its own tinted while it is on, holds the live
+  stream of the cloud open while the switch is on and the page shown, so the flow moves as it happens. The salt over
+  90 days with the regenerations marked as dashed lines and the litres per day of this month through the softener
+  beside the water meter are cards of the row of the consumption; the alerts the iQua cloud keeps, coloured by their
+  level - the salt in amber -, the sixth card of the first row: the newest four, the older ones counted.
 - **Boiler room**: a schematic of the furnace and the two pumps it feeds, with the state of
   every device, the last thing `boiler-service` noted about it and how long ago that was.
 
@@ -319,10 +336,10 @@ dashboards:
   the temperature of the room in the heating ends there. Nothing is shown as done before the
   registry says so, and one change is made at a time.
 
-The hot water, the boiler room and the presence are read-only. The water page writes in three places:
-the command of the valve, after a question, and the bills of the waterworks (HAS-323), and the start
-of the circulation pump (HAS-406); after every write it reads again, and only that answer moves the
-page.
+The hot water, the boiler room and the presence are read-only. The water page writes in four places:
+the command of the valve, after a question, and the bills of the waterworks (HAS-323), the start
+of the circulation pump (HAS-406), and the regeneration of the softener, after a question, with its
+live flow (HAS-402); after every write it reads again, and only that answer moves the page.
 
 Every view stands in the **middle of the page**, with its title in the top left corner, and the
 cards of a row are of one size (HAS-266).

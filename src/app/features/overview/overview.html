@@ -179,6 +179,23 @@
               }
             </dd>
           </div>
+          <!-- HAS-402: the salt of the softener and the days it lasts, a call of its own -->
+          @let softened = softenerView();
+          @if (softened.saltPercent !== undefined) {
+            <div class="tile__row" data-testid="tile-valve-salt">
+              <dt>{{ t('overview.valve.salt') }}</dt>
+              <dd>
+                <strong>{{
+                  softened.saltDaysLeft !== undefined
+                    ? t('overview.valve.saltValue', {
+                        percent: (softened.saltPercent | localNumber: { maximumFractionDigits: 0 }),
+                        days: softened.saltDaysLeft,
+                      })
+                    : (softened.saltPercent | localNumber: { maximumFractionDigits: 0 }) + ' %'
+                }}</strong>
+              </dd>
+            </div>
+          }
         </dl>
         @if (view.measuredAt | houseAge; as age) {
           <p
@@ -198,6 +215,7 @@
       }
       <div tileFailures>
         <app-api-error-strip [error]="todayConsumption.error()" [describeWith]="describeWater" />
+        <app-api-error-strip [error]="softenerFailure()" [describeWith]="describeWater" />
       </div>
     </app-domain-tile>
 

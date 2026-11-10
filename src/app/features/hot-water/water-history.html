@@ -1,8 +1,14 @@
 <ng-container *transloco="let t">
-  <mat-card appearance="outlined" class="history card--domain" data-testid="water-history">
+  <mat-card
+    appearance="outlined"
+    class="history card--domain"
+    [attr.data-testid]="line() === 'water' ? 'water-history' : 'circulation-history'"
+  >
     <mat-card-header>
       <div mat-card-avatar class="domain-badge"><mat-icon>show_chart</mat-icon></div>
-      <mat-card-title>{{ t('hotWater.history.title') }}</mat-card-title>
+      <mat-card-title>{{
+        t(line() === 'water' ? 'hotWater.history.tankTitle' : 'hotWater.history.circulationTitle')
+      }}</mat-card-title>
     </mat-card-header>
 
     <mat-card-content>
@@ -22,7 +28,7 @@
               [from]="axis.from"
               [to]="axis.to"
               [band]="band()"
-              [label]="t('hotWater.history.chart')"
+              [label]="t(line() === 'water' ? 'hotWater.history.tankChart' : 'hotWater.history.circulationChart')"
             />
           }
           <ul class="history__facts" data-testid="history-facts">
@@ -36,9 +42,11 @@
               </li>
             }
           </ul>
-          <p class="history__note">
-            {{ t('hotWater.history.bandNote', { low: bandLimits.low, high: bandLimits.high }) }}
-          </p>
+          @if (line() === 'water') {
+            <p class="history__note">
+              {{ t('hotWater.history.bandNote', { low: bandLimits.low, high: bandLimits.high }) }}
+            </p>
+          }
         </ng-template>
       </app-history-frame>
     </mat-card-content>

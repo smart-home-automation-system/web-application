@@ -95,56 +95,22 @@
                 <span>{{ t('water.valve.unconfirmed') }}</span>
               </p>
             }
-            @let asked = valveQuestion();
-            @if (asked !== undefined) {
-              <fieldset
-                class="valve__question"
-                [attr.aria-labelledby]="valveQuestionId"
-                data-testid="valve-question"
-              >
-                <p [id]="valveQuestionId">
-                  {{
-                    t(asked === 'close' ? 'water.valve.confirmClose' : 'water.valve.confirmOpen')
-                  }}
-                </p>
-                <div class="valve__answers">
-                  <button
-                    #keepValve
-                    matButton
-                    type="button"
-                    data-testid="valve-cancel"
-                    (click)="valveQuestion.set(undefined)"
-                  >
-                    {{ t('water.valve.cancel') }}
-                  </button>
-                  <button
-                    matButton="filled"
-                    type="button"
-                    data-testid="valve-confirm"
-                    [disabled]="commanding()"
-                    (click)="command(asked)"
-                  >
-                    {{ t(asked === 'close' ? 'water.valve.doClose' : 'water.valve.doOpen') }}
-                  </button>
-                </div>
-              </fieldset>
-            } @else {
-              <div class="valve__commands">
-                @for (state of commandsOf(view.open); track state) {
-                  <button
-                    matButton="outlined"
-                    type="button"
-                    disabledInteractive
-                    [attr.data-testid]="'valve-' + state"
-                    [disabled]="commanding()"
-                    (click)="valveQuestion.set(state)"
-                  >
-                    <mat-icon>{{ state === 'close' ? 'block' : 'water_drop' }}</mat-icon>
-                    {{ t(state === 'close' ? 'water.valve.doClose' : 'water.valve.doOpen') }}
-                  </button>
-                }
-              </div>
-            }
+            <!-- the question before a command is a window over the page, the card keeps its size (owner, 2026-11-09) -->
+            <div class="valve__commands">
+              @for (state of commandsOf(view.open); track state) {
+                <button
+                  matButton="outlined"
+                  type="button"
+                  disabledInteractive
+                  [attr.data-testid]="'valve-' + state"
+                  [disabled]="commanding() || valveQuestion() !== undefined"
+                  (click)="askValve(state)"
+                >
+                  <mat-icon>{{ state === 'close' ? 'block' : 'water_drop' }}</mat-icon>
+                  {{ t(state === 'close' ? 'water.valve.doClose' : 'water.valve.doOpen') }}
+                </button>
+              }
+            </div>
             @if (commanding()) {
               <mat-progress-bar
                 mode="indeterminate"
@@ -180,7 +146,7 @@
         </mat-card-subtitle>
       </mat-card-header>
 
-      <mat-card-content>
+      <mat-card-content class="tile__content--middle">
         @if (totals.loading()) {
           <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('water.usage.loading')" />
         } @else {
@@ -261,7 +227,7 @@
         </mat-card-subtitle>
       </mat-card-header>
 
-      <mat-card-content>
+      <mat-card-content class="tile__content--centre">
         @if (demand.loading()) {
           <mat-progress-bar
             mode="indeterminate"
@@ -416,6 +382,9 @@
         }
       </mat-card-content>
     </mat-card>
+
+    <!-- the alerts of the iQua cloud (HAS-402): the sixth card of the row (owner, 2026-11-09) -->
+    <app-softener-alerts class="tile" />
   </section>
 
   <!-- when the sensors were read: one time for both temperatures, told in each of their cards -->
@@ -436,8 +405,21 @@
     }
   </ng-template>
 
-  <app-water-consumption class="wide" />
-  <app-water-bills class="wide" />
-  <app-water-history class="wide" />
+  <!-- the second row (owner, 2026-11-09): the consumption, the water per day of this month through the softener and the
+       meter, and the salt of 90 days - three cards of one height -->
+  <section class="wide row">
+    <app-water-consumption />
+    <app-softener-days />
+    <app-softener-salt />
+  </section>
+  <!-- the water softener (HAS-402): its state and commands -->
+  <app-softener-card class="wide" />
+  <!-- the history of the tank and of the circulation, two cards of one row (owner, 2026-11-09) -->
+  <section class="wide row row--two">
+    <app-water-history line="water" />
+    <app-water-history line="circulation" />
+  </section>
   <app-circulation-runs class="wide" [runs]="runs" [day]="today()" />
+  <!-- the bills of the waterworks at the bottom of the page (owner, 2026-11-09) -->
+  <app-water-bills class="wide" />
 </ng-container>

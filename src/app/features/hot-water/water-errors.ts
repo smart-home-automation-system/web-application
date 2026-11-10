@@ -18,6 +18,12 @@ export const WATER_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   DEVICE_FAILED: 'water.error.deviceFailed',
   // the circulation pump (HAS-404): the tank below the minimum of the service
   TANK_COLD: 'water.error.tankCold',
+  // the water softener (HAS-402): the iQua cloud not read yet, its commands, its live stream
+  SOFTENER_UNAVAILABLE: 'water.error.softenerUnavailable',
+  SOFTENER_COMMAND_FAILED: 'water.error.softenerCommandFailed',
+  REGENERATION_IN_PROGRESS: 'water.error.regenerationInProgress',
+  COMMAND_TOO_SOON: 'water.error.commandTooSoon',
+  LIVE_THROTTLED: 'water.error.liveThrottled',
 };
 
 /**

@@ -12,6 +12,12 @@
   margin-bottom: 12px;
 }
 
+// what stands under the periods: as tall as a page asks (`--app-frame-body-min-height`), so that a card whose chart
+// is replaced by the progress bar of another period, or by a note, keeps its height (owner, 2026-11-09)
+.frame__body {
+  min-height: var(--app-frame-body-min-height, 0);
+}
+
 .frame__freshness {
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-surface-variant);

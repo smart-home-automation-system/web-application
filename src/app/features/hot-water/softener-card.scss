@@ -1,0 +1,200 @@
+// the rows of a value and its name, shared with the tiles of the overview
+@use '../../shared/domain-tile/tile-content';
+
+// The water softener (HAS-402): one card as wide as the row of the water page - the salt, the water, the regeneration -
+// three columns on a wide screen, one on a phone.
+:host {
+  display: block;
+}
+
+.softener {
+  --app-domain: var(--app-domain-water);
+}
+
+// a value in the stronger text colour, its name in the quieter one, as in the cards of the first row (owner, 2026-11-09)
+.tile__row dd {
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.softener__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+
+  // the columns of one height, what ends a column at its bottom: the age of the reading under the salt, the commands
+  // under the regeneration (owner, 2026-11-09 - no foot under the three columns and no empty space above it)
+  > section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.softener__heading {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-small);
+}
+
+.softener__gauge {
+  display: block;
+  margin-bottom: 8px;
+}
+
+// a reading the service only repeats: on the tinted strip of an error, whose text colour is made for it - the error red
+// alone does not reach 4.5:1 on glass
+.tile__measured--old {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  mat-icon {
+    flex: none;
+  }
+}
+
+// the salt running low (owner, 2026-11-09): amber, a warning and no failure
+.softener__warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--app-warning-container);
+  color: var(--app-on-warning-container);
+
+  mat-icon {
+    flex: none;
+  }
+}
+
+.softener__state {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-large);
+}
+
+// when the cloud was read - the age of the reading, which the freshness of the call is not
+.tile__measured {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.softener__unknown,
+.softener__note {
+  margin: 8px 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+// the flags of the softener as chips: raised on the strip of an error, clear plain, not known hatched in words
+.softener__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.softener__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 999px;
+  font: var(--mat-sys-label-medium);
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.softener__flag--raised {
+  border-color: var(--mat-sys-error);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+// the salt raised by the softener: amber like the warning of the gauge, not the red of a fault
+.softener__flag--warning {
+  border-color: var(--app-on-warning-container);
+  background: var(--app-warning-container);
+  color: var(--app-on-warning-container);
+}
+
+.softener__flag--unknown {
+  border-style: dashed;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// what is left of the height of the row spread between the parts of the salt, not left above the age of the reading
+.softener__salt {
+  justify-content: space-between;
+
+  .tile__measured {
+    margin-top: 12px;
+  }
+}
+
+// in the bottom right corner of the card, as the valve and the circulation have them (owner, 2026-11-09)
+.softener__commands {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+// the live flow in a panel of its own (owner, 2026-11-09): framed, and tinted in the colour of the water while the
+// stream is open - the switch at its top, the flow under it
+.softener__live {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-glass-edge);
+  border-radius: var(--mat-sys-corner-medium);
+
+  .tile__rows {
+    margin-top: 8px;
+  }
+
+  // the panel takes what is left of the column: how live the flow is stands at its bottom
+  .softener__note {
+    margin: auto 0 0;
+    padding-top: 4px;
+  }
+}
+
+.softener__live--on {
+  border-color: var(--app-domain-water);
+  background: color-mix(in srgb, var(--app-domain-water) 10%, transparent);
+}
+
+mat-slide-toggle {
+  display: block;
+}

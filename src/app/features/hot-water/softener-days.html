@@ -1,0 +1,58 @@
+<ng-container *transloco="let t">
+  <mat-card appearance="outlined" class="card--domain" data-testid="softener-days">
+    <mat-card-header>
+      <div mat-card-avatar class="domain-badge"><mat-icon>bar_chart</mat-icon></div>
+      <mat-card-title>{{ t('softener.history.daysTitle') }}</mat-card-title>
+      <mat-card-subtitle>
+        <app-data-freshness [lastUpdated]="days.lastUpdated()" [stale]="days.stale()" />
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (daysWaiting()) {
+        <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('softener.history.loading')" />
+      } @else if (daySeries().length === 0) {
+        @if (!days.error()) {
+          <p class="softener-history__empty">{{ t('softener.history.noDays') }}</p>
+        }
+      } @else {
+        <!-- the month in numbers: the litres through the softener and through the meter so far -->
+        <dl class="tile__rows tile__rows--big softener-history__summary" data-testid="softener-days-summary">
+          <div class="tile__row">
+            <dt>{{ t('softener.history.softenerSeries') }}</dt>
+            <dd>
+              @if (monthSoftener() !== undefined) {
+                <strong>{{ monthSoftener() | localNumber: whole }} l</strong>
+              } @else {
+                {{ t('softener.notKnown') }}
+              }
+            </dd>
+          </div>
+          <div class="tile__row">
+            <dt>{{ t('softener.history.meterSeries') }}</dt>
+            <dd>
+              @if (monthMeter() !== undefined) {
+                <strong>{{ monthMeter() | localNumber: whole }} l</strong>
+              } @else {
+                {{ t('softener.notKnown') }}
+              }
+            </dd>
+          </div>
+        </dl>
+        <div class="softener-history__chart">
+          <app-bars-chart
+            [categories]="categories()"
+            [series]="daySeries()"
+            unit="l"
+            [decimals]="0"
+            [label]="t('softener.history.daysChart')"
+          />
+          <div class="chart__foot">
+            <p class="softener-history__note">{{ t('softener.history.daysNote') }}</p>
+          </div>
+        </div>
+      }
+      <app-api-error-strip [error]="days.error()" [describeWith]="describe" />
+      <app-api-error-strip [error]="meter.error()" [describeWith]="describe" />
+    </mat-card-content>
+  </mat-card>
+</ng-container>

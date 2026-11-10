@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(19, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(20, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -174,6 +174,19 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the water softener (HAS-402): its card, its history and the alerts of its cloud
+      test('water softener', async ({ page }, testInfo) => {
+        await page.goto('/water');
+        await expect(page.getByTestId('softener-salt-history').locator('.chart__plot svg')).toBeVisible();
+        await expect(page.getByTestId('softener-days').locator('.chart__plot svg')).toBeVisible();
+        await page.getByTestId('softener').scrollIntoViewIfNeeded();
+        await photoIsShown(page);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'water-softener'),
+          fullPage: true,
+        });
+      });
+
       // the history of the hot water over a week: the hour the sensor of the mock house was
       // silent is a break in both lines
       test('hot water, the history of 7 days', async ({ page }, testInfo) => {
@@ -219,8 +232,14 @@ for (const language of ['en', 'pl'] as const) {
           );
           await expect(page.getByTestId('valve').locator('mat-progress-bar')).toHaveCount(0);
           await expect(page.getByTestId('consumption').locator('mat-progress-bar')).toHaveCount(0);
+          await expect(page.getByTestId('softener').locator('mat-progress-bar')).toHaveCount(0);
           if (scenario === 'default') {
             await expect(page.getByText(TEXTS[language].warmEnough)).toBeVisible();
+            // the softener (HAS-402): its two charts drawn before the picture is taken
+            await expect(
+              page.getByTestId('softener-salt-history').locator('.chart__plot svg'),
+            ).toBeVisible();
+            await expect(page.getByTestId('softener-days').locator('.chart__plot svg')).toBeVisible();
             // the history and the consumption are drawn before the picture is taken
             await expect(
               page.getByTestId('water-history').locator('.chart__plot svg'),

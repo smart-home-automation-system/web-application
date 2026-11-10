@@ -524,6 +524,92 @@ test.describe('the water of the house', () => {
   });
 });
 
+// HAS-402: the water softener on the water page - its state, its history, the alerts of its cloud, a regeneration
+// after a question and the live flow
+test.describe('the water softener', () => {
+  test('shows the salt, the water, the regeneration, the history and the alerts of the cloud', async ({ page }) => {
+    await page.goto('/water');
+
+    const softener = page.getByTestId('softener');
+    await expect(softener.getByTestId('softener-salt-days')).toHaveText('Lasts 18 days');
+    await expect(softener.getByTestId('softener-used-today')).toHaveText('Used today 214 l');
+    await expect(softener.getByTestId('softener-hardness')).toHaveText('Hardness of the water 205 mg/l CaCO₃');
+    await expect(softener.getByTestId('softener-regeneration-state')).toHaveText('No regeneration planned');
+    await expect(softener.getByTestId('softener-measured')).toContainText('Read from the cloud');
+    await expect(page.getByTestId('softener-salt-history').locator('.chart__plot svg')).toBeVisible();
+    await expect(page.getByTestId('softener-regeneration-marks')).toHaveText('Regenerations: 5');
+    await expect(page.getByTestId('softener-days').locator('.chart__plot svg')).toBeVisible();
+    const alerts = page.getByTestId('softener-alerts');
+    // the salt in amber, apart from the warnings (owner, 2026-11-09)
+    await expect(alerts.locator('[data-level="salt"]')).toContainText('Low Salt');
+    await expect(alerts.locator('[data-level="critical"]')).toContainText('Disconnected');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('schedules a regeneration after a question, and offers its cancel', async ({ page }) => {
+    await page.goto('/water');
+    const softener = page.getByTestId('softener');
+
+    await expect(softener.getByTestId('softener-tonight')).toBeVisible();
+    const height = (await softener.boundingBox())!.height;
+    await softener.getByTestId('softener-tonight').click();
+    // the question is a window over the page; the card keeps its size (owner, 2026-11-09)
+    const question = page.getByRole('dialog');
+    await expect(question.getByTestId('softener-question')).toHaveText(
+      'Schedule a regeneration for tonight?',
+    );
+    await expect(question.getByRole('button', { name: 'Keep as it is' })).toBeFocused();
+    expect((await softener.boundingBox())!.height).toBe(height);
+    await question.getByTestId('confirm-yes').click();
+    await expect(question).toHaveCount(0);
+
+    await expect(softener.getByTestId('softener-regeneration-state')).toHaveText(
+      'A regeneration is scheduled for tonight',
+    );
+    await expect(softener.getByTestId('softener-cancel')).toBeVisible();
+  });
+
+  // the keyboard: Escape answers no, and the focus comes back to the button the question was asked from
+  test('gives the focus back to the command after the question', async ({ page }) => {
+    await page.goto('/water');
+    const tonight = page.getByTestId('softener').getByTestId('softener-tonight');
+
+    await tonight.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog').getByTestId('confirm-cancel')).toBeFocused();
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(tonight).toBeFocused();
+    await expect(page.getByTestId('softener-regeneration-state')).toHaveText('No regeneration planned');
+  });
+
+  test('shows the flow live while the switch is on', async ({ page }) => {
+    await page.goto('/water');
+    const softener = page.getByTestId('softener');
+    await expect(softener.getByTestId('softener-flow')).toHaveText('Flow 0.0 l/min');
+
+    await expect(softener.getByTestId('softener-flow-note')).toHaveText('The last value the cloud had.');
+
+    await softener.getByTestId('softener-live').getByRole('switch').click();
+
+    await expect(softener.getByTestId('softener-flow')).toHaveText('Flow 6.4 l/min');
+    await expect(softener.getByTestId('softener-flow-note')).toContainText('Live until');
+    await expect(softener.getByTestId('softener-live-panel')).toHaveClass(/softener__live--on/);
+  });
+
+  // just after a start water-service has not read the cloud: the code worded, never zeros
+  test('words a softener not read yet', async ({ page }) => {
+    await useScenario(page, 'no-readings');
+    await page.goto('/water');
+
+    await expect(page.getByTestId('softener-not-read')).toHaveText(
+      'The softener has not been read from the iQua cloud yet.',
+    );
+    await expect(page.getByTestId('softener').getByRole('alert')).toHaveCount(0);
+  });
+});
+
 // HAS-323: the writes of the water page - the valve after a question, the bills of the waterworks
 test.describe('the valve and the bills', () => {
   test('closes and opens the valve, each after a question', async ({ page }) => {
@@ -532,14 +618,22 @@ test.describe('the valve and the bills', () => {
     await expect(valve.getByTestId('valve-state')).toContainText('Open');
 
     await valve.getByTestId('valve-close').click();
-    await expect(valve.getByTestId('valve-question')).toContainText(
+    // a window over the page, "Cancel" focused; a click outside answers no (owner, 2026-11-09)
+    const question = page.getByRole('dialog');
+    await expect(question.getByTestId('valve-question')).toContainText(
       'It cuts the water of the whole house.',
     );
-    await valve.getByTestId('valve-confirm').click();
+    await expect(question.getByTestId('confirm-cancel')).toBeFocused();
+    await page.mouse.click(5, 5);
+    await expect(question).toHaveCount(0);
+    await expect(valve.getByTestId('valve-state')).toContainText('Open');
+
+    await valve.getByTestId('valve-close').click();
+    await question.getByTestId('confirm-yes').click();
     await expect(valve.getByTestId('valve-state')).toContainText('Closed');
 
     await valve.getByTestId('valve-open').click();
-    await valve.getByTestId('valve-confirm').click();
+    await question.getByTestId('confirm-yes').click();
     await expect(valve.getByTestId('valve-state')).toContainText('Open');
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
@@ -594,7 +688,7 @@ test.describe('hot water', () => {
     const gauge = temperatures.getByRole('meter');
     await expect(gauge).toHaveAttribute('aria-valuetext', '40.6 °C; kept between 38 and 42 °C');
     await expect(temperatures).toContainText(
-      'Heated once it drops below 38 °C, until it is above 42 °C.',
+      'Heated below 38\u00a0°C, up to 42\u00a0°C.',
     );
     await expect(page.getByTestId('pump-state')).toHaveText(/Stopped/);
     await expect(page.getByTestId('pump-return')).toHaveText(/Return\s+26\.4 °C/);
@@ -604,12 +698,14 @@ test.describe('hot water', () => {
 
   test('draws the marker inside the band while the water is in it', async ({ page }) => {
     await page.goto('/water');
-    const band = page.locator('.gauge__band');
+    // the gauge of the tank - the salt of the softener has one too (HAS-402)
+    const tank = page.getByTestId('temperatures');
+    const band = tank.locator('.gauge__band');
     await expect(band).toBeVisible();
 
     const [bandBox, markerBox] = await Promise.all([
       band.boundingBox(),
-      page.locator('.gauge__marker').boundingBox(),
+      tank.locator('.gauge__marker').boundingBox(),
     ]);
     const marker = markerBox!.x + markerBox!.width / 2;
 
@@ -672,10 +768,12 @@ test.describe('hot water', () => {
 
     await page.goto('/water');
 
-    // nine calls in nine cards - the valve, the totals and the consumption (HAS-322), the bills (HAS-323), the
-    // temperatures, the demand, the history, the pump and its runs of today (HAS-406)
+    // fifteen calls, sixteen cards that tell them - the valve, the totals and the consumption (HAS-322), the bills
+    // (HAS-323), the temperatures, the demand, the history in the cards of the tank and of the circulation (one call,
+    // a card each since 2026-11-09), the pump and its runs of today (HAS-406), and the softener (HAS-402): its state,
+    // the salt and the regenerations, the days and the meter, the alerts of the cloud
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(9);
+    await expect(alerts).toHaveCount(16);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('The service is not available right now (error 502).');
     }

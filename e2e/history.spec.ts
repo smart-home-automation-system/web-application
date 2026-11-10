@@ -20,27 +20,61 @@ async function drawn(card: Locator): Promise<Locator> {
 }
 
 test.describe('the history of the hot water', () => {
-  test('draws both temperatures of the last 24 hours, with what they ranged between', async ({
+  test('draws the tank and the circulation of the last 24 hours, each in its card', async ({
     page,
   }) => {
     await page.goto('/water');
     const card = page.getByTestId('water-history');
 
-    await expect(card.locator('mat-card-title')).toHaveText('Temperature history');
+    await expect(card.locator('mat-card-title')).toHaveText('Temperature of the tank');
     const plot = await drawn(card);
     await expect(plot).toHaveAttribute(
       'aria-label',
-      'Chart of the temperature of the tank and of the circulation over the chosen period',
+      'Chart of the temperature of the tank over the chosen period',
     );
-    // the legend is part of the picture: both lines are named in it
+    // the legend is part of the picture
     await expect(plot).toContainText('Tank');
-    await expect(plot).toContainText('Circulation');
     await expect(card.getByTestId('history-facts')).toContainText(/Tank\s+37\.0\s+–\s+45\.0 °C/);
-    await expect(card.getByTestId('history-facts')).toContainText(
-      /Circulation\s+25\.0\s+–\s+31\.0 °C/,
-    );
     await expect(card.getByRole('radio', { name: '24 hours' })).toBeChecked();
     await expect(card.getByRole('alert')).toHaveCount(0);
+
+    // the circulation in a card of its own, in the same row (owner, 2026-11-09)
+    const circulation = page.getByTestId('circulation-history');
+    await expect(circulation.locator('mat-card-title')).toHaveText('Temperature of the circulation');
+    await expect(await drawn(circulation)).toContainText('Circulation');
+    await expect(circulation.getByTestId('history-facts')).toContainText(
+      /Circulation\s+25\.0\s+–\s+31\.0 °C/,
+    );
+  });
+
+  // a card waiting for another period keeps its place: nothing under it moves (owner, 2026-11-09)
+  test('keeps the cards in place while another period is asked for', async ({ page }) => {
+    await page.goto('/water');
+    const card = page.getByTestId('water-history');
+    await drawn(card);
+    // on a phone the circulation stands between the two: drawn too before anything is measured
+    await drawn(page.getByTestId('circulation-history'));
+    // how far under the top of the history the card after it stands - from the history, not from the title: the
+    // cards above may still be loading on a slow machine - read in the frame the progress bar is shown in
+    const runsTop = () =>
+      document.querySelector('app-circulation-runs')!.getBoundingClientRect().top -
+      document.querySelector('[data-testid="water-history"]')!.getBoundingClientRect().top;
+    const before = await page.evaluate(runsTop);
+    const whileWaiting = page.waitForFunction(
+      () =>
+        document.querySelector('[data-testid="water-history"] mat-progress-bar')
+          ? document.querySelector('app-circulation-runs')!.getBoundingClientRect().top -
+            document.querySelector('[data-testid="water-history"]')!.getBoundingClientRect().top
+          : false,
+      undefined,
+      { polling: 'raf' },
+    );
+
+    await card.getByRole('radio', { name: '7 days' }).click();
+
+    expect(await (await whileWaiting).jsonValue()).toBe(before);
+    await drawn(card);
+    expect(await page.evaluate(runsTop)).toBe(before);
   });
 
   test('offers 7 and 30 days, and draws each', async ({ page }) => {
@@ -101,7 +135,7 @@ test.describe('the history of the hot water', () => {
     const card = page.getByTestId('water-history');
 
     const plot = await drawn(card);
-    await expect(card.locator('mat-card-title')).toHaveText('Historia temperatur');
+    await expect(card.locator('mat-card-title')).toHaveText('Temperatura zasobnika');
     await expect(plot).toContainText('Zasobnik');
     await expect(card.getByRole('radio', { name: '24 godziny' })).toBeChecked();
     await expect(card.getByTestId('history-facts')).toContainText(/Zasobnik\s+37,0\s+–\s+45,0 °C/);

@@ -1,0 +1,70 @@
+// The alerts of the iQua cloud (HAS-402): a list coloured by the level the cloud gives - critical on the strip of an
+// error (its text colour is made for it), a warning outlined, the rest plain.
+:host {
+  display: block;
+}
+
+// a card of the first row of the water page (owner, 2026-11-09): as tall as its neighbours
+.softener-alerts {
+  --app-domain: var(--app-domain-water);
+
+  height: 100%;
+  box-sizing: border-box;
+}
+
+mat-card-header {
+  padding: 12px 12px 0;
+}
+
+mat-card-content {
+  padding: 8px 12px 12px;
+}
+
+.softener-alerts__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.softener-alerts__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--mat-sys-corner-small);
+
+  mat-icon {
+    flex: none;
+  }
+}
+
+.softener-alerts__item--critical {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+// an alert of the salt: amber, as on the card of the softener (owner, 2026-11-09)
+.softener-alerts__item--salt {
+  background: var(--app-warning-container);
+  color: var(--app-on-warning-container);
+}
+
+.softener-alerts__item--warning {
+  border-color: var(--mat-sys-outline);
+}
+
+.softener-alerts__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--mat-sys-body-medium);
+}
+
+.softener-alerts__meta,
+.softener-alerts__empty {
+  font: var(--mat-sys-body-small);
+}

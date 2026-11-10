@@ -1,6 +1,9 @@
 // the rows of a value and its name, shared with the tiles of the overview (HAS-322: the valve)
 @use '../../shared/domain-tile/tile-content';
 
+// the page grew with the sixth card of the row (HAS-402, owner 2026-11-09: up to 1800 px on a wide screen)
+$page-width: 1800px;
+
 // A row of five cards of one size, in the middle of the page - the valve, the water used, the tank, the demand and the circulation -
 // and the consumption and the history under it, as wide as the row (owner, 2026-11-05, HAS-322: the heating page).
 // Two a row on a tablet, one on a phone; the cards of a row are as tall as the tallest, so none stops short of its
@@ -17,7 +20,7 @@
   align-items: stretch;
   gap: 12px;
   width: 100%;
-  max-width: 1240px;
+  max-width: $page-width;
   margin-inline: auto;
 
   @media (min-width: 640px) {
@@ -28,9 +31,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  // five cards since the water used has its own (owner, 2026-11-05): all of them in one row on a wide screen
-  @media (min-width: 1240px) {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+  // six cards since the alerts of the softener joined the row (owner, 2026-11-09): all of them in one row on a wide
+  // screen - the page is wider for it
+  @media (min-width: 1400px) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
@@ -41,8 +45,41 @@
   box-sizing: border-box;
 }
 
+// a column, so that the commands of a card - the valve, the circulation - stand at its bottom, on one line across the
+// row (owner, 2026-11-09)
+// a value in the stronger text colour, its name in the quieter one - the value is what a card is read for (owner,
+// 2026-11-09); the overview keeps its own look
+.tiles .tile__row dd {
+  color: var(--mat-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
 .tiles .tile mat-card-content {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+}
+
+// a card that says less than its height (owner, 2026-11-09): the rows of the water used spaced a little wider and in
+// the middle of the card, raised by a few pixels - centred exactly they looked low; the state of the heating of the
+// water in the middle across, on the line of the state of the valve and of the circulation - centred in the height
+// it stood apart from the title
+.tiles .tile .tile__content--middle {
+  justify-content: center;
+  padding-bottom: 28px;
+
+  .tile__rows {
+    gap: 10px;
+  }
+}
+
+.tiles .tile .tile__content--centre {
+  align-items: center;
+  text-align: center;
+
+  .tile__state {
+    align-self: center;
+  }
 }
 
 // every card here is of the hot-water domain: its colour on the edge, the badge and the gauge
@@ -141,24 +178,52 @@ mat-card-content {
 .wide {
   display: block;
   width: 100%;
-  max-width: 1240px;
+  max-width: $page-width;
   margin-inline: auto;
 }
 
-// the command of the valve (HAS-323): its buttons, or the question that comes before it
+// the second row (owner, 2026-11-09): the consumption, the water per day and the salt, three of one height
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+
+  @media (min-width: 1100px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+// the history of the tank and of the circulation: two cards of one row (owner, 2026-11-09)
+.row--two {
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// the command of the valve (HAS-323) and the start of the circulation (HAS-406): in the bottom right corner of the
+// card, at one height in every card of the row (owner, 2026-11-09)
 .valve__commands,
 .valve__answers {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
   margin-top: 12px;
+}
+
+.valve__commands,
+.valve__question {
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 // a fieldset, named by its question: none of the frame of a form field
 .valve__question {
   min-inline-size: 0;
   border: 0;
-  margin: 12px 0 0;
+  margin-inline: 0;
+  margin-bottom: 0;
   padding: 10px 12px;
   border-radius: var(--mat-sys-corner-medium);
   background: var(--mat-sys-error-container);
