@@ -43,8 +43,10 @@ export class SoftenerAlerts {
   protected readonly alerts = inject(SoftenerApi).watchAlerts();
   protected readonly describe = describeWaterError;
 
-  /** The alerts not read in the iQua application, newest first as the service sends them. */
-  private readonly unread = computed(() => (this.alerts.value() ?? []).filter((alert) => alert.read !== true));
+  /** Every alert the cloud keeps, newest first as the service sends them; `null` from the service is none. */
+  private readonly all = computed(() => this.alerts.value() ?? []);
+  /** The alerts not read in the iQua application. */
+  private readonly unread = computed(() => this.all().filter((alert) => alert.read !== true));
 
   protected readonly shown = computed(() =>
     this.unread()
@@ -54,5 +56,5 @@ export class SoftenerAlerts {
   /** The unread alerts past the ones shown - counted, never dropped unseen. */
   protected readonly hidden = computed(() => Math.max(0, this.unread().length - SOFTENER_ALERTS_SHOWN));
   /** The newest alert the cloud keeps, read or not - its date said while none is unread, so an empty card shows it works. */
-  protected readonly lastAt = computed(() => (this.alerts.value() ?? []).find((alert) => alert.at)?.at);
+  protected readonly lastAt = computed(() => this.all().find((alert) => alert.at)?.at);
 }

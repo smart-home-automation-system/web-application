@@ -8,7 +8,7 @@ import { SOFTENER_ALERTS_SHOWN, SoftenerAlerts } from './softener-alerts';
 const words = (element: Element | null | undefined) => (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
 describe('SoftenerAlerts', () => {
-  let alerts: FakeResource<SoftenerAlert[]>;
+  let alerts: FakeResource<SoftenerAlert[] | null>;
 
   beforeEach(() => {
     alerts = fakeResource();
@@ -88,6 +88,15 @@ describe('SoftenerAlerts', () => {
 
   it('says that the cloud keeps no alert at all', async () => {
     answer(alerts, []);
+    const element = await card();
+
+    expect(words(element.querySelector('[data-testid="softener-alerts-none"]'))).toBe(
+      'The cloud keeps no alerts of the softener.',
+    );
+  });
+
+  it('reads an answer of null as no alert at all', async () => {
+    answer(alerts, null);
     const element = await card();
 
     expect(words(element.querySelector('[data-testid="softener-alerts-none"]'))).toBe(
