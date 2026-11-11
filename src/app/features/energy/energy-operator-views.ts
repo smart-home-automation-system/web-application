@@ -156,6 +156,13 @@ export function operatorMonths(
     );
 }
 
+/** The months of the operator by their month, for the line of the same month of the house. */
+export function operatorByMonth(
+  months: readonly OperatorMonth[],
+): ReadonlyMap<string, OperatorMonth> {
+  return new Map(months.map((month) => [month.month, month]));
+}
+
 /** The credit left by the operator at the end of the last month that has one. */
 export function operatorBalanceNow(months: readonly OperatorMonth[]): number | undefined {
   return [...months].reverse().find((month) => month.balance !== undefined)?.balance;

@@ -4,6 +4,7 @@ import {
   operatorBalanceNow,
   operatorDays,
   operatorHours,
+  operatorByMonth,
   operatorMonths,
   operatorTotals,
 } from './energy-operator-views';
@@ -89,6 +90,12 @@ describe('the meter of the operator (HAS-417)', () => {
     // an hour the answer leaves without its export has none, never 0
     expect(hours[3].exported).toBeUndefined();
     expect(operatorHours(undefined)).toEqual([]);
+  });
+
+  it('finds the month of the operator for the line of the same month of the house', () => {
+    const byMonth = operatorByMonth([{ month: '2026-10', imported: 262.38 }]);
+    expect(byMonth.get('2026-10')?.imported).toBe(262.38);
+    expect(byMonth.get('2026-09')).toBeUndefined();
   });
 
   it('keeps the months the portal served a day of, and the credit left at the last of them', () => {

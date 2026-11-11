@@ -1059,7 +1059,9 @@ export const pl: Messages = {
       stored: 'Pozostało',
       noDays: 'brak zamkniętego dnia',
       note: 'Wszystko w kWh. Szacunek domu z całych miesięcy, nie faktura.',
+      house: 'Szacunek domu',
       operator: {
+        noMonth: 'brak odczytów',
         title: 'Według licznika Tauronu',
         inTheGrid: 'W sieci według Tauronu',
         note: 'Dni podane przez portal eLicznik, rozliczone tak samo - strona faktury.',
