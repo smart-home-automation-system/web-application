@@ -1227,8 +1227,13 @@ e2e/              # Playwright tests
     cloud silent; the mock registry holds the two inverters (ids 64, 65), the water valve (66, HAS-313) and the air conditioner of sanctum (67, HAS-392) - the devices page counts 29.
   - **The charge of the battery** (HAS-342, `EnergyControl` in `energy-control.ts`, its own four cards in the section
     under the flow): the charge, the automation, the planned outages and the charges of 30 days. **These are writes to
-    the real inverter** (`POST` / `DELETE /energy/battery/charge`) - no question by the owner's choice, except the cancel
-    of a charge the automation started (it also skips the outage; "Keep charging" takes the focus). The end of a charge
+    the real inverter** (`POST` / `DELETE /energy/battery/charge`): **the start asks first** (owner, 2026-11-11, HAS-417 -
+    HAS-342 sent it at once) and so does the cancel of a charge the automation started (it also skips the outage) - both
+    `ConfirmDialog` over the page (testId `charge-question`, "Do not charge" / "Keep charging" focused), closed with no
+    answer once a charge goes on (a start) or is over (a cancel); the cancel of a charge of the dashboard is sent at
+    once. The commands stand in the bottom right corner of the card, as the valve's: the tile is `domain-tile--column`
+    (an opt-in of `DomainTile`: its content a column that fills the card), the form fills what is left of it and the
+    line of the planned start stands above the commands. The end of a charge
     is a time of day (`untilOf`: today while ahead, tomorrow otherwise). **Copied facts** (`energy-charge.ts`): the target
     10 - 100, the power 1 - 8 kW, the margin 0 - 720 min of `ChargeRules` / `AutomationRules` of energy-service; the
     automation applies to a planned outage of the street only (owner, 2026-11-03). The settings follow the stored answer

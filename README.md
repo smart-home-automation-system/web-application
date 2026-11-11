@@ -88,8 +88,9 @@ dashboards:
   now and the minutes to the target with "Stop charging" (a charge the automation started is asked about first:
   stopping it skips its outage); the switch of the charge before a planned outage of the street with its
   target, power and margin; the planned outages of Tauron with the start the charge would have and "No charge
-  for this one"; the charges of the last 30 days. These are writes to the real inverter - no question but the
-  one above, read again at once and 2.5 s later.
+  for this one"; the charges of the last 30 days. These are writes to the real inverter: "Charge from the grid" asks
+  first too (HAS-417), in a window over the page, the commands in the bottom right corner of the card; every write is
+  read again at once and 2.5 s later.
 - **Air conditioning** (HAS-395, the administrator's, `/aircon`, from `aircon-service` >= 0.10.0; the filters
   from 0.11.0): every unit by room, a card each - the unit with its controls as on My room; **its filter** - the
   hours of work since it was cleaned and "Cleaned" after a question (the hours start again at 0); **its rule** in a
