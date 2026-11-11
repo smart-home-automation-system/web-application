@@ -322,7 +322,7 @@ describe('Energy', () => {
     expect(words(page())).not.toMatch(/zł|PLN|€|\$/);
   });
 
-  //HAS-417: the side of the operator, its own table under the house's; nothing of it without such a month
+  //HAS-417: the side of the operator beside the house's, a month on one line; nothing of it without such a month
   it('settles the months of the meter of Tauron apart', async () => {
     await fixture.whenStable();
     answerQuery(months, 2026, {
@@ -344,11 +344,23 @@ describe('Energy', () => {
     });
     await fixture.whenStable();
     const settlement = page().querySelector('[data-testid="energy-settlement"]')!;
-    const operator = settlement.querySelector('[data-testid="operator-settlement"]')!;
-    expect(operator.querySelectorAll('tbody tr')).toHaveLength(1);
-    expect(words(operator.querySelector('[data-month="2026-10"]'))).toBe(
-      'October 2026 51.06 35.74 262.38 0.00',
+    // one table: a month on one line, the house on the left, the meter of Tauron on the right (owner, 2026-11-11)
+    expect(words(settlement.querySelector('[data-testid="operator-settlement"]'))).toBe(
+      'By the meter of Tauron',
     );
+    const operatorOf = (month: string) =>
+      [...settlement.querySelectorAll(`[data-month="${month}"] [data-side="operator"]`)]
+        .map((cell) => words(cell))
+        .join(' ');
+    expect(settlement.querySelectorAll('[data-testid="settlement-table"] tbody tr')).toHaveLength(
+      2,
+    );
+    expect(words(settlement.querySelector('[data-month="2026-10"]'))).toMatch(
+      /^October 2026 52.10 /,
+    );
+    expect(operatorOf('2026-10')).toBe('51.06 35.74 262.38 0.00');
+    // a month the portal served no day of says so on its own line, never a figure of another month
+    expect(operatorOf('2026-09')).toBe('no readings');
     // 0 is what is left, not unknown
     expect(words(settlement.querySelector('[data-testid="operator-in-the-grid"]'))).toBe(
       'In the grid by Tauron 0.00 kWh',

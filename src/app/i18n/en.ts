@@ -1067,7 +1067,9 @@ export const en = {
       stored: 'Credit left',
       noDays: 'no closed day',
       note: 'All in kWh. The estimate of the house by whole months, not the invoice.',
+      house: 'The estimate of the house',
       operator: {
+        noMonth: 'no readings',
         title: 'By the meter of Tauron',
         inTheGrid: 'In the grid by Tauron',
         note: 'The days the eLicznik portal served, settled the same way - the side of the invoice.',
