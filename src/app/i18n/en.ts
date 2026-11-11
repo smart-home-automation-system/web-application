@@ -848,6 +848,8 @@ export const en = {
       battery: 'Battery',
       house: 'House',
       grid: 'Grid',
+      soc: 'Charged',
+      socNotKnown: 'Charge not known',
       panelsIn: 'The panels feed the house',
       panelsIdle: 'The panels produce nothing',
       batteryIn: 'The battery feeds the house',

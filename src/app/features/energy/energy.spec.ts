@@ -161,6 +161,27 @@ describe('Energy', () => {
     expect(words(flow.querySelector('[data-today="selfConsumption"]'))).toContain('63 %');
   });
 
+  // the battery of the diagram says how full it is - the SOC of the battery call (owner, 2026-11-11)
+  it('shows the charge of the battery in the diagram, from the battery call', async () => {
+    answer(flows, FLOWS);
+    let flow = await card('flow');
+    expect(words(flow.querySelector('[data-testid="flow-soc"]'))).toBe('Charge not known');
+
+    answer(battery, { soc: 68.4, power: 2150, direction: 'charging' });
+    flow = await card('flow');
+    expect(words(flow.querySelector('[data-testid="flow-soc"]'))).toBe('Charged 68 %');
+  });
+
+  it('tells a failure of the battery call in the flow card too, apart from the flows', async () => {
+    answer(flows, FLOWS);
+    fail(battery, new ApiError('server', 503));
+
+    const flow = await card('flow');
+    expect(words(flow.querySelector('[data-testid="flow-soc"]'))).toBe('Charge not known');
+    expect(flow.querySelector('[data-node="house"]')).not.toBeNull();
+    expect(flow.querySelector('app-api-error-strip .strip')).not.toBeNull();
+  });
+
   // what the answer leaves out is not known, never 0 - the diagram too
   it('says "not known" for a power and a total the answer leaves out', async () => {
     answer(flows, { production: 0 });

@@ -18,6 +18,7 @@ test('shows where the energy goes now, the devices, the alarms and the history',
     flow.getByRole('img', { name: 'The house returns energy to the grid' }),
   ).toBeVisible();
   await expect(flow.getByRole('img', { name: 'The house charges the battery' })).toBeVisible();
+  await expect(flow.getByTestId('flow-soc')).toHaveText('Charged 68 %');
 
   await expect(page.getByTestId('grid-state')).toHaveText('power The grid is there');
   await expect(

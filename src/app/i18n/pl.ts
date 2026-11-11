@@ -839,6 +839,8 @@ export const pl: Messages = {
       panels: 'Panele',
       battery: 'Magazyn',
       house: 'Dom',
+      soc: 'Naładowany',
+      socNotKnown: 'Poziom nieznany',
       grid: 'Sieć',
       panelsIn: 'Panele zasilają dom',
       panelsIdle: 'Panele nic nie produkują',

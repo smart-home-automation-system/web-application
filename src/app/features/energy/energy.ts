@@ -13,6 +13,7 @@ import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { historyPeriod } from '../../shared/history-chart/history-period';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
+import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { EnergyChartCard } from './energy-chart-card';
 import { EnergyControl } from './energy-control';
@@ -74,6 +75,7 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
     MatIconModule,
     MatProgressBarModule,
     TranslocoDirective,
+    ApiErrorStrip,
     DomainTile,
     EnergyChartCard,
     EnergyControl,
