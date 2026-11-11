@@ -81,15 +81,12 @@ $gap: 12px;
   color: var(--mat-sys-on-error-container);
 }
 
+// the form is a column: its buttons at the start of their line
 .form__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-
-// the form is a column: its buttons at the start of their line
-.form__actions {
   align-self: flex-start;
+  gap: 8px;
 }
 
 .planned,
