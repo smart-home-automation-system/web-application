@@ -1246,6 +1246,21 @@ e2e/              # Playwright tests
     line (drawn in every column) stands where its number is. A day without its kWh has no bar and says "not known".
     The 48 hours are a `HistoryChart` of two lines. `stale` of the answer is said in words. The overview tile has
     one line for tomorrow (`tomorrowOf`), the call a fourth failure in its `tileFailures`.
+  - **The meter of Tauron** (HAS-417, `energy-service` >= 0.17.0 / HAS-340 - the eLicznik portal of the operator, the
+    settlement truth): the card `EnergyOperator` (`energy-operator.ts`, after the days) reads `GET /energy/days` - its own
+    call of the same range rules as the days card, since 0.17.0 the answer holds `elicznikImport` / `elicznikExport`
+    beside the 3EM - and shows every day the newest first with the difference in % (the 3EM the base, `apartOf` of
+    `energy-operator-views.ts`, pinned by its spec); **a day the portal has not served yet is "not yet", never 0** - the
+    portal serves a day the morning after it, so yesterday always stands so in the morning. A day with values of the
+    operator opens `ElicznikDayDialog` (`GET /energy/elicznik?from=day&to=day`, its own call, freshness and failure in the
+    window): the hours as bars, labelled by their start, **the two 02:00 of the night the clocks go back apart** ("02:00 (1)"
+    the repeated one, `operatorHours`), 23 hours the night they go forward, the registers of the meter at the end of the day
+    when both are known. The settlement card shows the months of the operator (`elicznik*` of `/energy/months`) as a table
+    of its own beside the house's (side by side from 1000 px of the card, a container query), with "in the grid by Tauron";
+    nothing of it while no month has such a day. The settlement spans the row under the days and the meter (it was half a
+    row with an empty half). The fetch by hand (`POST /energy/elicznik/fetch`) is not offered here - Bruno's. The mock
+    (`energyElicznik`, `operatorOf` of `energy.fixtures.ts`): every day but yesterday served, the import 0.8 % above the
+    3EM, the export 2 % below, the last Sunday of October with its 25 hours, every fifth day without its registers.
   - **The registry knows the kind `inverter`** (`smart-home-sdk` 1.15.0): `bindingsOf('inverter')` is the
     `inverter` binding alone, of the vendor `other`; the form asks for the brand and the serial, offers the
     registration number of the dongle on a SOLAX only and the logger serial on a SOFAR only, the number of the
