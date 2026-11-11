@@ -18,6 +18,7 @@ import { EnergyChartCard } from './energy-chart-card';
 import { EnergyControl } from './energy-control';
 import { ENERGY_CHARTS, energyChart } from './energy-charts';
 import { EnergyDays, shiftDay } from './energy-days';
+import { EnergyOperator } from './energy-operator';
 import { describeEnergyError } from './energy-errors';
 import { EnergyFlow } from './energy-flow';
 import { EnergyForecastCard } from './energy-forecast';
@@ -77,6 +78,7 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
     EnergyChartCard,
     EnergyControl,
     EnergyDays,
+    EnergyOperator,
     EnergyFlow,
     EnergyForecastCard,
     EnergySettlement,

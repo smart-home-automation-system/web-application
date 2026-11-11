@@ -73,7 +73,7 @@ describe('Energy', () => {
   let outages: FakeQueryResource<HistoryRange, readonly GridOutage[] | null>;
   let days: FakeQueryResource<DaysQuery, readonly EnergyDay[] | null>;
   let months: FakeQueryResource<number, EnergyMonths | null>;
-  let daysAsked: () => DaysQuery;
+  let daysAsked: (() => DaysQuery) | undefined;
   let yearAsked: () => number;
   let outagesAsked: () => HistoryRange;
   let fixture: ComponentFixture<Energy>;
@@ -88,6 +88,7 @@ describe('Energy', () => {
     alerts = fakeResource();
     outages = fakeQueryResource();
     days = fakeQueryResource();
+    daysAsked = undefined;
     months = fakeQueryResource();
     TestBed.configureTestingModule({
       providers: [
@@ -109,7 +110,11 @@ describe('Energy', () => {
               return outages;
             },
             watchHistory: () => fakeQueryResource<HistoryRange, EnergyHistory | null>(),
+            // the days card asks first; the meter of Tauron (HAS-417) asks the same and has a test of its own
             watchDays: (query: () => DaysQuery) => {
+              if (daysAsked !== undefined) {
+                return fakeQueryResource();
+              }
               daysAsked = query;
               return days;
             },
@@ -296,10 +301,50 @@ describe('Energy', () => {
     expect(words(page())).not.toMatch(/zł|PLN|€|\$/);
   });
 
+  //HAS-417: the side of the operator, its own table under the house's; nothing of it without such a month
+  it('settles the months of the meter of Tauron apart', async () => {
+    await fixture.whenStable();
+    answerQuery(months, 2026, {
+      year: 2026,
+      ratio: 0.7,
+      months: [
+        { month: '2026-09', days: 30, exported: 210.8, credited: 147.56, stored: 27.16 },
+        {
+          month: '2026-10',
+          days: 31,
+          exported: 52.1,
+          stored: 0,
+          elicznikImported: 262.38,
+          elicznikExported: 51.06,
+          elicznikCredited: 35.74,
+          elicznikBalance: 0,
+        },
+      ],
+    });
+    await fixture.whenStable();
+    const settlement = page().querySelector('[data-testid="energy-settlement"]')!;
+    const operator = settlement.querySelector('[data-testid="operator-settlement"]')!;
+    expect(operator.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(words(operator.querySelector('[data-month="2026-10"]'))).toBe(
+      'October 2026 51.06 35.74 262.38 0.00',
+    );
+    // 0 is what is left, not unknown
+    expect(words(settlement.querySelector('[data-testid="operator-in-the-grid"]'))).toBe(
+      'In the grid by Tauron 0.00 kWh',
+    );
+
+    answerQuery(months, 2026, {
+      year: 2026,
+      months: [{ month: '2026-09', days: 30, stored: 27.16 }],
+    });
+    await fixture.whenStable();
+    expect(settlement.querySelector('[data-testid="operator-settlement"]')).toBeNull();
+  });
+
   it('asks for the closed days up to yesterday', async () => {
     await fixture.whenStable();
-    expect(daysAsked()).toEqual({ from: '2026-10-26', to: '2026-11-01' });
-    answerQuery(days, daysAsked(), [
+    expect(daysAsked!()).toEqual({ from: '2026-10-26', to: '2026-11-01' });
+    answerQuery(days, daysAsked!(), [
       { day: '2026-10-31', solaxYield: 8.1, imported: 31.33, exported: 0.39 },
       { day: '2026-11-01', imported: 34.02, exported: 0.13 },
     ]);

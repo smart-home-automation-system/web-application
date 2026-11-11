@@ -45,6 +45,12 @@ $gap: 12px;
   .charts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  // the days and the meter of Tauron side by side (HAS-417), the settlement across the page under them: alone in
+  // half a row it left the other half empty
+  .charts > app-energy-settlement {
+    grid-column: 1 / -1;
+  }
 }
 
 @container (min-width: 1180px) {

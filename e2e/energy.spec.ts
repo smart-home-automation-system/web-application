@@ -43,6 +43,32 @@ test('shows where the energy goes now, the devices, the alarms and the history',
   await expect(main).not.toContainText('zł');
 });
 
+// HAS-417: the meter of Tauron beside the 3EM, the hours of a day - the night the clocks went back with its 25 hours -
+// and its side of the settlement
+test('sets the meter of Tauron beside the 3EM and opens the hours of a day', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-28T10:00:00+01:00'));
+  await page.goto('/energy');
+  const operator = page.getByTestId('energy-operator');
+
+  // the portal serves a day the morning after it: yesterday stands without it, never 0
+  await expect(operator.locator('[data-day="2026-10-27"]')).toContainText('not yet');
+  await expect(operator.locator('[data-day="2026-10-26"] [data-apart="import"]')).toHaveText(
+    '+0.8 %',
+  );
+  await expect(operator.getByTestId('operator-total')).toBeVisible();
+
+  await operator.locator('[data-day="2026-10-25"]').getByTestId('operator-hours').click();
+  const window = page.getByRole('dialog');
+  await expect(window.getByTestId('elicznik-day-title')).toContainText('25 Oct');
+  await expect(window.locator('.chart__plot svg')).toBeVisible();
+  await expect(window).toContainText('The clocks went back that night');
+  await window.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await expect(page.getByTestId('operator-settlement')).toBeVisible();
+  await expect(page.getByTestId('operator-in-the-grid')).toContainText('kWh');
+});
+
 test('goes back a billing year, and not past the one of today', async ({ page }) => {
   await page.goto('/energy');
   const settlement = page.getByTestId('energy-settlement');
