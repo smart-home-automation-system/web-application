@@ -3,6 +3,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { MessageKey } from '../../i18n/messages';
+import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { FlowDirection, FlowView } from './energy-views';
 import { PowerValue } from './power-value';
 
@@ -33,11 +34,13 @@ function arrow(
  * Where the energy of the house goes now (HAS-341): the panels above the house, the battery on its
  * left, the grid on its right, an arrow along each line by the sign of its power in
  * `GET /energy/flows` - none within 20 W of nothing, a question mark where the power is not known.
- * The arrows carry their meaning in words too; the colour is never the only sign.
+ * The arrows carry their meaning in words too; the colour is never the only sign. The battery also
+ * says how full it is (HAS-417, owner 2026-11-11) - the SOC of `GET /energy/battery`, the call of the
+ * battery card, handed in by the page; "not known" while that call has not told it, never 0.
  */
 @Component({
   selector: 'app-energy-flow',
-  imports: [MatIconModule, TranslocoDirective, PowerValue],
+  imports: [MatIconModule, TranslocoDirective, LocalNumberPipe, PowerValue],
   template: `
     <ng-container *transloco="let t">
       @let f = flow();
@@ -67,6 +70,13 @@ function arrow(
           <mat-icon class="node__icon" aria-hidden="true">battery_charging_full</mat-icon>
           <span class="node__name">{{ t('energy.flow.battery') }}</span>
           <strong class="node__value"><app-power-value [watts]="f.battery" /></strong>
+          <span class="node__parts" data-testid="flow-soc">
+            @if (soc() !== undefined) {
+              {{ t('energy.flow.soc') }} {{ soc()! | localNumber: WHOLE }}&nbsp;%
+            } @else {
+              {{ t('energy.flow.socNotKnown') }}
+            }
+          </span>
         </div>
 
         <div
@@ -192,6 +202,9 @@ function arrow(
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EnergyFlow {
+  /** The SOC of the battery in %, from the battery call; `undefined` while not known. */
+  readonly soc = input<number>();
+  protected readonly WHOLE: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
   readonly flow = input.required<FlowView>();
 
   protected readonly arrows = computed(() => {

@@ -189,6 +189,12 @@ export interface EnergyDay {
   readonly houseLoad?: number;
   readonly selfConsumption?: number;
   readonly gridShare?: number;
+  /**
+   * The same day as the meter of the operator counts it (the eLicznik portal of Tauron, energy-service >= 0.17.0,
+   * HAS-340) - the settlement truth; left out until the portal served the day whole, the morning after it.
+   */
+  readonly elicznikImport?: number;
+  readonly elicznikExport?: number;
 }
 
 /** A month of the billing year, kWh; a month without a closed day has `days` 0 and no energies. */
@@ -210,6 +216,44 @@ export interface EnergyMonth {
   readonly expired?: number;
   /** The credit left at the end of the month - what may still be drawn back. */
   readonly stored?: number;
+  /**
+   * The same from the days of the eLicznik portal (HAS-340): the sums of the month by the meter of the operator, its
+   * credit and the credit left at its end, settled from the first month the portal was read; left out for a month
+   * without such a day.
+   */
+  readonly elicznikImported?: number;
+  readonly elicznikExported?: number;
+  readonly elicznikCredited?: number;
+  readonly elicznikBalance?: number;
+}
+
+/** An hour of a day of the eLicznik portal (HAS-340), kWh. */
+export interface ElicznikHour {
+  /** 1-24: the hour ending at it, house time (1 is 00:00 - 01:00). */
+  readonly hour?: number;
+  /** The first 02:00 - 03:00 of the night the clocks go back (25 hours that day; 23 the night they go forward). */
+  readonly repeated?: boolean;
+  readonly imported?: number;
+  readonly exported?: number;
+}
+
+/** A day the eLicznik portal served whole: the sums of its hours and the registers of the meter at its end. */
+export interface ElicznikDay {
+  /** `YYYY-MM-DD`. */
+  readonly day?: string;
+  readonly imported?: number;
+  readonly exported?: number;
+  /** The registers at the end of the day, whole kWh; left out when not read. */
+  readonly meterImported?: number;
+  readonly meterExported?: number;
+  readonly hours?: readonly ElicznikHour[];
+}
+
+/** `GET /energy/elicznik?from=&to=` (energy-service >= 0.17.0, HAS-340): the stored days of a range, at most 31. */
+export interface ElicznikDays {
+  readonly from?: string;
+  readonly to?: string;
+  readonly days?: readonly ElicznikDay[];
 }
 
 /**
@@ -501,6 +545,18 @@ export class EnergyApi {
     return queryResource(
       query,
       (asked) => this.api.get<readonly EnergyDay[] | null>('/energy/days', { ...asked }),
+      { intervalMs: POLL_DAYS_EVERY_MS },
+    );
+  }
+
+  /**
+   * One day of the meter of the operator, hour by hour (HAS-340), tagged with it - read by the window of a day, every
+   * quarter of an hour like the days: the portal is read once a morning. Call in an injection context.
+   */
+  watchElicznikDay(day: () => string): QueryResource<string, ElicznikDays | null> {
+    return queryResource(
+      day,
+      (asked) => this.api.get<ElicznikDays | null>('/energy/elicznik', { from: asked, to: asked }),
       { intervalMs: POLL_DAYS_EVERY_MS },
     );
   }

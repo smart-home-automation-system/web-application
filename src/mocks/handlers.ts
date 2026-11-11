@@ -76,6 +76,7 @@ import {
   battery,
   energyAlerts,
   energyDays,
+  energyElicznik,
   energyFlows,
   energyForecast,
   energyMonths,
@@ -987,6 +988,11 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/energy/days',
     reply: (request, fresh) => energyDays(from(request), to(request), fresh),
+  },
+  {
+    method: 'GET',
+    path: '/home/energy/elicznik',
+    reply: (request, fresh) => energyElicznik(from(request), to(request), fresh),
   },
   {
     method: 'GET',

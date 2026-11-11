@@ -4,6 +4,9 @@ import {
   EnergyDay,
   EnergyFlows,
   EnergyForecast,
+  ElicznikDay,
+  ElicznikDays,
+  ElicznikHour,
   EnergyMonths,
   EnergyStatus,
   GridOutage,
@@ -222,7 +225,11 @@ const DAY_MS = 24 * 60 * 60 * 1_000;
 const dayOf = (text: string) => Date.parse(`${text}T00:00:00Z`);
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
-/** `GET /home/energy/days?from=&to=`: a closed day per date up to yesterday, the third day of every week of the meter alone. */
+/**
+ * `GET /home/energy/days?from=&to=`: a closed day per date up to yesterday, the third day of every week of the meter alone.
+ * Since HAS-417 the meter of Tauron beside it (energy-service >= 0.17.0): every day but yesterday - the portal serves a
+ * day the morning after it, so the last one stands "not yet" - the import 0.8 % above the 3EM, the export 2 % below.
+ */
 export function energyDays(
   from: string | null,
   to: string | null,
@@ -249,7 +256,12 @@ export function energyDays(
     const sunny = 8 + ((index * 7) % 13);
     if (index % 7 === 3) {
       // a day the inverters were not read: the meter alone
-      days.push({ day: isoDay(day), imported: 14.2, exported: 0.3 });
+      days.push({
+        day: isoDay(day),
+        imported: 14.2,
+        exported: 0.3,
+        ...(day < yesterday ? operatorOf(14.2, 0.3) : {}),
+      });
       continue;
     }
     const solaxYield = Math.round(sunny * 0.62 * 10) / 10;
@@ -266,9 +278,104 @@ export function energyDays(
       charged: 4,
       discharged: 3.6,
       houseLoad: Math.round((solaxYield + sofarYield + imported - exported - 0.4) * 10) / 10,
+      ...(day < yesterday ? operatorOf(imported, exported) : {}),
     });
   }
   return { status: 200, body: days };
+}
+
+/** The day of the meter of Tauron beside the 3EM: 0.8 % more taken, 2 % less returned. */
+function operatorOf(imported: number, exported: number): Partial<EnergyDay> {
+  return {
+    elicznikImport: Math.round(imported * 1.008 * 1000) / 1000,
+    elicznikExport: Math.round(exported * 0.98 * 1000) / 1000,
+  };
+}
+
+/** A range the service refuses: not two days, reversed, or 31 days and more. */
+function elicznikRangeRefused(from: string | null, to: string | null): boolean {
+  const pattern = /^\d{4}-\d{2}-\d{2}$/;
+  return (
+    from === null ||
+    to === null ||
+    !pattern.test(from) ||
+    !pattern.test(to) ||
+    dayOf(from) > dayOf(to) ||
+    (dayOf(to) - dayOf(from)) / DAY_MS >= 31
+  );
+}
+
+/** Whether a day (ms of its midnight, UTC) is the last Sunday of a month of 31 days (0-based). */
+function lastSundayOf(day: number, month: number): boolean {
+  const date = new Date(day);
+  return date.getUTCMonth() === month && date.getUTCDay() === 0 && date.getUTCDate() + 7 > 31;
+}
+
+/** The hours of a day of the portal: no hour 3 the night the clocks go forward, two the night they go back. */
+function elicznikHours(day: number): ElicznikHour[] {
+  const back = lastSundayOf(day, 9);
+  const forward = lastSundayOf(day, 2);
+  const hours: ElicznikHour[] = [];
+  for (let hour = 1; hour <= 24; hour++) {
+    if (forward && hour === 3) {
+      continue;
+    }
+    const night = hour <= 7 || hour >= 22;
+    const sun =
+      hour >= 9 && hour <= 16 ? Math.round(Math.sin(((hour - 8) / 9) * Math.PI) * 400) / 1000 : 0;
+    const imported = Math.round(((night ? 1.4 : 0.12) + ((hour * 37) % 11) / 100) * 1000) / 1000;
+    if (back && hour === 3) {
+      hours.push({ hour, repeated: true, imported, exported: 0 });
+    }
+    hours.push({ hour, repeated: false, imported, exported: sun });
+  }
+  return hours;
+}
+
+/** A day of the portal: the sums of its hours, the registers - every fifth day without them, as when not read yet. */
+function elicznikDay(day: number): ElicznikDay {
+  const hours = elicznikHours(day);
+  const sum = (of: 'imported' | 'exported') =>
+    Math.round(hours.reduce((total, hour) => total + (hour[of] ?? 0), 0) * 1000) / 1000;
+  const index = Math.round(day / DAY_MS);
+  const registers =
+    index % 5 === 0
+      ? {}
+      : {
+          meterImported: 2600 + (index % 400) * 21,
+          meterExported: 4868 + Math.floor((index % 400) / 3),
+        };
+  return {
+    day: isoDay(day),
+    imported: sum('imported'),
+    exported: sum('exported'),
+    ...registers,
+    hours,
+  };
+}
+
+/**
+ * `GET /home/energy/elicznik?from=&to=` (HAS-417): the days the portal served, hour by hour - the night the clocks go
+ * back (the last Sunday of October) with its 25 hours, the one they go forward without hour 3; every fifth day without
+ * the registers of the meter. Yesterday and later are not served.
+ */
+export function energyElicznik(
+  from: string | null,
+  to: string | null,
+  fresh: boolean,
+  now: Date = new Date(),
+): MockReply {
+  if (elicznikRangeRefused(from, to)) {
+    return { status: 400, body: { errors: [{ message: 'Invalid range', code: 'INVALID_RANGE' }] } };
+  }
+  const yesterday = dayOf(houseTime(now, 0).slice(0, 10)) - DAY_MS;
+  const days: ElicznikDay[] = [];
+  const last = fresh ? -1 : Math.min(dayOf(to as string), yesterday - DAY_MS);
+  for (let day = dayOf(from as string); day <= last; day += DAY_MS) {
+    days.push(elicznikDay(day));
+  }
+  const answer: ElicznikDays = { from: from as string, to: to as string, days };
+  return { status: 200, body: answer };
 }
 
 /** `GET /home/energy/months?year=`: the billing year from September, the first months closed. */
@@ -303,6 +410,10 @@ export function energyMonths(year: string | null, fresh: boolean): MockReply {
                   bought: 0,
                   expired: 0,
                   stored: 27.16,
+                  elicznikImported: 121.37,
+                  elicznikExported: 206.58,
+                  elicznikCredited: 144.61,
+                  elicznikBalance: 23.24,
                 },
                 {
                   ...month,
@@ -316,6 +427,10 @@ export function energyMonths(year: string | null, fresh: boolean): MockReply {
                   bought: 196.67,
                   expired: 0,
                   stored: 0,
+                  elicznikImported: 262.38,
+                  elicznikExported: 51.06,
+                  elicznikCredited: 35.74,
+                  elicznikBalance: 0,
                 },
                 {
                   ...month,

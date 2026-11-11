@@ -16,7 +16,7 @@
       data-testid="card-flow"
     >
       @if (flows.value()) {
-        <app-energy-flow [flow]="flow()" />
+        <app-energy-flow [flow]="flow()" [soc]="soc()" />
         @let d = today();
         <h3 class="tile__subhead">{{ t('energy.today.title') }}</h3>
         <dl class="tile__rows tile__rows--two">
@@ -104,6 +104,10 @@
       } @else if (!flows.error()) {
         <p class="tile__detail">{{ t('energy.cards.none') }}</p>
       }
+      <!-- the SOC in the diagram is the battery call's: its failure is told here too, apart from the flows -->
+      <div tileFailures>
+        <app-api-error-strip [error]="battery.error()" [describeWith]="describe" />
+      </div>
     </app-domain-tile>
 
     <!-- the grid as the SOLAX sees it, and whether each source answers -->
@@ -464,6 +468,7 @@
       <app-energy-chart-card [chart]="chart" [(preset)]="period.preset" />
     }
     <app-energy-days />
+    <app-energy-operator />
     <app-energy-settlement />
   </section>
   <!-- an inverter from the one call of both (HAS-341): the rows they share, and those of its brand -->

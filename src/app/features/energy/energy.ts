@@ -13,11 +13,13 @@ import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { historyPeriod } from '../../shared/history-chart/history-period';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
+import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { EnergyChartCard } from './energy-chart-card';
 import { EnergyControl } from './energy-control';
 import { ENERGY_CHARTS, energyChart } from './energy-charts';
 import { EnergyDays, shiftDay } from './energy-days';
+import { EnergyOperator } from './energy-operator';
 import { describeEnergyError } from './energy-errors';
 import { EnergyFlow } from './energy-flow';
 import { EnergyForecastCard } from './energy-forecast';
@@ -73,10 +75,12 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
     MatIconModule,
     MatProgressBarModule,
     TranslocoDirective,
+    ApiErrorStrip,
     DomainTile,
     EnergyChartCard,
     EnergyControl,
     EnergyDays,
+    EnergyOperator,
     EnergyFlow,
     EnergyForecastCard,
     EnergySettlement,

@@ -18,6 +18,7 @@ test('shows where the energy goes now, the devices, the alarms and the history',
     flow.getByRole('img', { name: 'The house returns energy to the grid' }),
   ).toBeVisible();
   await expect(flow.getByRole('img', { name: 'The house charges the battery' })).toBeVisible();
+  await expect(flow.getByTestId('flow-soc')).toHaveText('Charged 68 %');
 
   await expect(page.getByTestId('grid-state')).toHaveText('power The grid is there');
   await expect(
@@ -41,6 +42,32 @@ test('shows where the energy goes now, the devices, the alarms and the history',
   await expect(page.getByTestId('in-the-grid')).toBeVisible();
   // the net-metering in kWh, never money
   await expect(main).not.toContainText('zł');
+});
+
+// HAS-417: the meter of Tauron beside the 3EM, the hours of a day - the night the clocks went back with its 25 hours -
+// and its side of the settlement
+test('sets the meter of Tauron beside the 3EM and opens the hours of a day', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-28T10:00:00+01:00'));
+  await page.goto('/energy');
+  const operator = page.getByTestId('energy-operator');
+
+  // the portal serves a day the morning after it: yesterday stands without it, never 0
+  await expect(operator.locator('[data-day="2026-10-27"]')).toContainText('not yet');
+  await expect(operator.locator('[data-day="2026-10-26"] [data-apart="import"]')).toHaveText(
+    '+0.8 %',
+  );
+  await expect(operator.getByTestId('operator-total')).toBeVisible();
+
+  await operator.locator('[data-day="2026-10-25"]').getByTestId('operator-hours').click();
+  const window = page.getByRole('dialog');
+  await expect(window.getByTestId('elicznik-day-title')).toContainText('25 Oct');
+  await expect(window.locator('.chart__plot svg')).toBeVisible();
+  await expect(window).toContainText('The clocks went back that night');
+  await window.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await expect(page.getByTestId('operator-settlement')).toBeVisible();
+  await expect(page.getByTestId('operator-in-the-grid')).toContainText('kWh');
 });
 
 test('goes back a billing year, and not past the one of today', async ({ page }) => {
@@ -118,7 +145,18 @@ test('starts and stops a charge from the grid, and keeps it in the history', asy
 
   await expect(page.getByTestId('charge-none')).toBeVisible();
   await page.getByTestId('charge-target').fill('90');
+  const card = page.getByTestId('card-charge');
+  const height = (await card.boundingBox())!.height;
   await page.getByTestId('charge-start').click();
+  // a write to the real inverter: asked first in a window over the page, the card keeps its size (owner, 2026-11-11)
+  const question = page.getByRole('dialog');
+  await expect(question.getByTestId('charge-question')).toContainText(
+    'Charge the battery from the grid now?',
+  );
+  await expect(question.getByRole('button', { name: 'Do not charge' })).toBeFocused();
+  expect((await card.boundingBox())!.height).toBe(height);
+  await question.getByTestId('confirm-yes').click();
+  await expect(question).toHaveCount(0);
   await expect(page.getByTestId('charge-state')).toHaveText('Charging · started by the dashboard');
 
   await page.getByTestId('charge-cancel').click();
@@ -151,6 +189,7 @@ test('tells a charge the house did not take', async ({ page }) => {
   await page.goto('/energy');
 
   await page.getByTestId('charge-start').click();
+  await page.getByRole('dialog').getByTestId('confirm-yes').click();
   await expect(page.getByTestId('card-charge')).toContainText('The charge could not be started.');
   await expect(page.getByTestId('charge-none')).toBeVisible();
 });

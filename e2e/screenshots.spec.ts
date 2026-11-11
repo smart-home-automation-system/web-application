@@ -177,7 +177,9 @@ for (const language of ['en', 'pl'] as const) {
       // the water softener (HAS-402): its card, its history and the alerts of its cloud
       test('water softener', async ({ page }, testInfo) => {
         await page.goto('/water');
-        await expect(page.getByTestId('softener-salt-history').locator('.chart__plot svg')).toBeVisible();
+        await expect(
+          page.getByTestId('softener-salt-history').locator('.chart__plot svg'),
+        ).toBeVisible();
         await expect(page.getByTestId('softener-days').locator('.chart__plot svg')).toBeVisible();
         await page.getByTestId('softener').scrollIntoViewIfNeeded();
         await photoIsShown(page);
@@ -239,7 +241,9 @@ for (const language of ['en', 'pl'] as const) {
             await expect(
               page.getByTestId('softener-salt-history').locator('.chart__plot svg'),
             ).toBeVisible();
-            await expect(page.getByTestId('softener-days').locator('.chart__plot svg')).toBeVisible();
+            await expect(
+              page.getByTestId('softener-days').locator('.chart__plot svg'),
+            ).toBeVisible();
             // the history and the consumption are drawn before the picture is taken
             await expect(
               page.getByTestId('water-history').locator('.chart__plot svg'),
@@ -578,6 +582,24 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the meter of Tauron (HAS-417): the days beside the 3EM, and the hours of the night the clocks went back
+      test('energy operator', async ({ page }, testInfo) => {
+        await page.clock.setFixedTime(new Date('2026-10-28T10:00:00+01:00'));
+        await page.goto('/energy');
+        const operator = page.getByTestId('energy-operator');
+        await expect(operator.getByTestId('operator-total')).toBeVisible();
+        await operator.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy-operator'),
+        });
+        await operator.locator('[data-day="2026-10-25"]').getByTestId('operator-hours').click();
+        const window = page.getByRole('dialog');
+        await expect(window.locator('.chart__plot svg')).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy-operator-day'),
+        });
+      });
+
       // the production forecast (HAS-373): the sentence, the closed days, seven days and 48 hours
       test('energy forecast', async ({ page }, testInfo) => {
         await page.goto('/energy');
@@ -593,6 +615,14 @@ for (const language of ['en', 'pl'] as const) {
       test('energy charge', async ({ page }, testInfo) => {
         await page.goto('/energy');
         await page.getByTestId('charge-start').click();
+        // the question before a charge, a window over the darkened page (owner, 2026-11-11)
+        const question = page.getByRole('dialog');
+        await expect(question.getByTestId('charge-question')).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy-charge-question'),
+        });
+        await question.getByTestId('confirm-yes').click();
         await expect(page.getByTestId('charge-state')).toBeVisible();
         await page.locator('app-energy-control').screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-charge'),

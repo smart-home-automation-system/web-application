@@ -78,13 +78,19 @@ dashboards:
   performance ratio of each inverter; then the powers and the state of charge over 24 hours, 7
   or 30 days, the closed days as bars, and **the net-metering of the billing year** ("opusty") - per month
   what was returned, credited at the ratio, taken, covered by the credit and bought, and the credit "in the
-  grid" now - all in kWh, never money. **Charging the battery** (HAS-342): the charge from the grid started with
+  grid" now - all in kWh, never money; **the meter of Tauron** (HAS-417, from `energy-service` 0.17.0): every closed
+  day of 7 or 30 the import and the export as the meter of the operator counts them (read from the eLicznik portal the
+  morning after) beside the 3EM, how far apart in %, the sums of the days both know, "not yet" for a day the portal has
+  not served; a day opens its hours in a window (the 25 hours of the night the clocks go back, the registers of the
+  meter at its end), and the net-metering card settles the months of the operator beside the house's estimate - the
+  side of the invoice. **Charging the battery** (HAS-342): the charge from the grid started with
   its target and an optional end time, and while it goes on its state, who started it, its window, the battery
   now and the minutes to the target with "Stop charging" (a charge the automation started is asked about first:
   stopping it skips its outage); the switch of the charge before a planned outage of the street with its
   target, power and margin; the planned outages of Tauron with the start the charge would have and "No charge
-  for this one"; the charges of the last 30 days. These are writes to the real inverter - no question but the
-  one above, read again at once and 2.5 s later.
+  for this one"; the charges of the last 30 days. These are writes to the real inverter: "Charge from the grid" asks
+  first too (HAS-417), in a window over the page, the commands in the bottom right corner of the card; every write is
+  read again at once and 2.5 s later.
 - **Air conditioning** (HAS-395, the administrator's, `/aircon`, from `aircon-service` >= 0.10.0; the filters
   from 0.11.0): every unit by room, a card each - the unit with its controls as on My room; **its filter** - the
   hours of work since it was cleaned and "Cleaned" after a question (the hours start again at 0); **its rule** in a
@@ -601,7 +607,7 @@ Endpoints used today:
 | `GET` | `/home/appliance/{id}/runs?from=&to=` | The cycles of one appliance that started in the range (appliances: the last 30 days of every appliance, one after the other, every 60 s - the counters and the lists read that one answer) |
 | `GET` | `/home/appliance/{id}/samples?from=&to=` | The draw of the plug, a sample every 30 s (appliances: the last 24 or 48 hours of each appliance, every 60 s) |
 | `GET` | `/home/device/registry?kind=appliance&enabled=true` | The appliances with their settings (appliances, read only, every 60 s) |
-| `GET` | `/home/energy/flows` | Where the energy goes now and the day so far (energy: every 15 s; overview: every 60 s). Needs `energy-service` 0.8.0 and `api-gateway-service` 0.10.0 or later |
+| `GET` | `/home/energy/flows` | Where the energy goes now and the day so far (energy: every 15 s; overview: every 60 s). The SOC beside the battery of the diagram is the read of `/home/energy/battery`. Needs `energy-service` 0.8.0 and `api-gateway-service` 0.10.0 or later |
 | `GET` | `/home/energy/status` | The sources and the grid as the SOLAX sees it (energy: every 30 s; overview: every 60 s) |
 | `GET` | `/home/energy/grid`, `/home/energy/inverters`, `/home/energy/battery` | The grid meter, both inverters and the battery now (energy, every 15 s; the battery also on the overview, every 60 s) |
 | `GET` | `/home/energy/forecast` | The production forecast of the coming days (energy and overview, every 5 min). Needs `energy-service` 0.16.0; the categories are the service's, no band is copied |
@@ -615,8 +621,9 @@ Endpoints used today:
 | `GET` | `/home/energy/outages/planned` | The outages Tauron announces for the house, with the planned start of the charge (energy, every 60 s) |
 | `PUT` | `/home/energy/outages/planned/{id}/skip`, `.../unskip` | No automatic charge for an outage, or allowed again (energy) |
 | `GET` | `/home/energy/history?metric=&from=&to=` | `pv-power`, `house-load`, `grid-power` and `battery-soc` over the period of the page (energy, every 3 min); `UNKNOWN_METRIC` and `INVALID_RANGE` have texts |
-| `GET` | `/home/energy/days?from=&to=` | The closed days up to yesterday, 7 or 30 (energy, every 15 min) |
-| `GET` | `/home/energy/months?year=` | The net-metering of a billing year (energy, every 15 min) |
+| `GET` | `/home/energy/days?from=&to=` | The closed days up to yesterday, 7 or 30 (energy, every 15 min) - since `energy-service` 0.17.0 with `elicznikImport` / `elicznikExport`, the meter of Tauron (HAS-417: the days card and the card of the meter, two calls) |
+| `GET` | `/home/energy/elicznik?from=&to=` | One day of the meter of Tauron hour by hour, with the registers of the meter (energy: the window of a day, every 15 min). Needs `energy-service` 0.17.0 |
+| `GET` | `/home/energy/months?year=` | The net-metering of a billing year (energy, every 15 min); since `energy-service` 0.17.0 the months of the meter of Tauron (`elicznik*`) settled beside it |
 | `GET` | `/home/device/registry` | Every device of the house with its room, kind, vendor and binding (devices, rooms). By the Devices and the Rooms page only, polled every 60 s while it is open and read again after every change. Needs `database-service` 0.12.0 and `api-gateway-service` 0.5.0 or later |
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |

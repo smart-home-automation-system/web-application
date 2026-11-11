@@ -425,9 +425,11 @@ export const en = {
       deviceFailed: 'The valve refused the command or did not answer it.',
       tankCold: 'The water in the tank is too cold to run the circulation.',
       softenerUnavailable: 'The softener has not been read from the iQua cloud yet.',
-      softenerCommandFailed: 'The iQua cloud refused the command of the softener or did not answer it.',
+      softenerCommandFailed:
+        'The iQua cloud refused the command of the softener or did not answer it.',
       regenerationInProgress: 'The softener is regenerating now.',
-      commandTooSoon: 'A command was sent to the softener less than a minute ago - try again in a moment.',
+      commandTooSoon:
+        'A command was sent to the softener less than a minute ago - try again in a moment.',
       liveThrottled: 'The iQua cloud limits the live flow - try again later.',
     },
   },
@@ -589,7 +591,8 @@ export const en = {
       marksNote: 'The dashed lines mark the regenerations.',
       daysTitle: 'Water per day this month',
       noDays: 'No day of this month has been read yet.',
-      daysChart: 'The water per day of this month, through the softener and through the water meter',
+      daysChart:
+        'The water per day of this month, through the softener and through the water meter',
       softenerSeries: 'Through the softener',
       meterSeries: 'Water meter',
       daysNote:
@@ -764,6 +767,9 @@ export const en = {
       left: 'To the target',
       minutes: 'about {{ minutes }} min',
       endingNote: 'Over - the inverter is being set back to its own settings.',
+      startQuestion:
+        'Charge the battery from the grid now? The inverter takes power from the grid until the battery reaches the target or the end.',
+      dontStart: 'Do not charge',
       cancel: 'Stop charging',
       keep: 'Keep charging',
       cancelQuestion:
@@ -842,6 +848,8 @@ export const en = {
       battery: 'Battery',
       house: 'House',
       grid: 'Grid',
+      soc: 'Charged',
+      socNotKnown: 'Charge not known',
       panelsIn: 'The panels feed the house',
       panelsIdle: 'The panels produce nothing',
       batteryIn: 'The battery feeds the house',
@@ -1019,6 +1027,29 @@ export const en = {
       known: '({{ known }} of {{ days }} days)',
       note: 'A day closes after midnight; a day without a figure has no bar.',
     },
+    operator: {
+      title: 'Meter of Tauron',
+      day: 'Day',
+      importMeter: 'Taken, 3EM',
+      importOperator: 'Taken, Tauron',
+      exportMeter: 'Returned, 3EM',
+      exportOperator: 'Returned, Tauron',
+      apart: 'Apart',
+      hours: 'Hours',
+      hoursOf: 'The hours of {{ day }}',
+      notYet: 'not yet',
+      total: 'Days of both ({{ days }})',
+      note: 'kWh. The meter of Tauron is what the invoice counts, read from the eLicznik portal the morning after a day; "apart" is Tauron against the 3EM of the house.',
+      dayTitle: 'The meter of Tauron, {{ day }}',
+      loading: 'Loading the hours of the day',
+      hoursLabel:
+        'The energy of each hour by the meter of Tauron: taken from and returned to the grid',
+      registers: 'Registers at the end of the day',
+      registerValues: 'taken {{ imported }} kWh, returned {{ exported }} kWh',
+      repeatedNote: 'The clocks went back that night: the hour from 02:00 came twice.',
+      noDay: 'The eLicznik portal has not served this day.',
+      close: 'Close',
+    },
     settlement: {
       title: 'Net-metering',
       yearBefore: 'The billing year before',
@@ -1036,6 +1067,11 @@ export const en = {
       stored: 'Credit left',
       noDays: 'no closed day',
       note: 'All in kWh. The estimate of the house by whole months, not the invoice.',
+      operator: {
+        title: 'By the meter of Tauron',
+        inTheGrid: 'In the grid by Tauron',
+        note: 'The days the eLicznik portal served, settled the same way - the side of the invoice.',
+      },
     },
     error: {
       inverterNotFound: 'The energy service does not know this inverter.',

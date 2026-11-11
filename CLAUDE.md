@@ -1210,6 +1210,9 @@ e2e/              # Playwright tests
     diagram (`EnergyFlow`) has an arrow per line - an `img` with its words on the wrapper (the icon of Material is
     `aria-hidden` by itself) - and a question mark where the power is not known. A power is written by
     `PowerValue`: W below a kilowatt, kW from one on, its size only, "not known" for none.
+    **The battery of the diagram says how full it is** (HAS-417, owner 2026-11-11): `/energy/flows` has no SOC, so
+    the page hands in the SOC of `/energy/battery` - the call of the battery card, no request of its own - "Charge not
+    known" while that call has not told it, and its failure told in the flow card too (`tileFailures`).
   - **Copied facts**: `PHASE_CURRENT_WARN_AMPERES` (22 A, `phase-current-warn`), `BILLING_YEAR_STARTS` (9,
     `settlement.period-start`), the words of `RunMode`, `BatteryDirection`, `GridDirection` and the kinds of
     `source_alert` (`energy-views.ts`) - a value this version does not know is printed as it came.
@@ -1227,8 +1230,13 @@ e2e/              # Playwright tests
     cloud silent; the mock registry holds the two inverters (ids 64, 65), the water valve (66, HAS-313) and the air conditioner of sanctum (67, HAS-392) - the devices page counts 29.
   - **The charge of the battery** (HAS-342, `EnergyControl` in `energy-control.ts`, its own four cards in the section
     under the flow): the charge, the automation, the planned outages and the charges of 30 days. **These are writes to
-    the real inverter** (`POST` / `DELETE /energy/battery/charge`) - no question by the owner's choice, except the cancel
-    of a charge the automation started (it also skips the outage; "Keep charging" takes the focus). The end of a charge
+    the real inverter** (`POST` / `DELETE /energy/battery/charge`): **the start asks first** (owner, 2026-11-11, HAS-417 -
+    HAS-342 sent it at once) and so does the cancel of a charge the automation started (it also skips the outage) - both
+    `ConfirmDialog` over the page (testId `charge-question`, "Do not charge" / "Keep charging" focused), closed with no
+    answer once a charge goes on (a start) or is over (a cancel); the cancel of a charge of the dashboard is sent at
+    once. The commands stand in the bottom right corner of the card, as the valve's: the tile is `domain-tile--column`
+    (an opt-in of `DomainTile`: its content a column that fills the card), the form fills what is left of it and the
+    line of the planned start stands above the commands. The end of a charge
     is a time of day (`untilOf`: today while ahead, tomorrow otherwise). **Copied facts** (`energy-charge.ts`): the target
     10 - 100, the power 1 - 8 kW, the margin 0 - 720 min of `ChargeRules` / `AutomationRules` of energy-service; the
     automation applies to a planned outage of the street only (owner, 2026-11-03). The settings follow the stored answer
@@ -1246,6 +1254,21 @@ e2e/              # Playwright tests
     line (drawn in every column) stands where its number is. A day without its kWh has no bar and says "not known".
     The 48 hours are a `HistoryChart` of two lines. `stale` of the answer is said in words. The overview tile has
     one line for tomorrow (`tomorrowOf`), the call a fourth failure in its `tileFailures`.
+  - **The meter of Tauron** (HAS-417, `energy-service` >= 0.17.0 / HAS-340 - the eLicznik portal of the operator, the
+    settlement truth): the card `EnergyOperator` (`energy-operator.ts`, after the days) reads `GET /energy/days` - its own
+    call of the same range rules as the days card, since 0.17.0 the answer holds `elicznikImport` / `elicznikExport`
+    beside the 3EM - and shows every day the newest first with the difference in % (the 3EM the base, `apartOf` of
+    `energy-operator-views.ts`, pinned by its spec); **a day the portal has not served yet is "not yet", never 0** - the
+    portal serves a day the morning after it, so yesterday always stands so in the morning. A day with values of the
+    operator opens `ElicznikDayDialog` (`GET /energy/elicznik?from=day&to=day`, its own call, freshness and failure in the
+    window): the hours as bars, labelled by their start, **the two 02:00 of the night the clocks go back apart** ("02:00 (1)"
+    the repeated one, `operatorHours`), 23 hours the night they go forward, the registers of the meter at the end of the day
+    when both are known. The settlement card shows the months of the operator (`elicznik*` of `/energy/months`) as a table
+    of its own beside the house's (side by side from 1000 px of the card, a container query), with "in the grid by Tauron";
+    nothing of it while no month has such a day. The settlement spans the row under the days and the meter (it was half a
+    row with an empty half). The fetch by hand (`POST /energy/elicznik/fetch`) is not offered here - Bruno's. The mock
+    (`energyElicznik`, `operatorOf` of `energy.fixtures.ts`): every day but yesterday served, the import 0.8 % above the
+    3EM, the export 2 % below, the last Sunday of October with its 25 hours, every fifth day without its registers.
   - **The registry knows the kind `inverter`** (`smart-home-sdk` 1.15.0): `bindingsOf('inverter')` is the
     `inverter` binding alone, of the vendor `other`; the form asks for the brand and the serial, offers the
     registration number of the dongle on a SOLAX only and the logger serial on a SOFAR only, the number of the

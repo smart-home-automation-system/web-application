@@ -15,6 +15,7 @@ import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { describeEnergyError } from './energy-errors';
+import { operatorBalanceNow, operatorMonths } from './energy-operator-views';
 import { BILLING_YEAR_STARTS, billingYearOf, monthsOf, numberOf, storedNow } from './energy-views';
 
 /**
@@ -24,6 +25,10 @@ import { BILLING_YEAR_STARTS, billingYearOf, monthsOf, numberOf, storedNow } fro
  * was bought; the credit that lapsed and what is left "in the grid" - the rolling twelve months. A
  * month without a closed day has no figures, never zeros. The house's estimate by whole months,
  * not the invoice - the card says so. Its own call: freshness and failure here.
+ *
+ * Since HAS-417 the same answer carries the side of the operator (energy-service >= 0.17.0): the months the eLicznik
+ * portal of Tauron served a day of, settled by its meter - a table of its own under the house's, with what is left in
+ * the grid by Tauron; nothing of it while the answer has no such month.
  */
 @Component({
   selector: 'app-energy-settlement',
@@ -85,70 +90,138 @@ import { BILLING_YEAR_STARTS, billingYearOf, monthsOf, numberOf, storedNow } fro
           } @else if (shown(); as answer) {
             @let rows = rowsOf(answer.months);
             @let stored = stored_(rows);
-            <p class="settlement__lead" data-testid="in-the-grid">
-              <span>{{ t('energy.settlement.inTheGrid') }}</span>
-              @if (stored !== undefined) {
-                <strong>{{ stored | localNumber: TWO }} kWh</strong>
-              } @else {
-                <strong>{{ t('energy.notKnown') }}</strong>
-              }
-            </p>
-            @if (ratioOf(answer.ratio); as ratio) {
-              <p class="settlement__note">
-                {{ t('energy.settlement.ratio', { ratio: (ratio | localNumber: TWO) }) }}
-              </p>
-            }
-            <div class="settlement__scroll">
-              <table class="settlement__table">
-                <thead>
-                  <tr>
-                    <th scope="col">{{ t('energy.settlement.month') }}</th>
-                    <th scope="col">{{ t('energy.settlement.exported') }}</th>
-                    <th scope="col">{{ t('energy.settlement.credited') }}</th>
-                    <th scope="col">{{ t('energy.settlement.imported') }}</th>
-                    <th scope="col">{{ t('energy.settlement.drawn') }}</th>
-                    <th scope="col">{{ t('energy.settlement.bought') }}</th>
-                    <th scope="col">{{ t('energy.settlement.expired') }}</th>
-                    <th scope="col">{{ t('energy.settlement.stored') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of rows; track row.month) {
-                    <tr [attr.data-month]="row.month">
-                      <th scope="row">{{ monthName(row.month) }}</th>
-                      @if ((row.days ?? 0) > 0) {
-                        <td>
-                          {{ row.exported === undefined ? '–' : (row.exported | localNumber: TWO) }}
-                        </td>
-                        <td>
-                          {{ row.credited === undefined ? '–' : (row.credited | localNumber: TWO) }}
-                        </td>
-                        <td>
-                          {{ row.imported === undefined ? '–' : (row.imported | localNumber: TWO) }}
-                        </td>
-                        <td>
-                          {{ row.drawn === undefined ? '–' : (row.drawn | localNumber: TWO) }}
-                        </td>
-                        <td>
-                          {{ row.bought === undefined ? '–' : (row.bought | localNumber: TWO) }}
-                        </td>
-                        <td>
-                          {{ row.expired === undefined ? '–' : (row.expired | localNumber: TWO) }}
-                        </td>
-                        <td>
-                          {{ row.stored === undefined ? '–' : (row.stored | localNumber: TWO) }}
-                        </td>
-                      } @else {
-                        <td colspan="7" class="settlement__none">
-                          {{ t('energy.settlement.noDays') }}
-                        </td>
-                      }
-                    </tr>
+            @let operator = operatorRowsOf(answer.months);
+            <div class="settlement__sides" [class.settlement__sides--two]="operator.length > 0">
+              <div class="settlement__side">
+                <p class="settlement__lead" data-testid="in-the-grid">
+                  <span>{{ t('energy.settlement.inTheGrid') }}</span>
+                  @if (stored !== undefined) {
+                    <strong>{{ stored | localNumber: TWO }} kWh</strong>
+                  } @else {
+                    <strong>{{ t('energy.notKnown') }}</strong>
                   }
-                </tbody>
-              </table>
+                </p>
+                @if (ratioOf(answer.ratio); as ratio) {
+                  <p class="settlement__note">
+                    {{ t('energy.settlement.ratio', { ratio: (ratio | localNumber: TWO) }) }}
+                  </p>
+                }
+                <div class="settlement__scroll">
+                  <table class="settlement__table">
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ t('energy.settlement.month') }}</th>
+                        <th scope="col">{{ t('energy.settlement.exported') }}</th>
+                        <th scope="col">{{ t('energy.settlement.credited') }}</th>
+                        <th scope="col">{{ t('energy.settlement.imported') }}</th>
+                        <th scope="col">{{ t('energy.settlement.drawn') }}</th>
+                        <th scope="col">{{ t('energy.settlement.bought') }}</th>
+                        <th scope="col">{{ t('energy.settlement.expired') }}</th>
+                        <th scope="col">{{ t('energy.settlement.stored') }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of rows; track row.month) {
+                        <tr [attr.data-month]="row.month">
+                          <th scope="row">{{ monthName(row.month) }}</th>
+                          @if ((row.days ?? 0) > 0) {
+                            <td>
+                              {{
+                                row.exported === undefined ? '–' : (row.exported | localNumber: TWO)
+                              }}
+                            </td>
+                            <td>
+                              {{
+                                row.credited === undefined ? '–' : (row.credited | localNumber: TWO)
+                              }}
+                            </td>
+                            <td>
+                              {{
+                                row.imported === undefined ? '–' : (row.imported | localNumber: TWO)
+                              }}
+                            </td>
+                            <td>
+                              {{ row.drawn === undefined ? '–' : (row.drawn | localNumber: TWO) }}
+                            </td>
+                            <td>
+                              {{ row.bought === undefined ? '–' : (row.bought | localNumber: TWO) }}
+                            </td>
+                            <td>
+                              {{
+                                row.expired === undefined ? '–' : (row.expired | localNumber: TWO)
+                              }}
+                            </td>
+                            <td>
+                              {{ row.stored === undefined ? '–' : (row.stored | localNumber: TWO) }}
+                            </td>
+                          } @else {
+                            <td colspan="7" class="settlement__none">
+                              {{ t('energy.settlement.noDays') }}
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <p class="settlement__note">{{ t('energy.settlement.note') }}</p>
+              </div>
+              @if (operator.length > 0) {
+                @let operatorStored = operatorStoredOf(operator);
+                <div class="settlement__side">
+                  <h3 class="settlement__sub">{{ t('energy.settlement.operator.title') }}</h3>
+                  <p class="settlement__lead" data-testid="operator-in-the-grid">
+                    <span>{{ t('energy.settlement.operator.inTheGrid') }}</span>
+                    @if (operatorStored !== undefined) {
+                      <strong>{{ operatorStored | localNumber: TWO }} kWh</strong>
+                    } @else {
+                      <strong>{{ t('energy.notKnown') }}</strong>
+                    }
+                  </p>
+                  <div class="settlement__scroll">
+                    <table class="settlement__table" data-testid="operator-settlement">
+                      <thead>
+                        <tr>
+                          <th scope="col">{{ t('energy.settlement.month') }}</th>
+                          <th scope="col">{{ t('energy.settlement.exported') }}</th>
+                          <th scope="col">{{ t('energy.settlement.credited') }}</th>
+                          <th scope="col">{{ t('energy.settlement.imported') }}</th>
+                          <th scope="col">{{ t('energy.settlement.stored') }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (row of operator; track row.month) {
+                          <tr [attr.data-month]="row.month">
+                            <th scope="row">{{ monthName(row.month) }}</th>
+                            <td>
+                              {{
+                                row.exported === undefined ? '–' : (row.exported | localNumber: TWO)
+                              }}
+                            </td>
+                            <td>
+                              {{
+                                row.credited === undefined ? '–' : (row.credited | localNumber: TWO)
+                              }}
+                            </td>
+                            <td>
+                              {{
+                                row.imported === undefined ? '–' : (row.imported | localNumber: TWO)
+                              }}
+                            </td>
+                            <td>
+                              {{
+                                row.balance === undefined ? '–' : (row.balance | localNumber: TWO)
+                              }}
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="settlement__note">{{ t('energy.settlement.operator.note') }}</p>
+                </div>
+              }
             </div>
-            <p class="settlement__note">{{ t('energy.settlement.note') }}</p>
           }
           <app-api-error-strip [error]="months.error()" [describeWith]="describe" />
         </mat-card-content>
@@ -232,6 +305,37 @@ import { BILLING_YEAR_STARTS, billingYearOf, monthsOf, numberOf, storedNow } fro
       color: var(--mat-sys-on-surface-variant);
     }
 
+    mat-card-content {
+      container-type: inline-size;
+    }
+
+    .settlement__sides {
+      display: grid;
+      gap: 16px 32px;
+    }
+
+    .settlement__side {
+      min-width: 0;
+    }
+
+    /* the house and the operator side by side once the card is wide (HAS-417) */
+    @container (min-width: 1000px) {
+      .settlement__sides--two {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        align-items: start;
+      }
+
+      .settlement__sides--two .settlement__sub {
+        margin-top: 0;
+      }
+    }
+
+    .settlement__sub {
+      margin: 16px 0 0;
+      font: var(--mat-sys-title-small);
+      color: var(--mat-sys-on-surface);
+    }
+
     .settlement__note {
       margin: 6px 0 0;
       font: var(--mat-sys-body-small);
@@ -273,6 +377,8 @@ export class EnergySettlement {
   protected readonly describe = describeEnergyError;
   protected readonly stored_ = storedNow;
   protected readonly ratioOf = numberOf;
+  protected readonly operatorRowsOf = operatorMonths;
+  protected readonly operatorStoredOf = operatorBalanceNow;
 
   /** `2026-10` as "October 2026" in the language of the interface. */
   protected monthName(month: string): string {

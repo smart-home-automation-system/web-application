@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 import { of, throwError } from 'rxjs';
 
 import {
@@ -86,6 +88,7 @@ describe('EnergyControl', () => {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         {
           provide: EnergyApi,
           useValue: {
@@ -104,12 +107,20 @@ describe('EnergyControl', () => {
     fixture = TestBed.createComponent(EnergyControl);
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    TestBed.inject(MatDialog).closeAll();
+    vi.useRealTimers();
+  });
 
   const page = () => fixture.nativeElement as HTMLElement;
   const words = (element: Element | null | undefined) =>
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const byId = (id: string) => page().querySelector(`[data-testid="${id}"]`) as HTMLElement;
+  // the question is a window over the page, outside the fixture
+  const inWindow = async (id: string) => {
+    await fixture.whenStable();
+    return document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+  };
 
   function type(id: string, value: string): void {
     const input = byId(id) as HTMLInputElement;
@@ -124,7 +135,8 @@ describe('EnergyControl', () => {
     await fixture.whenStable();
   }
 
-  it('starts a charge to the target until the time asked, with no question', async () => {
+  // a write to the real inverter: asked first in a window over the page (owner, 2026-11-11)
+  it('starts a charge to the target until the time asked, once the question is answered yes', async () => {
     answer(charge, { active: false, plannedStart: '2026-11-12T03:55:00' });
     await settle();
 
@@ -135,7 +147,46 @@ describe('EnergyControl', () => {
     byId('charge-start').click();
     await settle();
 
+    expect(api.startCharge).not.toHaveBeenCalled();
+    expect(words(await inWindow('charge-question'))).toContain(
+      'Charge the battery from the grid now?',
+    );
+    const keep = await inWindow('confirm-cancel');
+    expect(words(keep)).toBe('Do not charge');
+    expect(keep!.hasAttribute('cdkfocusinitial')).toBe(true);
+    expect((byId('charge-start') as HTMLButtonElement).getAttribute('aria-disabled')).toBe('true');
+
+    (await inWindow('confirm-yes'))!.click();
+    await settle();
+    expect(await inWindow('charge-question')).toBeNull();
     expect(api.startCharge).toHaveBeenCalledWith({ targetSoc: 80, until: '2026-11-03T18:30:00' });
+  });
+
+  it('sends nothing when the question is answered no', async () => {
+    answer(charge, { active: false });
+    await settle();
+
+    byId('charge-start').click();
+    await settle();
+    (await inWindow('confirm-cancel'))!.click();
+    await settle();
+
+    expect(await inWindow('charge-question')).toBeNull();
+    expect(api.startCharge).not.toHaveBeenCalled();
+  });
+
+  it('closes the question of a start for good once a charge goes on', async () => {
+    answer(charge, { active: false });
+    await settle();
+    byId('charge-start').click();
+    await settle();
+    expect(await inWindow('charge-question')).toBeTruthy();
+
+    answer(charge, { active: true, run: { ...CHARGING, source: 'automation' }, soc: 50 });
+    await settle();
+
+    expect(await inWindow('charge-question')).toBeNull();
+    expect(api.startCharge).not.toHaveBeenCalled();
   });
 
   it('refuses a target out of bounds and an end that is not a time, before any write', async () => {
@@ -149,6 +200,8 @@ describe('EnergyControl', () => {
     expect(words(byId('charge-problems'))).toContain(
       'The target is a whole number from 10 to 100 %.',
     );
+    // nothing to ask about a charge the service would refuse
+    expect(await inWindow('charge-question')).toBeNull();
     expect(api.startCharge).not.toHaveBeenCalled();
   });
 
@@ -177,10 +230,14 @@ describe('EnergyControl', () => {
     byId('charge-cancel').click();
     await settle();
     expect(api.cancelCharge).not.toHaveBeenCalled();
-    expect(words(byId('charge-cancel-question'))).toContain('Stopping it also skips that outage.');
-    expect(document.activeElement).toBe(byId('charge-cancel-keep'));
+    expect(words(await inWindow('charge-question'))).toContain(
+      'Stopping it also skips that outage.',
+    );
+    const keep = await inWindow('confirm-cancel');
+    expect(words(keep)).toBe('Keep charging');
+    expect(keep!.hasAttribute('cdkfocusinitial')).toBe(true);
 
-    byId('charge-cancel-confirm').click();
+    (await inWindow('confirm-yes'))!.click();
     await settle();
     expect(api.cancelCharge).toHaveBeenCalledTimes(1);
   });
@@ -193,6 +250,8 @@ describe('EnergyControl', () => {
     await settle();
 
     byId('charge-start').click();
+    await settle();
+    (await inWindow('confirm-yes'))!.click();
     await settle();
     await settle();
 
