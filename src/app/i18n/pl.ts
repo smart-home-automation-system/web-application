@@ -419,7 +419,8 @@ export const pl: Messages = {
       deviceFailed: 'Zawór odrzucił komendę albo na nią nie odpowiedział.',
       tankCold: 'Woda w zbiorniku jest za zimna, żeby uruchomić cyrkulację.',
       softenerUnavailable: 'Zmiękczacz nie został jeszcze odczytany z chmury iQua.',
-      softenerCommandFailed: 'Chmura iQua odrzuciła polecenie zmiękczacza albo na nie nie odpowiedziała.',
+      softenerCommandFailed:
+        'Chmura iQua odrzuciła polecenie zmiękczacza albo na nie nie odpowiedziała.',
       regenerationInProgress: 'Zmiękczacz właśnie się regeneruje.',
       commandTooSoon: 'Polecenie do zmiękczacza wysłano mniej niż minutę temu - spróbuj za chwilę.',
       liveThrottled: 'Chmura iQua ogranicza przepływ na żywo - spróbuj później.',
@@ -758,6 +759,9 @@ export const pl: Messages = {
       left: 'Do celu',
       minutes: 'około {{ minutes }} min',
       endingNote: 'Zakończone - falownik wraca do swoich ustawień.',
+      startQuestion:
+        'Naładować magazyn z sieci teraz? Falownik pobiera energię z sieci, aż magazyn osiągnie cel albo minie godzina końca.',
+      dontStart: 'Nie ładuj',
       cancel: 'Przerwij ładowanie',
       keep: 'Ładuj dalej',
       cancelQuestion:
@@ -1028,7 +1032,8 @@ export const pl: Messages = {
       note: 'kWh. Licznik Tauronu to podstawa faktury, odczytany z portalu eLicznik rano po danym dniu; „różnica” to Tauron względem 3EM domu.',
       dayTitle: 'Licznik Tauronu, {{ day }}',
       loading: 'Wczytywanie godzin dnia',
-      hoursLabel: 'Energia każdej godziny według licznika Tauronu: pobrana z sieci i oddana do niej',
+      hoursLabel:
+        'Energia każdej godziny według licznika Tauronu: pobrana z sieci i oddana do niej',
       registers: 'Stany licznika na koniec dnia',
       registerValues: 'pobrano {{ imported }} kWh, oddano {{ exported }} kWh',
       repeatedNote: 'Tej nocy cofnięto zegar: godzina od 02:00 była dwa razy.',

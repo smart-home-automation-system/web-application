@@ -1,15 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
+  DestroyRef,
   computed,
   effect,
   inject,
   signal,
   untracked,
-  viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -33,6 +34,11 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
 import { lightReadBack } from '../../shared/lights/light-read-back';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
+import {
+  CONFIRM_DIALOG_SIZE,
+  ConfirmData,
+  ConfirmDialog,
+} from '../../shared/confirm-dialog/confirm-dialog';
 import {
   AUTOMATION_MARGIN,
   AUTOMATION_POWER,
@@ -65,9 +71,10 @@ interface Failure {
  * administrator's - the energy page): four cards, one call each.
  * - **The charge**: the one going on - its state, who started it, its window, the battery now and the
  *   minutes to its target, and its cancel - or the form of a new one: the target SOC and an optional
- *   end as a time of day. **A write to the real inverter, without a question** (owner, the rule of the
- *   blinds) - except the cancel of a charge the automation started, which asks first: it also skips
- *   the outage it was for.
+ *   end as a time of day. **The start asks first, in a window over the page** (owner, 2026-11-11 - the
+ *   rule of the water valve; HAS-342 had sent it without a question), and so does the cancel of a charge
+ *   the automation started: it also skips the outage it was for. The cancel of a charge of the dashboard
+ *   is sent at once. The commands stand in the bottom right corner of the card.
  * - **The charges** of the last 30 days.
  * - **The automation**: its switch, target, power and margin, written whole and read back.
  * - **The planned outages** of Tauron with the planned start of the charge and its skip.
@@ -79,6 +86,7 @@ interface Failure {
 @Component({
   selector: 'app-energy-control',
   imports: [
+    NgTemplateOutlet,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -106,6 +114,7 @@ export class EnergyControl {
   private readonly api = inject(EnergyApi);
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
   private readonly ticker = inject(Ticker);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly charge = this.api.watchCharge();
 
@@ -155,9 +164,10 @@ export class EnergyControl {
   protected readonly chargeTried = signal(false);
   protected readonly chargeBusy = signal(false);
   protected readonly chargeFailure = signal<Failure | undefined>(undefined);
-  /** The cancel of a charge the automation started is asked first - it also skips its outage. */
-  protected readonly askCancel = signal(false);
-  private readonly keep = viewChild<unknown, ElementRef<HTMLElement>>('keep', { read: ElementRef });
+  /** The command asked about in the window over the page; sent only once it is confirmed. */
+  protected readonly question = signal<'start' | 'cancel' | undefined>(undefined);
+  private questionDialog?: MatDialogRef<ConfirmDialog, boolean>;
+  private destroyed = false;
   protected readonly targetValid = computed(() => within(wholeOf(this.target()), CHARGE_TARGET));
   protected readonly untilValue = computed(() =>
     untilOf(this.until(), this.ticker.now(), this.zone),
@@ -210,22 +220,35 @@ export class EnergyControl {
         this.autoMargin.set(numberOf(stored.marginMinutes)?.toString() ?? '');
       }
     });
-    // the question of a cancel goes for good with the charge it was asked about
+    // a question with nothing left to ask goes for good, the window closed with no answer: the start once a
+    // charge goes on (the automation began one), the cancel once the charge it was asked about is over
     effect(() => {
-      if (!this.goingOn()) {
-        this.askCancel.set(false);
+      const asked = this.question();
+      const goingOn = this.goingOn();
+      if ((asked === 'start' && goingOn) || (asked === 'cancel' && !goingOn)) {
+        this.questionDialog?.close(false);
       }
     });
-    // asked, "Keep" takes the focus - an Enter pressed out of habit keeps the charge
-    effect(() => this.keep()?.nativeElement.focus());
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.questionDialog?.close(false);
+    });
   }
 
   protected textOf(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }
 
+  /** The form checked first; a valid charge asked about in the window, sent only for yes. */
   protected start(): void {
     this.chargeTried.set(true);
+    if (!this.targetValid() || this.untilValue() === 'invalid' || this.chargeBusy()) {
+      return;
+    }
+    this.ask('start', () => this.sendStart());
+  }
+
+  private sendStart(): void {
     const until = this.untilValue();
     if (!this.targetValid() || until === 'invalid' || this.chargeBusy()) {
       return;
@@ -247,17 +270,52 @@ export class EnergyControl {
 
   /** The cancel: at once for a charge of the dashboard, after the question for one of the automation. */
   protected cancel(): void {
-    if (this.run()?.source === 'automation' && !this.askCancel()) {
-      this.askCancel.set(true);
+    if (this.run()?.source === 'automation') {
+      this.ask('cancel', () => this.sendCancel());
+    } else {
+      this.sendCancel();
+    }
+  }
+
+  private sendCancel(): void {
+    if (this.chargeBusy() || !this.goingOn()) {
       return;
     }
-    this.askCancel.set(false);
     this.send(
       this.api.cancelCharge(),
       'energy.charge.cancelFailed',
       this.chargeBusy,
       this.chargeFailure,
     );
+  }
+
+  /** The question in a window over the page (`ConfirmDialog`), the safe answer focused. */
+  private ask(command: 'start' | 'cancel', confirmed: () => void): void {
+    if (this.question() !== undefined || this.chargeBusy()) {
+      return;
+    }
+    const start = command === 'start';
+    this.question.set(command);
+    this.questionDialog = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, {
+      ...CONFIRM_DIALOG_SIZE,
+      data: {
+        icon: start ? 'bolt' : 'stop',
+        title: start ? 'energy.charge.start' : 'energy.charge.cancel',
+        question: start ? 'energy.charge.startQuestion' : 'energy.charge.cancelQuestion',
+        confirm: start ? 'energy.charge.start' : 'energy.charge.cancel',
+        cancel: start ? 'energy.charge.dontStart' : 'energy.charge.keep',
+        testId: 'charge-question',
+      },
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+    });
+    this.questionDialog.afterClosed().subscribe((answer) => {
+      this.questionDialog = undefined;
+      this.question.set(undefined);
+      if (answer === true && !this.destroyed) {
+        confirmed();
+      }
+    });
   }
 
   protected editAuto(change: () => void): void {

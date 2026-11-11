@@ -425,9 +425,11 @@ export const en = {
       deviceFailed: 'The valve refused the command or did not answer it.',
       tankCold: 'The water in the tank is too cold to run the circulation.',
       softenerUnavailable: 'The softener has not been read from the iQua cloud yet.',
-      softenerCommandFailed: 'The iQua cloud refused the command of the softener or did not answer it.',
+      softenerCommandFailed:
+        'The iQua cloud refused the command of the softener or did not answer it.',
       regenerationInProgress: 'The softener is regenerating now.',
-      commandTooSoon: 'A command was sent to the softener less than a minute ago - try again in a moment.',
+      commandTooSoon:
+        'A command was sent to the softener less than a minute ago - try again in a moment.',
       liveThrottled: 'The iQua cloud limits the live flow - try again later.',
     },
   },
@@ -589,7 +591,8 @@ export const en = {
       marksNote: 'The dashed lines mark the regenerations.',
       daysTitle: 'Water per day this month',
       noDays: 'No day of this month has been read yet.',
-      daysChart: 'The water per day of this month, through the softener and through the water meter',
+      daysChart:
+        'The water per day of this month, through the softener and through the water meter',
       softenerSeries: 'Through the softener',
       meterSeries: 'Water meter',
       daysNote:
@@ -764,6 +767,9 @@ export const en = {
       left: 'To the target',
       minutes: 'about {{ minutes }} min',
       endingNote: 'Over - the inverter is being set back to its own settings.',
+      startQuestion:
+        'Charge the battery from the grid now? The inverter takes power from the grid until the battery reaches the target or the end.',
+      dontStart: 'Do not charge',
       cancel: 'Stop charging',
       keep: 'Keep charging',
       cancelQuestion:
@@ -1034,7 +1040,8 @@ export const en = {
       note: 'kWh. The meter of Tauron is what the invoice counts, read from the eLicznik portal the morning after a day; "apart" is Tauron against the 3EM of the house.',
       dayTitle: 'The meter of Tauron, {{ day }}',
       loading: 'Loading the hours of the day',
-      hoursLabel: 'The energy of each hour by the meter of Tauron: taken from and returned to the grid',
+      hoursLabel:
+        'The energy of each hour by the meter of Tauron: taken from and returned to the grid',
       registers: 'Registers at the end of the day',
       registerValues: 'taken {{ imported }} kWh, returned {{ exported }} kWh',
       repeatedNote: 'The clocks went back that night: the hour from 02:00 came twice.',

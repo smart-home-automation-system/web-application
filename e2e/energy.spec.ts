@@ -144,7 +144,18 @@ test('starts and stops a charge from the grid, and keeps it in the history', asy
 
   await expect(page.getByTestId('charge-none')).toBeVisible();
   await page.getByTestId('charge-target').fill('90');
+  const card = page.getByTestId('card-charge');
+  const height = (await card.boundingBox())!.height;
   await page.getByTestId('charge-start').click();
+  // a write to the real inverter: asked first in a window over the page, the card keeps its size (owner, 2026-11-11)
+  const question = page.getByRole('dialog');
+  await expect(question.getByTestId('charge-question')).toContainText(
+    'Charge the battery from the grid now?',
+  );
+  await expect(question.getByRole('button', { name: 'Do not charge' })).toBeFocused();
+  expect((await card.boundingBox())!.height).toBe(height);
+  await question.getByTestId('confirm-yes').click();
+  await expect(question).toHaveCount(0);
   await expect(page.getByTestId('charge-state')).toHaveText('Charging · started by the dashboard');
 
   await page.getByTestId('charge-cancel').click();
@@ -177,6 +188,7 @@ test('tells a charge the house did not take', async ({ page }) => {
   await page.goto('/energy');
 
   await page.getByTestId('charge-start').click();
+  await page.getByRole('dialog').getByTestId('confirm-yes').click();
   await expect(page.getByTestId('card-charge')).toContainText('The charge could not be started.');
   await expect(page.getByTestId('charge-none')).toBeVisible();
 });

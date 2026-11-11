@@ -9,6 +9,19 @@
   box-sizing: border-box;
 }
 
+// a tile whose commands stand at its bottom (the charge of the battery, HAS-417): the class `domain-tile--column` on
+// the tile makes its content a column that fills the card, so `margin-top: auto` puts them there
+:host(.domain-tile--column) .tile {
+  display: flex;
+  flex-direction: column;
+}
+
+:host(.domain-tile--column) mat-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
 // the title and, at its right, a signal the page may put there
 .tile__title {
   display: flex;

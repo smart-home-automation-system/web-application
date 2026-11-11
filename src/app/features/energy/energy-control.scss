@@ -41,17 +41,21 @@ $gap: 12px;
   }
 }
 
-.question {
+// the commands of the charge in the bottom right corner of the card, as the valve of the water page (owner,
+// 2026-11-11): the content of the card is a column (`domain-tile--column`), the form fills what is left of it
+.commands {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  font: var(--mat-sys-body-medium);
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 .form {
-  display: grid;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   gap: 10px;
   margin-top: 8px;
 }
@@ -83,10 +87,9 @@ $gap: 12px;
   gap: 8px;
 }
 
-button[type='submit'],
-.form__actions,
-[data-testid='charge-cancel'] {
-  justify-self: start;
+// the form is a column: its buttons at the start of their line
+.form__actions {
+  align-self: flex-start;
 }
 
 .planned,

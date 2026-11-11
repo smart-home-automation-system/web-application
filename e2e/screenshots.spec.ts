@@ -594,7 +594,7 @@ for (const language of ['en', 'pl'] as const) {
         await operator.locator('[data-day="2026-10-25"]').getByTestId('operator-hours').click();
         const window = page.getByRole('dialog');
         await expect(window.locator('.chart__plot svg')).toBeVisible();
-        await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
+        await page.waitForFunction(() => document.getAnimations().length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-operator-day'),
         });
@@ -615,6 +615,14 @@ for (const language of ['en', 'pl'] as const) {
       test('energy charge', async ({ page }, testInfo) => {
         await page.goto('/energy');
         await page.getByTestId('charge-start').click();
+        // the question before a charge, a window over the darkened page (owner, 2026-11-11)
+        const question = page.getByRole('dialog');
+        await expect(question.getByTestId('charge-question')).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy-charge-question'),
+        });
+        await question.getByTestId('confirm-yes').click();
         await expect(page.getByTestId('charge-state')).toBeVisible();
         await page.locator('app-energy-control').screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-charge'),

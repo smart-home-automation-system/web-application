@@ -1,7 +1,15 @@
 <ng-container *transloco="let t">
+  <ng-template #plannedStart>
+    @if (charge.value()?.plannedStart; as planned) {
+      <p class="tile__detail" data-testid="charge-planned">
+        {{ t('energy.charge.plannedStart') }} {{ planned | houseDateTime }}
+      </p>
+    }
+  </ng-template>
+
   <!-- the charge going on, or the form of a new one -->
   <app-domain-tile
-    class="control__charge"
+    class="control__charge domain-tile--column"
     heading="energy.cards.charge"
     icon="battery_charging_full"
     domain="energy"
@@ -53,43 +61,26 @@
         @if (r.state === 'ending') {
           <p class="tile__detail">{{ t('energy.charge.endingNote') }}</p>
         }
+        <ng-container [ngTemplateOutlet]="plannedStart" />
+        <!-- the question of a cancel of the automation is a window over the page, the card keeps its size -->
         @if (goingOn() && r.state !== 'ending') {
-          @if (askCancel()) {
-            <p class="question" role="alert" data-testid="charge-cancel-question">
-              {{ t('energy.charge.cancelQuestion') }}
-              <button
-                matButton
-                type="button"
-                data-testid="charge-cancel-keep"
-                #keep
-                (click)="askCancel.set(false)"
-              >
-                {{ t('energy.charge.keep') }}
-              </button>
-              <button
-                matButton="outlined"
-                type="button"
-                data-testid="charge-cancel-confirm"
-                [disabled]="chargeBusy()"
-                (click)="cancel()"
-              >
-                {{ t('energy.charge.cancel') }}
-              </button>
-            </p>
-          } @else {
+          <div class="commands">
             <button
               matButton="outlined"
               type="button"
+              disabledInteractive
               data-testid="charge-cancel"
-              [disabled]="chargeBusy()"
+              [disabled]="chargeBusy() || question() !== undefined"
               (click)="cancel()"
             >
               <mat-icon>stop</mat-icon>{{ t('energy.charge.cancel') }}
             </button>
-          }
+          </div>
         }
       } @else {
         <p class="tile__detail" data-testid="charge-none">{{ t('energy.charge.none') }}</p>
+        <!-- above the form: the commands keep the bottom right corner of the card -->
+        <ng-container [ngTemplateOutlet]="plannedStart" />
         <form class="form" data-testid="charge-form" (submit)="$event.preventDefault(); start()">
           <div class="form__row">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -127,23 +118,22 @@
               }
             </ul>
           }
-          <button
-            matButton="filled"
-            type="submit"
-            data-testid="charge-start"
-            [disabled]="chargeBusy()"
-          >
-            <mat-icon>bolt</mat-icon>{{ t('energy.charge.start') }}
-          </button>
+          <!-- a write to the real inverter: asked first in a window over the page (owner, 2026-11-11) -->
+          <div class="commands">
+            <button
+              matButton="filled"
+              type="submit"
+              disabledInteractive
+              data-testid="charge-start"
+              [disabled]="chargeBusy() || question() !== undefined"
+            >
+              <mat-icon>bolt</mat-icon>{{ t('energy.charge.start') }}
+            </button>
+          </div>
         </form>
       }
       @if (chargeBusy()) {
         <mat-progress-bar mode="indeterminate" [attr.aria-label]="t('energy.charge.sending')" />
-      }
-      @if (charge.value()?.plannedStart; as planned) {
-        <p class="tile__detail" data-testid="charge-planned">
-          {{ t('energy.charge.plannedStart') }} {{ planned | houseDateTime }}
-        </p>
       }
       @if (chargeFailure(); as failed) {
         <app-api-error-strip
