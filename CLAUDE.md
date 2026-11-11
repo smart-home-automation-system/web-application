@@ -1210,6 +1210,9 @@ e2e/              # Playwright tests
     diagram (`EnergyFlow`) has an arrow per line - an `img` with its words on the wrapper (the icon of Material is
     `aria-hidden` by itself) - and a question mark where the power is not known. A power is written by
     `PowerValue`: W below a kilowatt, kW from one on, its size only, "not known" for none.
+    **The battery of the diagram says how full it is** (HAS-417, owner 2026-11-11): `/energy/flows` has no SOC, so
+    the page hands in the SOC of `/energy/battery` - the call of the battery card, no request of its own - "Charge not
+    known" while that call has not told it, and its failure told in the flow card too (`tileFailures`).
   - **Copied facts**: `PHASE_CURRENT_WARN_AMPERES` (22 A, `phase-current-warn`), `BILLING_YEAR_STARTS` (9,
     `settlement.period-start`), the words of `RunMode`, `BatteryDirection`, `GridDirection` and the kinds of
     `source_alert` (`energy-views.ts`) - a value this version does not know is printed as it came.
