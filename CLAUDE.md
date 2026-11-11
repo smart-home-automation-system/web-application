@@ -1263,8 +1263,10 @@ e2e/              # Playwright tests
     operator opens `ElicznikDayDialog` (`GET /energy/elicznik?from=day&to=day`, its own call, freshness and failure in the
     window): the hours as bars, labelled by their start, **the two 02:00 of the night the clocks go back apart** ("02:00 (1)"
     the repeated one, `operatorHours`), 23 hours the night they go forward, the registers of the meter at the end of the day
-    when both are known. The settlement card shows the months of the operator (`elicznik*` of `/energy/months`) as a table
-    of its own beside the house's (side by side from 1000 px of the card, a container query), with "in the grid by Tauron";
+    when both are known. The settlement card shows the months of the operator (`elicznik*` of `/energy/months`) in **the
+    same table** as the house's - a month on one line, the house's estimate on the left, the meter of Tauron after a line on
+    the right, each group named over it, "no readings" for a month the portal served no day of (owner, 2026-11-11: two
+    tables side by side put September beside November) - with "in the grid by Tauron" beside the house's figure;
     nothing of it while no month has such a day. The settlement spans the row under the days and the meter (it was half a
     row with an empty half). The fetch by hand (`POST /energy/elicznik/fetch`) is not offered here - Bruno's. The mock
     (`energyElicznik`, `operatorOf` of `energy.fixtures.ts`): every day but yesterday served, the import 0.8 % above the

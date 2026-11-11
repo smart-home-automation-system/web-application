@@ -82,7 +82,7 @@ dashboards:
   day of 7 or 30 the import and the export as the meter of the operator counts them (read from the eLicznik portal the
   morning after) beside the 3EM, how far apart in %, the sums of the days both know, "not yet" for a day the portal has
   not served; a day opens its hours in a window (the 25 hours of the night the clocks go back, the registers of the
-  meter at its end), and the net-metering card settles the months of the operator beside the house's estimate - the
+  meter at its end), and the net-metering card settles the months of the operator beside the house's estimate, a month on one line of one table - the
   side of the invoice. **Charging the battery** (HAS-342): the charge from the grid started with
   its target and an optional end time, and while it goes on its state, who started it, its window, the battery
   now and the minutes to the target with "Stop charging" (a charge the automation started is asked about first:
