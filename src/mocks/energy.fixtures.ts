@@ -260,7 +260,7 @@ export function energyDays(
         day: isoDay(day),
         imported: 14.2,
         exported: 0.3,
-        ...operatorOf(14.2, 0.3, day < yesterday),
+        ...(day < yesterday ? operatorOf(14.2, 0.3) : {}),
       });
       continue;
     }
@@ -278,26 +278,86 @@ export function energyDays(
       charged: 4,
       discharged: 3.6,
       houseLoad: Math.round((solaxYield + sofarYield + imported - exported - 0.4) * 10) / 10,
-      ...operatorOf(imported, exported, day < yesterday),
+      ...(day < yesterday ? operatorOf(imported, exported) : {}),
     });
   }
   return { status: 200, body: days };
 }
 
-/** The day of the meter of Tauron beside the 3EM: 0.8 % more taken, 2 % less returned; none for a day not served yet. */
-function operatorOf(imported: number, exported: number, served: boolean): Partial<EnergyDay> {
-  return served
-    ? {
-        elicznikImport: Math.round(imported * 1.008 * 1000) / 1000,
-        elicznikExport: Math.round(exported * 0.98 * 1000) / 1000,
-      }
-    : {};
+/** The day of the meter of Tauron beside the 3EM: 0.8 % more taken, 2 % less returned. */
+function operatorOf(imported: number, exported: number): Partial<EnergyDay> {
+  return {
+    elicznikImport: Math.round(imported * 1.008 * 1000) / 1000,
+    elicznikExport: Math.round(exported * 0.98 * 1000) / 1000,
+  };
+}
+
+/** A range the service refuses: not two days, reversed, or 31 days and more. */
+function elicznikRangeRefused(from: string | null, to: string | null): boolean {
+  const pattern = /^\d{4}-\d{2}-\d{2}$/;
+  return (
+    from === null ||
+    to === null ||
+    !pattern.test(from) ||
+    !pattern.test(to) ||
+    dayOf(from) > dayOf(to) ||
+    (dayOf(to) - dayOf(from)) / DAY_MS >= 31
+  );
+}
+
+/** Whether a day (ms of its midnight, UTC) is the last Sunday of a month of 31 days (0-based). */
+function lastSundayOf(day: number, month: number): boolean {
+  const date = new Date(day);
+  return date.getUTCMonth() === month && date.getUTCDay() === 0 && date.getUTCDate() + 7 > 31;
+}
+
+/** The hours of a day of the portal: no hour 3 the night the clocks go forward, two the night they go back. */
+function elicznikHours(day: number): ElicznikHour[] {
+  const back = lastSundayOf(day, 9);
+  const forward = lastSundayOf(day, 2);
+  const hours: ElicznikHour[] = [];
+  for (let hour = 1; hour <= 24; hour++) {
+    if (forward && hour === 3) {
+      continue;
+    }
+    const night = hour <= 7 || hour >= 22;
+    const sun =
+      hour >= 9 && hour <= 16 ? Math.round(Math.sin(((hour - 8) / 9) * Math.PI) * 400) / 1000 : 0;
+    const imported = Math.round(((night ? 1.4 : 0.12) + ((hour * 37) % 11) / 100) * 1000) / 1000;
+    if (back && hour === 3) {
+      hours.push({ hour, repeated: true, imported, exported: 0 });
+    }
+    hours.push({ hour, repeated: false, imported, exported: sun });
+  }
+  return hours;
+}
+
+/** A day of the portal: the sums of its hours, the registers - every fifth day without them, as when not read yet. */
+function elicznikDay(day: number): ElicznikDay {
+  const hours = elicznikHours(day);
+  const sum = (of: 'imported' | 'exported') =>
+    Math.round(hours.reduce((total, hour) => total + (hour[of] ?? 0), 0) * 1000) / 1000;
+  const index = Math.round(day / DAY_MS);
+  const registers =
+    index % 5 === 0
+      ? {}
+      : {
+          meterImported: 2600 + (index % 400) * 21,
+          meterExported: 4868 + Math.floor((index % 400) / 3),
+        };
+  return {
+    day: isoDay(day),
+    imported: sum('imported'),
+    exported: sum('exported'),
+    ...registers,
+    hours,
+  };
 }
 
 /**
  * `GET /home/energy/elicznik?from=&to=` (HAS-417): the days the portal served, hour by hour - the night the clocks go
- * back (the last Sunday of October) with its 25 hours, the one they go forward without hour 3; the registers of the
- * meter at the end of every day but the first of the range. Yesterday and later are not served.
+ * back (the last Sunday of October) with its 25 hours, the one they go forward without hour 3; every fifth day without
+ * the registers of the meter. Yesterday and later are not served.
  */
 export function energyElicznik(
   from: string | null,
@@ -305,71 +365,16 @@ export function energyElicznik(
   fresh: boolean,
   now: Date = new Date(),
 ): MockReply {
-  const pattern = /^\d{4}-\d{2}-\d{2}$/;
-  if (
-    from === null ||
-    to === null ||
-    !pattern.test(from) ||
-    !pattern.test(to) ||
-    dayOf(from) > dayOf(to) ||
-    (dayOf(to) - dayOf(from)) / DAY_MS >= 31
-  ) {
+  if (elicznikRangeRefused(from, to)) {
     return { status: 400, body: { errors: [{ message: 'Invalid range', code: 'INVALID_RANGE' }] } };
   }
   const yesterday = dayOf(houseTime(now, 0).slice(0, 10)) - DAY_MS;
   const days: ElicznikDay[] = [];
-  if (!fresh) {
-    for (let day = dayOf(from); day <= Math.min(dayOf(to), yesterday - DAY_MS); day += DAY_MS) {
-      const date = new Date(day);
-      const lastSunday = (month: number) =>
-        date.getUTCMonth() === month && date.getUTCDay() === 0 && date.getUTCDate() + 7 > 31;
-      const back = lastSunday(9);
-      const forward = lastSunday(2);
-      const hours: ElicznikHour[] = [];
-      for (let hour = 1; hour <= 24; hour++) {
-        if (forward && hour === 3) {
-          continue;
-        }
-        const night = hour <= 7 || hour >= 22;
-        const sun =
-          hour >= 9 && hour <= 16
-            ? Math.round(Math.sin(((hour - 8) / 9) * Math.PI) * 400) / 1000
-            : 0;
-        const take = (night ? 1.4 : 0.12) + ((hour * 37) % 11) / 100;
-        if (back && hour === 3) {
-          hours.push({
-            hour,
-            repeated: true,
-            imported: Math.round(take * 1000) / 1000,
-            exported: 0,
-          });
-        }
-        hours.push({
-          hour,
-          repeated: false,
-          imported: Math.round(take * 1000) / 1000,
-          exported: sun,
-        });
-      }
-      const sum = (of: 'imported' | 'exported') =>
-        Math.round(hours.reduce((total, hour) => total + (hour[of] ?? 0), 0) * 1000) / 1000;
-      const index = Math.round(day / DAY_MS);
-      days.push({
-        day: isoDay(day),
-        imported: sum('imported'),
-        exported: sum('exported'),
-        // every fifth day without its registers, as when the portal has not read the meter yet
-        ...(index % 5 !== 0
-          ? {
-              meterImported: 2600 + (index % 400) * 21,
-              meterExported: 4868 + Math.floor((index % 400) / 3),
-            }
-          : {}),
-        hours,
-      });
-    }
+  const last = fresh ? -1 : Math.min(dayOf(to as string), yesterday - DAY_MS);
+  for (let day = dayOf(from as string); day <= last; day += DAY_MS) {
+    days.push(elicznikDay(day));
   }
-  const answer: ElicznikDays = { from, to, days };
+  const answer: ElicznikDays = { from: from as string, to: to as string, days };
   return { status: 200, body: answer };
 }
 

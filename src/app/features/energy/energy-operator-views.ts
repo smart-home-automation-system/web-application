@@ -114,7 +114,8 @@ export function operatorHours(day: ElicznikDay | undefined): readonly OperatorHo
   return hours.map((hour) => {
     const start = `${String((hour.hour as number) - 1).padStart(2, '0')}:00`;
     const repeated = hour.repeated === true;
-    const label = doubled.has(hour.hour) ? `${start} (${repeated ? 1 : 2})` : start;
+    const which = repeated ? 1 : 2;
+    const label = doubled.has(hour.hour) ? `${start} (${which})` : start;
     return {
       label,
       repeated,
