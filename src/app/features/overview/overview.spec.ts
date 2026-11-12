@@ -98,7 +98,8 @@ type Tile =
   | 'light'
   | 'appliance'
   | 'energy'
-  | 'valve';
+  | 'valve'
+  | 'aircon';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -317,6 +318,8 @@ describe('Overview', () => {
     expect(await link('presence')).toBe('/presence');
     expect(await link('weather')).toBe('/weather');
     expect(await link('blinds')).toBe('/blinds');
+    // the page of the units (HAS-395); the tile came first and led nowhere (the owner on HAS-431)
+    expect(await link('aircon')).toBe('/aircon');
   });
 
   // one tile for the heating (owner, 2026-10-21, HAS-266): the state, the rooms, the silent
