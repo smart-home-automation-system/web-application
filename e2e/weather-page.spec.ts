@@ -3,7 +3,7 @@ import { Locator, Page } from '@playwright/test';
 import { expect, startIn, test, useScenario } from './support';
 
 /**
- * The weather page: the cards of the metrics and the seven charts of their history, fed by the
+ * The weather page: the cards of the metrics and the nine charts of their history, fed by the
  * mock API, whose station was silent for an hour yesterday. The mock dates its answers from the
  * time of the call, so every test pins the clock: a Friday, 14:30 on the clocks of the house.
  */
@@ -18,7 +18,9 @@ const CHARTS = [
   'illuminance',
   'precipitation',
   'pressure',
-  'air',
+  'pm1',
+  'pm25',
+  'pm10',
 ];
 
 /** The picture of a chart, once the library has arrived and drawn into it. */
@@ -58,7 +60,7 @@ test.describe('the weather page', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('draws the seven charts over the last 24 hours, with what they ranged between', async ({
+  test('draws the nine charts over the last 24 hours, with what they ranged between', async ({
     page,
   }) => {
     await page.goto('/weather');
@@ -75,7 +77,7 @@ test.describe('the weather page', () => {
     await expect(chart(page, 'illuminance').locator('.chart__plot')).toContainText('10,000 lx');
   });
 
-  // the page is one look at the weather: one period for all seven
+  // the page is one look at the weather: one period for all nine
   test('switches every chart to the period chosen on one of them', async ({ page }) => {
     await page.goto('/weather');
     await drawn(chart(page, 'pressure'));
@@ -142,7 +144,7 @@ test.describe('the weather page', () => {
   });
 
   // HAS-431: the air quality sensor of the garden - a moderate evening in the mock house
-  test('tells the air quality, its level in words, and the thresholds of PM10 on its chart', async ({
+  test('tells the air quality, its level in words, and a chart per fraction with its thresholds', async ({
     page,
   }) => {
     await page.goto('/weather');
@@ -154,9 +156,12 @@ test.describe('the weather page', () => {
     await expect(air).toContainText(/PM1\s+31 µg\/m³/);
     await expect(air.getByTestId('air-smog')).toHaveCount(0);
     await expect(page.getByTestId('card-station')).toContainText(/Air quality sensor\s+Answers/);
-    const plot = await drawn(chart(page, 'air'));
-    await expect(plot).toContainText('PM10 moderate from');
-    await expect(plot).toContainText('PM10 bad from');
+    for (const key of ['pm25', 'pm10']) {
+      const plot = await drawn(chart(page, key));
+      await expect(plot).toContainText('Moderate from');
+      await expect(plot).toContainText('Bad from');
+    }
+    await expect(await drawn(chart(page, 'pm1'))).not.toContainText('Moderate from');
   });
 
   test('warns of the smog of an open episode', async ({ page }) => {

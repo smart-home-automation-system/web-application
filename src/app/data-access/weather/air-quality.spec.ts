@@ -8,6 +8,8 @@ import {
   PM10_BAD_FROM,
   PM10_MODERATE_FROM,
   PM10_THRESHOLDS,
+  PM25_BAD_FROM,
+  PM25_MODERATE_FROM,
   PM25_THRESHOLDS,
   airLevelColour,
   airLevelOf,
@@ -22,6 +24,8 @@ describe('air quality', () => {
     expect(PM25_THRESHOLDS).toEqual([13, 35, 55, 75, 110]);
     expect(PM10_MODERATE_FROM).toBe(50);
     expect(PM10_BAD_FROM).toBe(110);
+    expect(PM25_MODERATE_FROM).toBe(35);
+    expect(PM25_BAD_FROM).toBe(75);
   });
 
   // a threshold belongs to the level below it

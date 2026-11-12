@@ -425,11 +425,7 @@
 
   <section class="charts" [attr.aria-label]="t('weather.page.history')">
     @for (chart of charts; track chart.spec.key) {
-      <app-weather-chart-card
-        [class.chart--wide]="chart.spec.wide === true"
-        [chart]="chart"
-        [(preset)]="period.preset"
-      />
+      <app-weather-chart-card [chart]="chart" [(preset)]="period.preset" />
     }
   </section>
 </ng-container>

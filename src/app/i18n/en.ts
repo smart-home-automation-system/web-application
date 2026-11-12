@@ -747,11 +747,23 @@ export const en = {
         note: 'At the station, not reduced to sea level.',
       },
       air: {
-        title: 'Particulate matter',
-        label: 'Chart of PM2.5 and PM10 outside over the period',
-        note: 'Dashed: PM10 of 50 µg/m³, above which the air is moderate, and of 110, above which it is bad (the air quality index of GIOS).',
-        moderateFrom: 'PM10 moderate from',
-        badFrom: 'PM10 bad from',
+        moderateFrom: 'Moderate from',
+        badFrom: 'Bad from',
+      },
+      pm1: {
+        title: 'PM1',
+        label: 'Chart of PM1 outside over the period',
+        note: 'The finest dust; the air quality index of GIOS has no thresholds for it.',
+      },
+      pm25: {
+        title: 'PM2.5',
+        label: 'Chart of PM2.5 outside over the period',
+        note: 'Dashed: 35 µg/m³, above which the air is moderate, and 75, above which it is bad (the air quality index of GIOS), once the readings come near them.',
+      },
+      pm10: {
+        title: 'PM10',
+        label: 'Chart of PM10 outside over the period',
+        note: 'Dashed: 50 µg/m³, above which the air is moderate, and 110, above which it is bad (the air quality index of GIOS), once the readings come near them.',
       },
     },
   },

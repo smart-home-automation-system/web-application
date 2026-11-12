@@ -2,7 +2,12 @@ import { Signal, computed, inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
-import { PM10_BAD_FROM, PM10_MODERATE_FROM } from '../../data-access/weather/air-quality';
+import {
+  PM10_BAD_FROM,
+  PM10_MODERATE_FROM,
+  PM25_BAD_FROM,
+  PM25_MODERATE_FROM,
+} from '../../data-access/weather/air-quality';
 import { WeatherApi, WeatherMetric } from '../../data-access/weather/weather-api';
 import { MessageKey } from '../../i18n/messages';
 import {
@@ -57,8 +62,6 @@ export interface WeatherChartSpec {
    * would stretch the axis of a clean week far above its lines.
    */
   readonly thresholds?: readonly ThresholdSpec[];
-  /** The whole width of a row of charts. */
-  readonly wide?: boolean;
 }
 
 interface ThresholdSpec {
@@ -70,7 +73,7 @@ interface ThresholdSpec {
 }
 
 /**
- * The seven charts, in the order of the page. The units are the ones the gateway of the station
+ * The nine charts, in the order of the page. The units are the ones the gateway of the station
  * reports; the unit of the rain gauge is not confirmed (`weather-service` README), so its
  * amounts are written without one.
  */
@@ -143,29 +146,57 @@ export const WEATHER_CHARTS: readonly WeatherChartSpec[] = [
     note: 'weather.charts.pressure.note',
     lines: [{ metric: 'pressure', name: 'weather.metric.pressure', color: 1, drawn: 'avg' }],
   },
+  // the air quality sensor outside (HAS-431, weather-service >= 0.6.0): whole µg/m³, from nothing up - a chart per
+  // fraction (the owner on the PR), PM2.5 and PM10 with the thresholds of their scale; PM1 has none in the index
   {
-    // the air quality sensor outside (HAS-431, weather-service >= 0.6.0): whole µg/m³, from nothing up
-    key: 'air',
-    title: 'weather.charts.air.title',
-    label: 'weather.charts.air.label',
+    key: 'pm1',
+    title: 'weather.charts.pm1.title',
+    label: 'weather.charts.pm1.label',
     icon: 'pulmonology',
     unit: 'µg/m³',
     decimals: 0,
     bounds: { min: 0 },
-    note: 'weather.charts.air.note',
-    wide: true,
-    lines: [
-      { metric: 'pm25', name: 'weather.metric.pm25', color: 1, drawn: 'avg' },
-      { metric: 'pm10', name: 'weather.metric.pm10', color: 2, drawn: 'avg' },
-    ],
+    note: 'weather.charts.pm1.note',
+    lines: [{ metric: 'pm1', name: 'weather.metric.pm1', color: 1, drawn: 'avg' }],
+  },
+  {
+    key: 'pm25',
+    title: 'weather.charts.pm25.title',
+    label: 'weather.charts.pm25.label',
+    icon: 'pulmonology',
+    unit: 'µg/m³',
+    decimals: 0,
+    bounds: { min: 0 },
+    note: 'weather.charts.pm25.note',
+    lines: [{ metric: 'pm25', name: 'weather.metric.pm25', color: 1, drawn: 'avg' }],
     thresholds: [
       {
-        key: 'pm10-moderate',
+        key: 'moderate',
+        value: PM25_MODERATE_FROM,
+        name: 'weather.charts.air.moderateFrom',
+        color: 5,
+      },
+      { key: 'bad', value: PM25_BAD_FROM, name: 'weather.charts.air.badFrom', color: 5 },
+    ],
+  },
+  {
+    key: 'pm10',
+    title: 'weather.charts.pm10.title',
+    label: 'weather.charts.pm10.label',
+    icon: 'pulmonology',
+    unit: 'µg/m³',
+    decimals: 0,
+    bounds: { min: 0 },
+    note: 'weather.charts.pm10.note',
+    lines: [{ metric: 'pm10', name: 'weather.metric.pm10', color: 1, drawn: 'avg' }],
+    thresholds: [
+      {
+        key: 'moderate',
         value: PM10_MODERATE_FROM,
         name: 'weather.charts.air.moderateFrom',
         color: 5,
       },
-      { key: 'pm10-bad', value: PM10_BAD_FROM, name: 'weather.charts.air.badFrom', color: 5 },
+      { key: 'bad', value: PM10_BAD_FROM, name: 'weather.charts.air.badFrom', color: 5 },
     ],
   },
 ];

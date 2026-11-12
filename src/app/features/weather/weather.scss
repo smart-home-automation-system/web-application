@@ -10,14 +10,15 @@ $gap: 12px;
 // The page stands in the middle of a wide screen, like the overview, and its rows are always
 // full (owner, 2026-10-16, the overview): never a row of four with two under it and an empty half
 // beside them. Seven cards since the air quality (HAS-431) - in one row, or the air quality card two
-// places wide in rows of four or of two, or one column; the seven charts in rows of three or of two
-// with the chart of the air quality the whole width of the last row, or in one column. The counts follow the width of the
+// places wide in rows of four or of two, or one column; the nine charts in three rows of three, in
+// rows of two with the last one the whole width, or in one column. The counts follow the width of the
 // page, not of the window. Cards side by side end on one line (owner, 2026-10-10): their
 // contents differ by a line or two. The title stays in the top left corner, as on every other view
 // (owner, 2026-10-21, HAS-266).
+// 1800 px, the width of the water page (the owner on HAS-431)
 .cards,
 .charts {
-  max-width: 1600px;
+  max-width: 1800px;
   margin-inline: auto;
 }
 
@@ -50,8 +51,8 @@ $gap: 12px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  // the last chart, the air quality: a row of its own
-  .chart--wide {
+  // nine charts in rows of two: the last one a row of its own
+  app-weather-chart-card:last-child:nth-child(odd) {
     grid-column: 1 / -1;
   }
 }
@@ -65,6 +66,11 @@ $gap: 12px;
 @container (min-width: 1440px) {
   .charts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  // three full rows of three
+  app-weather-chart-card:last-child:nth-child(odd) {
+    grid-column: auto;
   }
 }
 

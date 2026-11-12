@@ -739,11 +739,23 @@ export const pl: Messages = {
         note: 'Na wysokości stacji, nie zredukowane do poziomu morza.',
       },
       air: {
-        title: 'Pyły zawieszone',
-        label: 'Wykres PM2,5 i PM10 na zewnątrz w wybranym okresie',
-        note: 'Przerywane: PM10 50 µg/m³, powyżej którego powietrze jest umiarkowane, i 110, powyżej którego jest złe (indeks jakości powietrza GIOŚ).',
-        moderateFrom: 'PM10 umiarkowana od',
-        badFrom: 'PM10 zła od',
+        moderateFrom: 'Umiarkowana od',
+        badFrom: 'Zła od',
+      },
+      pm1: {
+        title: 'PM1',
+        label: 'Wykres PM1 na zewnątrz w wybranym okresie',
+        note: 'Najdrobniejszy pył; indeks jakości powietrza GIOŚ nie ma dla niego progów.',
+      },
+      pm25: {
+        title: 'PM2,5',
+        label: 'Wykres PM2,5 na zewnątrz w wybranym okresie',
+        note: 'Przerywane: 35 µg/m³, powyżej którego powietrze jest umiarkowane, i 75, powyżej którego jest złe (indeks jakości powietrza GIOŚ), gdy odczyty się do nich zbliżą.',
+      },
+      pm10: {
+        title: 'PM10',
+        label: 'Wykres PM10 na zewnątrz w wybranym okresie',
+        note: 'Przerywane: 50 µg/m³, powyżej którego powietrze jest umiarkowane, i 110, powyżej którego jest złe (indeks jakości powietrza GIOŚ), gdy odczyty się do nich zbliżą.',
       },
     },
   },

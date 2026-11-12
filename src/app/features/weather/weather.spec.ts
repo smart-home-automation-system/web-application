@@ -349,50 +349,62 @@ describe('Weather', () => {
       expect((await card('station')).querySelector('[data-testid="air-sensor-silent"]')).toBeNull();
     });
 
-    it('draws PM2.5 and PM10 with the two thresholds of PM10, left out of the numbers', async () => {
+    // a chart per fraction (the owner on the PR): each drawn alone, with the thresholds of its own scale
+    async function answerAir(values: Partial<Record<'pm1' | 'pm25' | 'pm10', number>>) {
       await fixture.whenStable();
       const asked = (
         fixture.componentInstance as unknown as { period: { range(): HistoryRange } }
       ).period.range();
-      for (const name of ['pm25', 'pm10'] as const) {
-        answerQuery(histories.get(name)!, asked, {
+      for (const [name, value] of Object.entries(values)) {
+        answerQuery(histories.get(name as WeatherMetric)!, asked, {
           bucketSeconds: 300,
-          points: [{ at: '2026-10-16T14:00:00', avg: name === 'pm10' ? 64 : 41, min: 1, max: 99 }],
+          points: [{ at: '2026-10-16T14:00:00', avg: value, min: 1, max: 99 }],
         });
       }
       await fixture.whenStable();
-      // the one chart drawn: the others have no answer
-      const air = () => charts.drawn.findIndex((drawn) => drawn !== undefined);
-      await vi.waitFor(() => expect(air()).toBeGreaterThanOrEqual(0));
+    }
+    /** The lines of the one chart drawn: the others have no answer. */
+    async function drawnLines(): Promise<string[]> {
+      const index = () => charts.drawn.findIndex((drawn) => drawn !== undefined);
+      await vi.waitFor(() => expect(index()).toBeGreaterThanOrEqual(0));
+      return charts.lines(index()).map((line) => line.name);
+    }
 
-      const lines = charts.lines(air());
-      expect(lines.map((line) => line.name)).toEqual(
-        expect.arrayContaining(['PM2.5', 'PM10', 'PM10 moderate from', 'PM10 bad from']),
+    it('draws PM10 alone with the two thresholds of its scale, left out of the numbers', async () => {
+      await answerAir({ pm10: 64 });
+
+      expect(await drawnLines()).toEqual(
+        expect.arrayContaining(['PM10', 'Moderate from', 'Bad from']),
       );
       expect(
-        words(page().querySelector('[data-testid="chart-air"] [data-testid="history-facts"]')),
-      ).toBe('PM2.5 41 – 41 µg/m³ PM10 64 – 64 µg/m³');
+        words(page().querySelector('[data-testid="chart-pm10"] [data-testid="history-facts"]')),
+      ).toBe('PM10 64 – 64 µg/m³');
+    });
+
+    it('draws PM2.5 alone with the thresholds of PM2.5, 35 and 75', async () => {
+      await answerAir({ pm25: 41 });
+
+      await drawnLines();
+      const lines = charts.lines(charts.drawn.findIndex((drawn) => drawn !== undefined));
+      const at = (name: string) =>
+        (lines.find((line) => line.name === name)?.data[0] as [number, number] | undefined)?.[1];
+      expect(at('Moderate from')).toBe(35);
+      expect(at('Bad from')).toBe(75);
+    });
+
+    it('draws PM1 alone, with no threshold - the index has none for it', async () => {
+      await answerAir({ pm1: 80 });
+
+      expect(await drawnLines()).toEqual(['PM1']);
     });
 
     // a clean week keeps its own axis: a threshold is drawn once the readings reach half of it
     it('draws only the thresholds the readings come near', async () => {
-      await fixture.whenStable();
-      const asked = (
-        fixture.componentInstance as unknown as { period: { range(): HistoryRange } }
-      ).period.range();
-      for (const name of ['pm25', 'pm10'] as const) {
-        answerQuery(histories.get(name)!, asked, {
-          bucketSeconds: 300,
-          points: [{ at: '2026-10-16T14:00:00', avg: name === 'pm10' ? 30 : 12, min: 1, max: 40 }],
-        });
-      }
-      await fixture.whenStable();
-      const air = () => charts.drawn.findIndex((drawn) => drawn !== undefined);
-      await vi.waitFor(() => expect(air()).toBeGreaterThanOrEqual(0));
+      await answerAir({ pm10: 30 });
 
-      const names = charts.lines(air()).map((line) => line.name);
-      expect(names).toContain('PM10 moderate from');
-      expect(names).not.toContain('PM10 bad from');
+      const names = await drawnLines();
+      expect(names).toContain('Moderate from');
+      expect(names).not.toContain('Bad from');
     });
 
     it('draws no threshold while no line has anything to draw', async () => {
@@ -400,22 +412,12 @@ describe('Weather', () => {
       const asked = (
         fixture.componentInstance as unknown as { period: { range(): HistoryRange } }
       ).period.range();
-      for (const name of ['pm25', 'pm10'] as const) {
-        answerQuery(histories.get(name)!, asked, { bucketSeconds: 300, points: [] });
-      }
+      answerQuery(histories.get('pm10')!, asked, { bucketSeconds: 300, points: [] });
       await fixture.whenStable();
 
-      expect(words(page().querySelector('[data-testid="chart-air"]'))).toContain(
+      expect(words(page().querySelector('[data-testid="chart-pm10"]'))).toContain(
         'No reading in this period.',
       );
-    });
-
-    it('is the whole width of a row of charts', async () => {
-      await fixture.whenStable();
-
-      const wide = [...page().querySelectorAll('app-weather-chart-card.chart--wide')];
-      expect(wide).toHaveLength(1);
-      expect(wide[0].querySelector('[data-testid="chart-air"]')).not.toBeNull();
     });
 
     it('speaks Polish', async () => {
@@ -440,6 +442,7 @@ describe('Weather', () => {
           'gust',
           'humidity',
           'illuminance',
+          'pm1',
           'pm10',
           'pm25',
           'precipitation',
@@ -448,7 +451,7 @@ describe('Weather', () => {
           'wind',
         ].sort(),
       );
-      expect(page().querySelectorAll('app-weather-chart-card')).toHaveLength(7);
+      expect(page().querySelectorAll('app-weather-chart-card')).toHaveLength(9);
     });
 
     // the page is one look at the weather: the period chosen on one chart is that of all

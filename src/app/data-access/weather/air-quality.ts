@@ -17,9 +17,11 @@ export const PM10_THRESHOLDS = [20, 50, 80, 110, 150] as const;
 /** The same for PM2.5, µg/m³. */
 export const PM25_THRESHOLDS = [13, 35, 55, 75, 110] as const;
 
-/** PM10 from which the air is moderate and from which it is bad - drawn across the chart of the page. */
+/** Above these the air is moderate and bad - drawn across the charts of the page. */
 export const PM10_MODERATE_FROM = PM10_THRESHOLDS[1];
 export const PM10_BAD_FROM = PM10_THRESHOLDS[3];
+export const PM25_MODERATE_FROM = PM25_THRESHOLDS[1];
+export const PM25_BAD_FROM = PM25_THRESHOLDS[3];
 
 const finite = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
