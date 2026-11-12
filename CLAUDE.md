@@ -1172,7 +1172,7 @@ e2e/              # Playwright tests
   weather page; the domain colour is `weather`. `SHELL_READS`
   (`src/testing/overview-reads.ts`) lets a test that renders the shell pass the read of the strip.
 - **The weather page** (HAS-241, `features/weather/`, the administrator's) is cards of the weather
-  now and seven charts of its history (the seventh, the air quality, since HAS-431). What to keep:
+  now and nine charts of its history (PM1, PM2.5 and PM10 since HAS-431). What to keep:
   - **The cards read the resource of the strip** (`CurrentWeatherStore`) and each tells its
     freshness and failure - the owner's rule of the two hot-water cards. A card's age is
     `ReadingAge` over `newestOf` its metrics; a row the service calls stale is tagged through
@@ -1210,12 +1210,14 @@ e2e/              # Playwright tests
   - **The weather page** has seven cards: the air quality card (`card-air`) reads the weather call and **the status
     for the smog**, its failure told on the card apart (the station card does the same for the battery); the station
     card names the sensor - whether it answers, its silence - only while the status has `airSensor`. **The rows stay
-    full**: seven cards in one row from 1600 px of the page, rows of four from 900 px and of two from 500 px with the
-    air quality card two places wide (it stands before the light and the station so that the rows close), one column
-    below. The seventh chart (`air`, PM2.5 and PM10) spans its row (`wide` of the spec, `chart--wide`). **Its PM10
-    thresholds are dashed lines of the neutral fifth colour** (`thresholds` of `WeatherChartSpec`), drawn once the
-    readings of the period reach half of a threshold - drawn always, 110 stretched the axis of a clean week; they are
-    in no number under the chart.
+    full**: the page is 1800 px wide at most (the width of the water page - the owner on the PR); seven cards in one
+    row from 1600 px of the page, rows of four from 900 px and of two from 500 px with the air quality card two places
+    wide (it stands before the light and the station so that the rows close), one column below. **A chart per fraction**
+    (the owner on the PR: not PM2.5 and PM10 on one chart): `pm1`, `pm25`, `pm10` - nine charts, three rows of three,
+    in rows of two the last a row of its own. **The thresholds of PM2.5 (35, 75) and PM10 (50, 110) are dashed lines of
+    the neutral fifth colour** (`thresholds` of `WeatherChartSpec`), drawn once the readings of the period reach half
+    of a threshold - drawn always, 110 stretched the axis of a clean week; they are in no number under the chart. PM1
+    has no threshold in the index.
   - **The strip** draws the dot after the humidity, a `role="button"` with the level and PM10 as its name and tooltip
     (a tap, Enter or Space, its event stopped so the tooltip of a failed strip does not open with it); **no dot for a
     stale level** - the age of the strip is the station's. **The overview tile** has the row "Air quality" with PM10;
