@@ -1224,7 +1224,7 @@ e2e/              # Playwright tests
     heights through the switch.
   - **The strip** draws the dot after the humidity, a `role="button"` with the level and PM10 as its name and tooltip
     (a tap, Enter or Space, its event stopped so the tooltip of a failed strip does not open with it); **no dot for a
-    stale level** - the age of the strip is the station's. **The overview tile** has the row "Air quality" with PM10;
+    stale level** - the age of the strip is the station's. **The overview tile** has the row "Air quality" - the word and the colour of the level, no values (the owner on the PR);
     **the age and the silence of the tile stay the station's** (`weatherMetrics`): a fresh air sensor never hides a
     silent station (found in review), the air row is tagged out of date by itself.
   - The mock (`weather.fixtures.ts`): a moderate evening (level 3, PM2.5 42, PM10 58); `localStorage['mock-smog']` =

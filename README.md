@@ -45,7 +45,7 @@ dashboards:
   garage open or closed, its flow and the litres used today, and since HAS-402 the salt of the softener and the days
   it lasts), the boiler room, who is at home - with a warning
   when the detection has not checked for more than five minutes - the weather (temperature, dew
-  point, wind and gusts, rain, daylight, and since HAS-431 the air quality in a word with PM10), the blinds (HAS-254: how many are open, closed, moving
+  point, wind and gusts, rain, daylight, and since HAS-431 the air quality in a word and its colour, no values), the blinds (HAS-254: how many are open, closed, moving
   and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
   the rooms with a light on, and whether the house is empty and acted on) and the appliances
   (HAS-282: which of the washing machine, the dryer and the dishwasher runs and which waits to be
