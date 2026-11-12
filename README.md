@@ -45,7 +45,7 @@ dashboards:
   garage open or closed, its flow and the litres used today, and since HAS-402 the salt of the softener and the days
   it lasts), the boiler room, who is at home - with a warning
   when the detection has not checked for more than five minutes - the weather (temperature, dew
-  point, wind and gusts, rain, daylight), the blinds (HAS-254: how many are open, closed, moving
+  point, wind and gusts, rain, daylight, and since HAS-431 the air quality in a word with PM10), the blinds (HAS-254: how many are open, closed, moving
   and not known, read once a minute) and the lights (HAS-268: how many are on, off and not known,
   the rooms with a light on, and whether the house is empty and acted on) and the appliances
   (HAS-282: which of the washing machine, the dryer and the dishwasher runs and which waits to be
@@ -57,13 +57,19 @@ dashboards:
   the outdoor temperature and humidity, led by an icon of rain or of a strong wind (8 m/s), with
   the age of the reading. A failed call keeps the last reading, its age marked, with the reason
   in a tooltip (a tap on a phone); with nothing to show - no answer yet, or a station not heard
-  yet - it shrinks to an icon whose tooltip says why.
+  yet - it shrinks to an icon whose tooltip says why. Since HAS-431 a dot in the colour of the air quality
+  after the humidity, its level and PM10 in its tooltip (a tap or a key); none for a level out of date.
 - **Weather**: the weather station in detail - temperature with dew point and humidity, wind
   with gusts and its direction on a dial, rain now and the rain gauge, pressure, daylight and UV,
   and the station itself (whether its gateway answers, when it was last heard, battery and
-  voltage) - and six charts of the history over 24 hours, 7 or 30 days, one period for all:
+  voltage) - and seven charts of the history over 24 hours, 7 or 30 days, one period for all:
   temperature and dew point, humidity, wind and gusts, daylight (logarithmic), rain per interval,
-  pressure.
+  pressure, and the particulate matter.
+  **The air quality** (HAS-431, the BleBox sensor of the garden): the level of the sensor on the scale of the
+  air quality index of GIOS in a word and its colour (very good ... very bad), PM2.5 and PM10 with the level of
+  each, PM1, an open smog episode the household was told of, the sensor on the station card (whether it
+  answers, its silence), and PM2.5 and PM10 over the period on a chart the width of its row, with the PM10
+  thresholds of 50 and 110 µg/m³ dashed once the readings come near them.
 - **Energy** (HAS-341, the administrator's, `/energy`): the energy of the house from `energy-service` -
   where it goes now (the panels above the house, the battery and the grid beside it, an arrow along each
   line by the sign of its power, "not known" where a power is not), the day so far, the grid as the SOLAX
@@ -552,9 +558,9 @@ Endpoints used today:
 | `GET`, `POST`, `PUT`, `DELETE` | `/home/water/bills`, `/home/water/bills/{id}` | The bills of the waterworks with what the house measured (water), read every 5 min and again after every write. Needs `water-service` 0.9.0 or later |
 | `GET` | `/home/water/consumption?range=&at=` | The water used over a day, week, month or year in buckets, with the total and the one before (water; today on the overview), asked when the range or the day changes, then every minute. Needs `water-service` 0.8.0 or later |
 | `GET` | `/home/boiler/status` | The furnace and both pumps: `working` and the last note of the service with its time (boiler room, overview), polled every 30 s |
-| `GET` | `/home/weather/current` | Every metric of the weather station with `value`, `measuredAt` and `stale` (the strip on every page, overview, weather), polled every 60 s by one resource for all. A metric never heard is not in the answer and is not drawn; `{}` is a station not heard yet. Needs `weather-service` 0.4.0 and `api-gateway-service` 0.6.0 or later |
-| `GET` | `/home/weather/status` | How the service hears the station: its gateway (answers or not, when checked), when the station was last heard, `silent` after 30 min (weather), polled every 60 s |
-| `GET` | `/home/weather/history?metric=&from=&to=` | One metric over a range, averaged into buckets with `min` / `max` (weather: temperature, dew point, humidity, wind, gust, illuminance, precipitation, pressure). Asked when the period changes, then every 3 min. An unknown metric is `UNKNOWN_METRIC` |
+| `GET` | `/home/weather/current` | Every metric of the weather station with `value`, `measuredAt` and `stale` (the strip on every page, overview, weather), polled every 60 s by one resource for all. A metric never heard is not in the answer and is not drawn; `{}` is a station not heard yet. Since HAS-431 also `pm1`, `pm25`, `pm10` and `airQualityLevel` of the air quality sensor (`weather-service` 0.5.0). Needs `weather-service` 0.4.0 and `api-gateway-service` 0.6.0 or later |
+| `GET` | `/home/weather/status` | How the service hears the station: its gateway (answers or not, when checked), when the station was last heard, `silent` after 30 min (weather), polled every 60 s; since HAS-431 `airSensor` - whether the air quality sensor answers, its silence and an open `smog` episode (`weather-service` 0.7.0) |
+| `GET` | `/home/weather/history?metric=&from=&to=` | One metric over a range, averaged into buckets with `min` / `max` (weather: temperature, dew point, humidity, wind, gust, illuminance, precipitation, pressure, and since HAS-431 PM2.5 and PM10 - `weather-service` 0.6.0). Asked when the period changes, then every 3 min. An unknown metric is `UNKNOWN_METRIC` |
 | `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the switch on "My room"). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened - and after every change made on the Household page |
 | `GET` | `/home/household` | The whole registry - every member, switched off or not, with phone, role, rooms, permissions and devices (household). By the Household page only, polled every 60 s while it is open and read again after every change |
 | `POST` | `/home/household/member` | Adds a member, with role, rooms and permissions (household) |
