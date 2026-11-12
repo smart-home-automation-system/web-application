@@ -95,6 +95,34 @@ test.describe('the weather page', () => {
     await expect(await drawn(chart(page, 'wind'))).toContainText('Sept');
   });
 
+  // the owner on HAS-431: the cards must not shrink to their progress bars while another period loads
+  test('keeps the height of every chart while another period loads', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/weather');
+    for (const key of CHARTS) {
+      await drawn(chart(page, key));
+    }
+
+    const heights = await page.evaluate(async () => {
+      const cards = [...document.querySelectorAll('app-weather-chart-card')];
+      const seen = new Set<string>();
+      const measure = () =>
+        seen.add(cards.map((card) => Math.round(card.getBoundingClientRect().height)).join(','));
+      measure();
+      const week = [
+        ...document.querySelectorAll('[data-testid="chart-pressure"] mat-button-toggle button'),
+      ].find((button) => button.textContent?.includes('7 days')) as HTMLButtonElement;
+      week.click();
+      for (let sample = 0; sample < 40; sample++) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        measure();
+      }
+      return [...seen];
+    });
+
+    expect(heights).toHaveLength(1);
+  });
+
   test('tells the failure in every card and chart, and keeps the choice of the period', async ({
     page,
   }) => {

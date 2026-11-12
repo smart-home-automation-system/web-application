@@ -1,6 +1,14 @@
 :host {
   display: block;
   min-width: 0;
+  // what stands under the periods keeps its height while another period loads (the owner on HAS-431, the rule of
+  // the water page): the chart (280 px), the numbers and a note of two lines - the tallest card of the page
+  --app-frame-body-min-height: 336px;
+
+  // the chart of a phone (220 px), the media query of HistoryChart
+  @media (max-width: 640px) {
+    --app-frame-body-min-height: 276px;
+  }
 }
 
 // as tall as its place: the charts of a row end on one line
