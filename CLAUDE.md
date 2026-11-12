@@ -1218,6 +1218,10 @@ e2e/              # Playwright tests
     the neutral fifth colour** (`thresholds` of `WeatherChartSpec`), drawn once the readings of the period reach half
     of a threshold - drawn always, 110 stretched the axis of a clean week; they are in no number under the chart. PM1
     has no threshold in the index.
+    **A chart card keeps its height while another period loads** (the owner on the PR - every card shrank to its
+    progress bar): `--app-frame-body-min-height` of `weather-chart-card.scss`, 336 px (276 px below 640 px) - the chart, its
+    numbers and a note of two lines; a taller chart or a longer note changes that number. A browser test samples the
+    heights through the switch.
   - **The strip** draws the dot after the humidity, a `role="button"` with the level and PM10 as its name and tooltip
     (a tap, Enter or Space, its event stopped so the tooltip of a failed strip does not open with it); **no dot for a
     stale level** - the age of the strip is the station's. **The overview tile** has the row "Air quality" with PM10;
