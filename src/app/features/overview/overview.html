@@ -357,16 +357,13 @@
               </dd>
             </div>
           }
-          <!-- the air quality (HAS-431): the word of the level in its colour, PM10 beside it -->
+          <!-- the air quality (HAS-431): the word of the level in its colour, no values (the owner on the PR) -->
           @if (outside.airQualityLevel; as air) {
             <div class="tile__row" data-metric="airQualityLevel" [attr.data-level]="air.value">
               <dt>{{ t('overview.weather.air') }}</dt>
               <dd>
-                @if (air.stale || outside.pm10?.stale) {
+                @if (air.stale) {
                   <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
-                }
-                @if (outside.pm10; as pm10) {
-                  <span class="tile__age">PM10 {{ pm10.value | localNumber: WHOLE }} µg/m³</span>
                 }
                 <span class="tile__air"
                   ><app-air-level-dot [level]="air.value" /><strong>{{

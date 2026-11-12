@@ -749,15 +749,15 @@ describe('Overview', () => {
       );
     });
 
-    // HAS-431: the reading of the strip, no second call - the word of the level beside its colour, PM10 beside it
-    it('tells the air quality in a word, with PM10', async () => {
+    // HAS-431: the reading of the strip, no second call - the word of the level beside its colour, no values (the owner)
+    it('tells the air quality in a word and its colour, no values', async () => {
       answer(weather, {
         ...WEATHER,
         pm10: { value: 58, measuredAt: '2026-10-10T18:26:00', stale: false },
         airQualityLevel: { value: 3, measuredAt: '2026-10-10T18:26:00', stale: false },
       });
 
-      expect(await row('airQualityLevel')).toBe('Air quality PM10 58 µg/m³ Moderate');
+      expect(await row('airQualityLevel')).toBe('Air quality Moderate');
       const air = (await tile('weather')).querySelector('[data-metric="airQualityLevel"]');
       expect(air?.querySelector('app-air-level-dot')?.getAttribute('data-level')).toBe('3');
     });
