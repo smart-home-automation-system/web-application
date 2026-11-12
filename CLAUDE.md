@@ -946,7 +946,7 @@ e2e/              # Playwright tests
   room without a unit** (the 404 `NOT_FOUND_ROOM`, an empty list) nor while the first answer is on its way - and the
   tile `tile-aircon` of the overview (`GET /aircon` and `/aircon/automation` once a minute, the second told in
   `tileFailures`; units on by room with their mode, how many do not answer, what the empty house or a lost grid
-  switched off). What to keep:
+  switched off; its title leads to the page of the units since HAS-431 - the tile came before the page and led nowhere). What to keep:
   - **One unit is `AirconControl`** (`shared/aircon/`, for the page of the units of HAS-395 too). **The state is read at a
     glance** (owner, 2026-11-08, on the iPhone: on or off was not to be told): a strip under the name - tinted with
     `--app-domain-aircon` and the icon of the mode while on, an outline while off, dashed while not known, always with
