@@ -8,9 +8,10 @@ $gap: 12px;
 }
 
 // The page stands in the middle of a wide screen, like the overview, and its rows are always
-// full: the six cards in one row, two rows of three, three of two or one column, and the six
-// charts in rows of three, of two or in one column - never a row of four with two under it and
-// an empty half beside them (owner, 2026-10-16, the overview). The counts follow the width of the
+// full (owner, 2026-10-16, the overview): never a row of four with two under it and an empty half
+// beside them. Seven cards since the air quality (HAS-431) - in one row, or the air quality card two
+// places wide in rows of four or of two, or one column; the seven charts in rows of three or of two
+// with the chart of the air quality the whole width of the last row, or in one column. The counts follow the width of the
 // page, not of the window. Cards side by side end on one line (owner, 2026-10-10): their
 // contents differ by a line or two. The title stays in the top left corner, as on every other view
 // (owner, 2026-10-21, HAS-266).
@@ -36,25 +37,44 @@ $gap: 12px;
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  // the air quality card before the light and the station: two places wide, it fills a row of two or the
+  // second row of four by itself and the two cards after it
+  .card--air {
+    grid-column: span 2;
+  }
 }
 
 @container (min-width: 760px) {
-  .cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .charts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  // the last chart, the air quality: a row of its own
+  .chart--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (min-width: 900px) {
+  .cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @container (min-width: 1440px) {
-  .cards {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
   .charts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1600px) {
+  .cards {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .card--air {
+    grid-column: auto;
   }
 }
 
@@ -83,4 +103,26 @@ $gap: 12px;
   margin: 4px 0 0;
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-surface-variant);
+}
+
+// the air quality (HAS-431): its level in the colour of the scale and in words, the level of PM2.5 and PM10 by
+// their value
+.air__lead {
+  flex-wrap: wrap;
+
+  app-air-level-dot {
+    width: 0.8em;
+    height: 0.8em;
+  }
+}
+
+// the smog of an open episode, above the level that follows it
+.air__smog {
+  margin-bottom: 10px;
+}
+
+.air__level {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }

@@ -24,7 +24,13 @@ export type WeatherMetric =
   | 'raining'
   | 'precipitation'
   | 'battery'
-  | 'voltage';
+  | 'voltage'
+  // the BleBox airSensor outside (weather-service 0.5.0, HAS-427; its history since 0.6.0): µg/m³ and the level
+  // of the GIOS scale, 1 - 6 (`air-quality.ts`)
+  | 'pm1'
+  | 'pm25'
+  | 'pm10'
+  | 'airQualityLevel';
 
 /** One metric of the current weather, as the service last heard it from the station. */
 export interface CurrentMetric {
@@ -61,6 +67,31 @@ export interface StationStatus {
   readonly lastReadingAt?: string;
   /** Nothing heard for 30 minutes - true as well when nothing was heard since the start. */
   readonly silent?: boolean;
+  /**
+   * The air quality sensor (weather-service 0.5.0, HAS-427; `silent` and `smog` since 0.7.0, HAS-429); absent while
+   * the registry has no such sensor.
+   */
+  readonly airSensor?: AirSensorStatus;
+}
+
+/** How the service hears the air quality sensor outside. */
+export interface AirSensorStatus {
+  readonly address?: string;
+  /** Whether its last read was answered; absent before the first read. */
+  readonly reachable?: boolean;
+  /** House wall-clock time of that read. */
+  readonly checkedAt?: string;
+  /** House wall-clock time the sensor last measured; absent until it has. */
+  readonly lastReadingAt?: string;
+  /** No valid reading for `weather.air.silent-after` (30 min) - the alert of the technical channel. */
+  readonly silent?: boolean;
+  /** An open smog episode - the household was told (HAS-429); absent while there is none. */
+  readonly smog?: {
+    /** House wall-clock time the bad air began. */
+    readonly since?: string;
+    /** The level of the scale that opened it. */
+    readonly level?: number;
+  };
 }
 
 /** One bucket of a weather history. */

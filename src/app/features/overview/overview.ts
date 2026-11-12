@@ -18,9 +18,11 @@ import { SoftenerApi } from '../../data-access/water/softener-api';
 import { ConsumptionQuery, WaterApi } from '../../data-access/water/water-api';
 import { toSoftenerView } from '../hot-water/softener-views';
 import { isOutOfDate, toWaterReading } from '../../data-access/water/water-reading';
+import { AIR_LEVEL_LABELS } from '../../data-access/weather/air-quality';
 import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
 import { MessageKey } from '../../i18n/messages';
+import { AirLevelDot } from '../../shared/air-quality/air-level-dot';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
@@ -95,6 +97,7 @@ const GRID_WORDS = { in: 'import', out: 'export', idle: 'idle' } as const;
     DomainTile,
     DisplayTextPipe,
     PowerValue,
+    AirLevelDot,
   ],
   templateUrl: './overview.html',
   styleUrl: './overview.scss',
@@ -125,7 +128,9 @@ export class Overview {
   // HAS-402: the salt of the softener and the days it lasts - a third call of the water tile, its failure in the
   // failures of the tile
   protected readonly softener = inject(SoftenerApi).watchSoftener();
-  protected readonly softenerView = computed(() => toSoftenerView(this.softener.value(), this.zone));
+  protected readonly softenerView = computed(() =>
+    toSoftenerView(this.softener.value(), this.zone),
+  );
   /** The softener not read yet (503 SOFTENER_UNAVAILABLE) is no failure of the tile: nothing is said of the salt. */
   protected readonly softenerFailure = computed(() => {
     const error = this.softener.error();
@@ -321,15 +326,22 @@ export class Overview {
   protected readonly weatherReading = computed(() =>
     toWeatherReading(this.weather.value(), this.zone),
   );
-  /** The metrics of the tile: whatever of them the answer has. */
+  /** The metrics of the station the tile shows: whatever of them the answer has. */
   private readonly weatherMetrics = computed(() => {
     const { temperature, dewPoint, wind, gust, raining, illuminance } = this.weatherReading();
     return [temperature, dewPoint, wind, gust, raining, illuminance];
   });
-  protected readonly weatherShown = computed(() =>
-    this.weatherMetrics().some((metric) => metric !== undefined),
+  /** The words of the levels of the air quality (HAS-431), the same as the strip and the weather page. */
+  protected readonly airLabels = AIR_LEVEL_LABELS;
+  protected readonly weatherShown = computed(
+    () =>
+      this.weatherMetrics().some((metric) => metric !== undefined) ||
+      this.weatherReading().airQualityLevel !== undefined,
   );
-  /** The last the station was heard of what the tile shows, and whether all of it is stale. */
+  /**
+   * The last the station was heard of what the tile shows, and whether all of it is stale - the station's alone: the
+   * air quality sensor is another device, and its own row says when it is out of date (HAS-431).
+   */
   protected readonly weatherNewest = computed(() => newestOf(this.weatherMetrics()));
 
   // ---- sensors ----

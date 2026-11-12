@@ -2,6 +2,7 @@ import { Signal, computed, inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 
 import { LanguageStore } from '../../core/i18n/language-store';
+import { PM10_BAD_FROM, PM10_MODERATE_FROM } from '../../data-access/weather/air-quality';
 import { WeatherApi, WeatherMetric } from '../../data-access/weather/weather-api';
 import { MessageKey } from '../../i18n/messages';
 import {
@@ -50,10 +51,26 @@ export interface WeatherChartSpec {
   /** A sentence under the chart, for what the picture cannot say. */
   readonly note?: MessageKey;
   readonly lines: readonly LineSpec[];
+  /**
+   * Levels drawn across the chart as dashed lines - the thresholds of a scale (HAS-431), never in the numbers under
+   * the chart. A threshold is drawn once the readings of the period reach half of it: drawn always, the 110 of PM10
+   * would stretch the axis of a clean week far above its lines.
+   */
+  readonly thresholds?: readonly ThresholdSpec[];
+  /** The whole width of a row of charts. */
+  readonly wide?: boolean;
+}
+
+interface ThresholdSpec {
+  readonly key: string;
+  readonly value: number;
+  readonly name: MessageKey;
+  /** The neutral colour of the chart, apart from the measured lines. */
+  readonly color: 5;
 }
 
 /**
- * The six charts, in the order of the page. The units are the ones the gateway of the station
+ * The seven charts, in the order of the page. The units are the ones the gateway of the station
  * reports; the unit of the rain gauge is not confirmed (`weather-service` README), so its
  * amounts are written without one.
  */
@@ -125,6 +142,31 @@ export const WEATHER_CHARTS: readonly WeatherChartSpec[] = [
     decimals: 1,
     note: 'weather.charts.pressure.note',
     lines: [{ metric: 'pressure', name: 'weather.metric.pressure', color: 1, drawn: 'avg' }],
+  },
+  {
+    // the air quality sensor outside (HAS-431, weather-service >= 0.6.0): whole µg/m³, from nothing up
+    key: 'air',
+    title: 'weather.charts.air.title',
+    label: 'weather.charts.air.label',
+    icon: 'pulmonology',
+    unit: 'µg/m³',
+    decimals: 0,
+    bounds: { min: 0 },
+    note: 'weather.charts.air.note',
+    wide: true,
+    lines: [
+      { metric: 'pm25', name: 'weather.metric.pm25', color: 1, drawn: 'avg' },
+      { metric: 'pm10', name: 'weather.metric.pm10', color: 2, drawn: 'avg' },
+    ],
+    thresholds: [
+      {
+        key: 'pm10-moderate',
+        value: PM10_MODERATE_FROM,
+        name: 'weather.charts.air.moderateFrom',
+        color: 5,
+      },
+      { key: 'pm10-bad', value: PM10_BAD_FROM, name: 'weather.charts.air.badFrom', color: 5 },
+    ],
   },
 ];
 
@@ -216,18 +258,42 @@ export function weatherChart(spec: WeatherChartSpec, period: HistoryPeriod): Wea
     });
   });
 
+  const combined = combinedHistory(histories);
   return {
     spec,
-    ...combinedHistory(histories),
-    lines: computed(() =>
-      measured().map(({ line, name, points }): ChartLine => ({
+    ...combined,
+    lines: computed(() => {
+      const drawn = measured().map(({ line, name, points }): ChartLine => ({
         key: line.metric,
         name,
         color: line.color,
         points,
         bars: line.drawn === 'rain',
-      })),
-    ),
+      }));
+      const axis = combined.axis();
+      if (drawn.length === 0 || axis === undefined) {
+        return drawn;
+      }
+      const highest = Math.max(
+        ...drawn.flatMap((line) => line.points.map(([, value]) => value ?? -Infinity)),
+      );
+      // the language is read by measured() above
+      return [
+        ...drawn,
+        ...(spec.thresholds ?? [])
+          .filter((threshold) => highest >= threshold.value / 2)
+          .map((threshold): ChartLine => ({
+            key: threshold.key,
+            name: transloco.translate(threshold.name),
+            color: threshold.color,
+            dashed: true,
+            points: [
+              [axis.from, threshold.value],
+              [axis.to, threshold.value],
+            ],
+          })),
+      ];
+    }),
     facts: computed(() =>
       measured().flatMap(({ line, name, points }): ChartFact[] => {
         if (line.drawn === 'rain') {

@@ -746,6 +746,48 @@ describe('Overview', () => {
       );
     });
 
+    // HAS-431: the reading of the strip, no second call - the word of the level beside its colour, PM10 beside it
+    it('tells the air quality in a word, with PM10', async () => {
+      answer(weather, {
+        ...WEATHER,
+        pm10: { value: 58, measuredAt: '2026-10-10T18:26:00', stale: false },
+        airQualityLevel: { value: 3, measuredAt: '2026-10-10T18:26:00', stale: false },
+      });
+
+      expect(await row('airQualityLevel')).toBe('Air quality PM10 58 µg/m³ Moderate');
+      const air = (await tile('weather')).querySelector('[data-metric="airQualityLevel"]');
+      expect(air?.querySelector('app-air-level-dot')?.getAttribute('data-level')).toBe('3');
+    });
+
+    it('marks the air quality out of date while the rest is fresh, and draws no row without a level', async () => {
+      answer(weather, {
+        ...WEATHER,
+        airQualityLevel: { value: 5, measuredAt: '2026-10-10T17:40:00', stale: true },
+      });
+
+      expect(await row('airQualityLevel')).toBe('Air quality out of date Bad');
+
+      answer(weather, {
+        ...WEATHER,
+        pm10: { value: 58, measuredAt: '2026-10-10T18:26:00', stale: false },
+      });
+      expect((await tile('weather')).querySelector('[data-metric="airQualityLevel"]')).toBeNull();
+    });
+
+    // the air quality sensor is another device: its fresh reading does not hide a silent station
+    it('keeps the silence of the station when only the air quality sensor is heard', async () => {
+      const old = { measuredAt: '2026-10-10T17:40:00', stale: true };
+      answer(weather, {
+        temperature: { ...old, value: 9.5 },
+        airQualityLevel: { value: 2, measuredAt: '2026-10-10T18:29:00', stale: false },
+      });
+
+      expect(words((await tile('weather')).querySelector('[data-testid="weather-measured"]'))).toBe(
+        'Measured 50 min ago - the station has not been heard since.',
+      );
+      expect(await row('airQualityLevel')).toBe('Air quality Good');
+    });
+
     it('says when it rains', async () => {
       answer(weather, {
         raining: { value: true, measuredAt: '2026-10-10T18:29:00', stale: false },

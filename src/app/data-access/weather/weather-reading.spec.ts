@@ -59,6 +59,31 @@ describe('toWeatherReading', () => {
     });
   });
 
+  // HAS-431: the air quality sensor; its level is a whole number of the scale, anything else is not known
+  it('reads the air quality, and its level only when it is a level of the scale', () => {
+    const at = '2026-10-16T14:40:00';
+    const reading = toWeatherReading(
+      {
+        pm1: { value: 31, measuredAt: at },
+        pm25: { value: 42, measuredAt: at },
+        pm10: { value: 162, measuredAt: at, stale: true },
+        airQualityLevel: { value: 6, measuredAt: at },
+      },
+      ZONE,
+    );
+
+    expect(reading.pm1?.value).toBe(31);
+    expect(reading.pm25?.value).toBe(42);
+    expect(reading.pm10).toEqual(expect.objectContaining({ value: 162, stale: true }));
+    expect(reading.airQualityLevel?.value).toBe(6);
+    for (const value of [0, 7, 3.5, '3']) {
+      expect(
+        toWeatherReading({ airQualityLevel: { value: value as number } }, ZONE).airQualityLevel,
+        String(value),
+      ).toBeUndefined();
+    }
+  });
+
   it('reads nothing from an answer that is no object', () => {
     for (const answer of [
       null,

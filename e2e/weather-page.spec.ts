@@ -3,7 +3,7 @@ import { Locator, Page } from '@playwright/test';
 import { expect, startIn, test, useScenario } from './support';
 
 /**
- * The weather page: the cards of the metrics and the six charts of their history, fed by the
+ * The weather page: the cards of the metrics and the seven charts of their history, fed by the
  * mock API, whose station was silent for an hour yesterday. The mock dates its answers from the
  * time of the call, so every test pins the clock: a Friday, 14:30 on the clocks of the house.
  */
@@ -11,7 +11,15 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-10-16T12:30:00Z'));
 });
 
-const CHARTS = ['temperature', 'humidity', 'wind', 'illuminance', 'precipitation', 'pressure'];
+const CHARTS = [
+  'temperature',
+  'humidity',
+  'wind',
+  'illuminance',
+  'precipitation',
+  'pressure',
+  'air',
+];
 
 /** The picture of a chart, once the library has arrived and drawn into it. */
 async function drawn(card: Locator): Promise<Locator> {
@@ -50,7 +58,7 @@ test.describe('the weather page', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('draws the six charts over the last 24 hours, with what they ranged between', async ({
+  test('draws the seven charts over the last 24 hours, with what they ranged between', async ({
     page,
   }) => {
     await page.goto('/weather');
@@ -67,7 +75,7 @@ test.describe('the weather page', () => {
     await expect(chart(page, 'illuminance').locator('.chart__plot')).toContainText('10,000 lx');
   });
 
-  // the page is one look at the weather: one period for all six
+  // the page is one look at the weather: one period for all seven
   test('switches every chart to the period chosen on one of them', async ({ page }) => {
     await page.goto('/weather');
     await drawn(chart(page, 'pressure'));
@@ -132,6 +140,60 @@ test.describe('the weather page', () => {
 
     expect(overflow).toBe(0);
   });
+
+  // HAS-431: the air quality sensor of the garden - a moderate evening in the mock house
+  test('tells the air quality, its level in words, and the thresholds of PM10 on its chart', async ({
+    page,
+  }) => {
+    await page.goto('/weather');
+
+    const air = page.getByTestId('card-air');
+    await expect(air.getByTestId('air-level')).toHaveText('Moderate');
+    await expect(air).toContainText(/PM2\.5\s+Moderate\s+42 µg\/m³/);
+    await expect(air).toContainText(/PM10\s+Moderate\s+58 µg\/m³/);
+    await expect(air).toContainText(/PM1\s+31 µg\/m³/);
+    await expect(air.getByTestId('air-smog')).toHaveCount(0);
+    await expect(page.getByTestId('card-station')).toContainText(/Air quality sensor\s+Answers/);
+    const plot = await drawn(chart(page, 'air'));
+    await expect(plot).toContainText('PM10 moderate from');
+    await expect(plot).toContainText('PM10 bad from');
+  });
+
+  test('warns of the smog of an open episode', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('mock-smog', 'on'));
+    await page.goto('/weather');
+
+    const air = page.getByTestId('card-air');
+    await expect(air.getByTestId('air-level')).toHaveText('Very bad');
+    await expect(air.getByTestId('air-smog')).toContainText(
+      'Smog outside since 13:15 - the household was told.',
+    );
+  });
+
+  // seven cards: in one row, or the air quality two places wide in rows of four or of two - never a short row
+  for (const width of [2560, 1440, 1100, 700]) {
+    test(`keeps every row of cards full at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto('/weather');
+      await expect(page.getByTestId('card-air').getByTestId('air-level')).toBeVisible();
+
+      const rows = await page.evaluate(() => {
+        const section = document.querySelector('section.cards') as HTMLElement;
+        const box = section.getBoundingClientRect();
+        const byTop = new Map<number, number>();
+        for (const card of section.children) {
+          const rect = card.getBoundingClientRect();
+          const top = Math.round(rect.top);
+          byTop.set(top, (byTop.get(top) ?? 0) + rect.width);
+        }
+        return { width: box.width, rows: [...byTop.values()] };
+      });
+      for (const used of rows.rows) {
+        // the gaps between the cards are what is left
+        expect(rows.width - used).toBeLessThan(80);
+      }
+    });
+  }
 
   test('speaks Polish', async ({ page }) => {
     await startIn(page, 'pl');

@@ -1,16 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
+import { AIR_LEVEL_LABELS } from '../../data-access/weather/air-quality';
 import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { leadingIcon, newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
 import { DisplayText } from '../../i18n/messages';
 import { describeApiError } from '../../shared/api-error/describe-api-error';
+import { AirLevelDot } from '../../shared/air-quality/air-level-dot';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { APP_CONFIG } from '../config/app-config';
+import { numberFormat } from '../i18n/intl-formats';
+import { LanguageStore } from '../i18n/language-store';
 
 /** Why the strip is no more than an icon: the call failed, or the station was heard of nothing. */
 type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true };
@@ -35,6 +39,7 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
     MatIconModule,
     MatTooltipModule,
     TranslocoDirective,
+    AirLevelDot,
     DisplayTextPipe,
     HouseAgePipe,
     LocalNumberPipe,
@@ -98,6 +103,25 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
                   >{{ humidity.value | localNumber: WHOLE }} %</span
                 >
               }
+              <!-- the air quality (HAS-431): a dot in the colour of its level, the word and PM10 in its tooltip and
+                   its name; drawn only while the sensor gives a level that is not out of date -->
+              @if (air(); as level) {
+                <span
+                  class="weather__air"
+                  role="button"
+                  data-testid="weather-air"
+                  [attr.data-level]="level.level"
+                  [attr.aria-label]="level.text"
+                  tabindex="0"
+                  [matTooltip]="level.text"
+                  matTooltipTouchGestures="off"
+                  #airTip="matTooltip"
+                  (click)="$event.stopPropagation(); airTip.show()"
+                  (keydown.enter)="$event.stopPropagation(); airTip.show()"
+                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); airTip.show()"
+                  ><app-air-level-dot [level]="level.level"
+                /></span>
+              }
             </span>
             @let last = newest();
             @if (last || failure) {
@@ -133,6 +157,9 @@ type Collapsed = { readonly failure: DisplayText } | { readonly noReading: true 
 })
 export class WeatherStrip {
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
+  private readonly transloco = inject(TranslocoService);
+  private readonly language = inject(LanguageStore).language;
+  private readonly locale = inject(LanguageStore).locale;
   protected readonly weather = inject(CurrentWeatherStore).current;
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
@@ -143,6 +170,26 @@ export class WeatherStrip {
 
   protected readonly reading = computed(() => toWeatherReading(this.weather.value(), this.zone));
   protected readonly icon = computed(() => leadingIcon(this.reading()));
+
+  /** The level of the air quality and its words - the tooltip of its dot, and what a screen reader hears. */
+  protected readonly air = computed(() => {
+    // read so that the words follow the language
+    this.language();
+    const { airQualityLevel, pm10 } = this.reading();
+    // a level the sensor has not confirmed for half an hour is not the air now: the age of the strip is the station's
+    if (airQualityLevel === undefined || airQualityLevel.stale) {
+      return undefined;
+    }
+    const level = this.transloco.translate(AIR_LEVEL_LABELS[airQualityLevel.value]);
+    const text =
+      pm10 === undefined
+        ? this.transloco.translate('weather.air.strip', { level })
+        : this.transloco.translate('weather.air.stripPm10', {
+            level,
+            value: numberFormat(this.locale(), this.WHOLE).format(pm10.value),
+          });
+    return { level: airQualityLevel.value, text };
+  });
   /** The last the station was heard of what the strip shows. */
   protected readonly newest = computed(() => {
     const { temperature, humidity, raining, wind } = this.reading();

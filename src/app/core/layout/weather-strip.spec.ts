@@ -171,6 +171,78 @@ describe('WeatherStrip', () => {
     expect(tooltip()?.message).toBe('No reading from the weather station yet.');
   });
 
+  // HAS-431: a dot in the colour of the level, its words in its tooltip and for a screen reader
+  describe('the air quality', () => {
+    const AIR: CurrentWeather = {
+      ...WEATHER,
+      pm10: { value: 162.4, measuredAt: '2026-10-16T14:40:00', stale: false },
+      airQualityLevel: { value: 6, measuredAt: '2026-10-16T14:40:00', stale: false },
+    };
+    const airTooltip = () =>
+      fixture.debugElement.query(By.css('[data-testid="weather-air"]'))?.injector.get(MatTooltip);
+
+    it('draws a dot in the colour of the level after the humidity, its words for a screen reader', async () => {
+      answer(weather, AIR);
+
+      const air = (await strip())?.querySelector('[data-testid="weather-air"]');
+      expect(air?.getAttribute('data-level')).toBe('6');
+      expect(air?.querySelector('app-air-level-dot')?.getAttribute('data-level')).toBe('6');
+      expect(air?.previousElementSibling?.getAttribute('data-testid')).toBe('weather-humidity');
+      expect(air?.getAttribute('role')).toBe('button');
+      expect(air?.getAttribute('aria-label')).toBe('Air quality: Very bad, PM10 162 µg/m³');
+      expect(airTooltip()?.message).toBe('Air quality: Very bad, PM10 162 µg/m³');
+    });
+
+    it('opens the tooltip of the dot on a tap, Enter or Space, not that of the strip', async () => {
+      // a failed call: the strip itself takes a tap for its own tooltip
+      answer(weather, AIR);
+      await strip();
+      fail(weather, new ApiError('server', 502));
+      const air = (await strip())?.querySelector('[data-testid="weather-air"]') as HTMLElement;
+      const show = vi.spyOn(airTooltip()!, 'show');
+      const showStrip = vi.spyOn(tooltip()!, 'show');
+
+      air.click();
+      air.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      air.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+
+      expect(show).toHaveBeenCalledTimes(3);
+      expect(showStrip).not.toHaveBeenCalled();
+      expect(air.getAttribute('tabindex')).toBe('0');
+    });
+
+    // the age of the strip is the station's: a level the sensor has not confirmed is not the air now
+    it('draws no dot for a level the service calls stale', async () => {
+      answer(weather, {
+        ...AIR,
+        airQualityLevel: { value: 6, measuredAt: '2026-10-16T12:00:00', stale: true },
+      });
+
+      expect((await strip())?.querySelector('[data-testid="weather-air"]')).toBeNull();
+    });
+
+    it('names the level alone when PM10 is not known', async () => {
+      answer(weather, { ...WEATHER, airQualityLevel: AIR.airQualityLevel });
+      await strip();
+
+      expect(airTooltip()?.message).toBe('Air quality: Very bad');
+    });
+
+    it('draws no dot while the sensor gives no level', async () => {
+      answer(weather, { ...WEATHER, pm10: AIR.pm10 });
+
+      expect((await strip())?.querySelector('[data-testid="weather-air"]')).toBeNull();
+    });
+
+    it('speaks Polish', async () => {
+      await useLanguage('pl');
+      answer(weather, AIR);
+      await strip();
+
+      expect(airTooltip()?.message).toBe('Jakość powietrza: Bardzo zła, PM10 162 µg/m³');
+    });
+  });
+
   it('speaks Polish, with a decimal comma', async () => {
     await useLanguage('pl');
     answer(weather, WEATHER);
