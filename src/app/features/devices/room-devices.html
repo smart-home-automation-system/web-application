@@ -137,6 +137,11 @@
                       <span class="code device__id">{{ device.gree?.mac }}</span>
                       <span class="code">{{ device.gree?.address }}</span>
                     }
+                    @case ('blebox') {
+                      <span>{{ t('devices.device.blebox') }}</span>
+                      <span class="code device__id">{{ device.blebox?.deviceId }}</span>
+                      <span class="code">{{ device.blebox?.address }}</span>
+                    }
                     @default {
                       <span>{{ t('devices.device.noBinding') }}</span>
                     }

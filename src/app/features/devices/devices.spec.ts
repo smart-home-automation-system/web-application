@@ -758,6 +758,102 @@ describe('Devices', () => {
   });
 
   // a MAC that is not one never leaves the form
+  // HAS-426 (smart-home-sdk 1.20.0, the rule of blebox in DeviceRules of database-service 0.25.0): an air quality
+  // sensor is reached by its blebox binding alone, of the vendor blebox - the form offers nothing else; the id is
+  // sent as the sensor gives it
+  it('registers an air quality sensor with its address and id, and shows how it is reached', async () => {
+    answerTheRegistryWith([]);
+    const garden = await openRoom('garden', 'Add');
+    const form = garden.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Air quality sensor');
+    choose(form, 'kind', 'air quality sensor');
+    await settled();
+    expect(form.querySelector('[data-testid="binding"] button')).toBeNull();
+    expect(text(form)).toContain('BleBox, on the network');
+    type(form.querySelector<HTMLInputElement>('[data-testid="blebox-address"]')!, '192.0.2.23');
+    type(form.querySelector<HTMLInputElement>('[data-testid="blebox-device-id"]')!, '0123456789AB');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    const request = http.expectOne({ method: 'POST', url: '/home/device/registry' });
+    expect(request.request.body).toEqual({
+      name: 'Air quality sensor',
+      room: 'garden',
+      kind: 'air quality sensor',
+      enabled: true,
+      vendor: 'blebox',
+      blebox: { address: '192.0.2.23', deviceId: '0123456789ab' },
+    });
+    request.flush({});
+    await settled();
+    answerTheRegistryWith([
+      {
+        id: 68,
+        name: 'Air quality sensor',
+        room: 'garden',
+        kind: 'air quality sensor',
+        enabled: true,
+        vendor: 'blebox',
+        blebox: { address: '192.0.2.23', deviceId: '0123456789ab' },
+      },
+    ]);
+    await settled();
+    const shown = garden.querySelector('[data-device="68"]');
+    expect(text(shown)).toContain('Air quality sensor');
+    expect(text(shown)).toContain('0123456789ab');
+    expect(text(shown)).toContain('192.0.2.23');
+  });
+
+  // the form of a registered sensor holds its address and id, and saved unchanged it makes no call
+  it('opens a registered air quality sensor with its binding, and makes no call when nothing changed', async () => {
+    answerTheRegistryWith([
+      {
+        id: 68,
+        name: 'Air quality sensor',
+        room: 'garden',
+        kind: 'air quality sensor',
+        enabled: true,
+        vendor: 'blebox',
+        blebox: { address: '192.0.2.23', deviceId: '0123456789ab' },
+      },
+    ]);
+    await openRoom('garden');
+    button(row(68), 'Edit')!.click();
+    fixture.detectChanges();
+    const form = row(68).querySelector<HTMLElement>('app-smart-device-form')!;
+    expect(form.querySelector<HTMLInputElement>('[data-testid="blebox-address"]')!.value).toBe(
+      '192.0.2.23',
+    );
+    expect(form.querySelector<HTMLInputElement>('[data-testid="blebox-device-id"]')!.value).toBe(
+      '0123456789ab',
+    );
+
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    fixture.detectChanges();
+
+    http.expectNone({ method: 'PUT', url: '/home/device/registry/68' });
+    expect(row(68).querySelector('app-smart-device-form')).toBeNull();
+  });
+
+  // an id that is not one never leaves the form
+  it('does not send an air quality sensor whose id is not one', async () => {
+    answerTheRegistryWith([]);
+    const garden = await openRoom('garden', 'Add');
+    const form = garden.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Air quality sensor');
+    choose(form, 'kind', 'air quality sensor');
+    await settled();
+    type(form.querySelector<HTMLInputElement>('[data-testid="blebox-address"]')!, '192.0.2.23');
+    type(form.querySelector<HTMLInputElement>('[data-testid="blebox-device-id"]')!, '0123456789');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    http.expectNone({ method: 'POST', url: '/home/device/registry' });
+    expect(text(form)).toContain('The id of a sensor is 12 characters 0-9 and a-f.');
+  });
+
   it('does not send an air conditioner whose MAC is not one', async () => {
     answerTheRegistryWith([]);
     const office = await openRoom('office', 'Add');

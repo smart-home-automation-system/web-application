@@ -1149,7 +1149,7 @@ e2e/              # Playwright tests
     three missed reads (90 s) breaks the line. `shownHistory` takes the period as a function too, read
     lazily, because the card gets it as an input.
   - The mock registry holds the three appliances (ids 61-63, the ids of the mock of appliance-service): the
-    devices page counts them (29 devices with the two inverters of HAS-341, the water valve of HAS-313 and the air conditioner of HAS-392). The mock answers 30 days of cycles in a rhythm per appliance (one of
+    devices page counts them (30 devices with the two inverters of HAS-341, the water valve of HAS-313, the air conditioner of HAS-392 and the air quality sensor of HAS-426). The mock answers 30 days of cycles in a rhythm per appliance (one of
     the dishwasher without its energy) and a power curve every 30 s with a washing pause and the turns of a
     dryer after its end.
   - The photo `appliances` (a laundry room with the washing machine, the dryer, a smart plug and a dishwasher,
@@ -1227,7 +1227,7 @@ e2e/              # Playwright tests
     settles by "opusty"); a month without a closed day has no figures; "in the grid now" is `stored` of the
     last month with a day (`storedNow`).
   - The mock house is a bright afternoon (`energy.fixtures.ts`): phase B overloaded, one SOFAR fault, the SolaX
-    cloud silent; the mock registry holds the two inverters (ids 64, 65), the water valve (66, HAS-313) and the air conditioner of sanctum (67, HAS-392) - the devices page counts 29.
+    cloud silent; the mock registry holds the two inverters (ids 64, 65), the water valve (66, HAS-313), the air conditioner of sanctum (67, HAS-392) and the air quality sensor of the garden (68, HAS-426) - the devices page counts 30.
   - **The charge of the battery** (HAS-342, `EnergyControl` in `energy-control.ts`, its own four cards in the section
     under the flow): the charge, the automation, the planned outages and the charges of 30 days. **These are writes to
     the real inverter** (`POST` / `DELETE /energy/battery/charge`): **the start asks first** (owner, 2026-11-11, HAS-417 -
@@ -1288,6 +1288,13 @@ e2e/              # Playwright tests
     12 hex digits; `normaliseGreeMac` sends it lowercase without separators, the form the unit gives); one unit per
     MAC and one per address (`bindingTaken`). **The dashboard moves before the first unit is registered** (HAS-393):
     a version before it reads a stored unit with a binding it does not know.
+  - **The registry knows the kind `air quality sensor` and the vendor `blebox`** (HAS-426, `smart-home-sdk` 1.20.0,
+    the rule of `blebox` in `DeviceRules` of `database-service` 0.25.0): the rules of Gree a second time - `bindingsOf`
+    gives it the `blebox` binding alone, `vendorsOf('blebox')` the vendor `blebox` alone, never offered to a kind this
+    version does not know. The form asks for the address and the id of `GET /info` (`bleboxDeviceIdProblem`: 12 hex
+    digits; `normaliseBleboxDeviceId` sends it lowercase without separators); one sensor per id and one per address
+    (`bindingTaken`, `bleboxTaken`). The icon is `air`; the devices card counts it under "other". The mock registry
+    holds the sensor of the garden (68) - the devices page counts 30.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

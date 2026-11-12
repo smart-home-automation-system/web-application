@@ -39,7 +39,7 @@ export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
- * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.18.0) - copies, like the ones above,
+ * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.20.0) - copies, like the ones above,
  * and under the same rule: they are what the administration of the devices offers, and what
  * the registry already holds is shown and sent back as it is.
  */
@@ -64,6 +64,9 @@ export const DEVICE_KINDS = [
   // HAS-392 (smart-home-sdk 1.18.0, HAS-377): an indoor unit of an air conditioner driven by aircon-service,
   // reached by its gree binding alone
   'air conditioner',
+  // HAS-426 (smart-home-sdk 1.20.0, HAS-424): the air quality sensor outside the house polled by weather-service,
+  // reached by its blebox binding alone
+  'air quality sensor',
 ] as const;
 
 export type DeviceKind = (typeof DEVICE_KINDS)[number];
@@ -85,8 +88,9 @@ export const PLACEMENTS = ['external', 'internal'] as const;
 
 export type Placement = (typeof PLACEMENTS)[number];
 
-// gree (HAS-392, smart-home-sdk 1.18.0): the vendor of the air conditioners, reached by the gree binding alone
-export const VENDORS = ['shelly', 'eaton', 'gree', 'other'] as const;
+// gree (HAS-392, smart-home-sdk 1.18.0): the vendor of the air conditioners, reached by the gree binding alone;
+// blebox (HAS-426, smart-home-sdk 1.20.0): the vendor of the air quality sensor, reached by the blebox binding alone
+export const VENDORS = ['shelly', 'eaton', 'gree', 'blebox', 'other'] as const;
 
 export type Vendor = (typeof VENDORS)[number];
 

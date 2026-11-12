@@ -11,6 +11,7 @@ import {
   channelNeeded,
   channelsOf,
   generationsOf,
+  bleboxDeviceIdProblem,
   greeMacProblem,
   chosenProblem,
   deviceIdProblem,
@@ -18,6 +19,7 @@ import {
   loggerSerialOf,
   loggerSerialProblem,
   nameProblem,
+  normaliseBleboxDeviceId,
   normaliseGreeMac,
   openingSensorsOf,
   optionalAddressProblem,
@@ -80,6 +82,8 @@ describe('the rules of a device', () => {
     ['water valve', ['shelly']],
     // HAS-392: an air conditioner is reached by its gree binding alone
     ['air conditioner', ['gree']],
+    // HAS-426: the air quality sensor is reached by its blebox binding alone
+    ['air quality sensor', ['blebox']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });
@@ -105,6 +109,8 @@ describe('the rules of a device', () => {
     expect(vendorsOf('inverter')).toEqual(['other']);
     // a Gree unit is of the vendor gree, and nothing else is (HAS-377)
     expect(vendorsOf('gree')).toEqual(['gree']);
+    // a BleBox sensor is of the vendor blebox, and nothing else is (HAS-424)
+    expect(vendorsOf('blebox')).toEqual(['blebox']);
   });
 
   // HAS-260: the registry takes a zone (200 to 299) as the channel of a presence sensor alone
@@ -351,6 +357,63 @@ describe('the rules of a device', () => {
   });
 
   // HAS-392: the bounds of GreeBinding of smart-home-sdk 1.18.0, the unique indexes of database-service 0.23.0
+  // HAS-426: the bounds of BleboxBinding of smart-home-sdk 1.20.0, the unique indexes of database-service 0.25.0
+  describe('about an air quality sensor', () => {
+    it.each([
+      ['0123456789ab', undefined],
+      [' 0123456789AB ', undefined],
+      ['01:23:45:67:89:ab', undefined],
+      ['0123456789a', 'devices.problem.bleboxDeviceId'],
+      ['0123456789abc', 'devices.problem.bleboxDeviceId'],
+      ['0123456789ag', 'devices.problem.bleboxDeviceId'],
+      ['', 'devices.problem.bleboxDeviceId'],
+    ])('judges the id "%s"', (id, problem) => {
+      expect(bleboxDeviceIdProblem(id)).toBe(problem);
+    });
+
+    it('sends the id as the sensor gives it', () => {
+      expect(normaliseBleboxDeviceId(' 01:23:45:67:89:AB ')).toBe('0123456789ab');
+    });
+
+    it('finds the id or the address another sensor has', () => {
+      const sensor: SmartDevice = {
+        id: 68,
+        kind: 'air quality sensor',
+        vendor: 'blebox',
+        blebox: { address: '192.0.2.23', deviceId: '0123456789ab' },
+      };
+      expect(
+        bindingTaken({ blebox: { address: '192.0.2.24', deviceId: '0123456789ab' } }, [sensor]),
+      ).toBe('devices.problem.bleboxDeviceIdTaken');
+      expect(
+        bindingTaken({ blebox: { address: '192.0.2.23', deviceId: '0123456789ac' } }, [sensor]),
+      ).toBe('devices.problem.bleboxAddressTaken');
+      expect(
+        bindingTaken({ blebox: { address: '192.0.2.24', deviceId: '0123456789ac' } }, [sensor]),
+      ).toBeUndefined();
+      expect(bindingOf(sensor)).toBe('blebox');
+    });
+
+    it('sees a changed binding of a sensor as a change', () => {
+      const sensor: SmartDevice = {
+        name: 'Air quality sensor',
+        room: 'garden',
+        kind: 'air quality sensor',
+        enabled: true,
+        vendor: 'blebox',
+        blebox: { address: '192.0.2.23', deviceId: '0123456789ab' },
+      };
+      const details = { ...sensor } as DeviceDetails;
+      expect(sameDevice(sensor, details)).toBe(true);
+      expect(
+        sameDevice(sensor, {
+          ...details,
+          blebox: { address: '192.0.2.23', deviceId: '0123456789ac' },
+        }),
+      ).toBe(false);
+    });
+  });
+
   describe('about an air conditioner', () => {
     it.each([
       ['02005e0000a1', undefined],

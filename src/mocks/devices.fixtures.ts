@@ -361,6 +361,16 @@ const AT_THE_START: readonly StoredDevice[] = [
     vendor: 'gree',
     gree: { address: '192.0.2.87', mac: '02005e0000a5' },
   },
+  // the air quality sensor of the garden (HAS-426): an invented id, an address of the documentation range
+  {
+    id: 68,
+    name: 'Air quality sensor',
+    room: 'garden',
+    kind: 'air quality sensor',
+    enabled: true,
+    vendor: 'blebox',
+    blebox: { address: '192.0.2.23', deviceId: '0123456789ab' },
+  },
   // the water valve of the garage (HAS-313): a Shelly X of generation 3, an invented id, an address of the documentation range
   {
     id: 66,
@@ -482,7 +492,7 @@ function deviceOf(body: unknown): Draft | undefined {
   if (!isRecord(body)) {
     return undefined;
   }
-  const { name, room, kind, enabled, vendor, shelly, eaton, bthome, inverter, gree } = body;
+  const { name, room, kind, enabled, vendor, shelly, eaton, bthome, inverter, gree, blebox } = body;
   const { lightKind, placement, positioning, openingSensors } = body;
   if (typeof name !== 'string' || name.length < 3 || name.length > 50) {
     return undefined;
@@ -516,6 +526,7 @@ function deviceOf(body: unknown): Draft | undefined {
     bthome: bthomeOf(bthome),
     inverter: inverterOf(inverter),
     gree: greeOf(gree),
+    blebox: bleboxOf(blebox),
   };
   if (Object.values(bindings).includes(null)) {
     return undefined;
@@ -531,6 +542,7 @@ function deviceOf(body: unknown): Draft | undefined {
     ...(bindings.bthome ? { bthome: bindings.bthome } : {}),
     ...(bindings.inverter ? { inverter: bindings.inverter } : {}),
     ...(bindings.gree ? { gree: bindings.gree } : {}),
+    ...(bindings.blebox ? { blebox: bindings.blebox } : {}),
     ...(lightKind === undefined ? {} : { lightKind }),
     ...(placement === undefined ? {} : { placement }),
     ...(positioning === undefined ? {} : { positioning }),
@@ -654,6 +666,23 @@ function greeOf(value: unknown): SmartDevice['gree'] | null {
     : null;
 }
 
+/** `BleboxBinding`: the address of the sensor and the id of its GET /info - both needed. */
+function bleboxOf(value: unknown): SmartDevice['blebox'] | null {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    return null;
+  }
+  const { address, deviceId } = value;
+  return typeof address === 'string' &&
+    IPV4.test(address) &&
+    typeof deviceId === 'string' &&
+    /^[0-9a-f]{12}$/.test(deviceId)
+    ? { address, deviceId }
+    : null;
+}
+
 function whole(value: unknown, least: number, most: number): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= least && value <= most;
 }
@@ -675,11 +704,11 @@ function refusalOf(device: Draft, self: StoredDevice | undefined): MockReply | u
 
 /** `DeviceRules` of `database-service`, in its words. */
 function brokenRuleOf(device: Draft): string | undefined {
-  const given = (['shelly', 'eaton', 'bthome', 'inverter', 'gree'] as const).filter(
+  const given = (['shelly', 'eaton', 'bthome', 'inverter', 'gree', 'blebox'] as const).filter(
     (binding) => device[binding] !== undefined,
   );
   if (given.length !== 1) {
-    return `A device is reached through exactly one binding - shelly, eaton, bthome, inverter or gree - and this one has ${
+    return `A device is reached through exactly one binding - shelly, eaton, bthome, inverter, gree or blebox - and this one has ${
       given.length === 0 ? 'none' : given.join(' and ')
     }`;
   }
@@ -687,6 +716,7 @@ function brokenRuleOf(device: Draft): string | undefined {
   if (
     (device.vendor === 'eaton') !== (binding === 'eaton') ||
     (device.vendor === 'gree') !== (binding === 'gree') ||
+    (device.vendor === 'blebox') !== (binding === 'blebox') ||
     (binding === 'shelly' && device.vendor !== 'shelly') ||
     (binding === 'inverter' && device.vendor !== 'other')
   ) {
@@ -774,6 +804,8 @@ function possibleBindingsOf(kind: string): readonly string[] {
       return ['inverter'];
     case 'air conditioner':
       return ['gree'];
+    case 'air quality sensor':
+      return ['blebox'];
     default:
       return ['shelly', 'eaton', 'bthome'];
   }
@@ -789,6 +821,22 @@ function greeTakenOf(
   }
   return others.some((one) => one.gree?.address === gree.address)
     ? `A device is already registered for the Gree unit at [${gree.address}]`
+    : undefined;
+}
+
+/** The two unique indexes of a BleBox device, in the words of the registry; none for another binding. */
+function bleboxTakenOf(
+  blebox: SmartDevice['blebox'],
+  others: readonly StoredDevice[],
+): string | undefined {
+  if (blebox === undefined) {
+    return undefined;
+  }
+  if (others.some((one) => one.blebox?.deviceId === blebox.deviceId)) {
+    return `A device is already registered for the BleBox device with the id [${blebox.deviceId}]`;
+  }
+  return others.some((one) => one.blebox?.address === blebox.address)
+    ? `A device is already registered for the BleBox device at [${blebox.address}]`
     : undefined;
 }
 
@@ -812,8 +860,9 @@ function shellyTakenOf(
 
 /** The unique indexes of the registry, in the words of its answer. */
 function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string | undefined {
-  const { shelly, eaton, bthome, inverter, gree } = device;
-  const unitTaken = gree === undefined ? undefined : greeTakenOf(gree, others);
+  const { shelly, eaton, bthome, inverter, gree, blebox } = device;
+  const unitTaken =
+    (gree === undefined ? undefined : greeTakenOf(gree, others)) ?? bleboxTakenOf(blebox, others);
   if (unitTaken !== undefined) {
     return unitTaken;
   }

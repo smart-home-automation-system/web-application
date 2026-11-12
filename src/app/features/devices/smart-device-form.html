@@ -245,6 +245,43 @@
             }
           </mat-form-field>
         }
+        @case ('blebox') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.bleboxAddress') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="15"
+              data-testid="blebox-address"
+              [formControl]="bleboxAddress"
+            />
+            <mat-hint>{{ t('devices.form.bleboxAddressHint') }}</mat-hint>
+            @if (problemOf(bleboxAddress); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.bleboxDeviceId') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="17"
+              data-testid="blebox-device-id"
+              [formControl]="bleboxDeviceId"
+            />
+            <mat-hint>{{ t('devices.form.bleboxDeviceIdHint') }}</mat-hint>
+            @if (problemOf(bleboxDeviceId); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+        }
         @case ('inverter') {
           <div class="form__group" role="group" [attr.aria-labelledby]="id + '-brand'">
             <h3 class="form__label" [id]="id + '-brand'">{{ t('devices.form.brand') }}</h3>

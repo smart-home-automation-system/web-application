@@ -25,10 +25,11 @@ export const POINT_MIN = 1;
 export const POINT_MAX = 99;
 
 /**
- * The five ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
- * the part of the kind inverter and of no other kind, the gree binding (HAS-377) of the air conditioner.
+ * The six ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
+ * the part of the kind inverter and of no other kind, the gree binding (HAS-377) of the air conditioner,
+ * the blebox binding (HAS-424) of the air quality sensor.
  */
-export const BINDINGS = ['shelly', 'eaton', 'bthome', 'inverter', 'gree'] as const;
+export const BINDINGS = ['shelly', 'eaton', 'bthome', 'inverter', 'gree', 'blebox'] as const;
 export type Binding = (typeof BINDINGS)[number];
 
 /**
@@ -48,6 +49,8 @@ const IPV4 =
 const DEVICE_ID = /^[A-Za-z0-9_-]{3,50}$/;
 /** The MAC of a Gree unit as the unit gives it (`GreeBinding`): 12 hexadecimal digits, lowercase. */
 const GREE_MAC = /^[0-9a-f]{12}$/;
+/** The id of a BleBox device as its `GET /info` gives it (`BleboxBinding`): the same form as the Gree MAC. */
+const BLEBOX_DEVICE_ID = GREE_MAC;
 
 /**
  * The bindings a device of a kind can be reached through. What moves and what lights is wired
@@ -76,6 +79,8 @@ export function bindingsOf(kind: string): readonly Binding[] {
       return ['inverter'];
     case 'air conditioner':
       return ['gree'];
+    case 'air quality sensor':
+      return ['blebox'];
     default:
       return ANY_OTHER;
   }
@@ -139,7 +144,8 @@ export function bindingOf(device: SmartDevice): Binding | undefined {
  * The vendors a device reached through a binding can have: an Eaton device is reached through
  * a gateway of the AMX system and nothing else is, the binding of a Shelly is a Shelly's, and
  * a Bluetooth sensor is of any vendor but Eaton; an inverter is of none of the vendors the
- * registry names; a Gree unit is of the vendor gree, and nothing else is (HAS-377).
+ * registry names; a Gree unit is of the vendor gree, and nothing else is (HAS-377), a BleBox sensor of the
+ * vendor blebox, and nothing else is (HAS-424, the rule of `blebox` in `DeviceRules` of database-service 0.25.0).
  */
 export function vendorsOf(binding: Binding): readonly string[] {
   switch (binding) {
@@ -153,6 +159,8 @@ export function vendorsOf(binding: Binding): readonly string[] {
       return ['other'];
     case 'gree':
       return ['gree'];
+    case 'blebox':
+      return ['blebox'];
   }
 }
 
@@ -216,6 +224,17 @@ export function normaliseGreeMac(text: string): string {
 
 export function greeMacProblem(text: string): MessageKey | undefined {
   return GREE_MAC.test(normaliseGreeMac(text)) ? undefined : 'devices.problem.greeMac';
+}
+
+/** The id of a BleBox device as it is sent: lowercase, without separators - as its `GET /info` gives it. */
+export function normaliseBleboxDeviceId(text: string): string {
+  return normaliseGreeMac(text);
+}
+
+export function bleboxDeviceIdProblem(text: string): MessageKey | undefined {
+  return BLEBOX_DEVICE_ID.test(normaliseBleboxDeviceId(text))
+    ? undefined
+    : 'devices.problem.bleboxDeviceId';
 }
 
 /** A name as it is sent: without the spaces around it. */
@@ -284,11 +303,12 @@ export function bluetoothAddressProblem(text: string): MessageKey | undefined {
  * `others`: every other device of the registry - without the one being changed.
  */
 export function bindingTaken(
-  device: Pick<DeviceDetails, 'shelly' | 'eaton' | 'bthome' | 'inverter' | 'gree'>,
+  device: Pick<DeviceDetails, 'shelly' | 'eaton' | 'bthome' | 'inverter' | 'gree' | 'blebox'>,
   others: readonly SmartDevice[],
 ): MessageKey | undefined {
-  const { shelly, eaton, bthome, inverter, gree } = device;
-  const unitTaken = gree === undefined ? undefined : greeTaken(gree, others);
+  const { shelly, eaton, bthome, inverter, gree, blebox } = device;
+  const unitTaken =
+    (gree === undefined ? undefined : greeTaken(gree, others)) ?? bleboxTaken(blebox, others);
   if (unitTaken !== undefined) {
     return unitTaken;
   }
@@ -325,6 +345,25 @@ export function bindingTaken(
     return 'devices.problem.bluetoothAddressTaken';
   }
   return undefined;
+}
+
+/**
+ * One device per id and one per address of a BleBox device (devices_blebox_device_id_uq,
+ * devices_blebox_address_uq); nothing to find for a device of another binding.
+ */
+function bleboxTaken(
+  blebox: DeviceDetails['blebox'],
+  others: readonly SmartDevice[],
+): MessageKey | undefined {
+  if (blebox === undefined) {
+    return undefined;
+  }
+  if (others.some((other) => other.blebox?.deviceId === blebox.deviceId)) {
+    return 'devices.problem.bleboxDeviceIdTaken';
+  }
+  return others.some((other) => other.blebox?.address === blebox.address)
+    ? 'devices.problem.bleboxAddressTaken'
+    : undefined;
 }
 
 /** One device per MAC and one per address of a Gree unit (devices_gree_mac_uq, devices_gree_address_uq). */
@@ -388,6 +427,8 @@ export function sameDevice(before: SmartDevice, details: DeviceDetails): boolean
       device.inverter?.batterySerialNumber,
       device.gree?.address,
       device.gree?.mac,
+      device.blebox?.address,
+      device.blebox?.deviceId,
       device.lightKind,
       device.placement,
       device.positioning,
