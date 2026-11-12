@@ -61,6 +61,17 @@ export interface GreeBinding {
 }
 
 /**
+ * The air quality sensor outside the house (`BleboxBinding` of `smart-home-sdk` 1.20.0, HAS-424): polled by
+ * `weather-service` over the HTTP API of BleBox at its address.
+ */
+export interface BleboxBinding {
+  /** The IPv4 address of the sensor, reserved for it in DHCP. */
+  readonly address?: string;
+  /** The id `GET /info` of the device gives: 12 hexadecimal digits, lowercase. */
+  readonly deviceId?: string;
+}
+
+/**
  * A device as the registry holds it (`GET /home/device/registry`, `SmartDevice` of
  * `smart-home-sdk` 1.8.0 - `openingSensors` since 1.11.0 - served by `database-service` and
  * routed by the gateway from 0.5.0).
@@ -103,6 +114,8 @@ export interface SmartDevice {
   readonly inverter?: InverterBinding;
   /** An air conditioner only (HAS-377) - its binding. */
   readonly gree?: GreeBinding;
+  /** An air quality sensor only (HAS-424) - its binding. */
+  readonly blebox?: BleboxBinding;
   /** A light only: `relay`, `dimmer` or `rgbw`. */
   readonly lightKind?: string;
   /** Blinds only: `external` or `internal`. */
@@ -139,6 +152,7 @@ export interface DeviceDetails {
   readonly bthome?: BthomeBinding;
   readonly inverter?: InverterBinding;
   readonly gree?: GreeBinding;
+  readonly blebox?: BleboxBinding;
   readonly lightKind?: string;
   readonly placement?: string;
   readonly positioning?: boolean;
@@ -187,6 +201,7 @@ const KNOWN_FIELDS: readonly string[] = [
   'bthome',
   'inverter',
   'gree',
+  'blebox',
   'lightKind',
   'placement',
   'positioning',
@@ -288,6 +303,7 @@ const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
     'batterySerialNumber',
   ] satisfies readonly (keyof InverterBinding)[],
   gree: ['address', 'mac'] satisfies readonly (keyof GreeBinding)[],
+  blebox: ['address', 'deviceId'] satisfies readonly (keyof BleboxBinding)[],
 };
 
 /**

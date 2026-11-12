@@ -60,10 +60,12 @@ import {
   bluetoothAddressProblem,
   chosenProblem,
   deviceIdProblem,
+  bleboxDeviceIdProblem,
   greeMacProblem,
   loggerSerialOf,
   loggerSerialProblem,
   nameProblem,
+  normaliseBleboxDeviceId,
   normaliseGreeMac,
   normaliseName,
   openingSensorsOf,
@@ -206,6 +208,15 @@ export class SmartDeviceForm implements OnInit {
     nonNullable: true,
     validators: validator(greeMacProblem),
   });
+  // an air quality sensor (HAS-426): the address of the sensor and the id of its GET /info, both needed
+  protected readonly bleboxAddress = new FormControl('', {
+    nonNullable: true,
+    validators: validator(addressProblem),
+  });
+  protected readonly bleboxDeviceId = new FormControl('', {
+    nonNullable: true,
+    validators: validator(bleboxDeviceIdProblem),
+  });
   /** The brand decides which of the two numbers of its link the form asks for. */
   protected readonly brand = signal<string>(INVERTER_BRANDS[0]);
 
@@ -342,6 +353,8 @@ export class SmartDeviceForm implements OnInit {
       this.serial,
       this.greeAddress,
       this.greeMac,
+      this.bleboxAddress,
+      this.bleboxDeviceId,
     ]) {
       control.valueChanges.subscribe(() => this.taken.set(undefined));
     }
@@ -377,6 +390,8 @@ export class SmartDeviceForm implements OnInit {
     this.batterySerial.setValue(device.inverter?.batterySerialNumber ?? '');
     this.greeAddress.setValue(device.gree?.address ?? '');
     this.greeMac.setValue(device.gree?.mac ?? '');
+    this.bleboxAddress.setValue(device.blebox?.address ?? '');
+    this.bleboxDeviceId.setValue(device.blebox?.deviceId ?? '');
     this.lightKind.set(device.lightKind);
     this.placement.set(device.placement);
     this.positioning.set(device.positioning);
@@ -455,6 +470,8 @@ export class SmartDeviceForm implements OnInit {
         ];
       case 'gree':
         return [this.greeAddress, this.greeMac];
+      case 'blebox':
+        return [this.bleboxAddress, this.bleboxDeviceId];
     }
   }
 
@@ -512,6 +529,14 @@ export class SmartDeviceForm implements OnInit {
             gree: {
               address: this.greeAddress.value.trim(),
               mac: normaliseGreeMac(this.greeMac.value),
+            },
+          }
+        : {}),
+      ...(binding === 'blebox'
+        ? {
+            blebox: {
+              address: this.bleboxAddress.value.trim(),
+              deviceId: normaliseBleboxDeviceId(this.bleboxDeviceId.value),
             },
           }
         : {}),

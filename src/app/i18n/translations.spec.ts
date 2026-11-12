@@ -63,10 +63,12 @@ describe('translations', () => {
       'devices.device.generation',
       'devices.device.bluetooth',
       'devices.device.gree',
+      'devices.device.blebox',
       'aircon.page.plugs.sanctum',
       'devices.vendor.shelly',
       'devices.vendor.eaton',
       'devices.vendor.gree',
+      'devices.vendor.blebox',
       // HAS-394: a temperature, and the words of the remote of a Gree unit both languages use
       'aircon.target',
       'aircon.mode.auto',

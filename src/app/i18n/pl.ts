@@ -2241,6 +2241,7 @@ export const pl: Messages = {
       point: 'punkt {{ point }}',
       bluetooth: 'Bluetooth',
       gree: 'Gree',
+      blebox: 'BleBox',
       noBinding: 'Rejestr nie mówi, jak dotrzeć do tego urządzenia.',
       edit: 'Edytuj',
       putIntoUse: 'Pozwól serwisom używać',
@@ -2285,6 +2286,10 @@ export const pl: Messages = {
       greeAddressHint: 'Zarezerwowany dla jednostki w DHCP',
       greeMac: 'MAC jednostki',
       greeMacHint: 'Tak, jak podaje go jednostka: 12 znaków 0-9 i a-f, na przykład 02005e0000a1',
+      bleboxAddress: 'Adres czujnika',
+      bleboxAddressHint: 'Zarezerwowany dla czujnika w DHCP',
+      bleboxDeviceId: 'Identyfikator czujnika',
+      bleboxDeviceIdHint: 'Tak, jak podaje go /info: 12 znaków 0-9 i a-f, na przykład 0123456789ab',
       optional: 'Nieobowiązkowe',
       registration: 'Numer rejestracyjny modułu',
       registrationHint: 'Nieobowiązkowe - hasło lokalnego API modułu SolaX',
@@ -2338,6 +2343,9 @@ export const pl: Messages = {
       greeMac: 'MAC jednostki to 12 znaków 0-9 i a-f.',
       greeMacTaken: 'Klimatyzator o tym adresie MAC jest już zarejestrowany.',
       greeAddressTaken: 'Klimatyzator pod tym adresem jest już zarejestrowany.',
+      bleboxDeviceId: 'Identyfikator czujnika to 12 znaków 0-9 i a-f.',
+      bleboxDeviceIdTaken: 'Urządzenie BleBox o tym identyfikatorze jest już zarejestrowane.',
+      bleboxAddressTaken: 'Urządzenie BleBox pod tym adresem jest już zarejestrowane.',
     },
     // what the registry refuses, by the code of its answer
     error: {
@@ -2361,6 +2369,7 @@ export const pl: Messages = {
       inverter: 'Falownik',
       waterValve: 'Zawór wody',
       airConditioner: 'Klimatyzator',
+      airQualitySensor: 'Czujnik jakości powietrza',
     },
     lightKind: {
       relay: 'przełączane',
@@ -2375,6 +2384,7 @@ export const pl: Messages = {
       shelly: 'Shelly',
       eaton: 'Eaton',
       gree: 'Gree',
+      blebox: 'BleBox',
       other: 'Inny',
     },
     binding: {
@@ -2383,6 +2393,7 @@ export const pl: Messages = {
       bthome: 'Bluetooth',
       inverter: 'Falownik, odczytywany przez serwis energii',
       gree: 'Gree w sieci',
+      blebox: 'BleBox w sieci',
     },
   },
   household: {
