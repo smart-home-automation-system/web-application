@@ -962,7 +962,9 @@ e2e/              # Playwright tests
     their role is `radio`). Then the mode
     (a toggle group - an icon and its word on a wide card, the icon alone below 400 px in English (measured on a phone of 440 px, HAS-438) and 510 px in Polish,
     the word kept for a screen reader and in the tooltip), the target by a degree, the fan by a step beside it in the same row (HAS-438, owner 2026-11-13: auto, then low to high; a speed this version does not know offers no step), quiet /
-    turbo / sleep (`mat-slide-toggle` with `disableToggleValue`). **A unit without `power` is not known**: no settings
+    turbo / sleep - since HAS-438 (owner 2026-11-13: the slide toggles did not belong) a toggle group in the look of
+    the modes (`multiple`, an icon and a word, the words go below 300 px), each pressed while the unit reports it on; a
+    press sets the toggle back at once (`flipBoost`), so only the read-back moves it. **A unit without `power` is not known**: no settings
     are offered, never "off".
   - **`aircon-command-rules.ts` is a copy of `CommandRules` of `aircon-service`** - 16-30 °C, cooling never below
     22 °C (judged when the command sets the mode or the target), turbo and quiet not in `dry` or `fan`; its test runs the

@@ -1911,6 +1911,7 @@ export const en = {
     quiet: 'Quiet',
     turbo: 'Turbo',
     sleep: 'Sleep',
+    boostsLabel: 'Extras',
     sensor: 'Its sensor {{ value }} °C',
     sensorUnknown: 'Its sensor not read',
     compressor: 'compressor running',

@@ -202,36 +202,37 @@
       </span>
     </div>
 
-    <div class="switches">
-      @if (one.quiet !== undefined) {
-        <mat-slide-toggle
-          data-testid="aircon-quiet"
-          [checked]="one.quiet"
-          [disabled]="busy() || noBoost()"
-          (toggleChange)="flip('quiet')"
-          >{{ t('aircon.quiet')
-          }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-slide-toggle
+    <!-- quiet, turbo and sleep in the look of the modes (owner, 2026-11-13: the slide toggles did not belong):
+         each one pressed while the unit reports it on, a field the unit leaves out not offered. A press does
+         not flip the toggle - the read-back does (flipBoost) -->
+    <div class="boosts-box">
+      @if (boosts().length > 0) {
+        <mat-button-toggle-group
+          class="boosts"
+          multiple
+          hideMultipleSelectionIndicator
+          data-testid="aircon-boosts"
+          [attr.aria-label]="t('aircon.boostsLabel') + ' ' + label"
+          (change)="flipBoost($event)"
         >
-      }
-      @if (one.turbo !== undefined) {
-        <mat-slide-toggle
-          data-testid="aircon-turbo"
-          [checked]="one.turbo"
-          [disabled]="busy() || noBoost()"
-          (toggleChange)="flip('turbo')"
-          >{{ t('aircon.turbo')
-          }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-slide-toggle
-        >
-      }
-      @if (one.sleep !== undefined) {
-        <mat-slide-toggle
-          data-testid="aircon-sleep"
-          [checked]="one.sleep"
-          [disabled]="busy()"
-          (toggleChange)="flip('sleep')"
-          >{{ t('aircon.sleep')
-          }}<span class="visually-hidden">&ngsp;{{ label }}</span></mat-slide-toggle
-        >
+          @for (boost of boosts(); track boost.field) {
+            <mat-button-toggle
+              [value]="boost.field"
+              [checked]="boost.on"
+              [disabled]="busy() || (boost.field !== 'sleep' && noBoost())"
+              [attr.data-testid]="'aircon-' + boost.field"
+              [matTooltip]="t(BOOST_LABELS[boost.field])"
+              matTooltipTouchGestures="off"
+            >
+              <span class="mode"
+                ><mat-icon class="mode__icon" aria-hidden="true">{{
+                  BOOST_ICONS[boost.field]
+                }}</mat-icon
+                ><span class="boost__label">{{ t(BOOST_LABELS[boost.field]) }}</span></span
+              ><span class="visually-hidden">&ngsp;{{ label }}</span>
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
       }
     </div>
   } @else {

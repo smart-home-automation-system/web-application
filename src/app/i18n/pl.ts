@@ -1895,6 +1895,7 @@ export const pl: Messages = {
     quiet: 'Cichy',
     turbo: 'Turbo',
     sleep: 'Sen',
+    boostsLabel: 'Dodatki',
     sensor: 'Jego czujnik {{ value }} °C',
     sensorUnknown: 'Jego czujnik nieodczytany',
     compressor: 'sprężarka pracuje',

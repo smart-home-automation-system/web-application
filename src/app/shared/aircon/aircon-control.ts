@@ -1,12 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import {
-  MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS,
-  MatSlideToggleModule,
-} from '@angular/material/slide-toggle';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { DeviceCommands } from '../../core/api/device-commands';
@@ -26,6 +22,7 @@ import {
   commandProblem,
   lowestTarget,
 } from '../../data-access/aircon/aircon-command-rules';
+import { MessageKey } from '../../i18n/messages';
 import { DisplayTextPipe } from '../display-text/display-text.pipe';
 import { HouseAgePipe } from '../house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
@@ -50,13 +47,16 @@ import {
  * quiet not in dry or fan): a command it refuses is not sent and the reason is told. Switching to
  * cooling with a target below 22 °C sends 22 °C with it - the unit would refuse the mode alone.
  */
+/** What a unit can add to its mode, each switched on and off by itself. */
+type Boost = 'quiet' | 'turbo' | 'sleep';
+const BOOSTS: readonly Boost[] = ['quiet', 'turbo', 'sleep'];
+
 @Component({
   selector: 'app-aircon-control',
   imports: [
     MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
-    MatSlideToggleModule,
     MatTooltipModule,
     TranslocoDirective,
     DisplayTextPipe,
@@ -68,9 +68,6 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   preserveWhitespaces: true,
   host: { '[class.level]': 'level()' },
-  providers: [
-    { provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } },
-  ],
 })
 export class AirconControl {
   readonly unit = input.required<AirconUnit>();
@@ -98,6 +95,16 @@ export class AirconControl {
     dry: 'water_drop',
     fan: 'mode_fan',
     heat: 'sunny',
+  };
+  protected readonly BOOST_LABELS: Readonly<Record<Boost, MessageKey>> = {
+    quiet: 'aircon.quiet',
+    turbo: 'aircon.turbo',
+    sleep: 'aircon.sleep',
+  };
+  protected readonly BOOST_ICONS: Readonly<Record<Boost, string>> = {
+    quiet: 'volume_off',
+    turbo: 'speed',
+    sleep: 'bedtime',
   };
   /** The icon of a mode by its word; a word this version does not know has none. */
   protected readonly MODE_ICONS_BY_WORD: Readonly<Record<string, string>> = this.MODE_ICONS;
@@ -135,6 +142,15 @@ export class AirconControl {
     (AIRCON_FAN_SPEEDS as readonly string[]).indexOf(this.unit().fanSpeed ?? ''),
   );
 
+  /** Quiet, turbo and sleep as the unit reports them; a field it leaves out is not offered. */
+  protected readonly boosts = computed(() => {
+    const unit = this.unit();
+    return BOOSTS.filter((field) => unit[field] !== undefined).map((field) => ({
+      field,
+      on: unit[field] === true,
+    }));
+  });
+
   /** Why the last command was not sent - cleared by the next command. */
   protected readonly problem = signal<CommandProblem | undefined>(undefined);
 
@@ -167,7 +183,16 @@ export class AirconControl {
     }
   }
 
-  protected flip(field: 'quiet' | 'turbo' | 'sleep'): void {
+  /**
+   * A press of quiet, turbo or sleep: the group has already flipped the toggle, so it is set back at once -
+   * only the read-back of the unit moves it (no optimistic state, the rule of the slide toggles before).
+   */
+  protected flipBoost(event: MatButtonToggleChange): void {
+    event.source.checked = !event.source.checked;
+    this.flip(event.source.value as Boost);
+  }
+
+  private flip(field: Boost): void {
     const now = this.unit()[field];
     if (now !== undefined) {
       this.send({ [field]: !now });

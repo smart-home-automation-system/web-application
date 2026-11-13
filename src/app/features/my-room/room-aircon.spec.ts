@@ -134,7 +134,7 @@ describe('RoomAircon', () => {
         : control.getAttribute('role') === 'combobox'
           ? 'select: ' + words(control.closest('mat-form-field')?.querySelector('mat-label'))
           : (control.getAttribute('aria-label') ??
-            words(control.querySelector('.mode__label') ?? control)),
+            words(control.querySelector('.mode__label, .boost__label') ?? control)),
     );
     expect(controls).toEqual([
       'On Air conditioner',
@@ -148,9 +148,10 @@ describe('RoomAircon', () => {
       'Raise the target Air conditioner',
       'Slower fan Air conditioner',
       'Faster fan Air conditioner',
-      'switch: Quiet Air conditioner',
-      'switch: Turbo Air conditioner',
-      'switch: Sleep Air conditioner',
+      // HAS-438: quiet, turbo and sleep in the look of the modes, no longer slide toggles
+      'Quiet',
+      'Turbo',
+      'Sleep',
     ]);
   });
 
@@ -225,6 +226,23 @@ describe('RoomAircon', () => {
     await fixture.whenStable();
 
     expect(sent).toEqual([{ id: 140, command: { mode: 'cool', targetTemperature: 22 } }]);
+  });
+
+  // no optimistic state: the press is sent, the toggle moves with the read-back alone
+  it('sends quiet, turbo and sleep without pressing the toggle before the read-back', async () => {
+    answer(room, [OFFICE]);
+    await fixture.whenStable();
+    const sleep = () => card()!.querySelector('[data-testid="aircon-sleep"]')!;
+
+    (sleep().querySelector('button') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    expect(sent).toEqual([{ id: 140, command: { sleep: !OFFICE.sleep } }]);
+    expect(sleep().classList.contains('mat-button-toggle-checked')).toBe(OFFICE.sleep === true);
+
+    answer(room, [{ ...OFFICE, sleep: !OFFICE.sleep }]);
+    await fixture.whenStable();
+    expect(sleep().classList.contains('mat-button-toggle-checked')).toBe(OFFICE.sleep !== true);
   });
 
   it('keeps turbo and quiet off in drying', async () => {
