@@ -22,8 +22,8 @@ function link(
   watts: number | undefined,
   words: Readonly<Record<FlowDirection, MessageKey>>,
 ): Link {
-  const run = direction === 'in' ? 'along' : direction === 'out' ? 'back' : undefined;
-  return { state: direction, run, duration: durationOf(watts), label: words[direction] };
+  const runs: Partial<Record<FlowDirection, Link['run']>> = { in: 'along', out: 'back' };
+  return { state: direction, run: runs[direction], duration: durationOf(watts), label: words[direction] };
 }
 
 /** 3 s for a trickle down to 0.9 s from about 5 kW on - the light runs faster with more power. */

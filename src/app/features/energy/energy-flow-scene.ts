@@ -27,8 +27,8 @@ export function at(i: number, j: number): Point {
 }
 
 const up = (p: Point, h: number): Point => ({ x: p.x, y: p.y - h });
-const path = (...points: Point[]): string =>
-  `M${points.map((p) => `${round(p.x)},${round(p.y)}`).join(' L')} Z`;
+const pair = (p: Point): string => `${round(p.x)},${round(p.y)}`;
+const path = (...points: Point[]): string => `M${points.map(pair).join(' L')} Z`;
 const round = (n: number): number => Math.round(n * 10) / 10;
 
 /** A tile under a thing: its top, and the two faces of its edge that face the viewer. */
