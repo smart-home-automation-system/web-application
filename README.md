@@ -266,7 +266,8 @@ dashboards:
   administrator's). Since HAS-394 also **the air conditioner of the room** (`aircon-service` >= 0.5.0): on
   or off with its mode and target, the reading of its own sensor, whether the compressor runs, the open
   window that holds it and until when it is set back, whether it answers - and on / off, the mode, the
-  target by a degree (cooling never below 22 °C, as the service refuses it), the fan and quiet / turbo /
+  target by a degree (cooling never below 22 °C, as the service refuses it), the fan by a step beside it (auto, then low
+  to high - HAS-438) and quiet / turbo /
   sleep, each read back (no card for a room without a unit). The heating is read-only; setting a temperature or a schedule is not part of
   this application for anybody yet, and will be the administrator's alone. The blinds, the
   lights and the air conditioner are the only controls of a room.
