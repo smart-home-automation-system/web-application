@@ -286,7 +286,10 @@ describe('Energy', () => {
     answer(flows, FLOWS);
 
     const flow = await card('flow');
-    const lights = [...flow.querySelectorAll<SVGPathElement>('.link__light')];
+    // each light has its glow under it, a wide faint copy (no SVG filter, HAS-438)
+    expect(flow.querySelectorAll('.link__light--glow')).toHaveLength(3);
+    expect(flow.querySelector('[filter]')).toBeNull();
+    const lights = [...flow.querySelectorAll<SVGPathElement>('.link__light:not(.link__light--glow)')];
     // the panels produce: towards the house; the battery charges and the grid takes the surplus: away from it
     expect(lights.map((light) => light.getAttribute('data-run'))).toEqual(['along', 'back', 'back']);
     expect(lights[0].style.getPropertyValue('--flow-duration')).toBe('0.90s');
@@ -307,6 +310,8 @@ describe('Energy', () => {
   it('shows the next planned outage that is not over beside the sources, and none when none is announced', async () => {
     answer(planned, [
       { id: 1, startsAt: '2026-11-01T08:00:00', endsAt: '2026-11-01T12:00:00', kind: 'planned', scope: 'street' },
+      // no start to place it by: never "the next", whatever its end
+      { id: 4, endsAt: '2026-11-04T12:00:00', kind: 'planned', scope: 'street' },
       { id: 3, startsAt: '2026-11-20T08:00:00', endsAt: '2026-11-20T14:00:00', kind: 'planned', scope: 'town' },
       {
         id: 2,

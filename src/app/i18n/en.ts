@@ -115,9 +115,7 @@ export const en = {
     requests: {
       title: 'Requests',
       forYou: 'Requests for you',
-      toOthers: 'Yours for the others',
       nothing: 'None',
-      unknown: 'Not known',
     },
     appliances: {
       running: 'Running',
@@ -1558,7 +1556,6 @@ export const en = {
     stop: 'Stop',
     close: 'Close',
     positionLabel: 'Position',
-    goTo: 'Go',
     pause: 'Pause the schedules until their next run',
     pauseShort: 'Pause the schedules',
     send: 'Send',
@@ -1762,7 +1759,6 @@ export const en = {
       brightness: 'Brightness',
       send: 'Send',
       setColor: 'Set the colour',
-      set: 'Set',
       color: 'Colour',
       red: 'Red',
       green: 'Green',

@@ -185,9 +185,14 @@ export class Energy {
       const parsed = parseHouseDateTime(text);
       return parsed === undefined ? undefined : houseInstant(parsed, this.zone);
     };
+    // an outage is placed by its start: one without a start that can be read is never "the next"
     return (answer as PlannedOutage[])
-      .filter((outage) => (instantOf(outage.endsAt ?? outage.startsAt) ?? Infinity) > now)
-      .sort((a, b) => (instantOf(a.startsAt) ?? 0) - (instantOf(b.startsAt) ?? 0));
+      .flatMap((outage) => {
+        const start = instantOf(outage.startsAt);
+        return start !== undefined && (instantOf(outage.endsAt) ?? start) > now ? [{ outage, start }] : [];
+      })
+      .sort((a, b) => a.start - b.start)
+      .map(({ outage }) => outage);
   });
   protected readonly nextOutage = computed(() => this.plannedList()?.[0]);
   protected readonly outageList = computed(() => {

@@ -5,6 +5,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
 } from '@angular/core';
@@ -23,6 +24,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 
 import { ApiError, toApiError } from '../../core/api/api-error';
+import { PollingResource } from '../../core/api/polling-resource';
 import { APP_CONFIG } from '../../core/config/app-config';
 import { houseDay } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
@@ -128,13 +130,17 @@ export class EnergyControl {
   );
   protected readonly runs = this.api.watchChargeRuns(this.runsRange);
   protected readonly automation = this.api.watchAutomation();
-  protected readonly planned = this.api.watchPlannedOutages();
+  /**
+   * The planned outages of Tauron - polled by the page, which also shows the next one beside the flow (HAS-438): one
+   * call for both cards.
+   */
+  readonly planned = input.required<PollingResource<readonly PlannedOutage[] | null>>();
 
   private readonly readBack = lightReadBack(async () => {
     await Promise.all([
       this.charge.refresh(),
       this.runs.refresh(),
-      this.planned.refresh(),
+      this.planned().refresh(),
       this.automation.refresh(),
     ]);
   });
@@ -197,7 +203,7 @@ export class EnergyControl {
   protected readonly skipBusy = signal<number | undefined>(undefined);
   protected readonly skipFailure = signal<Failure | undefined>(undefined);
   protected readonly outages = computed(() => {
-    const answer: unknown = this.planned.value();
+    const answer: unknown = this.planned().value();
     return Array.isArray(answer) ? (answer as PlannedOutage[]) : undefined;
   });
   protected readonly runList = computed(() => {

@@ -265,7 +265,7 @@
     domain="energy"
     waitingLabel="energy.page.loading"
     [describeWith]="describe"
-    [resource]="planned"
+    [resource]="planned()"
     data-testid="card-planned"
   >
     @if (outages(); as list) {

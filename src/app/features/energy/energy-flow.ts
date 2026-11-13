@@ -53,16 +53,6 @@ export function durationOf(watts: number | undefined): string {
       @let l = links();
       <div class="flow" data-testid="energy-flow">
         <svg class="scene" [attr.viewBox]="S.viewBox" aria-hidden="true" focusable="false">
-          <defs>
-            <filter [attr.id]="glowId" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
           <!-- the tiles under the four things -->
           @for (tile of tiles; track $index) {
             <path class="tile__left" [attr.d]="tile.left" />
@@ -74,12 +64,20 @@ export function durationOf(watts: number | undefined): string {
           @for (one of lineList(); track one.key) {
             <path class="link__track" [attr.data-state]="one.link.state" [attr.d]="one.d" />
             @if (one.link.run; as run) {
+              <!-- its glow: the same light, wide and faint, under it - no filter referenced by url(#id), which
+                   WebKit resolves against the <base href> of the page -->
+              <path
+                class="link__light link__light--glow"
+                pathLength="100"
+                [attr.data-run]="run"
+                [style.--flow-duration]="one.link.duration"
+                [attr.d]="one.d"
+              />
               <path
                 class="link__light"
                 pathLength="100"
                 [attr.data-run]="run"
                 [style.--flow-duration]="one.link.duration"
-                [attr.filter]="'url(#' + glowId + ')'"
                 [attr.d]="one.d"
               />
             }
@@ -323,6 +321,11 @@ export function durationOf(watts: number | undefined): string {
       }
     }
 
+    .link__light--glow {
+      stroke-width: 10;
+      opacity: 0.3;
+    }
+
     @keyframes flow {
       from {
         stroke-dashoffset: 18;
@@ -392,10 +395,6 @@ export function durationOf(watts: number | undefined): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EnergyFlow {
-  /** Two of these drawings on a page must not share the id of their glow. */
-  private static count = 0;
-  protected readonly glowId = `energy-flow-glow-${EnergyFlow.count++}`;
-
   /** The SOC of the battery in %, from the battery call; `undefined` while not known. */
   readonly soc = input<number>();
   readonly flow = input.required<FlowView>();

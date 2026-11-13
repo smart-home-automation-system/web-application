@@ -959,8 +959,9 @@ e2e/              # Playwright tests
   attribute it is also the tooltip of the element (`heading` there). A unit test that renders
   the overview through the real routes lets its eighteen reads through with `isOverviewRead` (the energy tile four of them, HAS-341, HAS-373;
   the air conditioning tile two, HAS-394; the salt of the softener on the water tile, HAS-402), and the lists of the
-  requests by name (`OVERVIEW_REQUESTS`, the tile "Requests" of HAS-438: how many wait for the member of the profile,
-  the first three named, and how many of those written for the others - two calls, the second in `tileFailures`)
+  list of the requests by name (`OVERVIEW_REQUESTS`, the tile "Requests" of HAS-438: how many wait for the member of the
+  profile, the first three named - one call; what the member wrote for the others stays on the requests page, which
+  reads every other member's list, too many calls for a count on a tile)
   (`src/testing/overview-reads.ts`) - add a read there together with its tile.
 - **The air conditioners** (HAS-394, `AirconApi` in `data-access/aircon/`, `aircon-service` >= 0.5.0; epic HAS-376):
   the card `RoomAircon` of My room - a capability of a room, `GET /aircon/rooms/{room}` every 10 s, **no card for a
@@ -1285,10 +1286,13 @@ e2e/              # Playwright tests
     filled by the SOC -, two pylons down on the left, each on a tile, in the colours of the theme. A light runs along a
     line the way the energy flows (`stroke-dashoffset` on a `pathLength` of 100), faster with more power
     (`durationOf`: 3 s down to 0.9 s from about 5 kW); an idle line stands still, a power not known is dashed; with
-    reduced motion the light stands in the middle. The words of each line are a visually hidden `img` (`.arrow--*`),
+    reduced motion the light stands in the middle. Its glow is a wide faint copy of the light under it - **no SVG filter
+    referenced by `url(#id)`**: WebKit resolves it against the `<base href>` of the page. The words of each line are a visually hidden `img` (`.arrow--*`),
     the names and powers HTML over the scene in per cent (`LABELS`); on a phone the split by inverter is left out.
     **Beside it** a column of three cards ending with it: the sources, "Next planned outage" (`card-next-outage`,
-    the soonest outage of `GET /energy/outages/planned` not over yet - its own poll, no commands) and the open alarms
+    the soonest outage of `GET /energy/outages/planned` not over yet, placed by its start - one without a start is
+    never the next; no commands - the page polls the outages once and hands the resource to `EnergyControl`, whose
+    card of the planned outages reads the same answer) and the open alarms
     (`card-alerts-now`, the template of the alarms card further down, which takes the rest of the height). A power is written by
     `PowerValue`: W below a kilowatt, kW from one on, its size only, "not known" for none.
     **The battery of the diagram says how full it is** (HAS-417, owner 2026-11-11): `/energy/flows` has no SOC, so
