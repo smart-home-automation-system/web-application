@@ -53,12 +53,16 @@ test('sets the brightness of a light from the window of its room', async ({ page
   const lamp = window.locator('[data-testid="window-light"][data-light="40"]');
 
   await expect(lamp.getByTestId('light-state')).toHaveText('off');
-  await lamp.getByRole('slider').fill('75');
-  await lamp.getByRole('button', { name: 'Set Brightness Office desk lamp' }).click();
+  // HAS-438: a step of 10 % from the level the lamp reported, which also switches it on
+  const level = Number(
+    /(\d+)\s*%/.exec((await lamp.locator('.stepper__value').textContent()) ?? '')?.[1] ?? Number.NaN,
+  );
+  const expected = `on · ${Math.min(100, (Number.isNaN(level) ? 0 : level) + 10)} %`;
+  await lamp.getByRole('button', { name: 'Brighten Office desk lamp' }).click();
 
-  await expect(lamp.getByTestId('light-state')).toHaveText('on · 75 %');
+  await expect(lamp.getByTestId('light-state')).toHaveText(expected);
   // the card behind the window follows the same read
-  await expect(light(page, 40).getByTestId('light-state')).toHaveText('on · 75 %');
+  await expect(light(page, 40).getByTestId('light-state')).toHaveText(expected);
 });
 
 test('switches a room off, and names the light it could not reach', async ({ page }) => {

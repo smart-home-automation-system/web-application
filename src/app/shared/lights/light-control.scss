@@ -1,8 +1,10 @@
-// One light in a frame of its own, as a blind control is: the styles of the window of the lights
-// page, for the card of "My room"
+// One light in a frame of its own, in the look of an air conditioner (HAS-438, owner 2026-11-13): its name,
+// its state at a glance, the notes, then the controls in the middle of the frame - on / off as one bar, the
+// brightness by a step, the colour with its command. The bar and the step are the global `.segments` and
+// `.stepper` of src/styles.scss, shared with a blind.
 :host {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   padding: 8px 10px 10px;
   border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
   border-radius: var(--mat-sys-corner-medium);
@@ -15,34 +17,64 @@
   gap: 6px 10px;
 }
 
-.mat-icon.light__bulb {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
-  color: var(--mat-sys-on-surface-variant);
-
-  &[data-state='on'] {
-    color: var(--app-domain-light);
-  }
-}
-
 .light__name {
   font: var(--mat-sys-title-small);
   letter-spacing: var(--mat-sys-title-small-tracking);
   color: var(--mat-sys-on-surface);
 }
 
-.light__state {
-  font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface-variant);
+// the state at a glance: a strip tinted with the colour of a light while on, an outline while off, a dashed
+// one while not known - the strip of an air conditioner
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 60%, transparent);
+  border-radius: var(--mat-sys-corner-small);
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
   font-variant-numeric: tabular-nums;
+
+  &[data-state='on'] {
+    border-color: var(--app-domain-light);
+    background: color-mix(in srgb, var(--app-domain-light) 18%, transparent);
+  }
+
+  &[data-state='off'] {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &[data-state='unknown'] {
+    border-style: dashed;
+    color: var(--mat-sys-on-surface-variant);
+  }
 }
 
-.light__commands {
-  display: inline-flex;
-  gap: 6px;
-  margin-left: auto;
+.mat-icon.status__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+}
+
+.status[data-state='on'] .mat-icon.status__icon {
+  color: var(--app-domain-light);
+}
+
+// every control in the middle of the frame
+.light__row {
+  display: flex;
+  justify-content: center;
+}
+
+.mat-icon.stepper__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 // a colour of the house, drawn as it is: an outline keeps a dark or a pale one visible on the glass
@@ -55,34 +87,13 @@
   border: 1px solid var(--mat-sys-outline);
 }
 
-.swatch--large {
-  width: 28px;
-  height: 28px;
-}
-
-.control,
 .color {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-}
-
-.control__label {
-  min-width: 6em;
-  font: var(--mat-sys-label-large);
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.control__slider {
-  flex: 1 1 200px;
-  min-width: 160px;
+  display: grid;
+  gap: 4px;
 }
 
 .color__sliders {
   display: grid;
-  flex: 1 1 200px;
-  min-width: 160px;
 }
 
 .color__row {

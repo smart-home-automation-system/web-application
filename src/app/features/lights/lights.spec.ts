@@ -469,10 +469,11 @@ describe('Lights', () => {
       http.expectOne((call) => call.url.endsWith('/rules/runs')).flush([]);
       fixture.detectChanges();
 
-      expect(windowLight(3).querySelector('[data-testid="set-brightness"]')).toBeNull();
-      click(windowLight(40).querySelector('[data-testid="set-brightness"]'));
+      expect(windowLight(3).querySelector('[data-testid="brightness-up"]')).toBeNull();
+      // HAS-438: a step of 10 % from the level the lamp reported (70 %)
+      click(windowLight(40).querySelector('[data-testid="brightness-up"]'));
       const command = http.expectOne((call) => call.url === '/home/light/40/brightness');
-      expect(command.request.params.get('value')).toBe('70');
+      expect(command.request.params.get('value')).toBe('80');
       expect(command.request.params.get('source')).toBe('dashboard');
       command.flush(null, { status: 202, statusText: 'Accepted' });
       await nextRead();

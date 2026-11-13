@@ -1,6 +1,5 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
 import { provideI18nTesting } from '../../../testing/i18n';
@@ -105,7 +104,8 @@ describe('LightControl', () => {
     expect(words(shown.querySelector('[data-testid="light-state"]'))).toBe('not known yet');
   });
 
-  it('offers brightness to a light that dims and sends it within 1 and 100', async () => {
+  // HAS-438: the brightness by a step of 10 %, as the target of an air conditioner, within 1 ... 100
+  it('steps the brightness of a light that dims, within 1 and 100', async () => {
     fixture.componentInstance.light.set({
       id: 13,
       name: 'Bedroom light strip',
@@ -116,10 +116,31 @@ describe('LightControl', () => {
     const shown = await control();
     expect(words(shown.querySelector('[data-testid="light-state"]'))).toBe('on · 60 %');
 
-    slider(shown, 'brightness').value = '0';
-    shown.querySelector<HTMLButtonElement>('[data-testid="set-brightness"]')!.click();
+    shown.querySelector<HTMLButtonElement>('[data-testid="brightness-down"]')!.click();
+    expect(sent).toEqual(['brightness 50 13']);
 
-    expect(sent).toEqual(['brightness 1 13']);
+    fixture.componentInstance.light.set({
+      id: 13,
+      name: 'Bedroom light strip',
+      kind: 'rgbw',
+      on: true,
+      brightness: 5,
+    });
+    await control();
+    shown.querySelector<HTMLButtonElement>('[data-testid="brightness-down"]')!.click();
+    expect(sent.at(-1)).toBe('brightness 1 13');
+
+    fixture.componentInstance.light.set({
+      id: 13,
+      name: 'Bedroom light strip',
+      kind: 'rgbw',
+      on: true,
+      brightness: 100,
+    });
+    await control();
+    expect(shown.querySelector<HTMLButtonElement>('[data-testid="brightness-up"]')!.disabled).toBe(
+      true,
+    );
   });
 
   it('offers no brightness and no colour to a relay', async () => {
@@ -205,7 +226,8 @@ describe('LightControl', () => {
     expect(swatch()).toBe('rgb(0, 0, 255)');
   });
 
-  it('sends no brightness that is not a number', async () => {
+  // a level the light did not report: raised from nothing, never lowered
+  it('raises a brightness not reported from nothing, and offers no step down', async () => {
     fixture.componentInstance.light.set({
       id: 13,
       name: 'Bedroom light strip',
@@ -214,14 +236,12 @@ describe('LightControl', () => {
     });
     const shown = await control();
 
-    // a thumb without a numeric value: the browser gives NaN, the slider's own fallback aside
-    const component = fixture.debugElement.query(By.directive(LightControl))
-      .componentInstance as unknown as { setBrightness(value: number): void };
-    component.setBrightness(Number.NaN);
-    await control();
+    expect(
+      shown.querySelector<HTMLButtonElement>('[data-testid="brightness-down"]')!.disabled,
+    ).toBe(true);
+    shown.querySelector<HTMLButtonElement>('[data-testid="brightness-up"]')!.click();
 
-    expect(sent).toEqual([]);
-    expect(shown.querySelector('[data-testid="light-failure"]')).toBeNull();
+    expect(sent).toEqual(['brightness 10 13']);
   });
 
   it('sends no white for a light without a white channel, and says so', async () => {

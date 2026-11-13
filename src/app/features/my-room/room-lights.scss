@@ -40,11 +40,18 @@
   font-size: 18px;
 }
 
+// "All off" in the middle of the card, its failure under it (HAS-438)
 .lights__room {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 6px 12px;
+  gap: 6px;
+}
+
+// the switch of the resident in the middle too
+.rule__switch {
+  display: flex;
+  justify-content: center;
 }
 
 .rule {

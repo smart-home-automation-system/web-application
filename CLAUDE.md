@@ -293,10 +293,15 @@ e2e/              # Playwright tests
   `GET /light/rooms/{room}/rules` every minute. A line per light is the shared `LightControl`
   (`shared/lights/light-control`): on and off, the brightness of a dimmer, the colour of an rgbw
   light (white only when the light reported a white channel) - the controls of the window of the
-  lights page too, since HAS-267 (one copy). "All off" is `POST /light/rooms/{room}?turn=off`, shown only once the lights are known
+  lights page too, since HAS-267 (one copy). **The look of an air conditioner** (HAS-438, owner 2026-11-13): the
+  state a strip tinted with `--app-domain-light` while on; on / off one bar of the global `.segments`, the state
+  reported pressed (`aria-pressed`, neither while not known); the brightness by a step of 10 % (`.stepper`, 1-100,
+  a level not reported raised from nothing) instead of a slider and "Set"; the colour sliders kept, "Set the colour"
+  with its swatch under them; "All off" and the switch of the resident buttons of `.segments` too - everything in
+  the middle of the card. "All off" is `POST /light/rooms/{room}?turn=off`, shown only once the lights are known
   - a failure before any answer leaves nothing to press. The rule of the room is `ruleSummary` of
   the lights page, and **the switch of the resident** (`PUT .../rules/resident-enabled`) is the one
-  thing a resident changes about it: a `mat-slide-toggle` with `disableToggleValue`, which shows
+  thing a resident changes about it: a button pressed while it is on (a `mat-slide-toggle` before HAS-438), which shows
   `enabledByResident` as stored and reads the rule back after the write - a failed write leaves it
   where the service has it; a rule answered without the field gets no switch, only "not known"
   (missing is never read as on or off). The colour chosen on the sliders of `LightControl` is a
@@ -625,7 +630,7 @@ e2e/              # Playwright tests
     says somebody is in.
   - **The window of a room** (`LightRoomWindow`, the size of the rooms window): every light as the
     shared `LightControl` of My room (since HAS-267) - when it changed and by whom, the manual hold, a
-    brightness slider for a light that dims, and for an rgbw light sliders of red, green, blue -
+    brightness by a step for a light that dims (HAS-438), and for an rgbw light sliders of red, green, blue -
     **white only when the light reported `color.white`** (a Gen2 RGBW in the profile rgb refuses
     white with `UNSUPPORTED_CAPABILITY`; the device tells, not the registry). A colour starts from what
     the light reported, white for one not heard of. Then the sensors, the rule as stored with the link

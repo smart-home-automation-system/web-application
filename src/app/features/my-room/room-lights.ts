@@ -2,10 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import {
-  MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS,
-  MatSlideToggleModule,
-} from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 
@@ -39,8 +35,9 @@ import { ruleSummary } from '../lights/rule-summary';
  * card for a room without lights** - an empty list, or the 404 `NOT_FOUND_LIGHT` - also while the
  * first answer is on its way; any other failure before an answer is told. Nothing optimistic: a
  * command is followed by the two reads of the lights (`lightReadBack`), the switch by a read of
- * the rule, and only those answers move the screen. **The switch does not flip itself**
- * (`disableToggleValue`): it shows `enabledByResident` as stored, also after a write that failed.
+ * the rule, and only those answers move the screen. **The switch does not press itself** (a button since
+ * HAS-438, in the look of quiet / turbo / sleep): it shows `enabledByResident` as stored, also after a write
+ * that failed.
  */
 @Component({
   selector: 'app-room-lights',
@@ -48,7 +45,6 @@ import { ruleSummary } from '../lights/rule-summary';
     MatButtonModule,
     MatCardModule,
     MatIconModule,
-    MatSlideToggleModule,
     MatTooltipModule,
     TranslocoDirective,
     ApiErrorStrip,
@@ -61,9 +57,6 @@ import { ruleSummary } from '../lights/rule-summary';
   styleUrl: './room-lights.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   preserveWhitespaces: true,
-  providers: [
-    { provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } },
-  ],
 })
 export class RoomLights {
   /** The identifier of the room in the backend, as the registry gives it to the profile. */

@@ -776,10 +776,9 @@ describe('MyRoom', () => {
       expect(words((await card())!.querySelector('.rule__text'))).toBe(
         'off 15 min after empty · by hand left 60 min',
       );
-      const toggle = (await card())!.querySelector<HTMLElement>(
-        '[data-testid="rule-switch"] [role="switch"]',
-      )!;
-      expect(toggle.getAttribute('aria-checked')).toBe('true');
+      // HAS-438: a button pressed while the rule is on for the resident, no longer a slide toggle
+      const toggle = (await card())!.querySelector<HTMLElement>('[data-testid="rule-switch"]')!;
+      expect(toggle.getAttribute('aria-pressed')).toBe('true');
 
       toggle.click();
       await page();
@@ -787,12 +786,10 @@ describe('MyRoom', () => {
       expect(sent).toEqual(['resident off bedroom']);
       expect(refreshed).toHaveBeenCalled();
       // the switch shows what the service stores, not what was clicked
-      expect(toggle.getAttribute('aria-checked')).toBe('true');
+      expect(toggle.getAttribute('aria-pressed')).toBe('true');
       answer(lastRule().resource, { ...RULE, enabledByResident: false });
       expect(
-        (await card())!
-          .querySelector('[data-testid="rule-switch"] [role="switch"]')!
-          .getAttribute('aria-checked'),
+        (await card())!.querySelector('[data-testid="rule-switch"]')!.getAttribute('aria-pressed'),
       ).toBe('false');
     });
 

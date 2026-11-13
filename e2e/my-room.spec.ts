@@ -249,9 +249,14 @@ test.describe('the lights of the room', () => {
       await strip.getByRole('button', { name: 'On Bedroom light strip' }).click();
       await expect(strip.getByTestId('light-state')).toContainText('on');
 
-      await strip.getByTestId('brightness').fill('35');
-      await strip.getByRole('button', { name: 'Set Brightness Bedroom light strip' }).click();
-      await expect(strip.getByTestId('light-state')).toHaveText('on · 35 %');
+      // HAS-438: the brightness by a step of 10 % from the level reported (from nothing when none is)
+      const level = Number(
+        /(\d+)\s*%/.exec((await strip.locator('.stepper__value').textContent()) ?? '')?.[1] ??
+          Number.NaN,
+      );
+      const expected = Math.min(100, (Number.isNaN(level) ? 0 : level) + 10);
+      await strip.getByRole('button', { name: 'Brighten Bedroom light strip' }).click();
+      await expect(strip.getByTestId('light-state')).toHaveText(`on · ${expected} %`);
 
       await lights.getByRole('button', { name: 'All off bedroom' }).click();
       await expect(strip.getByTestId('light-state')).toHaveText('off');
@@ -293,13 +298,14 @@ test.describe('the lights of the room', () => {
       await expect(lights.getByTestId('room-rule')).toContainText('off 15 min after empty');
       await expect(lights.getByTestId('occupancy')).toContainText('Occupied');
 
-      const automation = lights.getByTestId('rule-switch').getByRole('switch');
-      await expect(automation).toHaveAttribute('aria-checked', 'true');
+      // HAS-438: a button pressed while the rule is on for the resident
+      const automation = lights.getByTestId('rule-switch');
+      await expect(automation).toHaveAttribute('aria-pressed', 'true');
       await automation.click();
-      await expect(automation).toHaveAttribute('aria-checked', 'false');
+      await expect(automation).toHaveAttribute('aria-pressed', 'false');
 
       await automation.click();
-      await expect(automation).toHaveAttribute('aria-checked', 'true');
+      await expect(automation).toHaveAttribute('aria-pressed', 'true');
     });
   });
 });

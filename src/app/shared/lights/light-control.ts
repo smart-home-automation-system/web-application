@@ -134,13 +134,20 @@ export class LightControl {
     this.commands().send(id, this.api.turn(id, on), this.refresh());
   }
 
-  /** 1 ... 100: the service refuses 0 - "off" is the way to switch a light off. */
-  protected setBrightness(value: number): void {
-    if (!Number.isFinite(value)) {
+  protected readonly BRIGHTNESS_STEP = 10;
+
+  /**
+   * The reported level moved by a step (HAS-438, owner 2026-11-13: a step, as the target of an air
+   * conditioner), kept within 1 ... 100 - the service refuses 0, "off" is the way to switch a light off. A
+   * level not reported is raised from nothing: the first step up is 10 %.
+   */
+  protected stepBrightness(by: number): void {
+    const at = this.light().brightness;
+    if (at === undefined && by < 0) {
       return;
     }
     const id = this.light().id;
-    const brightness = Math.min(100, Math.max(1, Math.round(value)));
+    const brightness = Math.min(100, Math.max(1, (at ?? 0) + by));
     this.commands().send(id, this.api.brightness(id, brightness), this.refresh());
   }
 
