@@ -91,6 +91,14 @@
   justify-self: start;
 }
 
+// the controls of the unit stand in the middle of its frame (owner, 2026-11-13, HAS-438): the modes, the row of
+// the target and the fan, quiet / turbo / sleep
+.modes-box,
+.boosts-box {
+  display: flex;
+  justify-content: center;
+}
+
 .mode {
   display: inline-flex;
   align-items: center;
@@ -134,6 +142,7 @@
 .settings {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 8px;
 }
@@ -206,6 +215,7 @@
   .modes {
     display: flex;
     justify-self: stretch;
+    flex: 1 1 auto;
   }
 
   .modes .mat-button-toggle {
