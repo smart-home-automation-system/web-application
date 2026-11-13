@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +10,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { DeviceNotifications } from '../../shared/push/device-notifications';
 
 import { BackgroundStore } from '../../core/background/background-store';
+import { ProfileStore } from '../../core/profile/profile-store';
 import { SEASONS, Season } from '../../core/theme/season';
 import { SchemeChoice, SeasonChoice, ThemeStore } from '../../core/theme/theme-store';
 import { MessageKey } from '../../i18n/messages';
@@ -35,12 +36,12 @@ const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
 };
 
 /**
- * Settings of this browser. So far the appearance: the colours follow the season and the system
- * by themselves, and this page lets somebody look at the other variants; the photos behind the
- * views can be switched off here for a slow device.
+ * Settings of this browser: the appearance - the colours follow the season and the system by
+ * themselves, and this page lets somebody look at the other variants; the photos behind the views
+ * can be switched off here for a slow device - and the notifications of this device (HAS-284).
  *
- * The administrator's page (its route says nothing about access, which means exactly that); it
- * changes only the browser it is opened in.
+ * Every member's since HAS-438 (owner, 2026-11-13); the palette, a tool for looking at the theme,
+ * stays the administrator's. It changes only the browser it is opened in.
  */
 @Component({
   selector: 'app-settings',
@@ -59,6 +60,8 @@ const SEASON_LABELS: Readonly<Record<Season, MessageKey>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Settings {
+  private readonly profile = inject(ProfileStore).profile;
+  protected readonly isAdmin = computed(() => this.profile()?.role === 'admin');
   protected readonly theme = inject(ThemeStore);
   protected readonly background = inject(BackgroundStore);
   protected readonly schemeOptions = SCHEME_OPTIONS;

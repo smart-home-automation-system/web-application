@@ -12,14 +12,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
-import { hasPermission } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
 import { ROOM_CAPABILITIES } from './capabilities';
-import { HouseHeating } from './house-heating';
-import { HouseholdAppliances } from './household-appliances';
-import { MyChores } from './my-chores';
-import { MyRequests } from './my-requests';
-import { DeviceNotifications } from '../../shared/push/device-notifications';
 
 /**
  * The page of a household member - a resident's whole application, made for the phone. It shows
@@ -29,12 +23,9 @@ import { DeviceNotifications } from '../../shared/push/device-notifications';
  * What a room shows is a list of capability cards (`ROOM_CAPABILITIES`), each created for the
  * room on screen; the page itself knows none of them. Everything about a room is read-only.
  *
- * The page has no control at all - with one exception that is not a room's: a member the
- * registry granted `heating_switch` also gets the switch of the heating of the whole house,
- * the card shared with the heating dashboard (owner, 2026-10-09). Not the role decides that:
- * an administrator switches the heating on its dashboard, and has no switch here either
- * unless granted one. And the appliances of the household (HAS-282): a card of their own, once,
- * after the rooms and not of any room, with "Emptied" for a finished one - for every member.
+ * The page holds what belongs to a room and nothing else (HAS-438, owner 2026-11-13): the appliances
+ * and the chores, the requests, the notifications of this device and the switch of the heating of the
+ * whole house are the household's, each on a page of its own in the navigation of a member.
  */
 @Component({
   selector: 'app-my-room',
@@ -44,11 +35,6 @@ import { DeviceNotifications } from '../../shared/push/device-notifications';
     MatCardModule,
     MatIconModule,
     TranslocoDirective,
-    HouseHeating,
-    HouseholdAppliances,
-    MyChores,
-    MyRequests,
-    DeviceNotifications,
   ],
   templateUrl: './my-room.html',
   styleUrl: './my-room.scss',
@@ -57,11 +43,6 @@ import { DeviceNotifications } from '../../shared/push/device-notifications';
 export class MyRoom {
   private readonly profile = inject(ProfileStore).profile;
   protected readonly capabilities = ROOM_CAPABILITIES;
-
-  /** Whether the registry lets this member switch the heating of the whole house from here. */
-  protected readonly switchesHeating = computed(() =>
-    hasPermission(this.profile(), 'heating_switch'),
-  );
 
   /** The rooms of the profile, each once, in the order of the registry. */
   protected readonly rooms = computed(() => [...new Set(this.profile()?.rooms ?? [])]);

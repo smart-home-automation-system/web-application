@@ -1,11 +1,12 @@
 import { inject } from '@angular/core';
 import { CanActivateChildFn, Router } from '@angular/router';
 
-import { accessOf, redirectFor } from './access';
+import { accessOf, permissionOf, redirectFor } from './access';
 import { ProfileStore } from './profile-store';
 
 /**
- * Lets a page open only for somebody who may see it, by the `data.access` of its route: without
+ * Lets a page open only for somebody who may see it, by the `data.access` of its route (and the
+ * `data.permission` it may ask for - HAS-438): without
  * a profile everything leads to the picker, and a resident who follows - or types - the address
  * of an administrator's page lands on their own.
  *
@@ -17,6 +18,6 @@ import { ProfileStore } from './profile-store';
  * carries a token, the guard is where an expired one is turned away.
  */
 export const profileGuard: CanActivateChildFn = (route) => {
-  const target = redirectFor(accessOf(route), inject(ProfileStore).profile());
+  const target = redirectFor(accessOf(route), inject(ProfileStore).profile(), permissionOf(route));
   return target === undefined ? true : inject(Router).parseUrl(target);
 };

@@ -21,7 +21,7 @@ import { DataFreshness } from '../../shared/data-freshness/data-freshness';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 
 /**
- * "Mine this month" on My room (HAS-346): the chores of the member of the profile in this calendar month of
+ * "Mine this month" (HAS-346; on the appliances page of every member since HAS-438, on My room before): the chores of the member of the profile in this calendar month of
  * the house - per appliance what they emptied out of the cycles that finished while they were at home - from
  * the report of HAS-345. For every member, in the row of the household. Nothing is drawn while the household
  * has no appliance in the report; a failure before any answer is told.
@@ -85,7 +85,7 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
     </ng-container>
   `,
   styles: `
-    /* laid out by the row of the household on My room, as the appliances card */
+    /* laid out by the row of the appliances page, as the appliances card */
     :host {
       display: contents;
     }

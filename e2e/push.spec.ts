@@ -14,13 +14,14 @@ async function asBrowser(
   await page.addInitScript((value) => localStorage.setItem('mock-push', value), browser);
 }
 
+// the switch is on the settings of every member since HAS-438 (it was on My room before)
 test.describe('a resident', () => {
   test.use({ profile: 'resident' });
 
   test('switches the notifications of the device on, keeps them over a reload, and off again', async ({
     page,
   }) => {
-    await page.goto('/room');
+    await page.goto('/settings');
     const card = page.getByTestId('device-notifications');
     const toggle = card.getByRole('switch', { name: 'Notify me on this device' });
     await expect(toggle).not.toBeChecked();
@@ -39,7 +40,7 @@ test.describe('a resident', () => {
   // no optimistic state: on only once the registry stored it
   test('stays off when the registry did not store it, and says so', async ({ page }) => {
     await useScenario(page, 'writes-fail');
-    await page.goto('/room');
+    await page.goto('/settings');
     const card = page.getByTestId('device-notifications');
 
     await card.getByRole('switch').click();
@@ -51,7 +52,7 @@ test.describe('a resident', () => {
   // the icon opens the address it was added from: it has to be added from the personal link
   test('is led to the personal link from a tab of Safari on an iPhone', async ({ page }) => {
     await asBrowser(page, 'iphone-tab');
-    await page.goto('/room');
+    await page.goto('/settings');
     const card = page.getByTestId('device-notifications');
 
     await expect(card.getByRole('switch')).toHaveCount(0);
@@ -63,7 +64,7 @@ test.describe('a resident', () => {
 
   test('is told when the browser cannot show them, or when they are blocked', async ({ page }) => {
     await asBrowser(page, 'denied');
-    await page.goto('/room');
+    await page.goto('/settings');
 
     await expect(page.getByTestId('device-notifications')).toContainText(
       'Allow them in the settings of the device',
@@ -73,7 +74,7 @@ test.describe('a resident', () => {
 
   test('is told that this browser takes no push', async ({ page }) => {
     await asBrowser(page, 'unsupported');
-    await page.goto('/room');
+    await page.goto('/settings');
 
     await expect(page.getByTestId('device-notifications')).toContainText(
       'This browser cannot show notifications of the application.',
@@ -82,7 +83,7 @@ test.describe('a resident', () => {
 
   test('is told that the house sends none yet while it has no key', async ({ page }) => {
     await useScenario(page, 'no-readings');
-    await page.goto('/room');
+    await page.goto('/settings');
     const card = page.getByTestId('device-notifications');
 
     await card.getByRole('switch').click();

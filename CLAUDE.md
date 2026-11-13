@@ -155,6 +155,9 @@ e2e/              # Playwright tests
   (`splitForBottomBar`; owner's choice, 2026-10-08) - so what is opened daily goes first, the
   settings and the build last. The owner's order (2026-10-17, HAS-232): Overview, My room,
   Weather, Rooms, then the rest. A page behind "More" marks the button as the open entry.
+  **A resident has at most five entries** (HAS-438, owner 2026-11-13): My room, Appliances, Requests,
+  Settings, and House heating with its permission - all on the bottom bar, no "More". A page offered to
+  members goes after the appliances, so the first places of the administrator stay as they are.
 - **Layout**: the shell renders both navigations and CSS shows one (side list from 840 px, bottom
   bar below). Use the `--mat-sys-*` variables for every colour and font — never a literal — so
   themes can change them. Global building blocks (`.page-header`, `.message-page`) are in
@@ -166,7 +169,9 @@ e2e/              # Playwright tests
   **a route that says nothing is the administrator's alone**, so a new page is closed to
   residents until somebody decides otherwise. Its `NAV_ITEMS` entry carries the same value (a
   test compares them), and `app.routes.spec.ts` lists every page open to others: add to that
-  list deliberately.
+  list deliberately. **A page may also ask for a permission of the registry** (HAS-438):
+  `data.permission` of the route and `permission` of its entry (a test compares them too) - `redirectFor`
+  sends anybody without it to their room, the administrator included; one page does so far, House heating.
 - **The browser's storage goes through `core/storage/browser-storage.ts`** (`readText` /
   `writeText` / `readJson` / `writeJson` / `watchKey`), never through `localStorage` directly:
   it throws in private mode, holds whatever an older version wrote, and changes under the page
@@ -300,14 +305,17 @@ e2e/              # Playwright tests
   (a room command for a room without lights; an empty list is the same) hides the card,
   `NOT_FOUND_RULE` says "No rule" and offers no switch. Every command goes through
   `lightReadBack` (the two reads, for an Eaton light). `profile-pages.spec` lets the two reads of
-  `/home/light/rooms/` through, like those of the blinds and the registry. **The switch of the heating of the whole house is on this page only for a member
-  with the permission `heating_switch`** (owner, 2026-10-09): `HouseHeating` is rendered under
-  `hasPermission(profile, 'heating_switch')`, and it is a component of its own so that the
-  state of the switch is not even asked for without it. Not the role decides - the
-  administrator has no switch here either. A unit
-  test that renders `/room` through the real routes (`profile-pages.spec`) lets the one read
-  of the page pass - the room, `GET` only: nobody there has the permission, so a call to the
-  switch of the house, read or write, fails the test.
+  `/home/light/rooms/` through, like those of the blinds and the registry. **The page holds the cards of a
+  room and nothing else** (HAS-438, owner 2026-11-13): the appliances and the chores, the requests, the
+  notifications of this device and the switch of the house are the household's and have pages of their own -
+  `AppliancesPage` (`/appliances`), `RequestsPage` (`/requests`), the settings, `HouseHeatingPage`
+  (`/house-heating`, `features/house-heating/`). **The switch of the heating of the whole house is for a member
+  with the permission `heating_switch` alone** (owner, 2026-10-09): its tab asks for the permission, and the page
+  still renders `HouseHeating` under `hasPermission(profile, 'heating_switch')` - a component of its own, so the
+  state of the switch is not even asked for without it. Not the role decides - the administrator has no such tab.
+  A unit test that renders the pages through the real routes (`profile-pages.spec`) lets their reads pass, `GET`
+  only: nobody there but the one test of House heating has the permission, so a call to the switch of the house
+  fails every other.
 - **The administration of the household** (HAS-204, `features/household/`, the administrator's)
   is the one view that reads the whole registry and the one that changes it. **The layout of the
   blinds page since HAS-266** (owner, 2026-10-21): "Add a member" in the header, the registry call
@@ -1030,18 +1038,17 @@ e2e/              # Playwright tests
     of HAS-343. A run of `watchRuns` carries `acknowledgedBy`. **"Emptied" is also offered while an appliance is
     `finishing`** (HAS-348, `canAcknowledge`, appliance-service >= 0.5.0): somebody heard it end and emptied it
     before the message - the service ends the cycle at the fall and only tells the household it was emptied. On
-    the card of My room only (the installed application opens there); the notice of the shell stays for
-    `finished` - a strip for a few minutes of finishing would come and go.
-  - **What is the household's stands in a row of its own under the rooms** (`.card-row` of
-    `src/styles.scss`, owner 2026-10-25): the appliances, the notifications of this device and the switch
-    of the house. Both rows - the room's and the household's - are `.card-row`: a wrapping flex row of
+    the card of the appliances page only; the notice of the shell stays for `finished` - a strip for a few
+    minutes of finishing would come and go.
+  - **The cards of a page stand in a `.card-row`** (`src/styles.scss`, owner 2026-10-25): a wrapping flex row of
     cards 360-480 px wide, of one height per line, a line with fewer cards in the middle (a grid puts
     its last row at the left). Its items are the cards: hosts of `display: contents`, or a block host
-    whose card is `height: 100%`.
-  - **The card of My room is not a capability of a room** (`HouseholdAppliances`, rendered once
-    under the rooms): the appliances are the household's, for every member, whatever their rooms.
-    It is not drawn while the list is empty or not answered yet; a failure before any answer is.
-    Its "Emptied" is the one control of My room that is not about a room - `my-room.spec` lists it.
+    whose card is `height: 100%`. The room's cards on My room, the appliances and the chores on the appliances
+    page, the requests on theirs.
+  - **The card of the appliances is not a capability of a room** (`HouseholdAppliances`, on the appliances page
+    since HAS-438 - on My room before): the appliances are the household's, for every member, whatever their
+    rooms. It is not drawn while the list is empty or not answered yet; a failure before any answer is.
+    `household-appliances.spec` tests it.
   - **The tile of the overview presses nothing** (`tile-appliance`; its title leads to the appliances page
     since HAS-283): running and waiting, the names **joined in TypeScript**, and how many the
     service says nothing of.
@@ -1095,8 +1102,9 @@ e2e/              # Playwright tests
   - `INVALID_RANGE` has a text (`CHORES_ERROR_TEXTS`, its test lists it). `profile-pages.spec` lets the
     read of the report through. The mock report (`chores.fixtures.ts`) grows with the number of months.
 - **The requests of the household** (HAS-411, epic HAS-407; `database-service` >= 0.22.0, texted at 08:00 by
-  notification-service 0.9.0): the card `MyRequests` ("Requests" / "Zapotrzebowania") in the row of the household
-  on My room, for every member with a profile - **not a capability of a room**. What to keep:
+  notification-service 0.9.0): the card `MyRequests` ("Requests" / "Zapotrzebowania") on a page of its own,
+  `/requests` (`RequestsPage`, HAS-438 - in the row of the household on My room before), for every member with a
+  profile - **not a capability of a room**. What to keep:
   - **One call, `GET /household/member/{name}/requests?done=true`** every minute (`MemberRequestsApi.watch`, a
     `queryResource` of the member of the profile - the list of another profile never stands under this one): the
     open requests and those done in the last 30 days, split by `toRequestLists` (`my-requests-views.ts`); the done
@@ -1122,15 +1130,17 @@ e2e/              # Playwright tests
   - **The recipients are the profiles** (`ProfileStore.members()`), the member of the profile first and chosen.
     The form is a `FormGroup`: a plain `<form>` under `ReactiveFormsModule` has no directive, and `ngSubmit`
     never comes (found by the unit test).
-  - `my-room.spec` leaves the controls of this card out of its list of the page's controls - `my-requests.spec`
-    names them; `profile-pages.spec` lets the read through. The mock (`requests.fixtures.ts`): Aurelia has two open
+  - `my-requests.spec` names the controls of the card; `profile-pages.spec` lets the read through. The mock (`requests.fixtures.ts`): Aurelia has two open
     requests (one texted, one from Borys) and one done, and wrote one for Celina (open) and one Celina ticked off -
     Celina, as no e2e test counts her controls; Borys wrote one for Aurelia, so the resident test counts its removal;
     refused as the service refuses; `resetRequests()`.
   - The rule of "the time alone today, the date otherwise" is `dayAwareFormat` of `core/time/house-date-time.ts`
     since this task (`cycleTimeFormat` of the appliances points at it).
-- **The appliances page** (HAS-283, `features/appliances/`, the administrator's; route `/appliances`, after the
-  lights in the menu, domain colour `appliance`): to tune the thresholds of the appliances. What to keep:
+- **The appliances page** (HAS-283, `features/appliances/`; route `/appliances`, after the lights in the menu,
+  domain colour `appliance`). **Every member's since HAS-438** (owner 2026-11-13): `AppliancesPage` shows everybody
+  the appliances with "Emptied" and "Mine this month", and creates `Appliances` - what tunes the thresholds - for
+  the administrator alone, so a resident never reads the device registry nor the cycles (`appliances-page.spec`).
+  What to keep of the administrator's part:
   - **Three calls, told once** in `SourcesStrip`: the appliances (the `ApplianceStore` of the whole
     application), their settings (`DeviceRegistryApi.watchKind('appliance')`, read only - written through the
     API, never by the devices form, so `appliance` is in `SmartDevice` but not in `KNOWN_FIELDS`) and **the
@@ -1462,8 +1472,8 @@ its own (HAS-194). Everything about that lives in `core/pwa/`, `core/api/connect
   "new version" strip and reloads on request. It asks the server on every return into view and
   hourly - the worker itself looks only when the page is loaded, which an installed application
   hardly ever is. `SwUpdate` is injected as optional, so a unit test needs no provider.
-- **Web Push** (HAS-284, `core/push/`, the card `shared/push/device-notifications.ts` on My room
-  and the settings): what to keep:
+- **Web Push** (HAS-284, `core/push/`, the card `shared/push/device-notifications.ts` on the settings of every
+  member - on My room too until HAS-438): what to keep:
   - **One door to the browser, `PUSH_PLATFORM`** (`push-platform.ts`): the real one is `SwPush`
     and `Notification`; the `mock` build puts `src/mocks/mock-push.ts` in its place through
     `mockApiProviders` of the mock door (`core/api/mock-api.ts`) - the dev server and the mock

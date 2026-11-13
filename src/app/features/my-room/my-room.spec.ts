@@ -1,27 +1,17 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {
-  FakeResource,
-  answer,
-  fail,
-  fakeQueryResource,
-  fakeResource,
-} from '../../../testing/fake-resource';
+import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { Profile } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
-import { DevicePushState, PushSubscriptionStore } from '../../core/push/push-subscription-store';
 import { of } from 'rxjs';
 
-import { Appliance, FailedAcknowledgement } from '../../data-access/appliance/appliance-api';
-import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi, HeatingStatus, Room } from '../../data-access/heating/heating-api';
 import { LightApi, Occupancy, RoomLights, RoomRule } from '../../data-access/light/light-api';
-import { MemberRequestsApi } from '../../data-access/household/member-requests-api';
 import { MyRoom } from './my-room';
 
 /** Thursday 8 October 2026, 14:30:00 on the clocks of the house (Europe/Warsaw, summer time). */
@@ -80,8 +70,6 @@ const resident = (...rooms: string[]): Profile => ({ name: 'Celina', role: 'resi
 
 describe('MyRoom', () => {
   let profile: WritableSignal<Profile | undefined>;
-  // HAS-284: the notifications of this device - unsupported unless a test says otherwise
-  const pushState = signal<DevicePushState>('unsupported');
   let status: FakeResource<HeatingStatus>;
   /** A resource per room asked for, in the order the cards were made. */
   let asked: { name: () => string; resource: FakeResource<Room | null> }[];
@@ -99,9 +87,6 @@ describe('MyRoom', () => {
   let occupancyAsked: { name: () => string; resource: FakeResource<Occupancy | null> }[];
   /** The commands sent to the blinds, in words. */
   let sent: string[];
-  let appliances: FakeResource<readonly Appliance[] | null>;
-  let acknowledged: string[];
-  const acknowledgeFailure = signal<FailedAcknowledgement | undefined>(undefined);
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
@@ -117,46 +102,10 @@ describe('MyRoom', () => {
     rulesAsked = [];
     occupancyAsked = [];
     sent = [];
-    appliances = fakeResource();
-    acknowledged = [];
-    acknowledgeFailure.set(undefined);
-    pushState.set('unsupported');
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
         { provide: ProfileStore, useValue: { profile, members: signal(undefined) } },
-        // HAS-411: the requests card of the household row - its own spec tests it
-        {
-          provide: MemberRequestsApi,
-          useValue: {
-            watch: () => ({
-              ...fakeQueryResource(),
-              changing: signal(undefined),
-              failure: signal(undefined),
-              added: signal(undefined),
-              add: () => Promise.resolve(false),
-              done: () => undefined,
-              remove: () => undefined,
-            }),
-            watchWrittenBy: () => ({
-              ...fakeQueryResource(),
-              asked: signal(undefined),
-              removing: signal(undefined),
-              failure: signal(undefined),
-              remove: () => undefined,
-            }),
-          },
-        },
-        {
-          provide: PushSubscriptionStore,
-          useValue: {
-            state: pushState,
-            busy: signal(false),
-            failure: signal(undefined),
-            enable: () => Promise.resolve(),
-            disable: () => Promise.resolve(),
-          },
-        },
         {
           provide: HeatingApi,
           useValue: {
@@ -243,17 +192,6 @@ describe('MyRoom', () => {
               return of(null);
             },
           },
-        },
-        {
-          provide: ApplianceStore,
-          useFactory: () => ({
-            appliances: {
-              ...appliances,
-              acknowledging: signal(undefined),
-              acknowledgeFailure,
-              acknowledge: (id: number, member?: string) => acknowledged.push(`${id} by ${member}`),
-            },
-          }),
         },
         {
           provide: DeviceRegistryApi,
@@ -572,20 +510,25 @@ describe('MyRoom', () => {
       expect(await controls()).toEqual({ inTheRoom: [], elsewhere: [] });
     });
 
-    // HAS-284: the one control of the page that is about the device, not a room
-    it('adds the switch of the notifications of this device, outside the card of the room', async () => {
-      pushState.set('off');
-      await page();
+    // HAS-438 (owner, 2026-11-13): the page holds the cards of a room and nothing of the household -
+    // the appliances and the chores, the requests, the notifications of this device and the switch of
+    // the house have pages of their own
+    it('holds nothing of the household, whatever the member may do', async () => {
+      profile.set({ ...resident('bedroom'), permissions: ['heating_switch'] });
+      const shown = await page();
       answer(lastAsked().resource, BEDROOM);
-      answer(blindsAsked.at(-1)!.resource, { room: 'bedroom', blinds: [] });
 
-      const { inTheRoom, elsewhere } = await controls();
-      expect(inTheRoom).toEqual([]);
-      // the switch is named by its label (its button has no text of its own)
-      expect(elsewhere).toHaveLength(1);
-      expect(
-        fixture!.nativeElement.querySelector('[data-testid="push-switch"] button'),
-      ).toBeTruthy();
+      for (const testId of [
+        'household-cards',
+        'appliances',
+        'my-chores',
+        'my-requests',
+        'device-notifications',
+        'heating-switch',
+      ]) {
+        expect(shown.querySelector(`[data-testid="${testId}"]`), testId).toBeNull();
+      }
+      expect(switchesWatched).toBe(0);
     });
 
     it('offers no switch of the house, and does not ask for its state', async () => {
@@ -595,69 +538,11 @@ describe('MyRoom', () => {
       expect(switchesWatched).toBe(0);
     });
 
-    // not the role decides: an administrator switches the heating on its dashboard
     it('offers the administrator no switch here either', async () => {
       profile.set({ name: 'Aurelia', role: 'admin', rooms: ['bedroom'] });
 
       expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeNull();
       expect(switchesWatched).toBe(0);
-    });
-
-    it('ignores a permission it does not know', async () => {
-      profile.set({ ...resident('bedroom'), permissions: ['everything'] });
-
-      expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeNull();
-    });
-  });
-
-  describe('for a member the registry lets switch the heating', () => {
-    const granted = (...rooms: string[]): Profile => ({
-      ...resident(...rooms),
-      permissions: ['heating_switch'],
-    });
-
-    beforeEach(() => profile.set(granted('bedroom', 'wardrobe')));
-
-    it('shows the switch of the house, the card shared with the heating dashboard', async () => {
-      await page();
-      answer(status, { isHeatingEnabled: false, updatedAt: '2026-09-28T06:45:12.840868' });
-
-      expect(words((await page()).querySelector('[data-testid="heating-switch"]'))).toContain(
-        'Disabled',
-      );
-      expect(switchesWatched).toBe(1);
-    });
-
-    it('adds that one control to the page, and still none to the room', async () => {
-      await page();
-      answer(lastAsked().resource, BEDROOM);
-      answer(status, { isHeatingEnabled: true, updatedAt: '2026-09-28T06:45:12.840868' });
-
-      expect(await controls()).toEqual({
-        inTheRoom: [],
-        elsewhere: ['bedroom', 'wardrobe', 'power_settings_new Switch off'],
-      });
-    });
-
-    it('keeps the switch while the member has no room', async () => {
-      profile.set(granted());
-
-      const shown = await page();
-
-      expect(shown.querySelector('[data-testid="no-rooms"]')).toBeTruthy();
-      expect(shown.querySelector('[data-testid="heating-switch"]')).toBeTruthy();
-    });
-
-    // the registry is asked again under an open page: a permission taken away there goes here
-    it('takes the switch away as soon as the registry does, and gives it back', async () => {
-      await page();
-
-      profile.set(resident('bedroom', 'wardrobe'));
-      expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeNull();
-
-      profile.set(granted('bedroom', 'wardrobe'));
-      expect((await page()).querySelector('[data-testid="heating-switch"]')).toBeTruthy();
-      expect(switchesWatched).toBe(2);
     });
   });
 
@@ -1100,127 +985,5 @@ describe('MyRoom', () => {
     const heating = (await page()).querySelector('[data-testid="room-heating"]');
     expect(words(heating?.querySelector('[data-testid="room-window"]'))).toContain('open');
     expect(heating?.querySelector('[data-testid="room-held"]')).not.toBeNull();
-  });
-
-  // HAS-282: the appliances of the household - once, not of any room, for every member
-  describe('the appliances of the household', () => {
-    const DRYER: Appliance = {
-      id: 62,
-      name: 'Dryer',
-      state: 'finished',
-      finishedAt: '2026-10-08T14:05:00',
-      awaitingSince: '2026-10-08T14:15:00',
-    };
-    const WASHER: Appliance = {
-      id: 61,
-      name: 'Washing machine',
-      state: 'running',
-      runningSince: '2026-10-08T13:40:00',
-    };
-    const DISHWASHER: Appliance = { id: 63, name: 'Dishwasher', state: 'idle' };
-
-    const appliancesCard = async () => (await page()).querySelector('[data-testid="appliances"]');
-
-    it('lists every appliance with its state, for a member of any room', async () => {
-      await page();
-      answer(appliances, [WASHER, DRYER, DISHWASHER]);
-
-      const rows = [...(await appliancesCard())!.querySelectorAll('.appliance')].map(words);
-      expect(rows).toEqual([
-        'Washing machine Running Running since 13:40',
-        'Dryer Finished - waits to be emptied Finished at 14:05 Emptied',
-        'Dishwasher Idle',
-      ]);
-    });
-
-    it('stands once, whichever room is chosen', async () => {
-      profile.set(resident('bedroom', 'wardrobe'));
-      await page();
-      answer(appliances, [DRYER]);
-
-      expect((await page()).querySelectorAll('[data-testid="appliances"]')).toHaveLength(1);
-    });
-
-    // the one control of the page that is not a room's - and only next to a finished appliance
-    it('offers "Emptied" for the finished one only, and sends it', async () => {
-      await page();
-      answer(lastAsked().resource, BEDROOM);
-      answer(appliances, [WASHER, DRYER, DISHWASHER]);
-
-      const buttons = [...(await appliancesCard())!.querySelectorAll('button')];
-      expect(buttons.map(words)).toEqual(['Emptied']);
-      buttons[0].click();
-
-      // HAS-347: as the member of the profile, whom the household messages then name
-      expect(acknowledged).toEqual(['62 by Celina']);
-      expect((await controls()).inTheRoom).toEqual([]);
-    });
-
-    // HAS-348: also while it is finishing - emptied before the message came
-    it('offers "Emptied" for one that is finishing, and sends it', async () => {
-      await page();
-      answer(appliances, [{ ...WASHER, state: 'finishing' }, DISHWASHER]);
-
-      const rows = [...(await appliancesCard())!.querySelectorAll('.appliance')].map(words);
-      expect(rows).toEqual([
-        'Washing machine Finishing Running since 13:40 Emptied',
-        'Dishwasher Idle',
-      ]);
-      (await appliancesCard())!.querySelector<HTMLButtonElement>('button')!.click();
-
-      expect(acknowledged).toEqual(['61 by Celina']);
-    });
-
-    it('tells a refused acknowledgement next to the appliance', async () => {
-      await page();
-      answer(appliances, [DRYER]);
-      acknowledgeFailure.set({
-        id: 62,
-        error: new ApiError('client', 409, [
-          { message: 'Nothing to acknowledge', code: 'NOTHING_TO_ACKNOWLEDGE' },
-        ]),
-      });
-
-      expect(
-        words((await appliancesCard())!.querySelector('[data-appliance="62"] [role="alert"]')),
-      ).toContain('Nothing waits to be emptied any more.');
-    });
-
-    it('words an acknowledgement without an answer as one that may have been carried out', async () => {
-      await page();
-      answer(appliances, [DRYER]);
-      acknowledgeFailure.set({ id: 62, error: new ApiError('network', 0) });
-
-      expect(
-        words((await appliancesCard())!.querySelector('[data-appliance="62"] [role="alert"]')),
-      ).toContain('may have been marked all the same');
-    });
-
-    // an acknowledgement without an answer that was carried out: the list read again says so
-    it('lets the failure go once the list shows the appliance emptied', async () => {
-      await page();
-      answer(appliances, [DRYER]);
-      acknowledgeFailure.set({ id: 62, error: new ApiError('network', 0) });
-      answer(appliances, [{ id: 62, name: 'Dryer', state: 'idle' }]);
-
-      expect(
-        (await appliancesCard())!.querySelector('[data-appliance="62"] [role="alert"]'),
-      ).toBeNull();
-    });
-
-    it('shows no card for a household without appliances, nor while the first answer is on its way', async () => {
-      await page();
-      expect(await appliancesCard()).toBeNull();
-
-      answer(appliances, []);
-      expect(await appliancesCard()).toBeNull();
-    });
-
-    it('tells a failure before any answer', async () => {
-      await page();
-      fail(appliances, new ApiError('server', 502));
-
-      expect((await appliancesCard())!.querySelector('[role="alert"]')).not.toBeNull();
-    });
   });
 });

@@ -488,7 +488,8 @@ describe('profiles in the application', () => {
 
   describe('a resident', () => {
     // the guard, not the navigation: these are addresses typed by hand
-    it.each(['/', '/overview', '/settings', '/about', '/profiles', '/no/such/page'])(
+    // HAS-438: the heating of the house asks for a permission Borys was not granted
+    it.each(['/', '/overview', '/house-heating', '/about', '/profiles', '/no/such/page'])(
       'is led from %s to their room',
       async (address) => {
         await start(BORYS);
@@ -499,13 +500,16 @@ describe('profiles in the application', () => {
       },
     );
 
-    it('is offered their room and nothing else', async () => {
+    // HAS-438 (owner, 2026-11-13): their room, the appliances, the requests and the settings - all of
+    // them on the bottom bar of a phone
+    it('is offered their own pages, all of them on the bottom bar', async () => {
       await start(BORYS);
       await harness.navigateByUrl('/room');
 
-      expect(sideNavigation()).toEqual(['My room']);
-      // a bar with one destination leads nowhere
-      expect(page().querySelector('.shell__bottom-nav')).toBeNull();
+      expect(sideNavigation()).toEqual(['My room', 'Appliances', 'Requests', 'Settings']);
+      expect(
+        [...page().querySelectorAll('.shell__bottom-nav a')].map((a) => a.getAttribute('href')),
+      ).toEqual(['/room', '/appliances', '/requests', '/settings']);
       expect(page().querySelector('a.shell__profile')).toBeNull();
       expect(page().querySelector('.shell__profile')?.textContent).toContain('Borys');
       // the card of their room, named by it
@@ -513,6 +517,33 @@ describe('profiles in the application', () => {
       expect(
         page().querySelector('[data-testid="room-heating"] mat-card-title')?.textContent?.trim(),
       ).toBe('loft');
+    });
+
+    it.each(['/appliances', '/requests', '/settings'])('opens %s', async (address) => {
+      await start(BORYS);
+
+      await harness.navigateByUrl(address);
+      await settle();
+
+      expect(url()).toBe(address);
+    });
+
+    // the one member of the mock household granted the switch of the house gets its tab too
+    it('is offered the heating of the house with its permission, and opens it', async () => {
+      await start({ ...BORYS, permissions: ['heating_switch'] });
+      await harness.navigateByUrl('/house-heating');
+      (await vi.waitFor(() => http.expectOne('/home/heating'))).flush({ isHeatingEnabled: true });
+      await settle();
+
+      expect(url()).toBe('/house-heating');
+      expect(sideNavigation()).toEqual([
+        'My room',
+        'Appliances',
+        'Requests',
+        'House heating',
+        'Settings',
+      ]);
+      expect(page().querySelectorAll('.shell__bottom-nav a')).toHaveLength(5);
     });
 
     it('sees the weather in the panel', async () => {
@@ -559,6 +590,7 @@ describe('profiles in the application', () => {
         'Blinds',
         'Lights',
         'Appliances',
+        'Requests',
         'Heating',
         'Water',
         'Boiler room',

@@ -1,10 +1,11 @@
-import { expect, startIn, test, useScenario } from './support';
+import { expect, test, useScenario } from './support';
 
 /**
  * "My room", the page of a household member, fed by the mock API: the rooms the registry gives
- * the profile, one at a time, read-only. The switch of the heating of the whole house is on the
- * page only for a member the registry granted it to. The mock household has a resident with
- * one room, one with two - the one who may switch the heating - and one with none.
+ * the profile, one at a time - the cards of a room and nothing else since HAS-438 (the appliances,
+ * the requests, the notifications and the switch of the house have pages of their own -
+ * resident-pages.spec). The mock household has a resident with one room, one with two - the one
+ * who may switch the heating - and one with none.
  */
 
 // Thursday 8 October 2026, 14:30 on the clocks of the house: what a schedule asks for, and which
@@ -30,33 +31,27 @@ test.describe('a resident with one room', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  // residents view temperatures and schedules; setting them is the administrator's alone
-  test('can press nothing about the room: no switch of the house, only "Emptied" and the notifications', async ({
+  // residents view temperatures and schedules; setting them is the administrator's alone - and since
+  // HAS-438 nothing of the household is on the page: the loft has no blinds, lights nor unit, so there
+  // is nothing at all to press
+  test('can press nothing about the room, and finds nothing of the household here', async ({
     page,
   }) => {
     await page.goto('/room');
     await expect(page.getByTestId('room-temperature')).toBeVisible();
 
-    const main = page.getByRole('main');
-    await expect(page.getByTestId('heating-switch')).toHaveCount(0);
-    // the controls of the page are not a room's: the finished dryer of the household (HAS-282),
-    // the switch of the notifications of this device (HAS-284) and the form of the requests
-    // (HAS-411: the text and "Add"; Borys has nothing waiting, so no line to tick off - but the
-    // removal of what he wrote for Aurelia, once the lists of the others are read)
-    await expect(
-      page.getByTestId('written-requests').getByRole('button', { name: 'Remove the request' }),
-    ).toHaveCount(1);
-    await expect(main.locator('button, a, input, select, textarea')).toHaveCount(5);
-    await expect(
-      page.getByTestId('my-requests').locator('button, a, input, select, textarea'),
-    ).toHaveCount(3);
-    await expect(
-      page
-        .getByTestId('device-notifications')
-        .getByRole('switch', { name: 'Notify me on this device' }),
-    ).toBeVisible();
-    await expect(page.getByTestId('appliances').getByRole('button')).toHaveText(['Emptied']);
-    await expect(page.getByTestId('room-heating').locator('button, [tabindex]')).toHaveCount(0);
+    await expect(page.getByRole('main').locator('button, a, input, select, textarea')).toHaveCount(
+      0,
+    );
+    for (const card of [
+      'heating-switch',
+      'appliances',
+      'my-chores',
+      'my-requests',
+      'device-notifications',
+    ]) {
+      await expect(page.getByTestId(card), card).toHaveCount(0);
+    }
   });
 
   test('never reaches a page where a temperature or a schedule could be set', async ({ page }) => {
@@ -69,7 +64,8 @@ test.describe('a resident with one room', () => {
       '/water',
       '/boiler',
       '/presence',
-      '/settings',
+      // HAS-438: the heating of the whole house asks for a permission Borys was not granted
+      '/house-heating',
       '/about',
       '/profiles',
       '/no/such/page',
@@ -129,22 +125,6 @@ test.describe('a resident with two rooms', () => {
     await expect(room.getByTestId('schedule-led')).toHaveAttribute('data-led', 'on');
   });
 
-  // the one member of the mock household the registry lets switch the heating
-  test('has the switch of the heating of the whole house, and it asks before it acts', async ({
-    page,
-  }) => {
-    await page.goto('/room');
-    const card = page.getByTestId('heating-switch');
-
-    await expect(page.getByTestId('heating-state')).toContainText('Enabled');
-    await card.getByRole('button', { name: 'Switch off' }).click();
-    await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
-
-    await expect(page.getByTestId('heating-state')).toContainText('Disabled');
-    // still nothing to press in the room itself
-    await expect(page.getByTestId('room-heating').locator('button, [tabindex]')).toHaveCount(0);
-  });
-
   // heating-service just after a start: it knows its rooms and schedules and nothing else
   test('claims nothing the service has not measured, heard or decided yet', async ({ page }) => {
     await useScenario(page, 'no-readings');
@@ -164,16 +144,12 @@ test.describe('a resident with two rooms', () => {
 
     await page.goto('/room');
 
-    // the switch of the house, the four cards of the room and the appliances: each tells its call -
-    // the lights card two, its lights and its rule (HAS-268), the sensors card two, the registry and
-    // the occupancy (HAS-369); the blinds, the lights, the sensors and the appliances are shown for the
-    // failure - nobody knows then if there are any; so is the card of the chores of the member (HAS-346)
-    // and that of the requests (HAS-411), and the air conditioning (HAS-394)
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(11);
-    await expect(page.getByTestId('my-requests').getByRole('alert')).toHaveCount(1);
+    // the cards of the room: each tells its call - the lights card two, its lights and its rule
+    // (HAS-268), the sensors card two, the registry and the occupancy (HAS-369); the blinds, the lights,
+    // the sensors and the air conditioning (HAS-394) are shown for the failure - nobody knows then if
+    // there are any
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(7);
     await expect(page.getByTestId('room-sensors').getByRole('alert')).toHaveCount(2);
-    await expect(page.getByTestId('my-chores').getByRole('alert')).toHaveCount(1);
-    await expect(page.getByTestId('appliances').getByRole('alert')).toHaveCount(1);
     await expect(page.getByTestId('room-lights').getByRole('alert')).toHaveCount(2);
     for (const card of [
       'room-heating',
@@ -186,8 +162,8 @@ test.describe('a resident with two rooms', () => {
         'The service is not available right now (error 502).',
       );
     }
-    // nothing to press but the form of the requests, which writes for the household whatever the list
-    await expect(page.getByRole('main').getByRole('button')).toHaveText(['add Add']);
+    // nothing to press: the form of the requests is on its own page since HAS-438
+    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
   });
 
   test('speaks Polish, except for the identifiers of the rooms', async ({ page }) => {
@@ -220,9 +196,8 @@ test.describe('a resident without a room', () => {
     await expect(page.getByTestId('room-heating')).toHaveCount(0);
     await expect(page.getByTestId('room-switcher')).toHaveCount(0);
     await expect(page.getByTestId('heating-switch')).toHaveCount(0);
-    // the appliances are the household's, a room or none: the finished dryer is all there is to press,
-    // and the form of the requests (HAS-411)
-    await expect(page.getByRole('main').getByRole('button')).toHaveText(['Emptied', 'add Add']);
+    // nothing of the household here since HAS-438: nothing at all to press
+    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
   });
 });
 
@@ -461,108 +436,5 @@ test.describe('the blinds and the sensors of the room', () => {
       await expect(page.getByTestId('room-lights')).toHaveCount(0);
       await expect(sensors.locator('button, [tabindex]')).toHaveCount(0);
     });
-  });
-});
-
-// HAS-411: the household requests (database-service 0.22.0) - the list of the member, written for anybody
-test.describe('the requests of the household', () => {
-  test('lists what waits for the member, with who wrote it and whether the SMS went', async ({
-    page,
-  }) => {
-    await page.goto('/room');
-    const card = page.getByTestId('my-requests');
-
-    await expect(card.getByText('Requests', { exact: true })).toBeVisible();
-    const open = card.getByTestId('open-requests').getByRole('listitem');
-    await expect(open).toHaveCount(2);
-    await expect(open.first()).toContainText('Bread and milk');
-    await expect(open.first()).toContainText('texted');
-    await expect(open.nth(1)).toContainText('Batteries for the remote');
-    await expect(open.nth(1)).toContainText('from Borys');
-    await expect(open.nth(1)).toContainText('goes by SMS at 08:00');
-
-    await card.getByTestId('done-toggle').click();
-    await expect(card.getByTestId('done-requests')).toContainText('Take the parcel');
-    await expect(page.getByRole('alert')).toHaveCount(0);
-  });
-
-  test('ticks a request off and removes another, reading the list back', async ({ page }) => {
-    await page.goto('/room');
-    const card = page.getByTestId('my-requests');
-    const open = card.getByTestId('open-requests').getByRole('listitem');
-    await expect(open).toHaveCount(2);
-
-    await open.filter({ hasText: 'Batteries' }).getByRole('button', { name: 'Done' }).click();
-    await expect(open).toHaveCount(1);
-    await card.getByTestId('done-toggle').click();
-    await expect(card.getByTestId('done-requests')).toContainText('Batteries for the remote');
-
-    await open.getByRole('button', { name: 'Remove the request' }).click();
-    await expect(card.getByTestId('no-requests')).toHaveText('Nothing is waiting for you.');
-  });
-
-  test('writes a request for another member and one for oneself', async ({ page }) => {
-    await page.goto('/room');
-    const card = page.getByTestId('my-requests');
-    await expect(card.getByTestId('open-requests').getByRole('listitem')).toHaveCount(2);
-
-    // a blank text is refused before anything is sent
-    await card.getByRole('button', { name: 'Add' }).click();
-    await expect(card.getByText('Write what is needed.')).toBeVisible();
-
-    await card.getByRole('combobox', { name: 'For' }).click();
-    await page.getByRole('option', { name: 'Borys' }).click();
-    await card.getByLabel('What is needed').fill('Light bulbs');
-    await card.getByLabel('What is needed').press('Enter');
-    await expect(card.getByTestId('request-added')).toHaveText('Added to the list of Borys');
-    await expect(card.getByLabel('What is needed')).toHaveValue('');
-    await expect(card.getByTestId('open-requests').getByRole('listitem')).toHaveCount(2);
-    // what was written for Borys shows at once in what Aurelia wrote for the others, on top
-    const written = card.getByTestId('written-open').getByRole('listitem');
-    await expect(written).toHaveCount(2);
-    await expect(written.first()).toContainText('Light bulbs');
-    await expect(written.first()).toContainText('for Borys');
-
-    await card.getByRole('combobox', { name: 'For' }).click();
-    await page.getByRole('option', { name: 'Aurelia' }).click();
-    await card.getByLabel('What is needed').fill('Coffee');
-    await card.getByRole('button', { name: 'Add' }).click();
-    await expect(card.getByTestId('open-requests').getByRole('listitem')).toHaveCount(3);
-    await expect(card.getByTestId('open-requests')).toContainText('Coffee');
-    await expect(written).toHaveCount(2);
-  });
-
-  test('shows what the member wrote for the others and removes one of them', async ({ page }) => {
-    await page.goto('/room');
-    const section = page.getByTestId('my-requests').getByTestId('written-requests');
-
-    await expect(section.getByText('Written by you for the others')).toBeVisible();
-    const written = section.getByTestId('written-open').getByRole('listitem');
-    await expect(written).toHaveCount(1);
-    await expect(written.first()).toContainText('Light bulbs for the hall');
-    await expect(written.first()).toContainText('for Celina');
-    await expect(written.first()).toContainText('goes by SMS at 08:00');
-
-    await section.getByTestId('written-done-toggle').click();
-    await expect(section.getByTestId('written-done')).toContainText('Stamps');
-    await expect(section.getByTestId('written-done')).toContainText('by Celina');
-
-    await written.getByRole('button', { name: 'Remove the request' }).click();
-    await expect(section.getByTestId('written-none')).toHaveText(
-      'Nothing you wrote for the others is waiting.',
-    );
-    await expect(page.getByRole('alert')).toHaveCount(0);
-  });
-
-  test('reads in Polish', async ({ page }) => {
-    await startIn(page, 'pl');
-    await page.goto('/room');
-    const card = page.getByTestId('my-requests');
-
-    await expect(card.getByText('Zapotrzebowania', { exact: true })).toBeVisible();
-    await expect(card).toContainText('od: Borys');
-    await expect(card).toContainText('pójdzie SMS-em o 8:00');
-    await expect(card.getByText('Wpisane przez Ciebie dla innych')).toBeVisible();
-    await expect(card).toContainText('dla: Celina');
   });
 });

@@ -42,10 +42,10 @@ const CHANGE_FAILED: Readonly<Record<RequestChange['kind'], MessageKey>> = {
 };
 
 /**
- * "Requests" on My room (HAS-411, epic HAS-407): the errands the household wrote for the member of the
- * profile - texted to them once, at 08:00 of the next morning, by notification-service 0.9.0 - each ticked
- * off or removed here, and a form to write one for anybody of the household. For every member with a
- * profile, in the row of the household; not a capability of a room.
+ * "Requests" (HAS-411, epic HAS-407; on a page of its own since HAS-438, on My room before): the
+ * errands the household wrote for the member of the profile - texted to them once, at 08:00 of the
+ * next morning, by notification-service 0.9.0 - each ticked off or removed here, and a form to write
+ * one for anybody of the household. For every member with a profile; not a capability of a room.
  *
  * `GET /household/member/{name}/requests?done=true` every minute (`database-service` >= 0.22.0; an older
  * one answers the bare 404, which the card tells). Nothing optimistic: after a write the list is read

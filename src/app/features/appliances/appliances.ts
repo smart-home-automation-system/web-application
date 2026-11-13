@@ -26,7 +26,8 @@ const LIST_LABELS: Readonly<Record<ListPreset, MessageKey>> = {
 };
 
 /**
- * The appliances page (HAS-283, the administrator's): every appliance of `appliance-service` with its
+ * The administrator's part of the appliances page (HAS-283; since HAS-438 inside `AppliancesPage`, which
+ * creates it for the administrator only): every appliance of `appliance-service` with its
  * state, its cycles and the draw of its plug, to tune the thresholds - which are changed on the devices
  * page. Three calls, told once in the strip at the top: the appliances (the resource of the whole
  * application), their settings in the device registry, and the cycles of the last 30 days of every
@@ -93,7 +94,9 @@ export class Appliances {
     const devices = this.registry.value();
     return new Map<number, SmartDevice>(
       Array.isArray(devices)
-        ? devices.filter((device) => typeof device.id === 'number').map((device) => [device.id as number, device])
+        ? devices
+            .filter((device) => typeof device.id === 'number')
+            .map((device) => [device.id as number, device])
         : [],
     );
   });
@@ -116,10 +119,14 @@ export class Appliances {
 
   /** The line of the whole house: every appliance whose cycles are known, added up. */
   protected readonly house = computed(() => {
-    const counted = this.rows().flatMap((row) => (row.counters === undefined ? [] : [row.counters]));
+    const counted = this.rows().flatMap((row) =>
+      row.counters === undefined ? [] : [row.counters],
+    );
     return counted.length === 0 ? undefined : addedUp(counted);
   });
 
   /** Some appliance's cycles failed: the house line then says it is not the whole house. */
-  protected readonly houseIncomplete = computed(() => this.rows().some((row) => row.counters === undefined));
+  protected readonly houseIncomplete = computed(() =>
+    this.rows().some((row) => row.counters === undefined),
+  );
 }

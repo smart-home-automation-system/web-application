@@ -425,6 +425,26 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // HAS-438: the pages of a resident besides their room - Celina also has the heating of the house
+      test.describe('as a resident, their own pages', () => {
+        test.use({ profile: 'resident-two-rooms' });
+
+        for (const [path, name, ready] of [
+          ['/appliances', 'resident-appliances', 'appliances'],
+          ['/requests', 'resident-requests', 'my-requests'],
+          ['/settings', 'resident-settings', 'device-notifications'],
+          ['/house-heating', 'resident-house-heating', 'heating-switch'],
+        ]) {
+          test(name, async ({ page }, testInfo) => {
+            await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+            await page.goto(path);
+            await expect(page.getByTestId(ready)).toBeVisible();
+            await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
+            await page.screenshot({ path: shot(testInfo.project.name, scheme, language, name) });
+          });
+        }
+      });
+
       test.describe('as a resident without a room', () => {
         test.use({ profile: 'resident-no-room' });
 
