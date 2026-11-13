@@ -247,8 +247,8 @@ dashboards:
   it stood empty - for today, 7 or 30 days, or two dates within the last 366 days. Only what
   was observed is drawn: time nobody looked at is hatched and named as such, never shown as
   absence.
-- **My room**: the page of a household member, made for the phone and a resident's whole
-  application. It shows the rooms the registry gives the profile, one at a time - a member with
+- **My room**: the page of a household member, made for the phone - since HAS-438 the cards of a room
+  and nothing else (owner 2026-11-13; what is the household's has pages of its own, below). It shows the rooms the registry gives the profile, one at a time - a member with
   several chooses among them, a member with none is told so. Per room: the temperature with
   the age of its reading, the humidity when the heating service reports one, the temperature
   the schedule asks for right now, each heater with what its relay last reported, the schedule
@@ -268,12 +268,21 @@ dashboards:
   target by a degree (cooling never below 22 °C, as the service refuses it), the fan and quiet / turbo /
   sleep, each read back (no card for a room without a unit). The heating is read-only; setting a temperature or a schedule is not part of
   this application for anybody yet, and will be the administrator's alone. The blinds, the
-  lights and the air conditioner are the only controls of a room - and for a member the household registry grants the permission
-  `heating_switch`: that member also gets the switch of the heating of the whole house here,
-  the same card as on the heating dashboard. Under the rooms, for every member, **the appliances
-  of the household** (HAS-282): the washing machine, the dryer and the dishwasher with their state,
-  running since or finished at, and "Emptied" for one that has finished and waits - the reminders
-  of `appliance-service` stop with it. Not by room: the appliances are the household's.
+  lights and the air conditioner are the only controls of a room.
+- **A resident's own pages** (HAS-438, owner 2026-11-13): besides My room, every member is offered
+  **Appliances**, **Requests** and **Settings** - and **House heating** with the permission `heating_switch`.
+  At most five entries, so all of them stand on the bottom bar of a phone, with no "More".
+  - **Appliances** (`/appliances`): for every member **the appliances of the household** (HAS-282) - the
+    washing machine, the dryer and the dishwasher with their state, running since or finished at, and
+    "Emptied" for one that has finished and waits (the reminders of `appliance-service` stop with it) - and
+    **"Mine this month"** (HAS-346). The administrator also gets everything that tunes them (below).
+  - **Requests** (`/requests`): the card of the household requests (HAS-411, below) on a page of its own.
+  - **Settings** (`/settings`): the appearance and the notifications of this device for every member; the
+    palette for the administrator alone.
+  - **House heating** (`/house-heating`): the switch of the heating of the whole house, the card of the heating
+    dashboard, for a member the household registry granted `heating_switch` and nobody else - the
+    administrator included, who switches the heating on its dashboard. Without the permission the address
+    leads to My room and nothing is read.
 - **The appliance notice**: above every page, for every member with a profile, a strip for each
   appliance that has finished and waits to be emptied, with since when, "Emptied" and a close
   button that hides it for the visit - it comes back with the next finished cycle. Nothing is
@@ -283,9 +292,9 @@ dashboards:
 - **The chores per member** (HAS-346): on the appliances page a table of every member - per appliance
   "emptied / cycles that finished while they were at home" and the share, for this month, the one before
   or the last three - with what was confirmed away from home, former members, the muted cycles and those
-  without a recorded presence told apart; on My room the card **"Mine this month"** with the same figures
+  without a recorded presence told apart; for every member the card **"Mine this month"** with the same figures
   of the member of the profile. From the report of `appliance-service` 0.9.0.
-- **The requests of the household** (HAS-411): on My room, for every member, the card **"Requests"** - the
+- **The requests of the household** (HAS-411): on the requests page (on My room until HAS-438), for every member, the card **"Requests"** - the
   errands the household wrote for the member of the profile, with who wrote them, when, and whether the SMS of
   08:00 already carried them (notification-service 0.9.0); each ticked off with "Done" or removed, those done in
   the last 30 days folded under the list. A form writes a request for anybody of the household - the member of
@@ -306,7 +315,7 @@ dashboards:
   does; "Not you?" changes it. A read counts once: the address loses it the moment it is taken (a
   reload sends nothing), and after a claim recorded for the wrong person the next read of the tag is
   the one for the right one. No navigation on this page, and no guard of the profiles.
-- **Notifications on this device** (HAS-284): on My room for every member, and on the settings, a
+- **Notifications on this device** (HAS-284): on the settings of every member (on My room too until HAS-438), a
   card with one switch - when an appliance has finished, the phone tells its member while they are
   at home, also with the application closed (Web Push of `notification-service` 0.6.0). The switch
   asks the browser for the permission, subscribes it with the public key of the house and stores the
@@ -420,12 +429,12 @@ that - the administrator has fourteen - it shows the first four and **More**, wh
 | Role | What the interface offers |
 |---|---|
 | `admin` | Every page. The name in the panel leads to the picker, to look at the application as somebody else; the own link leads back. |
-| `resident` | The "My room" page only - their rooms, read-only but for their blinds (HAS-254). Every other address - typed by hand included - leads there, and other profiles are not offered. |
+| `resident` | My room - their rooms, read-only but for their blinds, lights and air conditioner - and since HAS-438 the appliances, the requests and the settings of this device (House heating too with its permission). Every other address - typed by hand included - leads to My room, and other profiles are not offered. |
 
 Next to the role the registry can grant a member a **permission** - one thing beyond what the
 role gives. There is one so far, `heating_switch`: the switch of the heating of the whole house
-on the member's own "My room" page. The administrator grants and withdraws it on the Household
-page (`PUT /home/household/member/{name}/permissions` of `database-service`). Without it the page has no switch, for a resident
+on a tab of its own, House heating (on My room until HAS-438). The administrator grants and withdraws it on the Household
+page (`PUT /home/household/member/{name}/permissions` of `database-service`). Without it there is no such tab, for a resident
 and for the administrator alike - the administrator switches the heating on its dashboard. A
 permission, like a role, decides what is offered and is no access control.
 
@@ -538,8 +547,8 @@ Endpoints used today:
 
 | Method | Path | Used for |
 |---|---|---|
-| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating, and my room for a member with `heating_switch`), polled every 30 s, and once more right after every change of the switch |
-| `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating, and my room for a member with `heating_switch`), after a confirmation. Its answer is not used: the state is read again |
+| `GET` | `/home/heating` | State of the heating system switch and the time of its last change (overview tile, heating, and house heating for a member with `heating_switch`), polled every 30 s, and once more right after every change of the switch |
+| `POST` | `/home/heating?turn=on\|off` | Switches the heating of the whole house (heating, and house heating for a member with `heating_switch`), after a confirmation. Its answer is not used: the state is read again |
 | `GET` | `/home/heating/status/active` | Whether any room is being heated right now - the system is on *and* a room asks for heat (heating), polled every 30 s and right after a change of the switch |
 | `GET` | `/home/heating/rooms` | Every room with its temperature, heaters and schedules (heating, overview, rooms), polled every 30 s. Needs `heating-service` 1.8.0 or later; its `window` (the windows of the room and the hold of its heating) from 1.10.0 |
 | `GET` | `/home/heating/rooms/{name}` | One room, by the identifier the registry gives a profile (my room), polled every 30 s for the room on screen. A 404 with the code `NOT_FOUND_ROOM` is shown as "the heating service does not know this room" |
@@ -561,7 +570,7 @@ Endpoints used today:
 | `GET` | `/home/weather/current` | Every metric of the weather station with `value`, `measuredAt` and `stale` (the strip on every page, overview, weather), polled every 60 s by one resource for all. A metric never heard is not in the answer and is not drawn; `{}` is a station not heard yet. Since HAS-431 also `pm1`, `pm25`, `pm10` and `airQualityLevel` of the air quality sensor (`weather-service` 0.5.0). Needs `weather-service` 0.4.0 and `api-gateway-service` 0.6.0 or later |
 | `GET` | `/home/weather/status` | How the service hears the station: its gateway (answers or not, when checked), when the station was last heard, `silent` after 30 min (weather), polled every 60 s; since HAS-431 `airSensor` - whether the air quality sensor answers, its silence and an open `smog` episode (`weather-service` 0.7.0) |
 | `GET` | `/home/weather/history?metric=&from=&to=` | One metric over a range, averaged into buckets with `min` / `max` (weather: temperature, dew point, humidity, wind, gust, illuminance, precipitation, pressure, and since HAS-431 PM1, PM2.5 and PM10 - `weather-service` 0.6.0). Asked when the period changes, then every 3 min. An unknown metric is `UNKNOWN_METRIC` |
-| `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the switch on "My room"). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened - and after every change made on the Household page |
+| `GET` | `/home/household/profiles` | The profiles of the household: the name, role, rooms and permissions of every active member, and nothing else (`database-service` 0.10.0 or later; the permissions from 0.11.0 - an older one sends none, and nobody then has the House heating tab). Asked at every start, whenever the page comes back into view, by the profile picker and when a personal link is opened - and after every change made on the Household page |
 | `GET` | `/home/household` | The whole registry - every member, switched off or not, with phone, role, rooms, permissions and devices (household). By the Household page only, polled every 60 s while it is open and read again after every change |
 | `POST` | `/home/household/member` | Adds a member, with role, rooms and permissions (household) |
 | `PATCH` | `/home/household/member/{name}` | Changes the name, the phone and the role of a member (household). Sent only when one of them changed |
@@ -604,13 +613,13 @@ Endpoints used today:
 | `GET` | `/home/household/push-config` | The public VAPID key of the house (HAS-284), read when the notifications of a device are switched on or made anew; `{}` when the deployment has none, and the card says the house sends none yet. Needs `database-service` 0.18.0 or later |
 | `PUT` | `/home/household/member/{name}/push-subscriptions` | Stores the Web Push subscription of this browser for the member (`endpoint`, `keys`, `userAgent`) - an upsert by the endpoint; also at every start while switched on. `409 MEMBER_SWITCHED_OFF` has a text of its own |
 | `DELETE` | `/home/household/member/{name}/push-subscriptions?endpoint=` | Removes it when the switch is turned off, after the browser ended it |
-| `GET` | `/home/household/member/{name}/requests?done=true` | The requests of the member of the profile - open, and done in the last 30 days (my room, HAS-411), every 60 s and right after a change; the same read of every other profile, one after the other, for what the member of the profile wrote for them. Needs `database-service` 0.22.0 |
+| `GET` | `/home/household/member/{name}/requests?done=true` | The requests of the member of the profile - open, and done in the last 30 days (the requests page, HAS-411), every 60 s and right after a change; the same read of every other profile, one after the other, for what the member of the profile wrote for them. Needs `database-service` 0.22.0 |
 | `POST` | `/home/household/member/{name}/requests` | Writes a request for that member: body `{text, author}`, the author the member of the profile; the text checked first as the service checks it |
 | `PUT` | `/home/household/member/{name}/requests/{id}/done?member=` | Ticks a request off as the member of the profile; the list is read again |
 | `DELETE` | `/home/household/member/{name}/requests/{id}` | Removes a request; `NOT_FOUND_REQUEST` counts as removed. The codes `INVALID_REQUEST`, `MEMBER_SWITCHED_OFF` and `NOT_FOUND_HOUSEHOLD_MEMBER` have texts |
 | `GET` | `/home/appliance` | The appliances of the household with their state, `finishedAt` and `awaitingSince` (the notice of every page, my room, overview), polled every 30 s and right after an acknowledgement. Needs `appliance-service` 0.3.0 and `api-gateway-service` 0.9.0 or later |
 | `POST` | `/home/appliance/{id}/acknowledge?member=` | Marks a finished appliance as emptied (the notice, my room) - without `member` for the administrator's "Mute the reminders" on the notice (HAS-346: the cycle is nobody's chore); on my room also one still finishing (HAS-348, `appliance-service` 0.5.0: the cycle is then never announced) by the member of the profile in use, whom the household messages then name (HAS-347, `appliance-service` 0.4.0); the list is read again, the answer is not used. `409 NOTHING_TO_ACKNOWLEDGE`, `404 NOT_FOUND_APPLIANCE` and `400 UNKNOWN_MEMBER` have texts of their own |
-| `GET` | `/home/appliance/reports/members?from=&to=` | The chores per member of whole months of the house (the appliances page, My room), every 60 s; `INVALID_RANGE` has a text. Needs `appliance-service` 0.9.0 |
+| `GET` | `/home/appliance/reports/members?from=&to=` | The chores per member of whole months of the house (the appliances page), every 60 s; `INVALID_RANGE` has a text. Needs `appliance-service` 0.9.0 |
 | `POST` | `/home/appliance/claims` | The chore of the appliance a tag is on, claimed by the member of the browser (the tag page, HAS-346): body `{piccData, cmac, member}`, sent once per read; the answer names the appliance and the member. `INVALID_TAG`, `REPLAYED_TAG`, `NOTHING_TO_CLAIM`, `NOT_FOUND_APPLIANCE` and `UNKNOWN_MEMBER` have texts of their own. Needs `appliance-service` 0.7.0 |
 | `GET` | `/home/appliance/{id}/runs?from=&to=` | The cycles of one appliance that started in the range (appliances: the last 30 days of every appliance, one after the other, every 60 s - the counters and the lists read that one answer) |
 | `GET` | `/home/appliance/{id}/samples?from=&to=` | The draw of the plug, a sample every 30 s (appliances: the last 24 or 48 hours of each appliance, every 60 s) |
