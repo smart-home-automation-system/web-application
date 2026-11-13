@@ -255,8 +255,8 @@ dashboards:
   the schedule asks for right now, each heater with what its relay last reported, the schedule
   of today, and the windows of the room with the hold of its heating, with the state of its
   heating in one word as on the heating page (HAS-353). Since HAS-254 also **the
-  blinds of the room** - each with its position, open / stop / close, a position for one that can
-  go to one, and the pause of its schedules until their next run (no card for a room without
+  blinds of the room** - each with its position, open / stop / close as one bar, the position by a step of 10 % for one that
+  can go to one (HAS-438), and the pause of its schedules until their next run (no card for a room without
   blinds; the schedules themselves stay the administrator's) - and **the motion and presence
   sensors** the registry places in the room - since HAS-369 with what they sense as `light-service` hears them: the room occupied, empty or not known, the motion going on or the last one, its light, and when each sensor was last heard and whether it is reachable. Since HAS-268 also **the
   lights of the room**: the occupancy of the room, each light with on / off, the brightness of a
