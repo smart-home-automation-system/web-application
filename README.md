@@ -258,7 +258,7 @@ dashboards:
   blinds of the room** - each with its position, open / stop / close as one bar, the position by a step of 10 % for one that
   can go to one (HAS-438), and the pause of its schedules until their next run (no card for a room without
   blinds; the schedules themselves stay the administrator's) - and **the motion and presence
-  sensors** the registry places in the room - since HAS-369 with what they sense as `light-service` hears them: the room occupied, empty or not known, the motion going on or the last one, its light, and when each sensor was last heard and whether it is reachable. Since HAS-268 also **the
+  sensors** the registry places in the room - since HAS-369 with what they sense (since HAS-438 the occupancy as a strip and each sensor in a frame, as the other cards) as `light-service` hears them: the room occupied, empty or not known, the motion going on or the last one, its light, and when each sensor was last heard and whether it is reachable. Since HAS-268 also **the
   lights of the room**: the occupancy of the room, each light with on / off, the brightness of a
   dimmer by a step of 10 % (HAS-438) and the colour of an rgbw light, "All off", and the rule of the room in a few words with
   **the switch of the resident**, which stops the automatic lighting of the room until it is
