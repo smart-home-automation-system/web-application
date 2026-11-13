@@ -946,7 +946,7 @@ e2e/              # Playwright tests
   room without a unit** (the 404 `NOT_FOUND_ROOM`, an empty list) nor while the first answer is on its way - and the
   tile `tile-aircon` of the overview (`GET /aircon` and `/aircon/automation` once a minute, the second told in
   `tileFailures`; units on by room with their mode, how many do not answer, what the empty house or a lost grid
-  switched off). What to keep:
+  switched off; its title leads to the page of the units since HAS-431 - the tile came before the page and led nowhere). What to keep:
   - **One unit is `AirconControl`** (`shared/aircon/`, for the page of the units of HAS-395 too). **The state is read at a
     glance** (owner, 2026-11-08, on the iPhone: on or off was not to be told): a strip under the name - tinted with
     `--app-domain-aircon` and the icon of the mode while on, an outline while off, dashed while not known, always with
@@ -1172,14 +1172,14 @@ e2e/              # Playwright tests
   weather page; the domain colour is `weather`. `SHELL_READS`
   (`src/testing/overview-reads.ts`) lets a test that renders the shell pass the read of the strip.
 - **The weather page** (HAS-241, `features/weather/`, the administrator's) is cards of the weather
-  now and six charts of its history. What to keep:
+  now and nine charts of its history (PM1, PM2.5 and PM10 since HAS-431). What to keep:
   - **The cards read the resource of the strip** (`CurrentWeatherStore`) and each tells its
     freshness and failure - the owner's rule of the two hot-water cards. A card's age is
     `ReadingAge` over `newestOf` its metrics; a row the service calls stale is tagged through
     `outOfDate()` unless the whole card is. **The station card reads its own call**
     (`watchStatus`) and the battery of the weather beside it, so the failure of the weather call
     is told there too, apart (found in review).
-  - **The six charts share one period** (`historyPeriod()` of the page, bound to every frame): the
+  - **The charts share one period** (`historyPeriod()` of the page, bound to every frame): the
     page is one look at the weather. A chart is a spec (`WEATHER_CHARTS`) turned into resources
     by `weatherChart()` - one `watchHistory(metric, range)` per line; it waits until every line
     has its answer, tells the first failure, is as fresh as the oldest answer there is, and **its
@@ -1195,8 +1195,41 @@ e2e/              # Playwright tests
     `bounds` keeps an axis inside what a value can be (wind from 0, humidity 0-100 %); `bars` of a
     `ChartLine` draws bars, on an axis from 0.
   - **The rows are always full** (owner, 2026-10-16, the overview): container queries give the
-    cards 6 / 3 / 2 / 1 columns and the charts 3 / 2 / 1 - never a row of four with two under it.
+    cards 7 / 4 / 2 / 1 columns (HAS-431, below) and the charts 3 / 2 / 1 - never a row of four with two under it.
   - The photo `weather` (a garden with the station, from ChatGPT since HAS-266) has its tones narrowed to `35-230`.
+- **The air quality** (HAS-431, epic HAS-423; the BleBox airSensor of the garden read by `weather-service` >= 0.5.0,
+  its history >= 0.6.0, the silence and the smog of `/status` >= 0.7.0). What to keep:
+  - **The scale is one module, `data-access/weather/air-quality.ts`**: the six levels of the air quality index of GIOS,
+    the thresholds of PM10 (20 / 50 / 80 / 110 / 150) and PM2.5 (13 / 35 / 55 / 75 / 110) - a threshold belongs to
+    the level below it, the numbers notification-service words the smog by (HAS-430) -, the six words and the colour
+    of a level, `--app-air-1` ... `-6` of `_seasons.scss` (`$air-levels`). The card, the strip and the tile read it,
+    so they never word one reading differently. **The level of the whole is the sensor's** (`airQualityLevel`, read only
+    as a whole number 1 - 6); the level of PM2.5 and PM10 alone is computed. **The colour is never the only sign**: the
+    word is written beside the dot (`AirLevelDot`, `shared/air-quality/`, aria-hidden), in the strip the tooltip and
+    the name of the dot carry it.
+  - **The weather page** has seven cards: the air quality card (`card-air`) reads the weather call and **the status
+    for the smog**, its failure told on the card apart (the station card does the same for the battery); the station
+    card names the sensor - whether it answers, its silence - only while the status has `airSensor`. **The rows stay
+    full**: the page is 1800 px wide at most (the width of the water page - the owner on the PR); seven cards in one
+    row from 1600 px of the page, rows of four from 900 px and of two from 500 px with the air quality card two places
+    wide (it stands before the light and the station so that the rows close), one column below. **A chart per fraction**
+    (the owner on the PR: not PM2.5 and PM10 on one chart): `pm1`, `pm25`, `pm10` - nine charts, three rows of three,
+    in rows of two the last a row of its own. **The thresholds of PM2.5 (35, 75) and PM10 (50, 110) are dashed lines of
+    the neutral fifth colour** (`thresholds` of `WeatherChartSpec`), drawn once the readings of the period reach half
+    of a threshold - drawn always, 110 stretched the axis of a clean week; they are in no number under the chart. PM1
+    has no threshold in the index.
+    **A chart card keeps its height while another period loads** (the owner on the PR - every card shrank to its
+    progress bar): `--app-frame-body-min-height` of `weather-chart-card.scss`, 336 px (276 px below 640 px) - the chart, its
+    numbers and a note of two lines; a taller chart or a longer note changes that number. A browser test samples the
+    heights through the switch.
+  - **The strip** draws the dot after the humidity, a `role="button"` with the level and PM10 as its name and tooltip
+    (a tap, Enter or Space, its event stopped so the tooltip of a failed strip does not open with it); **no dot for a
+    stale level** - the age of the strip is the station's. **The overview tile** has the row "Air quality" - the word and the colour of the level, no values (the owner on the PR);
+    **the age and the silence of the tile stay the station's** (`weatherMetrics`): a fresh air sensor never hides a
+    silent station (found in review), the air row is tagged out of date by itself.
+  - The mock (`weather.fixtures.ts`): a moderate evening (level 3, PM2.5 42, PM10 58); `localStorage['mock-smog']` =
+    `on` gives level 6 and an open smog episode of 75 minutes. The history mock has the four metrics, PM10 above 50
+    in the evening.
 - **The energy page** (HAS-341, `features/energy/`, the administrator's; route `/energy` after the weather in the
   menu - on a phone the rooms move behind "More" -, domain colour `energy`, the indigo of a spark; photo `energy` - a technical room with the inverters, the battery,
   the distribution cabinet and the panels behind the window, from ChatGPT, tones `0-240`): the

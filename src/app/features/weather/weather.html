@@ -190,6 +190,102 @@
       }
     </app-domain-tile>
 
+    <!-- the air quality outside (HAS-431): the level the sensor gives, PM2.5 and PM10 with the level of each, PM1.
+         Whether there is smog comes with the status of the station - a call of its own, whose failure is told here
+         apart, as the station card tells the failure of the battery -->
+    <app-domain-tile
+      class="card--air"
+      heading="weather.cards.air"
+      icon="pulmonology"
+      domain="weather"
+      waitingLabel="weather.page.loading"
+      [resource]="current"
+      data-testid="card-air"
+    >
+      @let a = air();
+      @if (airSensor()?.smog; as smog) {
+        <p class="tile__lead tile__lead--alert air__smog" data-testid="air-smog">
+          <mat-icon>masks</mat-icon>
+          @if (smog.since; as since) {
+            <span>{{
+              t('weather.air.smog', { since: (since | houseDateTime: sinceFormat(since)) })
+            }}</span>
+          } @else {
+            <span>{{ t('weather.air.smogNow') }}</span>
+          }
+        </p>
+      }
+      @if (c.air.shown) {
+        @if (a.level !== undefined) {
+          <p class="tile__lead air__lead" data-testid="air-level" [attr.data-level]="a.level">
+            <app-air-level-dot [level]="a.level" />
+            <span>{{ t(airLabels[a.level]) }}</span>
+            @if (r.airQualityLevel; as metric) {
+              @if (outOfDate(metric, c.air)) {
+                <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+              }
+            }
+          </p>
+        } @else {
+          <p class="tile__lead tile__quiet" data-testid="air-level">
+            {{ t('weather.air.levelNotKnown') }}
+          </p>
+        }
+        <dl class="tile__rows">
+          @if (r.pm25; as metric) {
+            <div class="tile__row" data-metric="pm25">
+              <dt>{{ t('weather.metric.pm25') }}</dt>
+              <dd>
+                @if (outOfDate(metric, c.air)) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                @if (a.pm25Level; as level) {
+                  <span class="tile__age air__level" [attr.data-level]="level"
+                    ><app-air-level-dot [level]="level" />&ngsp;{{ t(airLabels[level]) }}</span
+                  >
+                }
+                <strong>{{ metric.value | localNumber: WHOLE }} µg/m³</strong>
+              </dd>
+            </div>
+          }
+          @if (r.pm10; as metric) {
+            <div class="tile__row" data-metric="pm10">
+              <dt>{{ t('weather.metric.pm10') }}</dt>
+              <dd>
+                @if (outOfDate(metric, c.air)) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                @if (a.pm10Level; as level) {
+                  <span class="tile__age air__level" [attr.data-level]="level"
+                    ><app-air-level-dot [level]="level" />&ngsp;{{ t(airLabels[level]) }}</span
+                  >
+                }
+                <strong>{{ metric.value | localNumber: WHOLE }} µg/m³</strong>
+              </dd>
+            </div>
+          }
+          @if (r.pm1; as metric) {
+            <div class="tile__row" data-metric="pm1">
+              <dt>{{ t('weather.metric.pm1') }}</dt>
+              <dd>
+                @if (outOfDate(metric, c.air)) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <strong>{{ metric.value | localNumber: WHOLE }} µg/m³</strong>
+              </dd>
+            </div>
+          }
+        </dl>
+        <p class="tile__note">{{ t('weather.air.scale') }}</p>
+        <app-reading-age [newest]="c.air.newest" outOfDateText="weather.air.measuredOutOfDate" />
+      } @else if (!current.error()) {
+        <p class="tile__detail">{{ t('weather.cards.airNone') }}</p>
+      }
+      @if (status.error(); as failure) {
+        <app-api-error-strip [error]="failure" [summary]="t('weather.air.smogFailed')" />
+      }
+    </app-domain-tile>
+
     <!-- daylight and UV -->
     <app-domain-tile
       heading="weather.cards.light"
@@ -247,6 +343,12 @@
             <span>{{ t('weather.station.silent') }}</span>
           </p>
         }
+        @if (airSensor()?.silent) {
+          <p class="tile__lead tile__lead--alert" data-testid="air-sensor-silent">
+            <mat-icon>warning</mat-icon>
+            <span>{{ t('weather.air.sensorSilent') }}</span>
+          </p>
+        }
         <dl class="tile__rows">
           <div class="tile__row" data-metric="gateway">
             <dt>{{ t('weather.station.gateway') }}</dt>
@@ -272,6 +374,23 @@
               }
             </dd>
           </div>
+          <!-- the air quality sensor (HAS-431): only while the status names one -->
+          @if (airSensor(); as sensor) {
+            <div class="tile__row" data-metric="airSensor">
+              <dt>{{ t('weather.air.sensor') }}</dt>
+              <dd>
+                @if (sensor.reachable === undefined) {
+                  <strong class="tile__quiet">{{ t('weather.station.notChecked') }}</strong>
+                } @else {
+                  <strong [class.tile__quiet]="!sensor.reachable">{{
+                    t(
+                      sensor.reachable ? 'weather.station.reachable' : 'weather.station.unreachable'
+                    )
+                  }}</strong>
+                }
+              </dd>
+            </div>
+          }
           @if (r.battery; as metric) {
             <div class="tile__row" data-metric="battery">
               <dt>{{ t('weather.station.battery') }}</dt>

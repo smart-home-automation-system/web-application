@@ -80,6 +80,8 @@ test.describe('overview', () => {
     ['tile-presence', 'At home now', '/presence'],
     ['tile-weather', 'Weather', '/weather'],
     ['tile-light', 'Lights', '/lights'],
+    // the page of the units (HAS-395) - the tile of HAS-394 came before it and led nowhere (the owner on HAS-431)
+    ['tile-aircon', 'Air conditioning', '/aircon'],
   ] as const) {
     test(`leads from "${name}" to ${address}`, async ({ page }) => {
       await page.goto('/overview');

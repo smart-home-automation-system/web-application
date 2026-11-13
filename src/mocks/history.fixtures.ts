@@ -186,6 +186,10 @@ const WEATHER_METRICS = [
   'uv',
   'windDirection',
   'precipitation',
+  'pm1',
+  'pm25',
+  'pm10',
+  'airQualityLevel',
 ] as const;
 
 /** A refusal of `weather-service` with its code: the metric it does not know. */
@@ -268,6 +272,15 @@ function weatherBucket(
       return spread(98, 0);
     case 'voltage':
       return spread(5.1, 0);
+    // the air quality sensor (HAS-431): the smoke of the stoves in the evening, PM10 above 50 for a few hours of it
+    case 'pm10':
+      return spread(Math.round(38 + 26 * daily(middle, 20)), 4);
+    case 'pm25':
+      return spread(Math.round(27 + 19 * daily(middle, 20)), 3);
+    case 'pm1':
+      return spread(Math.round(18 + 13 * daily(middle, 20)), 2);
+    case 'airQualityLevel':
+      return spread(daily(middle, 20) > 0.5 ? 3 : 2, 0);
   }
 }
 

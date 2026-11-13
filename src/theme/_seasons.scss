@@ -90,6 +90,36 @@ $room-states: (
   ),
 );
 
+// The six levels of the air quality index of GIOS (HAS-431, `air-quality.ts`), the same in every season: the hues of
+// the index - green, yellow-green, yellow, orange, red, deep red - for a dot, an edge or a mark, never text; the word
+// of the level is always written beside it. (light scheme, dark scheme)
+$air-levels: (
+  1: (
+    #2e8b3d,
+    #6ee08a,
+  ),
+  2: (
+    #6f9e00,
+    #bde05a,
+  ),
+  3: (
+    #b98f00,
+    #ffd84a,
+  ),
+  4: (
+    #d06a00,
+    #ffa24a,
+  ),
+  5: (
+    #cf2a2a,
+    #ff6b6b,
+  ),
+  6: (
+    #8a1538,
+    #e0457a,
+  ),
+);
+
 // The colours of the house's domains, the same in every season: a card about hot water is blue
 // in July and in January. (light scheme, dark scheme) - the dark shade is the lighter one again.
 $domains: (
@@ -377,6 +407,11 @@ $_neutral: (
   // The states of the heating of a room (HAS-353), the same in every season.
   @each $name, $pair in $room-states {
     --app-room-#{$name}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
+  }
+
+  // The levels of the air quality (HAS-431), the same in every season.
+  @each $level, $pair in $air-levels {
+    --app-air-#{$level}: light-dark(#{list.nth($pair, 1)}, #{list.nth($pair, 2)});
   }
 
   // The status bar of a phone continues the page. Both shades are also given on their own:

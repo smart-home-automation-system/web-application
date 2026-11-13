@@ -113,3 +113,10 @@ $max-columns: 5;
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
 }
+
+// the air quality of the weather tile (HAS-431): the dot of its level before its word
+.tile__air {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

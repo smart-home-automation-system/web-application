@@ -1,4 +1,5 @@
 import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
+import { AirLevel, airLevelOf } from './air-quality';
 import { CurrentMetric, CurrentWeather, WeatherMetric } from './weather-api';
 
 /** One metric as a view shows it: its value and how old it is. */
@@ -37,6 +38,14 @@ export interface WeatherReading {
   readonly battery?: MetricReading<number>;
   /** V */
   readonly voltage?: MetricReading<number>;
+  /** µg/m³, the air quality sensor outside (HAS-431). */
+  readonly pm1?: MetricReading<number>;
+  /** PM2.5, µg/m³. */
+  readonly pm25?: MetricReading<number>;
+  /** PM10, µg/m³. */
+  readonly pm10?: MetricReading<number>;
+  /** The level of the GIOS scale the sensor gives - a whole number from 1 to 6, anything else is left out. */
+  readonly airQualityLevel?: MetricReading<AirLevel>;
 }
 
 /**
@@ -51,6 +60,7 @@ export type WeatherIcon = 'rainy' | 'air' | 'device_thermostat';
 const isNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
+const isAirLevel = (value: unknown): value is AirLevel => airLevelOf(value) !== undefined;
 
 function metric<T>(
   answer: unknown,
@@ -98,6 +108,10 @@ export function toWeatherReading(
     precipitation: metric(of('precipitation'), isNumber, timeZone),
     battery: metric(of('battery'), isNumber, timeZone),
     voltage: metric(of('voltage'), isNumber, timeZone),
+    pm1: metric(of('pm1'), isNumber, timeZone),
+    pm25: metric(of('pm25'), isNumber, timeZone),
+    pm10: metric(of('pm10'), isNumber, timeZone),
+    airQualityLevel: metric(of('airQualityLevel'), isAirLevel, timeZone),
   };
 }
 

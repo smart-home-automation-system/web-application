@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { MessageKey } from '../../i18n/messages';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 
 /**
@@ -17,7 +18,7 @@ import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
       @if (newest(); as last) {
         @if (last.measuredAt | houseAge; as age) {
           <p class="age" [class.age--alert]="last.allStale" data-testid="measured">
-            {{ t(last.allStale ? 'weather.measuredOutOfDate' : 'weather.measured', { age }) }}
+            {{ t(last.allStale ? outOfDateText() : 'weather.measured', { age }) }}
           </p>
         }
       }
@@ -45,4 +46,6 @@ export class ReadingAge {
   readonly newest = input.required<
     { readonly measuredAt: string; readonly allStale: boolean } | undefined
   >();
+  /** What has not been heard since - the station, or the air quality sensor (HAS-431). */
+  readonly outOfDateText = input<MessageKey>('weather.measuredOutOfDate');
 }

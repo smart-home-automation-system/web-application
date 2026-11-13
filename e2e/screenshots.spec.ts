@@ -262,8 +262,8 @@ for (const language of ['en', 'pl'] as const) {
           await page.goto('/weather');
           await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
           if (scenario === 'default') {
-            // the six charts are drawn before the picture is taken
-            await expect(page.locator('.chart__plot svg')).toHaveCount(6);
+            // the nine charts are drawn before the picture is taken
+            await expect(page.locator('.chart__plot svg')).toHaveCount(9);
           }
           await photoIsShown(page);
           await page.screenshot({

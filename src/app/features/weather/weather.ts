@@ -3,6 +3,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
+import { dayAwareFormat, houseDay, parseHouseDateTime } from '../../core/time/house-date-time';
+import { Ticker } from '../../core/time/ticker';
+import { AIR_LEVEL_LABELS, levelOfPm10, levelOfPm25 } from '../../data-access/weather/air-quality';
 import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { WeatherApi } from '../../data-access/weather/weather-api';
 import {
@@ -14,8 +17,10 @@ import {
 import { MessageKey } from '../../i18n/messages';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { historyPeriod } from '../../shared/history-chart/history-period';
+import { AirLevelDot } from '../../shared/air-quality/air-level-dot';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
+import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { ReadingAge } from './reading-age';
 import { WEATHER_CHARTS, weatherChart } from './weather-charts';
@@ -54,9 +59,11 @@ const COMPASS_LABELS: Readonly<Record<NonNullable<ReturnType<typeof compassPoint
   imports: [
     MatIconModule,
     TranslocoDirective,
+    AirLevelDot,
     ApiErrorStrip,
     DomainTile,
     HouseAgePipe,
+    HouseDateTimePipe,
     LocalNumberPipe,
     ReadingAge,
     WeatherChartCard,
@@ -71,6 +78,7 @@ const COMPASS_LABELS: Readonly<Record<NonNullable<ReturnType<typeof compassPoint
 })
 export class Weather {
   private readonly zone = inject(APP_CONFIG).houseTimeZone;
+  private readonly ticker = inject(Ticker);
 
   protected readonly current = inject(CurrentWeatherStore).current;
   protected readonly status = inject(WeatherApi).watchStatus();
@@ -85,6 +93,25 @@ export class Weather {
   /** The total of the gauge as it counts: in tenths, written only where it has them. */
   protected readonly GAUGE: Intl.NumberFormatOptions = { maximumFractionDigits: 1 };
   protected readonly compassLabels = COMPASS_LABELS;
+  protected readonly airLabels = AIR_LEVEL_LABELS;
+
+  /** The start of a smog episode: the time alone today, with the date on another day. */
+  protected sinceFormat(since: string): Intl.DateTimeFormatOptions {
+    return dayAwareFormat(since, houseDay(this.ticker.now(), this.zone));
+  }
+
+  /**
+   * The air quality outside (HAS-431): the level the sensor gives, and the level of PM2.5 and PM10 alone by the
+   * thresholds of the scale (`air-quality.ts`).
+   */
+  protected readonly air = computed(() => {
+    const r = this.reading();
+    return {
+      level: r.airQualityLevel?.value,
+      pm25Level: levelOfPm25(r.pm25?.value),
+      pm10Level: levelOfPm10(r.pm10?.value),
+    };
+  });
 
   protected readonly reading = computed(() => toWeatherReading(this.current.value(), this.zone));
 
@@ -101,6 +128,7 @@ export class Weather {
       rain: card([r.raining, r.precipitation]),
       pressure: card([r.pressure]),
       light: card([r.illuminance, r.uv]),
+      air: card([r.airQualityLevel, r.pm25, r.pm10, r.pm1]),
     };
   });
 
@@ -132,6 +160,27 @@ export class Weather {
       reachable: typeof reachable === 'boolean' ? reachable : undefined,
       lastReadingAt: status?.lastReadingAt,
       silent: typeof silent === 'boolean' ? silent : undefined,
+    };
+  });
+
+  /**
+   * The air quality sensor as the status names it (weather-service 0.5.0; its silence and the smog since 0.7.0):
+   * `undefined` while the status is not known or names no sensor - an older service, or none in the registry.
+   */
+  protected readonly airSensor = computed(() => {
+    const sensor = this.status.value()?.airSensor;
+    if (typeof sensor !== 'object' || sensor === null) {
+      return undefined;
+    }
+    const smog = sensor.smog;
+    return {
+      reachable: typeof sensor.reachable === 'boolean' ? sensor.reachable : undefined,
+      silent: sensor.silent === true,
+      // an open episode; its start only when it is a time of the house
+      smog:
+        typeof smog === 'object' && smog !== null
+          ? { since: parseHouseDateTime(smog.since) ? smog.since : undefined }
+          : undefined,
     };
   });
 }

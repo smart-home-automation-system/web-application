@@ -357,6 +357,22 @@
               </dd>
             </div>
           }
+          <!-- the air quality (HAS-431): the word of the level in its colour, no values (the owner on the PR) -->
+          @if (outside.airQualityLevel; as air) {
+            <div class="tile__row" data-metric="airQualityLevel" [attr.data-level]="air.value">
+              <dt>{{ t('overview.weather.air') }}</dt>
+              <dd>
+                @if (air.stale) {
+                  <span class="tile__tag">{{ t('overview.weather.outOfDate') }}</span>
+                }
+                <span class="tile__air"
+                  ><app-air-level-dot [level]="air.value" /><strong>{{
+                    t(airLabels[air.value])
+                  }}</strong></span
+                >
+              </dd>
+            </div>
+          }
         </dl>
         @if (last?.measuredAt | houseAge; as age) {
           <p
@@ -549,6 +565,7 @@
       heading="overview.aircon.title"
       icon="ac_unit"
       domain="aircon"
+      link="/aircon"
       waitingLabel="aircon.loading"
       [resource]="aircon"
       data-testid="tile-aircon"

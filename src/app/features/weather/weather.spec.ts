@@ -224,6 +224,214 @@ describe('Weather', () => {
     });
   });
 
+  // HAS-431: the air quality sensor outside, read with the weather; whether there is smog with the status
+  describe('the air quality', () => {
+    const AIR: CurrentWeather = {
+      ...WEATHER,
+      pm1: metric(31, '2026-10-16T14:40:00'),
+      pm25: metric(42, '2026-10-16T14:40:00'),
+      pm10: metric(162, '2026-10-16T14:40:00'),
+      airQualityLevel: metric(3, '2026-10-16T14:40:00'),
+    };
+    const SENSOR = {
+      address: '192.0.2.23',
+      reachable: true,
+      checkedAt: '2026-10-16T14:44:00',
+      lastReadingAt: '2026-10-16T14:40:00',
+      silent: false,
+    };
+
+    it('tells the level of the sensor, PM2.5 and PM10 with the level of each, and PM1', async () => {
+      answer(current, AIR);
+
+      const air = await card('air');
+      expect(words(air.querySelector('[data-testid="air-level"]'))).toBe('Moderate');
+      expect(
+        air
+          .querySelector('[data-testid="air-level"] app-air-level-dot')
+          ?.getAttribute('data-level'),
+      ).toBe('3');
+      expect(await row('air', 'pm25')).toBe('PM2.5 Moderate 42 µg/m³');
+      expect(await row('air', 'pm10')).toBe('PM10 Very bad 162 µg/m³');
+      expect(await row('air', 'pm1')).toBe('PM1 31 µg/m³');
+      expect(words(air.querySelector('[data-testid="measured"]'))).toBe('Measured 5 min ago');
+    });
+
+    // the word is always written: the colour is never the only sign of a level
+    it('writes the word of every level beside its colour', async () => {
+      answer(current, AIR);
+
+      const air = await card('air');
+      for (const level of air.querySelectorAll('.air__level')) {
+        expect(words(level)).not.toBe('');
+      }
+    });
+
+    it('says the level is not known when the sensor gives none, and shows what it measured', async () => {
+      answer(current, { ...AIR, airQualityLevel: metric(7) });
+
+      expect(words((await card('air')).querySelector('[data-testid="air-level"]'))).toBe(
+        'Level not known',
+      );
+      expect(await row('air', 'pm10')).toBe('PM10 Very bad 162 µg/m³');
+    });
+
+    // a service before 0.5.0, or a sensor not heard since the start: nothing made up
+    it('says the sensor has not reported while the answer has none of it', async () => {
+      answer(current, WEATHER);
+
+      expect(words(await card('air'))).toContain('The air quality sensor has not reported yet.');
+      expect((await card('air')).querySelector('[data-metric="pm10"]')).toBeNull();
+    });
+
+    it('says the sensor has not been heard since when every value is stale', async () => {
+      answer(current, {
+        ...WEATHER,
+        pm10: metric(20, '2026-10-16T13:00:00', true),
+        airQualityLevel: metric(1, '2026-10-16T13:00:00', true),
+      });
+
+      expect(words((await card('air')).querySelector('[data-testid="measured"]'))).toBe(
+        'Measured 1 hr ago - the sensor has not been heard since.',
+      );
+    });
+
+    it('tells an open smog episode of the status', async () => {
+      answer(current, AIR);
+      answer(status, {
+        ...STATUS,
+        airSensor: { ...SENSOR, smog: { since: '2026-10-16T13:30:00', level: 6 } },
+      });
+
+      expect(words((await card('air')).querySelector('[data-testid="air-smog"]'))).toBe(
+        'masks Smog outside since 13:30 - the household was told.',
+      );
+    });
+
+    it('tells the smog without its start when the start is no time of the house', async () => {
+      answer(current, AIR);
+      answer(status, { ...STATUS, airSensor: { ...SENSOR, smog: { since: 'soon', level: 6 } } });
+
+      expect(words((await card('air')).querySelector('[data-testid="air-smog"]'))).toBe(
+        'masks Smog outside - the household was told.',
+      );
+    });
+
+    it('tells nothing of smog while the status names none', async () => {
+      answer(current, AIR);
+      answer(status, { ...STATUS, airSensor: SENSOR });
+
+      expect((await card('air')).querySelector('[data-testid="air-smog"]')).toBeNull();
+    });
+
+    // the status is a call of its own: its failure is told on the card, apart from the readings
+    it('tells that whether there is smog could not be read', async () => {
+      answer(current, AIR);
+      fail(status, new ApiError('server', 502));
+
+      expect(words(await card('air'))).toContain('Whether there is smog could not be read.');
+      expect(await row('air', 'pm10')).toBe('PM10 Very bad 162 µg/m³');
+    });
+
+    it('tells on the station card whether the sensor answers, and its silence', async () => {
+      answer(status, { ...STATUS, airSensor: { ...SENSOR, reachable: false, silent: true } });
+
+      expect(await row('station', 'airSensor')).toBe('Air quality sensor Does not answer');
+      expect(
+        words((await card('station')).querySelector('[data-testid="air-sensor-silent"]')),
+      ).toBe('warning The air quality sensor has had no valid reading for 30 minutes.');
+    });
+
+    it('names no sensor on the station card while the status has none', async () => {
+      answer(status, STATUS);
+
+      expect((await card('station')).querySelector('[data-metric="airSensor"]')).toBeNull();
+      expect((await card('station')).querySelector('[data-testid="air-sensor-silent"]')).toBeNull();
+    });
+
+    // a chart per fraction (the owner on the PR): each drawn alone, with the thresholds of its own scale
+    async function answerAir(values: Partial<Record<'pm1' | 'pm25' | 'pm10', number>>) {
+      await fixture.whenStable();
+      const asked = (
+        fixture.componentInstance as unknown as { period: { range(): HistoryRange } }
+      ).period.range();
+      for (const [name, value] of Object.entries(values)) {
+        answerQuery(histories.get(name as WeatherMetric)!, asked, {
+          bucketSeconds: 300,
+          points: [{ at: '2026-10-16T14:00:00', avg: value, min: 1, max: 99 }],
+        });
+      }
+      await fixture.whenStable();
+    }
+    /** The lines of the one chart drawn: the others have no answer. */
+    async function drawnLines(): Promise<string[]> {
+      const index = () => charts.drawn.findIndex((drawn) => drawn !== undefined);
+      await vi.waitFor(() => expect(index()).toBeGreaterThanOrEqual(0));
+      return charts.lines(index()).map((line) => line.name);
+    }
+
+    it('draws PM10 alone with the two thresholds of its scale, left out of the numbers', async () => {
+      await answerAir({ pm10: 64 });
+
+      expect(await drawnLines()).toEqual(
+        expect.arrayContaining(['PM10', 'Moderate from', 'Bad from']),
+      );
+      expect(
+        words(page().querySelector('[data-testid="chart-pm10"] [data-testid="history-facts"]')),
+      ).toBe('PM10 64 – 64 µg/m³');
+    });
+
+    it('draws PM2.5 alone with the thresholds of PM2.5, 35 and 75', async () => {
+      await answerAir({ pm25: 41 });
+
+      await drawnLines();
+      const lines = charts.lines(charts.drawn.findIndex((drawn) => drawn !== undefined));
+      const at = (name: string) =>
+        (lines.find((line) => line.name === name)?.data[0] as [number, number] | undefined)?.[1];
+      expect(at('Moderate from')).toBe(35);
+      expect(at('Bad from')).toBe(75);
+    });
+
+    it('draws PM1 alone, with no threshold - the index has none for it', async () => {
+      await answerAir({ pm1: 80 });
+
+      expect(await drawnLines()).toEqual(['PM1']);
+    });
+
+    // a clean week keeps its own axis: a threshold is drawn once the readings reach half of it
+    it('draws only the thresholds the readings come near', async () => {
+      await answerAir({ pm10: 30 });
+
+      const names = await drawnLines();
+      expect(names).toContain('Moderate from');
+      expect(names).not.toContain('Bad from');
+    });
+
+    it('draws no threshold while no line has anything to draw', async () => {
+      await fixture.whenStable();
+      const asked = (
+        fixture.componentInstance as unknown as { period: { range(): HistoryRange } }
+      ).period.range();
+      answerQuery(histories.get('pm10')!, asked, { bucketSeconds: 300, points: [] });
+      await fixture.whenStable();
+
+      expect(words(page().querySelector('[data-testid="chart-pm10"]'))).toContain(
+        'No reading in this period.',
+      );
+    });
+
+    it('speaks Polish', async () => {
+      await useLanguage('pl');
+      answer(current, AIR);
+
+      expect(words((await card('air')).querySelector('[data-testid="air-level"]'))).toBe(
+        'Umiarkowana',
+      );
+      expect(await row('air', 'pm25')).toBe('PM2,5 Umiarkowana 42 µg/m³');
+      expect(await row('air', 'pm10')).toBe('PM10 Bardzo zła 162 µg/m³');
+    });
+  });
+
   describe('the charts', () => {
     it('asks for the history of every metric drawn, once each', async () => {
       await fixture.whenStable();
@@ -234,13 +442,16 @@ describe('Weather', () => {
           'gust',
           'humidity',
           'illuminance',
+          'pm1',
+          'pm10',
+          'pm25',
           'precipitation',
           'pressure',
           'temperature',
           'wind',
         ].sort(),
       );
-      expect(page().querySelectorAll('app-weather-chart-card')).toHaveLength(6);
+      expect(page().querySelectorAll('app-weather-chart-card')).toHaveLength(9);
     });
 
     // the page is one look at the weather: the period chosen on one chart is that of all

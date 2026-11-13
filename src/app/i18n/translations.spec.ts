@@ -94,6 +94,11 @@ describe('translations', () => {
       'energy.alerts.kind.alarm',
       // a per cent of salt, written the same in both languages (HAS-402)
       'softener.salt.value',
+      // the names of the particulate matter, the same in both languages (HAS-431)
+      'weather.metric.pm1',
+      'weather.metric.pm10',
+      'weather.charts.pm1.title',
+      'weather.charts.pm10.title',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),
