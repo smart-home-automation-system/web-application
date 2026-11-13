@@ -272,7 +272,8 @@ e2e/              # Playwright tests
   HAS-394) - `my-room.spec` lists every control there is, the blind controls and their pause switch by
   name, `room-aircon.spec` those of a unit, and a new one fails that test on purpose. The cards, in the order of `ROOM_CAPABILITIES` (owner 2026-11-13, HAS-438: the lights, the blinds, the heating, the sensors, the air conditioning): heating (with the windows of the room and the hold of its
   heating, as on the heating page), **lights** (`RoomLights`, HAS-268 - below), **blinds**
-  (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, HAS-369: the motion and
+  (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, HAS-369 - since HAS-438 in the look of an air conditioner: the occupancy a strip tinted
+  while occupied, dashed while not known, every sensor in a frame of its own: the motion and
   presence sensors of `GET /device/registry?room=` and what they sense from
   `GET /light/rooms/{room}/occupancy` of `light-service` every 10 s - answered for every room of the
   house, one without lights too). The registry says which sensors the room has, the occupancy the
