@@ -9,8 +9,8 @@ import { RoomSensors } from './room-sensors';
 /**
  * Something a room can show or do, as a card of the "My room" page. The page knows none of them
  * by name: it renders whatever this list holds, in this order, and hands each card the room it
- * is for. Heating is the first; lighting and blinds (control), the opening, motion and presence
- * sensors (view) and, since HAS-394, the air conditioning (control). A new one gets an entry here
+ * is for: the lights and the blinds first (control), then the heating (owner, 2026-11-13, HAS-438),
+ * the opening, motion and presence sensors (view) and, since HAS-394, the air conditioning (control). A new one gets an entry here
  * when its service exists - and is absent from the page until then, without a placeholder.
  */
 export interface RoomCapability {
@@ -25,11 +25,12 @@ export interface RoomCapability {
 }
 
 export const ROOM_CAPABILITIES: readonly RoomCapability[] = [
-  { id: 'heating', component: RoomHeating },
   // HAS-268: the lights of the room with their controls and the switch of the resident
   { id: 'lights', component: RoomLights },
-  // HAS-254: the blinds with their controls, and the sensors the registry places there
+  // HAS-254: the blinds with their controls
   { id: 'blinds', component: RoomBlinds },
+  { id: 'heating', component: RoomHeating },
+  // HAS-254: the sensors the registry places there
   { id: 'sensors', component: RoomSensors },
   // HAS-394: the air conditioners of the room with their controls
   { id: 'aircon', component: RoomAircon },

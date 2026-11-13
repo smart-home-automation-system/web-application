@@ -270,7 +270,7 @@ e2e/              # Playwright tests
   found in review, the lesson of the heating switch again); and **nothing about a room can be
   pressed but its blinds, its lights and its air conditioner** (owner, 2026-10-18, HAS-254; HAS-268;
   HAS-394) - `my-room.spec` lists every control there is, the blind controls and their pause switch by
-  name, `room-aircon.spec` those of a unit, and a new one fails that test on purpose. The cards: heating (with the windows of the room and the hold of its
+  name, `room-aircon.spec` those of a unit, and a new one fails that test on purpose. The cards, in the order of `ROOM_CAPABILITIES` (owner 2026-11-13, HAS-438: the lights, the blinds, the heating, the sensors, the air conditioning): heating (with the windows of the room and the hold of its
   heating, as on the heating page), **lights** (`RoomLights`, HAS-268 - below), **blinds**
   (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, HAS-369: the motion and
   presence sensors of `GET /device/registry?room=` and what they sense from
