@@ -50,7 +50,7 @@ dashboards:
   the rooms with a light on, and whether the house is empty and acted on) and the appliances
   (HAS-282: which of the washing machine, the dryer and the dishwasher runs and which waits to be
   emptied - nothing to press there) and the energy (HAS-341: the panels, the house and the grid now, the
-  state of charge of the battery, a lost grid in red; since HAS-373 tomorrow of the production forecast in a line - "Tomorrow: poor, about 6 kWh"). Every call has its own freshness and its own failure, so the
+  state of charge of the battery, a lost grid in red; since HAS-373 tomorrow of the production forecast in a line - "Tomorrow: poor, about 6 kWh") and the requests (HAS-438: how many wait for the member of the profile, the first three named, and how many of those written for the others). Every call has its own freshness and its own failure, so the
   page stays whole while one service is down; the title of a tile leads to the dashboard that has
   the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
@@ -71,9 +71,10 @@ dashboards:
   answers, its silence), and a chart for each of PM1, PM2.5 and PM10 - PM2.5 with its thresholds of 35 and
   75 µg/m³, PM10 with 50 and 110, dashed once the readings come near them; the index has none for PM1.
 - **Energy** (HAS-341, the administrator's, `/energy`): the energy of the house from `energy-service` -
-  where it goes now (the panels above the house, the battery and the grid beside it, an arrow along each
-  line by the sign of its power, "not known" where a power is not), the day so far, the grid as the SOLAX
-  sees it and whether each source answers, a card each for the SOLAX (the strings, the run mode in words),
+  where it goes now (since HAS-438 an isometric scene of our own drawing: the house, the panels, the battery filled
+  by its charge and two pylons, each on a tile, a light running along each line the way the energy flows - faster
+  with more power, still where nothing flows, dashed where a power is not known), the day so far, the grid as the SOLAX
+  sees it and whether each source answers, beside it the next planned outage and the open alarms, a card each for the SOLAX (the strings, the run mode in words),
   the battery (the state of charge as a gauge, the energy left), the SOFAR (its state and faults in the
   words of the Solarman cloud) and the grid meter (per phase, a phase above 22 A marked), the open alarms
   and the outages of the grid of the last year; **the production forecast** (HAS-373) - one sentence of the coming
@@ -154,8 +155,8 @@ dashboards:
   and the energy of 24 hours, 7 and 30 days, every appliance added up. Then per appliance its card - its
   state, the same counters (a cycle whose energy is not known is named, never counted as 0 Wh; one that
   still runs is counted and adds no energy yet), its settings as the device registry holds them (read
-  only, changed on the devices page) and its cycles of 7 or 30 days (start, duration, energy, emptied
-  after how long and by whom) - and next to it **the draw of its plug** over the last 24 or 48 hours with
+  only, changed on the devices page) and the newest five of its cycles of 30 days, the rest counted (start,
+  duration, energy, emptied after how long and by whom) - and next to it **the draw of its plug** over the last 24 or 48 hours with
   its two thresholds drawn across it, where a washing pause or the turns of a dryer can be seen.
 - **The rule of a room** (HAS-267, the administrator's, `/lights/rooms/{room}/rules`, from "Change
   the rule" / "Write a rule" in the window of a room): what the rule can rely on - the lights of the
@@ -255,12 +256,12 @@ dashboards:
   the schedule asks for right now, each heater with what its relay last reported, the schedule
   of today, and the windows of the room with the hold of its heating, with the state of its
   heating in one word as on the heating page (HAS-353). Since HAS-254 also **the
-  blinds of the room** - each with its position, open / stop / close as one bar, the position by a step of 10 % for one that
-  can go to one (HAS-438), and the pause of its schedules until their next run (no card for a room without
+  blinds of the room** - each with its position, open / stop / close as one bar, the position on a slider sent with
+  "Send" for one that can go to one, and the pause of its schedules until their next run (no card for a room without
   blinds; the schedules themselves stay the administrator's) - and **the motion and presence
   sensors** the registry places in the room - since HAS-369 with what they sense (since HAS-438 the occupancy as a strip and each sensor in a frame, as the other cards) as `light-service` hears them: the room occupied, empty or not known, the motion going on or the last one, its light, and when each sensor was last heard and whether it is reachable. Since HAS-268 also **the
   lights of the room**: the occupancy of the room, each light with on / off, the brightness of a
-  dimmer by a step of 10 % (HAS-438) and the colour of an rgbw light, "All off", and the rule of the room in a few words with
+  dimmer on a slider sent with "Send" and the colour of an rgbw light, "All off", and the rule of the room in a few words with
   **the switch of the resident**, which stops the automatic lighting of the room until it is
   switched on again (no card for a room without lights; the rules themselves stay the
   administrator's). Since HAS-394 also **the air conditioner of the room** (`aircon-service` >= 0.5.0): on
@@ -277,7 +278,7 @@ dashboards:
     washing machine, the dryer and the dishwasher with their state, running since or finished at, and
     "Emptied" for one that has finished and waits (the reminders of `appliance-service` stop with it) - and
     **"Mine this month"** (HAS-346). The administrator also gets everything that tunes them (below).
-  - **Requests** (`/requests`): the card of the household requests (HAS-411, below) on a page of its own.
+  - **Requests** (`/requests`): the household requests (HAS-411, below) on a page of its own, as two cards.
   - **Settings** (`/settings`): the appearance and the notifications of this device for every member; the
     palette for the administrator alone.
   - **House heating** (`/house-heating`): the switch of the heating of the whole house, the card of the heating
@@ -295,15 +296,14 @@ dashboards:
   or the last three - with what was confirmed away from home, former members, the muted cycles and those
   without a recorded presence told apart; for every member the card **"Mine this month"** with the same figures
   of the member of the profile. From the report of `appliance-service` 0.9.0.
-- **The requests of the household** (HAS-411): on the requests page (on My room until HAS-438), for every member, the card **"Requests"** - the
-  errands the household wrote for the member of the profile, with who wrote them, when, and whether the SMS of
-  08:00 already carried them (notification-service 0.9.0); each ticked off with "Done" or removed, those done in
-  the last 30 days folded under the list. A form writes a request for anybody of the household - the member of
-  the profile chosen first - one line of up to 100 characters, checked before it is sent as
-  `database-service` checks it. Under the form **"Written by you for the others"** (0.46.1): what the member of
-  the profile wrote for the rest of the household - for whom, when, whether the SMS went, the last written on top,
-  each removable, those ticked off folded - so that a request written for somebody else can be seen to have been
-  added. Nothing optimistic: after a change the list is read again. Needs `database-service` 0.22.0; against an
+- **The requests of the household** (HAS-411): on the requests page (on My room until HAS-438), for every member,
+  two cards (HAS-438). **"Requests for you"** - the errands the household wrote for the member of the profile, with
+  who wrote them, when, and whether the SMS of 08:00 already carried them (notification-service 0.9.0); each ticked
+  off or removed with an icon on its right (green and red), those done in the last 30 days folded under the list.
+  **"Your requests for the others"** (0.46.1) - what the member of the profile wrote for the rest of the household -
+  for whom, when, whether the SMS went, the last written on top, each removable, those ticked off folded - and the
+  form that writes a request for anybody of the household - the first other member chosen - one line of up to 100
+  characters, checked before it is sent as `database-service` checks it. Nothing optimistic: after a change the list is read again. Needs `database-service` 0.22.0; against an
   older one the card shows the failure and the rest of the page works.
 - **The tag page** (HAS-346, `/t`): what a phone held to the NFC tag on an appliance opens -
   `/t?picc_data=…&cmac=…`, the read of an NTAG 424 DNA (HAS-343, programmed per
