@@ -1032,7 +1032,9 @@ e2e/              # Playwright tests
   - **The notice is the shell's** (`core/layout/notices.ts`): a strip per appliance that is
     `finished` with `awaitingSince`, for every member **with a profile** - the store is injected
     in an effect only once `ProfileStore.profile()` exists, so the picker and the personal link
-    of nobody ask for nothing. No `role`, like the other notices (pages ask for *the* `alert`).
+    of nobody ask for nothing. **On a phone the close is in the top right corner and the commands under the sentence in the
+    bottom right corner, "Emptied" last** (HAS-438, owner 2026-11-13 - three buttons in one row wrapped
+    untidily on an iPhone); "Emptied" of the card of the appliances page stands in its bottom right corner too. No `role`, like the other notices (pages ask for *the* `alert`).
     Closed, it is hidden for the visit under `id@awaitingSince`, so the next finished cycle
     brings it back; while the call fails it says nothing - it would tell a state the service may
     no longer have.

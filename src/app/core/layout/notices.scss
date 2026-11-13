@@ -75,14 +75,45 @@
 
   --mat-icon-button-icon-color: var(--mat-sys-on-primary-container);
 
-  // on a phone the sentence keeps its line and the buttons go under it: with the mute of the
-  // administrator (HAS-346) three buttons squeezed it to a word per line, the last running into them
+  // on a phone (HAS-438, owner 2026-11-13) the close stays in the top right corner as the close of a
+  // window, the sentence beside it, and the commands under it in the bottom right corner - with the mute
+  // of the administrator (HAS-346) three buttons in one row squeezed it to a word per line
   @media (max-width: 599.98px) {
-    flex-wrap: wrap;
-    row-gap: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'icon text close'
+      'actions actions actions';
+    align-items: start;
+    gap: 4px 12px;
+    padding: 4px 4px 8px 16px;
+
+    .notice__icon {
+      grid-area: icon;
+      margin-top: 10px;
+    }
 
     .notice__text {
-      flex-basis: calc(100% - 36px);
+      grid-area: text;
+      padding-top: 8px;
+    }
+
+    .notice__close {
+      grid-area: close;
+    }
+
+    .notice__actions {
+      grid-area: actions;
+      justify-content: flex-end;
+      padding-right: 4px;
     }
   }
+}
+
+.notice__actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
 }
