@@ -45,7 +45,7 @@ test.describe('a resident', () => {
       page.getByTestId('written-requests').getByRole('button', { name: 'Remove the request' }),
     ).toHaveCount(1);
     await expect(
-      page.getByTestId('my-requests').getByRole('button', { name: 'Add' }),
+      page.getByTestId('written-card').getByRole('button', { name: 'Add' }),
     ).toBeVisible();
   });
 
@@ -98,7 +98,7 @@ test.describe('a resident granted the switch of the house', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'House heating' })).toBeVisible();
     await expect(page.getByTestId('heating-state')).toContainText('Enabled');
     await card.getByRole('button', { name: 'Switch off' }).click();
-    await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
+    await page.getByRole('dialog').getByTestId('confirm-yes').click();
 
     await expect(page.getByTestId('heating-state')).toContainText('Disabled');
   });

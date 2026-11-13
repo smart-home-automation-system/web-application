@@ -27,38 +27,6 @@
               }}
             </p>
           }
-
-          @let change = question();
-          @if (change !== undefined) {
-            <div class="switch__question" role="group" [attr.aria-labelledby]="questionId">
-              <p [id]="questionId">
-                {{ t(change ? 'heatingSwitch.confirmOn' : 'heatingSwitch.confirmOff') }}
-              </p>
-              <div class="switch__answers">
-                <button #cancelButton matButton type="button" (click)="cancel()">
-                  {{ t('heatingSwitch.cancel') }}
-                </button>
-                <button matButton="filled" type="button" (click)="confirm(change)">
-                  {{ t(change ? 'heatingSwitch.turnOn' : 'heatingSwitch.turnOff') }}
-                </button>
-              </div>
-            </div>
-          } @else {
-            <!-- disabled and still focusable while a change is on its way: the focus stays
-                 where it was, and a screen reader hears why the button does nothing -->
-            <button
-              #triggerButton
-              matButton="outlined"
-              type="button"
-              class="switch__trigger"
-              disabledInteractive
-              [disabled]="control().switching()"
-              (click)="ask(!on)"
-            >
-              <mat-icon>power_settings_new</mat-icon>
-              {{ t(on ? 'heatingSwitch.turnOff' : 'heatingSwitch.turnOn') }}
-            </button>
-          }
         } @else if (!control().error()) {
           <p class="switch__detail">{{ t('heatingSwitch.unknown') }}</p>
         }
@@ -78,6 +46,26 @@
           />
         }
         <app-api-error-strip [error]="control().error()" />
+
+        <!-- the command in the bottom right corner (HAS-438, owner 2026-11-13); its question is a window over
+             the page, and the button is disabled while it is open or a change is on its way - disabled and still
+             focusable, so the focus stays where it was and a screen reader hears why it does nothing -->
+        @let current = enabled();
+        @if (current !== undefined) {
+          <div class="switch__commands">
+            <button
+              matButton="outlined"
+              type="button"
+              class="switch__trigger"
+              disabledInteractive
+              [disabled]="control().switching() || question() !== undefined"
+              (click)="ask(!current)"
+            >
+              <mat-icon>power_settings_new</mat-icon>
+              {{ t(current ? 'heatingSwitch.turnOff' : 'heatingSwitch.turnOn') }}
+            </button>
+          </div>
+        }
       }
     </mat-card-content>
   </mat-card>

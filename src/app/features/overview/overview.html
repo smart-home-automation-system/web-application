@@ -559,6 +559,57 @@
       }
     </app-domain-tile>
 
+    <!-- HAS-438: the requests of the household - how many wait for the member of the profile, the first of
+         them, and how many of what the member wrote for the others wait; nothing here ticks one off -->
+    <app-domain-tile
+      heading="overview.requests.title"
+      icon="checklist"
+      domain="household"
+      link="/requests"
+      waitingLabel="requests.loading"
+      [resource]="requests"
+      [describeWith]="describeRequestError"
+      data-testid="tile-requests"
+    >
+      @if (requestsSummary(); as summary) {
+        <dl class="tile__rows">
+          <div class="tile__row">
+            <dt>{{ t('overview.requests.forYou') }}</dt>
+            <dd>
+              @if (summary.open > 0) {
+                <strong>{{ summary.open }}</strong>
+              } @else {
+                <strong class="tile__quiet">{{ t('overview.requests.nothing') }}</strong>
+              }
+            </dd>
+          </div>
+          <div class="tile__row">
+            <dt>{{ t('overview.requests.toOthers') }}</dt>
+            <dd>
+              @let written = writtenOpen();
+              @if (written === undefined) {
+                <strong class="tile__quiet">{{ t('overview.requests.unknown') }}</strong>
+              } @else if (written > 0) {
+                <strong>{{ written }}</strong>
+              } @else {
+                <strong class="tile__quiet">{{ t('overview.requests.nothing') }}</strong>
+              }
+            </dd>
+          </div>
+        </dl>
+        <!-- the texts of the household, printed as they are -->
+        @for (text of summary.first; track $index) {
+          <p class="tile__detail" data-testid="tile-request">{{ text }}</p>
+        }
+      }
+      <div tileFailures>
+        <app-api-error-strip
+          [error]="writtenRequests.error()"
+          [describeWith]="describeRequestError"
+        />
+      </div>
+    </app-domain-tile>
+
     <!-- HAS-394: the air conditioners - what is on, by room with its mode, what does not answer, and
          what the automation switched off; nothing here commands a unit: the overview changes nothing -->
     <app-domain-tile

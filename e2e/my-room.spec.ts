@@ -249,14 +249,9 @@ test.describe('the lights of the room', () => {
       await strip.getByRole('button', { name: 'On Bedroom light strip' }).click();
       await expect(strip.getByTestId('light-state')).toContainText('on');
 
-      // HAS-438: the brightness by a step of 10 % from the level reported (from nothing when none is)
-      const level = Number(
-        /(\d+)\s*%/.exec((await strip.locator('.stepper__value').textContent()) ?? '')?.[1] ??
-          Number.NaN,
-      );
-      const expected = Math.min(100, (Number.isNaN(level) ? 0 : level) + 10);
-      await strip.getByRole('button', { name: 'Brighten Bedroom light strip' }).click();
-      await expect(strip.getByTestId('light-state')).toHaveText(`on · ${expected} %`);
+      await strip.getByTestId('brightness').fill('35');
+      await strip.getByRole('button', { name: 'Send Brightness Bedroom light strip' }).click();
+      await expect(strip.getByTestId('light-state')).toHaveText('on · 35 %');
 
       await lights.getByRole('button', { name: 'All off bedroom' }).click();
       await expect(strip.getByTestId('light-state')).toHaveText('off');

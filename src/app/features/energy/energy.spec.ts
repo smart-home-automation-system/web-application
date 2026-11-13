@@ -26,8 +26,10 @@ import {
   GridOutage,
   GridReading,
   Inverter,
+  PlannedOutage,
 } from '../../data-access/energy/energy-api';
 import { Energy } from './energy';
+import { durationOf } from './energy-flow';
 
 // 14:45 in the house (winter time, UTC+1)
 const NOW = new Date('2026-11-02T13:45:00Z');
@@ -70,6 +72,7 @@ describe('Energy', () => {
   let inverters: FakeResource<readonly Inverter[] | null>;
   let battery: FakeResource<Battery | null>;
   let alerts: FakeResource<readonly EnergyAlert[] | null>;
+  let planned: FakeResource<readonly PlannedOutage[] | null>;
   let outages: FakeQueryResource<HistoryRange, readonly GridOutage[] | null>;
   let days: FakeQueryResource<DaysQuery, readonly EnergyDay[] | null>;
   let months: FakeQueryResource<number, EnergyMonths | null>;
@@ -86,6 +89,7 @@ describe('Energy', () => {
     inverters = fakeResource();
     battery = fakeResource();
     alerts = fakeResource();
+    planned = fakeResource();
     outages = fakeQueryResource();
     days = fakeQueryResource();
     daysAsked = undefined;
@@ -126,7 +130,8 @@ describe('Energy', () => {
             watchCharge: () => fakeResource(),
             watchChargeRuns: () => fakeQueryResource(),
             watchAutomation: () => fakeResource(),
-            watchPlannedOutages: () => fakeResource(),
+            // the card of the planned outages (HAS-342) has a test of its own; the next one beside the flow reads it too
+            watchPlannedOutages: () => planned,
           },
         },
       ],
@@ -273,6 +278,68 @@ describe('Energy', () => {
     expect(words(card_.querySelector('[data-field="soc"]'))).toBe('not known');
     expect(card_.querySelector('[data-field="soc"] mat-progress-bar')).toBeNull();
     expect(words(card_.querySelector('[data-field="cycles"]'))).toBe('');
+  });
+
+  // HAS-438 (owner 2026-11-13, after the energy flow of SolaxCloud): a light runs along a line the way the energy
+  // flows - along the path from the thing to the house, or back - and stands still where nothing flows
+  it('runs a light along each line the way the energy flows, faster with more power', async () => {
+    answer(flows, FLOWS);
+
+    const flow = await card('flow');
+    const lights = [...flow.querySelectorAll<SVGPathElement>('.link__light')];
+    // the panels produce: towards the house; the battery charges and the grid takes the surplus: away from it
+    expect(lights.map((light) => light.getAttribute('data-run'))).toEqual(['along', 'back', 'back']);
+    expect(lights[0].style.getPropertyValue('--flow-duration')).toBe('0.90s');
+    expect(durationOf(undefined)).toBe('3.00s');
+    expect(durationOf(-2000)).toBe('2.16s');
+
+    answer(flows, { production: 0 });
+    const still = await card('flow');
+    expect(still.querySelectorAll('.link__light')).toHaveLength(0);
+    // a power not known is a dashed line, never a still one
+    expect(
+      [...still.querySelectorAll('.link__track')].map((track) => track.getAttribute('data-state')),
+    ).toEqual(['idle', 'unknown', 'unknown']);
+  });
+
+  // HAS-438 (owner 2026-11-13): beside the sources, the next planned outage and the open alarms - summaries of the
+  // cards further down
+  it('shows the next planned outage that is not over beside the sources, and none when none is announced', async () => {
+    answer(planned, [
+      { id: 1, startsAt: '2026-11-01T08:00:00', endsAt: '2026-11-01T12:00:00', kind: 'planned', scope: 'street' },
+      { id: 3, startsAt: '2026-11-20T08:00:00', endsAt: '2026-11-20T14:00:00', kind: 'planned', scope: 'town' },
+      {
+        id: 2,
+        startsAt: '2026-11-05T07:00:00',
+        endsAt: '2026-11-05T15:00:00',
+        kind: 'planned',
+        scope: 'street',
+        plannedChargeStart: '2026-11-05T04:30:00',
+      },
+    ]);
+
+    const next = await card('next-outage');
+    expect(words(next.querySelector('[data-testid="next-outage"]'))).toBe(
+      'power_off 5 Nov 2026, 07:00 – 5 Nov 2026, 15:00',
+    );
+    expect(words(next)).toContain('The charge would start at 5 Nov 2026, 04:30');
+    expect(words(next)).toContain('More announced: 1');
+    // nothing here changes the house: the commands are on the card of the planned outages
+    expect(next.querySelectorAll('button')).toHaveLength(0);
+
+    answer(planned, []);
+    expect(words((await card('next-outage')).querySelector('[data-testid="next-outage-none"]'))).toBe(
+      'check_circle Tauron announces no outage for the house.',
+    );
+  });
+
+  it('shows the open alarms beside the sources as the card of the events does', async () => {
+    answer(alerts, [{ source: 'phase b', kind: 'overload', openedAt: '2026-11-02T14:37:00' }]);
+
+    expect(words(await card('alerts-now'))).toContain('Overloaded Phase B');
+    expect([...(await card('alerts-now')).querySelectorAll('li')].map(words)).toEqual(
+      [...(await card('alerts')).querySelectorAll('li')].map(words),
+    );
   });
 
   it('lists the open alarms and the outages of the year, and says when there are none', async () => {

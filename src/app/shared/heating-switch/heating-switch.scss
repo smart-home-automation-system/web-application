@@ -15,7 +15,11 @@ mat-card-header {
   padding: 12px 12px 0;
 }
 
+// a column, so that the command stands in the bottom right corner whatever the height of the card
 mat-card-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 8px 12px 12px;
 }
 
@@ -42,28 +46,12 @@ mat-card-content {
   color: var(--mat-sys-on-surface-variant);
 }
 
-.switch__trigger {
-  margin-top: 12px;
-}
-
-// the question takes the place of the button: under a line, so it reads as a step of its own
-.switch__question {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
-
-  p {
-    margin: 0 0 8px;
-    font: var(--mat-sys-title-medium);
-    letter-spacing: var(--mat-sys-title-medium-tracking);
-    color: var(--mat-sys-on-surface);
-  }
-}
-
-.switch__answers {
+// the command in the bottom right corner of the card (HAS-438, owner 2026-11-13), as the valve of the water page
+.switch__commands {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 .switch__progress {

@@ -20,19 +20,6 @@ mat-card-header {
   padding: 8px 12px 12px;
 }
 
-.period {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px 12px;
-}
-
-.period__label {
-  font: var(--mat-sys-label-large);
-  color: var(--mat-sys-on-background);
-}
-
 .note {
   margin: 8px 0 0;
   font: var(--mat-sys-body-small);

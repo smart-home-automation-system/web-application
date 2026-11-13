@@ -6,6 +6,13 @@ import { APP_CONFIG } from '../../core/config/app-config';
 import { houseDay } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
+import { MemberRequestsApi } from '../../data-access/household/member-requests-api';
+import { ProfileStore } from '../../core/profile/profile-store';
+import {
+  describeRequestError,
+  toRequestLists,
+  toWrittenLists,
+} from '../requests/my-requests-views';
 import { BlindsApi } from '../../data-access/blinds/blinds-api';
 import { BoilerApi } from '../../data-access/boiler/boiler-api';
 import { EnergyApi } from '../../data-access/energy/energy-api';
@@ -273,6 +280,41 @@ export class Overview {
         .map((room) => room.room)
         .join(', '),
     };
+  });
+
+  // ---- requests (HAS-438) ----
+
+  private readonly profiles = inject(ProfileStore);
+  private readonly requestsApi = inject(MemberRequestsApi);
+  private readonly me = computed(() => this.profiles.profile()?.name);
+  /** The requests for the member of the profile - the call of the requests page, every minute. */
+  protected readonly requests = this.requestsApi.watch(this.me);
+  /** What the member wrote for the others - the second call of the tile, told in its failures. */
+  protected readonly writtenRequests = this.requestsApi.watchWrittenBy(this.me, () => {
+    const me = this.me()?.toLowerCase();
+    return (this.profiles.members() ?? [])
+      .map((member) => member.name)
+      .filter((name) => name.toLowerCase() !== me);
+  });
+  protected readonly describeRequestError = describeRequestError;
+
+  /** The open requests for the member and the first of them; `undefined` while not answered for this member. */
+  protected readonly requestsSummary = computed(() => {
+    const answered = this.requests.value();
+    if (answered === undefined || answered.query !== this.me()) {
+      return undefined;
+    }
+    const open = toRequestLists(answered.answer, this.me()).open;
+    return { open: open.length, first: open.slice(0, 3).map((request) => request.text) };
+  });
+
+  /** How many of what the member wrote for the others wait; `undefined` while not known. */
+  protected readonly writtenOpen = computed(() => {
+    const answered = this.writtenRequests.value();
+    const asked = this.writtenRequests.asked();
+    return answered !== undefined && asked !== undefined && answered.query === asked
+      ? toWrittenLists(answered.answer, this.me()).open.length
+      : undefined;
   });
 
   // ---- appliances (HAS-282) ----

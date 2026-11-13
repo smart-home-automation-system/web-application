@@ -177,7 +177,8 @@ body {
 
 // HAS-438 (owner, 2026-11-13): the controls of a device in the look of the modes of an air conditioner - a bar
 // of buttons drawn as a toggle group (`.segments`, `.segment`; `.segment--on` tinted as a selected toggle) and a
-// value stepped by - and + (`.stepper`, `.stepper__value`). Shared by a blind and a light.
+// value stepped by - and + (`.stepper`, `.stepper__value`, the target and the fan of an air conditioner); a
+// slider with its button (`.send-row`) for a blind and a light.
 // The bar of the modes of an air conditioner, drawn for buttons: an outline of a pill, a divider between
 // the parts, the selected part tinted as a selected toggle (secondary-container, derived from the primary)
 .segments {
@@ -240,6 +241,25 @@ body {
   width: 18px;
   height: 18px;
   font-size: 18px;
+}
+
+// a value chosen on a slider and sent with its button (owner 2026-11-13: a position or a brightness by a step
+// sent a command per press) - the slider takes the width, the button of `.segments` stands beside it
+.send-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.send-row__label {
+  flex: none;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.send-row__slider {
+  flex: 1;
+  min-width: 0;
 }
 
 // a value by a step, as the target of an air conditioner

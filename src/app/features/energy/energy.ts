@@ -5,15 +5,17 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
-import { houseDay } from '../../core/time/house-date-time';
+import { houseDay, houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
-import { EnergyApi, EnergyPhase, Inverter } from '../../data-access/energy/energy-api';
+import { EnergyApi, EnergyPhase, Inverter, PlannedOutage } from '../../data-access/energy/energy-api';
+import { automationApplies, outageKindLabel, outageScopeLabel } from './energy-charge';
 import { MessageKey } from '../../i18n/messages';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
 import { historyPeriod } from '../../shared/history-chart/history-period';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
+import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { EnergyChartCard } from './energy-chart-card';
 import { EnergyControl } from './energy-control';
@@ -72,6 +74,7 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
   selector: 'app-energy',
   imports: [
     NgTemplateOutlet,
+    DisplayTextPipe,
     MatIconModule,
     MatProgressBarModule,
     TranslocoDirective,
@@ -165,6 +168,28 @@ export class Energy {
   protected readonly sofar = computed(() => this.inverterOf('sofar'));
 
   protected readonly openAlerts = computed(() => alertsOf(this.alerts.value()));
+
+  // ---- the next planned outage (HAS-438): a summary of the card of the planned outages ----
+  protected readonly planned = this.api.watchPlannedOutages();
+  protected readonly outageKindLabel = outageKindLabel;
+  protected readonly outageScopeLabel = outageScopeLabel;
+  protected readonly automationApplies = automationApplies;
+  /** The outages announced and not over yet, the soonest first; `undefined` while the answer is no list. */
+  protected readonly plannedList = computed(() => {
+    const answer: unknown = this.planned.value();
+    if (!Array.isArray(answer)) {
+      return undefined;
+    }
+    const now = this.ticker.now();
+    const instantOf = (text: string | undefined) => {
+      const parsed = parseHouseDateTime(text);
+      return parsed === undefined ? undefined : houseInstant(parsed, this.zone);
+    };
+    return (answer as PlannedOutage[])
+      .filter((outage) => (instantOf(outage.endsAt ?? outage.startsAt) ?? Infinity) > now)
+      .sort((a, b) => (instantOf(a.startsAt) ?? 0) - (instantOf(b.startsAt) ?? 0));
+  });
+  protected readonly nextOutage = computed(() => this.plannedList()?.[0]);
   protected readonly outageList = computed(() => {
     const answer: unknown = this.outages.value()?.answer;
     return Array.isArray(answer)

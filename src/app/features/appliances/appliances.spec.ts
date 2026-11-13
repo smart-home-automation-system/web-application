@@ -147,22 +147,37 @@ describe('Appliances', () => {
     );
   });
 
-  it('lists the cycles of 7 or 30 days, the newest first, with who emptied them', async () => {
+  // the cycles of 30 days, no switch of the period (HAS-438, owner 2026-11-13)
+  it('lists the cycles of 30 days, the newest first, with who emptied them', async () => {
     await answered([{ id: 131, runs: WASHER_RUNS }, { id: 132, runs: [] }]);
     const listed = () => [...(card(131)?.querySelectorAll('[data-testid="run"]') ?? [])].map(words);
 
-    expect(listed()).toHaveLength(3);
+    expect(page().querySelector('[data-testid="runs-period"]')).toBeNull();
+    expect(listed()).toHaveLength(4);
     expect(listed()[0]).toContain('still running');
     expect(listed()[2]).toContain('energy not known');
-
-    const month = [...page().querySelectorAll('[data-testid="runs-period"] button')][1] as HTMLButtonElement;
-    month.click();
-    await fixture.whenStable();
-
-    expect(listed()).toHaveLength(4);
     expect(listed()[3]).toContain('820 Wh');
     expect(listed()[3]).toContain('emptied after 15 min · Anna');
+    expect(card(131)?.querySelector('[data-testid="runs-more"]')).toBeNull();
     expect(words(card(132)?.querySelector('[data-testid="appliance-runs"]'))).toContain('No cycle in this period.');
+  });
+
+  // a longer list tells nothing more: the newest five, the rest counted
+  it('lists the newest five cycles and counts the earlier ones', async () => {
+    const many = Array.from({ length: 8 }, (_, day) => ({
+      id: 100 + day,
+      startedAt: `2026-10-${String(25 - day).padStart(2, '0')}T10:00:00`,
+      finishedAt: `2026-10-${String(25 - day).padStart(2, '0')}T11:00:00`,
+      energyWh: 700,
+    }));
+    await answered([{ id: 131, runs: many }, { id: 132, runs: [] }]);
+
+    const listed = [...(card(131)?.querySelectorAll('[data-testid="run"]') ?? [])].map(words);
+    expect(listed).toHaveLength(5);
+    expect(listed[0]).toContain('25');
+    expect(words(card(131)?.querySelector('[data-testid="runs-more"]'))).toBe(
+      'and 3 earlier of the last 30 days',
+    );
   });
 
   it('shows the settings of the registry read only, and says when it has none', async () => {

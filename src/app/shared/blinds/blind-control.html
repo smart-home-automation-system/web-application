@@ -37,37 +37,28 @@
     </span>
   </div>
 
-  <!-- a position by a step of 10 %, as the target of an air conditioner; a position not known offers no step -->
+  <!-- a position on a slider, sent with "Send" (owner 2026-11-13: a step per press sent a command per step) -->
   @if (positioning() === true) {
-    @let at = state()?.position;
-    <div class="blind__row">
-      <span class="stepper" data-testid="blind-stepper">
+    <div class="send-row">
+      <mat-slider min="0" max="100" step="10" discrete class="send-row__slider">
+        <input
+          matSliderThumb
+          #position
+          data-testid="blind-position-slider"
+          [value]="state()?.position ?? 50"
+          [attr.aria-label]="t('blindControl.positionLabel') + ' ' + (name() ?? '')"
+        />
+      </mat-slider>
+      <span class="segments">
         <button
-          matIconButton
+          class="segment"
           type="button"
-          data-testid="blind-position-down"
-          [disabled]="sending || at === undefined || at <= 0"
-          [attr.aria-label]="t('blindControl.positionDown') + ' ' + (name() ?? '')"
-          (click)="step(-POSITION_STEP)"
+          data-testid="blind-go"
+          [disabled]="sending"
+          (click)="moveTo(position.valueAsNumber)"
         >
-          <mat-icon>remove</mat-icon>
-        </button>
-        <span class="stepper__value">
-          @if (at !== undefined) {
-            {{ t('blindControl.position', { position: at }) }}
-          } @else {
-            {{ t('blindControl.positionUnknown') }}
-          }
-        </span>
-        <button
-          matIconButton
-          type="button"
-          data-testid="blind-position-up"
-          [disabled]="sending || at === undefined || at >= 100"
-          [attr.aria-label]="t('blindControl.positionUp') + ' ' + (name() ?? '')"
-          (click)="step(POSITION_STEP)"
-        >
-          <mat-icon>add</mat-icon>
+          <mat-icon class="segment__icon" aria-hidden="true">send</mat-icon>&ngsp;{{ t('blindControl.send') }}
+          <span class="visually-hidden">{{ t('blindControl.positionLabel') }} {{ name() }}</span>
         </button>
       </span>
     </div>

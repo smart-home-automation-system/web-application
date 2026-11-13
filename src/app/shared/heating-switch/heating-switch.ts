@@ -1,19 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
-  Injector,
-  Signal,
-  afterNextRender,
+  DestroyRef,
   computed,
   effect,
   inject,
   input,
   signal,
-  viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -21,6 +18,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { FailedSwitch, HeatingSwitchControl } from '../../data-access/heating/heating-api';
 import { MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../api-error/api-error-strip';
+import { CONFIRM_DIALOG_SIZE, ConfirmData, ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 import { DataFreshness } from '../data-freshness/data-freshness';
 import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
 
@@ -29,8 +27,9 @@ import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
  * since when, and a button to change it. The view that shows it owns the data -
  * `<app-heating-switch [control]="heating" />` with `heating = inject(HeatingApi).watchSwitch()`.
  *
- * **The button asks before it acts**: it is replaced by the question and two buttons, in the
- * card itself, so nothing covers the state the question is about.
+ * **The button asks before it acts**, in a window over the page (`ConfirmDialog`, HAS-438, owner
+ * 2026-11-13 - the rule of every question of the house), "Cancel" focused; the button stands in the
+ * bottom right corner of the card and is disabled while its question is open.
  *
  * **What the card says is what the service answered, never what was clicked.** A change is sent,
  * the service is asked again, and only that answer moves the state on screen; a change that
@@ -53,15 +52,11 @@ import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeatingSwitch {
-  /** Two of these cards on one page must not share the id their question is named by. */
-  private static cards = 0;
-  protected readonly questionId = `heating-switch-question-${HeatingSwitch.cards++}`;
-
   readonly control = input.required<HeatingSwitchControl>();
 
-  private readonly injector = inject(Injector);
-  private readonly trigger = viewChild('triggerButton', { read: ElementRef });
-  private readonly cancelButton = viewChild('cancelButton', { read: ElementRef });
+  private readonly dialog = inject(MatDialog);
+  private questionDialog?: MatDialogRef<ConfirmDialog, boolean>;
+  private destroyed = false;
 
   /** True, false, or `undefined` while the answer does not say. */
   protected readonly enabled = computed(() => {
@@ -77,7 +72,7 @@ export class HeatingSwitch {
   /** The state somebody asked for with the button and has not confirmed yet. */
   private readonly asked = signal<boolean | undefined>(undefined);
 
-  /** The change the question on screen is about. */
+  /** The change the question open over the page is about. */
   protected readonly question = this.asked.asReadonly();
 
   /**
@@ -92,13 +87,18 @@ export class HeatingSwitch {
 
   constructor() {
     // A question is about leaving the state on screen. When that state goes - somebody else
-    // switched in the meantime, or the service stopped saying - the question goes for good:
-    // it must not come back by itself when the house returns to where it was.
+    // switched in the meantime, or the service stopped saying - the question goes for good, its
+    // window closed with no answer: it must not come back by itself when the house returns.
     effect(() => {
       const asked = this.asked();
       if (asked !== undefined && this.enabled() !== !asked) {
         this.asked.set(undefined);
+        this.questionDialog?.close();
       }
+    });
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.questionDialog?.close();
     });
   }
 
@@ -113,27 +113,34 @@ export class HeatingSwitch {
     return failed.on ? 'heatingSwitch.failedOn' : 'heatingSwitch.failedOff';
   }
 
+  /** Asks in a window over the page, "Cancel" focused; the change is sent only for the answer yes. */
   protected ask(on: boolean): void {
-    if (this.control().switching()) {
+    if (this.control().switching() || this.asked() !== undefined) {
       return;
     }
     this.asked.set(on);
-    // the button that was pressed is gone with the question: the safe answer takes the focus
-    this.focus(this.cancelButton);
-  }
-
-  protected cancel(): void {
-    this.asked.set(undefined);
-    this.focus(this.trigger);
-  }
-
-  protected confirm(on: boolean): void {
-    this.asked.set(undefined);
-    this.control().turn(on);
-    this.focus(this.trigger);
-  }
-
-  private focus(element: Signal<ElementRef<HTMLElement> | undefined>): void {
-    afterNextRender(() => element()?.nativeElement.focus(), { injector: this.injector });
+    this.questionDialog = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, {
+      ...CONFIRM_DIALOG_SIZE,
+      data: {
+        icon: 'power_settings_new',
+        title: on ? 'heatingSwitch.turnOn' : 'heatingSwitch.turnOff',
+        question: on ? 'heatingSwitch.confirmOn' : 'heatingSwitch.confirmOff',
+        confirm: on ? 'heatingSwitch.turnOn' : 'heatingSwitch.turnOff',
+        cancel: 'heatingSwitch.cancel',
+        testId: 'heating-switch-question',
+      },
+      // the first tabbable element - the one marked cdkFocusInitial, the cancel
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+    });
+    this.questionDialog.afterClosed().subscribe((confirmed) => {
+      this.questionDialog = undefined;
+      // a question the effect took back has nothing left to send
+      const still = this.asked() === on;
+      this.asked.set(undefined);
+      if (confirmed === true && still && !this.destroyed) {
+        this.control().turn(on);
+      }
+    });
   }
 }

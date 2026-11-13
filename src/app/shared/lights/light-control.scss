@@ -1,7 +1,7 @@
 // One light in a frame of its own, in the look of an air conditioner (HAS-438, owner 2026-11-13): its name,
 // its state at a glance, the notes, then the controls in the middle of the frame - on / off as one bar, the
-// brightness by a step, the colour with its command. The bar and the step are the global `.segments` and
-// `.stepper` of src/styles.scss, shared with a blind.
+// brightness on a slider with "Send", the colour with its command. The bar and the slider row are the global
+// `.segments` and `.send-row` of src/styles.scss, shared with a blind.
 :host {
   display: grid;
   gap: 8px;
@@ -69,14 +69,6 @@
   justify-content: center;
 }
 
-.mat-icon.stepper__icon {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
-  color: var(--mat-sys-on-surface-variant);
-}
-
 // a colour of the house, drawn as it is: an outline keeps a dark or a pale one visible on the glass
 .swatch {
   display: inline-block;
@@ -87,9 +79,12 @@
   border: 1px solid var(--mat-sys-outline);
 }
 
+// the sliders on the left, "Set the colour" on the right in the middle of their height
 .color {
   display: grid;
-  gap: 4px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
   min-inline-size: 0;
   margin: 0;
   padding: 0;
@@ -100,14 +95,24 @@
   display: grid;
 }
 
+.color__send {
+  flex: none;
+}
+
 .color__row {
   display: grid;
   grid-template-columns: 5.5em minmax(0, 1fr);
   align-items: center;
+  column-gap: 12px;
 
   mat-slider {
     min-width: 0;
   }
+}
+
+// the brightness slider starts where the colour sliders do
+.send-row__label {
+  width: 5.5em;
 }
 
 .color__name {

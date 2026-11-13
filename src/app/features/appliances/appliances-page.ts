@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { ProfileStore } from '../../core/profile/profile-store';
@@ -15,18 +16,26 @@ import { MyChores } from './my-chores';
  */
 @Component({
   selector: 'app-appliances-page',
-  imports: [TranslocoDirective, Appliances, HouseholdAppliances, MyChores],
+  imports: [TranslocoDirective, NgTemplateOutlet, Appliances, HouseholdAppliances, MyChores],
   template: `
     <ng-container *transloco="let t">
       <header class="page-header">
         <h1>{{ t('appliances.page.title') }}</h1>
       </header>
-      <div class="card-row" data-testid="household-appliances-row">
-        <app-household-appliances />
-        <app-my-chores />
-      </div>
+      <ng-template #household>
+        <div class="card-row" data-testid="household-appliances-row">
+          <app-household-appliances />
+          <app-my-chores />
+        </div>
+      </ng-template>
+      <!-- the administrator's part opens with the strip of its calls, the first card of every view (owner
+           2026-11-13), and takes the cards of every member under it -->
       @if (isAdmin()) {
-        <app-appliances />
+        <app-appliances>
+          <ng-container [ngTemplateOutlet]="household" />
+        </app-appliances>
+      } @else {
+        <ng-container [ngTemplateOutlet]="household" />
       }
     </ng-container>
   `,

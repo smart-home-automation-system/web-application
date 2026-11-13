@@ -110,6 +110,13 @@ export const pl: Messages = {
       emptyHouseActed: 'Wyłączone o {{ time }}, bo nikogo nie ma w domu',
       gridActed: 'Wyłączone o {{ time }} z powodu braku prądu z sieci',
     },
+    requests: {
+      title: 'Zapotrzebowania',
+      forYou: 'Prośby do Ciebie',
+      toOthers: 'Twoje do innych',
+      nothing: 'Brak',
+      unknown: 'Nieznane',
+    },
     appliances: {
       running: 'Pracuje',
       waiting: 'Czeka na opróżnienie',
@@ -791,6 +798,7 @@ export const pl: Messages = {
       charge: 'Ładowanie z sieci',
       automation: 'Ładowanie przed wyłączeniem',
       planned: 'Planowane wyłączenia',
+      nextOutage: 'Najbliższe wyłączenie',
       runs: 'Ładowania',
     },
     charge: {
@@ -860,6 +868,7 @@ export const pl: Messages = {
       skip: 'Bez ładowania dla tego',
       unskip: 'Jednak ładuj dla tego',
       skipFailed: 'Nie udało się zmienić wyłączenia.',
+      more: 'Kolejne zapowiedziane: {{ count }}',
       kind: {
         planned: 'planowane',
         unplanned: 'awaria',
@@ -1538,9 +1547,7 @@ export const pl: Messages = {
     goTo: 'Ustaw',
     pause: 'Wstrzymaj harmonogramy do ich najbliższego uruchomienia',
     pauseShort: 'Wstrzymaj harmonogramy',
-    positionDown: 'Obniż pozycję',
-    positionUp: 'Podnieś pozycję',
-    positionUnknown: 'Pozycja nieznana',
+    send: 'Wyślij',
     pausedSince: 'Wstrzymane',
     unreachable: 'Brak połączenia',
   },
@@ -1737,9 +1744,7 @@ export const pl: Messages = {
       on: 'Włącz',
       off: 'Wyłącz',
       brightness: 'Jasność',
-      brightnessUnknown: 'Jasność nieznana',
-      dim: 'Przyciemnij',
-      brighten: 'Rozjaśnij',
+      send: 'Wyślij',
       setColor: 'Ustaw kolor',
       set: 'Ustaw',
       color: 'Kolor',
@@ -2172,6 +2177,7 @@ export const pl: Messages = {
         energyUnknown: 'energia nieznana',
         acknowledgedAfter: 'opróżnione po {{ minutes }} min',
         notAcknowledged: 'nieoznaczone jako opróżnione',
+        more: 'i jeszcze {{ count }} wcześniejszych z ostatnich 30 dni',
       },
       power: {
         title: 'Pobór mocy',
@@ -2184,7 +2190,7 @@ export const pl: Messages = {
     },
   },
   requests: {
-    title: 'Zapotrzebowania',
+    title: 'Prośby do Ciebie',
     loading: 'Wczytuję zapotrzebowania',
     none: 'Nic na Ciebie nie czeka.',
     from: 'od:',
@@ -2197,7 +2203,7 @@ export const pl: Messages = {
     doneAt: 'zrobione {{ time }}',
     doneBy: 'odhaczył(a):',
     written: {
-      title: 'Wpisane przez Ciebie dla innych',
+      title: 'Twoje prośby do innych',
       for: 'dla:',
       none: 'Nic z tego, co wpisano dla innych, nie czeka.',
     },

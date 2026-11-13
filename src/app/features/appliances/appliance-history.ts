@@ -6,10 +6,6 @@ import { wallClockOf } from '../../shared/history-chart/chart-data';
 export const COUNTER_PRESETS = ['day', 'week', 'month'] as const satisfies readonly HistoryPreset[];
 export type CounterPreset = (typeof COUNTER_PRESETS)[number];
 
-/** The periods the list of the runs is shown for. */
-export const LIST_PRESETS = ['week', 'month'] as const satisfies readonly HistoryPreset[];
-export type ListPreset = (typeof LIST_PRESETS)[number];
-
 /** The periods of the power chart: the samples endpoint takes at most two days. */
 export const POWER_PRESETS: readonly HistoryPreset[] = ['day', 'twoDays'];
 

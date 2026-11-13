@@ -603,13 +603,13 @@ describe('MyRoom', () => {
         'arrow_upward Open Bedroom door blinds',
         'stop Stop Bedroom door blinds',
         'arrow_downward Close Bedroom door blinds',
-        // HAS-438: the pause is a button in the look of quiet / turbo / sleep, the position a step of 10 %
+        // HAS-438: the pause is a button in the look of quiet / turbo / sleep, the position a slider sent with "Send"
         'Pause the schedules until their next run Bedroom door blinds',
         'arrow_upward Open Bedroom window blinds',
         'stop Stop Bedroom window blinds',
         'arrow_downward Close Bedroom window blinds',
-        'Lower the position Bedroom window blinds',
-        'Raise the position Bedroom window blinds',
+        'Position Bedroom window blinds',
+        'send Send Position Bedroom window blinds',
         'Pause the schedules until their next run Bedroom window blinds',
       ]);
       // nothing in the card of the heating
@@ -632,18 +632,17 @@ describe('MyRoom', () => {
     });
 
     // HAS-438: the position by a step of 10 %, as the target of an air conditioner
-    it('moves a blind that takes a position by a step of 10 %', async () => {
+    // the position of the slider, sent once with "Send" (owner 2026-11-13: a step per press sent a command per step)
+    it('moves a blind that takes a position to the position of its slider', async () => {
       await page();
       answer(lastBlinds().resource, BLINDS);
 
-      (
-        (await card())!.querySelector(
-          '[data-blind="4"] [data-testid="blind-position-up"]',
-        ) as HTMLButtonElement
-      ).click();
+      const blind = (await card())!.querySelector('[data-blind="4"]')!;
+      blind.querySelector<HTMLInputElement>('[data-testid="blind-position-slider"]')!.value = '70';
+      blind.querySelector<HTMLButtonElement>('[data-testid="blind-go"]')!.click();
       await page();
 
-      expect(sent).toEqual(['to 50 4']);
+      expect(sent).toEqual(['to 70 4']);
     });
 
     it('shows no card for a room without blinds, nor while the first answer is on its way', async () => {

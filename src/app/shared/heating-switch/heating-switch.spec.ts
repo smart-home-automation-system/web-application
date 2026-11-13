@@ -1,5 +1,6 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 
 import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
@@ -41,7 +42,12 @@ describe('HeatingSwitch', () => {
 
   beforeEach(() => {
     control = fakeControl();
-    TestBed.configureTestingModule({ providers: [provideI18nTesting()] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideI18nTesting(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+      ],
+    });
     fixture = TestBed.createComponent(HeatingSwitch);
     fixture.componentRef.setInput('control', control);
   });
@@ -107,75 +113,85 @@ describe('HeatingSwitch', () => {
   });
 
   describe('the confirmation', () => {
-    it('asks before it switches, and sends nothing yet', async () => {
+    const inWindow = async (id: string) => {
+      await fixture.whenStable();
+      return document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+    };
+
+    // HAS-438 (owner 2026-11-13): the question is a window over the page, the card keeps its size
+    it('asks in a window before it switches, and sends nothing yet', async () => {
       answer(control, ON);
 
       await press('Switch off');
 
-      const question = (await card()).querySelector('[role="group"]')!;
-      expect(words(question)).toContain('Switch the heating of the whole house off?');
-      expect(question.getAttribute('aria-labelledby')).toBe(question.querySelector('p')?.id);
+      expect(words(await inWindow('heating-switch-question'))).toBe(
+        'Switch the heating of the whole house off?',
+      );
       expect(control.asked).toEqual([]);
-      // the state the question is about stays in view
+      // the state the question is about stays in view, and the button waits for the answer
       expect(await state()).toBe('check_circle Enabled');
+      expect((await button('Switch off'))!.getAttribute('aria-disabled')).toBe('true');
     });
 
-    it('moves the focus to "Cancel", the answer that changes nothing', async () => {
+    it('focuses "Cancel", the answer that changes nothing', async () => {
       answer(control, ON);
 
       await press('Switch off');
 
-      expect(document.activeElement).toBe(await button('Cancel'));
+      // the DOM of the tests lays nothing out: the window focuses the element marked so
+      expect((await inWindow('confirm-cancel'))!.hasAttribute('cdkfocusinitial')).toBe(true);
     });
 
-    it('switches nothing when the answer is "Cancel", and gives the focus back', async () => {
+    it('switches nothing when the answer is "Cancel"', async () => {
       answer(control, ON);
       await press('Switch off');
 
-      await press('Cancel');
+      (await inWindow('confirm-cancel'))!.click();
+      await fixture.whenStable();
 
       expect(control.asked).toEqual([]);
-      expect((await card()).querySelector('[role="group"]')).toBeNull();
-      expect(document.activeElement).toBe(await button('Switch off'));
+      expect(await inWindow('heating-switch-question')).toBeNull();
+      expect((await button('Switch off'))!.getAttribute('aria-disabled')).not.toBe('true');
     });
 
     it('asks the service to switch off once it is confirmed', async () => {
       answer(control, ON);
       await press('Switch off');
 
-      // the second button of that name: the one inside the question
-      await press('Switch off');
+      (await inWindow('confirm-yes'))!.click();
+      await fixture.whenStable();
 
       expect(control.asked).toEqual([false]);
-      expect((await card()).querySelector('[role="group"]')).toBeNull();
+      expect(await inWindow('heating-switch-question')).toBeNull();
     });
 
     it('asks the service to switch on once it is confirmed', async () => {
       answer(control, OFF);
       await press('Switch on');
-      expect(words((await card()).querySelector('[role="group"]'))).toContain(
+      expect(words(await inWindow('heating-switch-question'))).toBe(
         'Switch the heating of the whole house on?',
       );
 
-      await press('Switch on');
+      (await inWindow('confirm-yes'))!.click();
+      await fixture.whenStable();
 
       expect(control.asked).toEqual([true]);
     });
 
     // somebody else switched while the question was open: there is nothing left to confirm
-    it('drops the question when the house is already in the state asked for', async () => {
+    it('closes the question when the house is already in the state asked for', async () => {
       answer(control, ON);
       await press('Switch off');
 
       answer(control, OFF);
 
-      expect((await card()).querySelector('[role="group"]')).toBeNull();
+      expect(await inWindow('heating-switch-question')).toBeNull();
       expect(await button('Switch on')).toBeDefined();
       expect(control.asked).toEqual([]);
     });
 
-    // a dropped question is gone: nobody pressed anything since
-    it('does not bring a dropped question back when the house returns to where it was', async () => {
+    // a closed question is gone: nobody pressed anything since
+    it('does not bring a closed question back when the house returns to where it was', async () => {
       answer(control, ON);
       await press('Switch off');
       answer(control, OFF);
@@ -183,11 +199,11 @@ describe('HeatingSwitch', () => {
 
       answer(control, ON);
 
-      expect((await card()).querySelector('[role="group"]')).toBeNull();
+      expect(await inWindow('heating-switch-question')).toBeNull();
       expect(await button('Switch off')).toBeDefined();
     });
 
-    it('drops the question when the service stops saying what the state is', async () => {
+    it('closes the question when the service stops saying what the state is', async () => {
       answer(control, ON);
       await press('Switch off');
       answer(control, {});
@@ -195,22 +211,7 @@ describe('HeatingSwitch', () => {
 
       answer(control, ON);
 
-      expect((await card()).querySelector('[role="group"]')).toBeNull();
-    });
-
-    it('names its question by an id of its own, so two cards on a page do not share one', async () => {
-      const other = TestBed.createComponent(HeatingSwitch);
-      other.componentRef.setInput('control', control);
-      answer(control, ON);
-      await press('Switch off');
-      await other.whenStable();
-
-      const ids = [fixture, other].map(
-        (shown) => (shown.nativeElement as HTMLElement).querySelector('[role="group"] p')?.id,
-      );
-
-      expect(ids[0]).toMatch(/^heating-switch-question-\d+$/);
-      expect(ids[1]).not.toBe(ids[0]);
+      expect(await inWindow('heating-switch-question')).toBeNull();
     });
   });
 
@@ -320,9 +321,10 @@ describe('HeatingSwitch', () => {
 
     expect(await state()).toBe('check_circle Włączone');
     await press('Wyłącz');
-    expect(words((await card()).querySelector('[role="group"]'))).toContain(
+    await fixture.whenStable();
+    expect(words(document.querySelector('[data-testid="heating-switch-question"]'))).toBe(
       'Wyłączyć ogrzewanie całego domu?',
     );
-    expect(await button('Anuluj')).toBeDefined();
+    expect(words(document.querySelector('[data-testid="confirm-cancel"]'))).toBe('Anuluj');
   });
 });

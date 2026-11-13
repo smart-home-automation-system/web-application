@@ -100,6 +100,9 @@ export class MyRequests {
     return me === undefined ? others : [me, ...others];
   });
 
+  /** Whom the form offers first: a text, so that the same member read anew keeps what was chosen. */
+  private readonly firstRecipient = computed(() => this.recipients()[1] ?? this.me());
+
   /** What the member of the profile wrote for the others - so that what was added can be seen. */
   protected readonly written = inject(MemberRequestsApi).watchWrittenBy(this.me, () =>
     this.recipients().slice(1),
@@ -167,12 +170,13 @@ export class MyRequests {
   protected readonly describeError = describeRequestError;
 
   constructor() {
-    // the member of the profile is chosen until somebody chooses another; a profile changed in
-    // another tab chooses its member
+    // the first other member is chosen until somebody chooses another (HAS-438, owner 2026-11-13: the form
+    // stands on the card of the requests for the others), the member of the profile while nobody else is
+    // there; a profile changed in another tab chooses anew
     effect(() => {
-      const me = this.me();
-      if (me !== undefined) {
-        this.recipient.setValue(me);
+      const chosen = this.firstRecipient();
+      if (chosen !== undefined) {
+        this.recipient.setValue(chosen);
       }
     });
   }

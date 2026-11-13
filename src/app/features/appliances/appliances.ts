@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -10,7 +9,6 @@ import { Ticker } from '../../core/time/ticker';
 import { ApplianceApi, RunsOf, RunsQuery } from '../../data-access/appliance/appliance-api';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
-import { MessageKey } from '../../i18n/messages';
 import { toApplianceViews } from '../../shared/appliances/appliance-views';
 import { historyPeriod } from '../../shared/history-chart/history-period';
 import { Source, SourcesStrip } from '../../shared/sources-strip/sources-strip';
@@ -18,12 +16,7 @@ import { ApplianceCard } from './appliance-card';
 import { AppliancePower } from './appliance-power';
 import { CounterRow } from './counter-row';
 import { MembersReport } from './members-report';
-import { LIST_PRESETS, ListPreset, addedUp, countersOf, runsIn } from './appliance-history';
-
-const LIST_LABELS: Readonly<Record<ListPreset, MessageKey>> = {
-  week: 'history.preset.week',
-  month: 'history.preset.month',
-};
+import { addedUp, countersOf, runsIn } from './appliance-history';
 
 /**
  * The administrator's part of the appliances page (HAS-283; since HAS-438 inside `AppliancesPage`, which
@@ -37,7 +30,6 @@ const LIST_LABELS: Readonly<Record<ListPreset, MessageKey>> = {
 @Component({
   selector: 'app-appliances',
   imports: [
-    MatButtonToggleModule,
     MatCardModule,
     MatIconModule,
     TranslocoDirective,
@@ -75,10 +67,6 @@ export class Appliances {
     { id: 'runs', label: 'appliances.page.sources.runs', resource: this.runs },
   ];
 
-  /** The period of the lists of the cycles. */
-  protected readonly listPreset = signal<ListPreset>('week');
-  protected readonly listPresets = LIST_PRESETS;
-  protected readonly listLabels = LIST_LABELS;
   /** The period of the charts of the draw, shared by every chart of the page. */
   protected readonly power = historyPeriod('day');
 
@@ -103,7 +91,9 @@ export class Appliances {
 
   protected readonly rows = computed(() => {
     const now = this.ticker.now();
-    const list: HistoryRange = historyRange(this.listPreset(), now, this.zone);
+    // the cycles of the 30 days the page reads (HAS-438, owner 2026-11-13: no switch - the card lists the
+    // newest five and counts the rest)
+    const list: HistoryRange = historyRange('month', now, this.zone);
     const runs = this.runsById();
     return this.views().map((view) => {
       const entry = runs?.get(view.id);

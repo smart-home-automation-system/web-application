@@ -94,3 +94,8 @@ mat-card-header {
     grid-template-columns: 1fr auto;
   }
 }
+
+// the count of the earlier cycles stands apart from the list above it (HAS-438, owner 2026-11-13)
+.runs + .appliance__note {
+  margin-top: 10px;
+}

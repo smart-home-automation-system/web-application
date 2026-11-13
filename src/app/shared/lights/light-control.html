@@ -85,38 +85,32 @@
     </span>
   </div>
 
-  <!-- the brightness by a step of 10 %, as the target of an air conditioner: 1 ... 100 - the service refuses
-       0, "off" switches a light off; a level not reported is raised from nothing -->
+  <!-- the brightness on a slider, sent with "Send" (owner 2026-11-13: a step per press sent a command per
+       step); step 1 - the level a light reports is shown as it is, and sent as it is -->
   @if (dimmable()) {
-    <div class="light__row">
-      <span class="stepper" data-testid="brightness">
+    <div class="send-row">
+      <span class="send-row__label" aria-hidden="true">{{ t('lights.window.brightness') }}</span>
+      <mat-slider min="1" max="100" step="1" discrete class="send-row__slider">
+        <input
+          matSliderThumb
+          #level
+          data-testid="brightness"
+          [value]="one.brightness ?? 50"
+          [attr.aria-label]="t('lights.window.brightness') + ' ' + (one.name ?? '')"
+        />
+      </mat-slider>
+      <span class="segments">
         <button
-          matIconButton
+          class="segment"
           type="button"
-          data-testid="brightness-down"
-          [disabled]="busy() || one.brightness === undefined || one.brightness <= 1"
-          [attr.aria-label]="t('lights.window.dim') + ' ' + (one.name ?? '')"
-          (click)="stepBrightness(-BRIGHTNESS_STEP)"
+          data-testid="set-brightness"
+          [disabled]="busy()"
+          (click)="setBrightness(level.valueAsNumber)"
         >
-          <mat-icon>remove</mat-icon>
-        </button>
-        <span class="stepper__value">
-          <mat-icon class="stepper__icon" aria-hidden="true">brightness_6</mat-icon>
-          @if (one.brightness !== undefined) {
-            {{ t('lights.light.brightness', { value: one.brightness }) }}
-          } @else {
-            {{ t('lights.window.brightnessUnknown') }}
-          }
-        </span>
-        <button
-          matIconButton
-          type="button"
-          data-testid="brightness-up"
-          [disabled]="busy() || (one.brightness ?? 0) >= 100"
-          [attr.aria-label]="t('lights.window.brighten') + ' ' + (one.name ?? '')"
-          (click)="stepBrightness(BRIGHTNESS_STEP)"
-        >
-          <mat-icon>add</mat-icon>
+          <mat-icon class="segment__icon" aria-hidden="true">send</mat-icon>&ngsp;{{
+            t('lights.window.send')
+          }}
+          <span class="visually-hidden">{{ t('lights.window.brightness') }} {{ one.name }}</span>
         </button>
       </span>
     </div>
@@ -143,28 +137,26 @@
           </span>
         }
       </span>
-      <!-- the colour chosen beside its command, in the middle of the frame -->
-      <div class="light__row">
-        <span class="segments">
-          <button
-            class="segment"
-            type="button"
-            data-testid="set-color"
-            [disabled]="busy()"
-            (click)="setColor()"
-          >
-            <span
-              class="swatch"
-              data-testid="chosen-color"
-              role="img"
-              [style.background]="swatch()"
-              [attr.aria-label]="t('lights.window.chosenColor')"
-            ></span
-            >&ngsp;{{ t('lights.window.setColor') }}
-            <span class="visually-hidden">{{ t('lights.window.color') }} {{ one.name }}</span>
-          </button>
-        </span>
-      </div>
+      <!-- the command on the right, level with the middle slider - the card stays low (owner 2026-11-13) -->
+      <span class="segments color__send">
+        <button
+          class="segment"
+          type="button"
+          data-testid="set-color"
+          [disabled]="busy()"
+          (click)="setColor()"
+        >
+          <span
+            class="swatch"
+            data-testid="chosen-color"
+            role="img"
+            [style.background]="swatch()"
+            [attr.aria-label]="t('lights.window.chosenColor')"
+          ></span
+          >&ngsp;{{ t('lights.window.setColor') }}
+          <span class="visually-hidden">{{ t('lights.window.color') }} {{ one.name }}</span>
+        </button>
+      </span>
     </fieldset>
     @if (!hasWhite()) {
       <p class="note">{{ t('lights.window.noWhite') }}</p>

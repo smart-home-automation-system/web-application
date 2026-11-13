@@ -91,18 +91,15 @@ test.describe('the administrator', () => {
 
 // HAS-283: the appliances page of the administrator - the counters, the cycles of 7 or 30 days, the draw
 test.describe('the appliances page', () => {
-  test('lists the cycles of 7 or 30 days and draws the last 24 or 48 hours', async ({ page }) => {
+  test('lists the newest cycles of 30 days and draws the last 24 or 48 hours', async ({ page }) => {
     await page.goto('/appliances');
 
     const washer = page.getByTestId('appliance-61');
     await expect(washer.getByTestId('counters')).toContainText('30 days');
-    const week = await washer.getByTestId('run').count();
-    expect(week).toBeGreaterThan(0);
-
-    await page.getByTestId('runs-period').getByRole('radio', { name: '30 days' }).click();
-    await expect(async () =>
-      expect(await washer.getByTestId('run').count()).toBeGreaterThan(week),
-    ).toPass();
+    // the newest five of 30 days, the rest counted - no switch of the period (HAS-438)
+    await expect(washer.getByTestId('run')).toHaveCount(5);
+    await expect(washer.getByTestId('runs-more')).toContainText('earlier of the last 30 days');
+    await expect(page.getByTestId('runs-period')).toHaveCount(0);
 
     const power = page.getByTestId('power-61');
     await expect(power.getByTestId('power-facts')).toContainText('Running above 20 W');

@@ -50,6 +50,8 @@ export class ApplianceCard {
   readonly runsError = input<ApiError | undefined>();
 
   protected readonly STATE_LABELS = APPLIANCE_STATE_LABELS;
+  /** The cycles listed: the newest five, the rest of the period counted. */
+  protected readonly RUNS_SHOWN = 5;
   protected readonly presets = COUNTER_PRESETS;
   protected readonly TIME: Intl.DateTimeFormatOptions = { dateStyle: 'short', timeStyle: 'short' };
   protected readonly WHOLE: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };

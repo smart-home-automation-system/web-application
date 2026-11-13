@@ -1,3 +1,4 @@
+import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -41,6 +42,8 @@ import {
 } from '../../data-access/water/water-api';
 import { CurrentWeather, WeatherApi } from '../../data-access/weather/weather-api';
 import { Overview } from './overview';
+import { ProfileStore } from '../../core/profile/profile-store';
+import { MemberRequest, MemberRequestsApi } from '../../data-access/household/member-requests-api';
 
 // 18:30 in the house (summer time, UTC+2)
 const NOW = new Date('2026-10-10T16:30:00Z');
@@ -99,7 +102,8 @@ type Tile =
   | 'appliance'
   | 'energy'
   | 'valve'
-  | 'aircon';
+  | 'aircon'
+  | 'requests';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -120,6 +124,10 @@ describe('Overview', () => {
   let energyStatus: FakeResource<EnergyStatus | null>;
   let energyForecast: FakeResource<EnergyForecast | null>;
   let fixture: ComponentFixture<Overview>;
+  let requests: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
+  let written: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
+  let requestsAsked: () => string | undefined;
+  let writtenAsked: () => string | undefined;
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
@@ -140,6 +148,8 @@ describe('Overview', () => {
     energyBattery = fakeResource();
     energyStatus = fakeResource();
     energyForecast = fakeResource();
+    requests = fakeQueryResource();
+    written = fakeQueryResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -175,6 +185,27 @@ describe('Overview', () => {
             watchBattery: () => energyBattery,
             watchStatus: () => energyStatus,
             watchForecast: () => energyForecast,
+          },
+        },
+        {
+          provide: ProfileStore,
+          useValue: {
+            profile: signal({ name: 'Ola', role: 'admin', rooms: [] }),
+            members: signal([{ name: 'Ola' }, { name: 'Borys' }]),
+          },
+        },
+        {
+          provide: MemberRequestsApi,
+          useValue: {
+            watch: (member: () => string | undefined) => {
+              requestsAsked = member;
+              return requests;
+            },
+            watchWrittenBy: (author: () => string | undefined, others: () => readonly string[]) => {
+              const query = computed(() => [author(), ...others()].join(','));
+              writtenAsked = query;
+              return { ...written, asked: query };
+            },
           },
         },
         {
@@ -653,6 +684,43 @@ describe('Overview', () => {
       answer(appliances, []);
 
       expect(words(await tile('appliance'))).toContain('The household has no appliance yet.');
+    });
+  });
+
+  // HAS-438: the requests of the member of the profile and what the member wrote for the others - two calls
+  describe('the requests', () => {
+    it('counts the requests for the member and those written for the others, the first of them named', async () => {
+      await fixture.whenStable();
+      answerQuery(requests, requestsAsked(), [
+        { id: 1, text: 'Bread and milk', author: 'Borys' },
+        { id: 2, text: 'Parcel', author: 'Borys', doneAt: '2026-10-01T10:00:00' },
+      ]);
+      const shown = await tile('requests');
+      expect(words(shown)).toContain('Requests for you 1');
+      // the second call not answered yet: not known, never 0
+      expect(words(shown)).toContain('Yours for the others Not known');
+      expect([...shown.querySelectorAll('[data-testid="tile-request"]')].map(words)).toEqual([
+        'Bread and milk',
+      ]);
+
+      answerQuery(written, writtenAsked(), [
+        { id: 7, member: 'Borys', text: 'Bulbs', author: 'Ola' },
+      ]);
+      expect(words(await tile('requests'))).toContain('Yours for the others 1');
+      expect((await tile('requests')).querySelectorAll('button')).toHaveLength(0);
+      expect((await tile('requests')).querySelector('a.tile__link')?.getAttribute('href')).toBe(
+        '/requests',
+      );
+    });
+
+    it('says when nothing waits, and tells a failed read of the others apart', async () => {
+      await fixture.whenStable();
+      answerQuery(requests, requestsAsked(), []);
+      failQuery(written, writtenAsked(), new ApiError('server', 500));
+
+      const shown = await tile('requests');
+      expect(words(shown)).toContain('Requests for you None');
+      expect(shown.querySelector('app-api-error-strip .strip')).not.toBeNull();
     });
   });
 

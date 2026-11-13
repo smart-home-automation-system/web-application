@@ -102,7 +102,7 @@ const pages: Page[] = [
     // HAS-438: the requests of the household on a page of their own, for every member
     path: 'requests',
     title: 'nav.requests',
-    data: { access: 'member', background: 'room' },
+    data: { access: 'member', background: 'requests' },
     loadComponent: () => import('./features/requests/requests-page').then((m) => m.RequestsPage),
   },
   {

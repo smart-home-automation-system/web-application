@@ -57,10 +57,11 @@ test.describe('heating', () => {
 
     await card.getByRole('button', { name: 'Switch off' }).click();
 
-    const question = card.getByRole('group', {
-      name: 'Switch the heating of the whole house off?',
-    });
-    await expect(question).toBeVisible();
+    // the question is a window over the page (HAS-438), the card keeps its size
+    const question = page.getByRole('dialog');
+    await expect(question.getByTestId('heating-switch-question')).toHaveText(
+      'Switch the heating of the whole house off?',
+    );
     await expect(question.getByRole('button', { name: 'Cancel' })).toBeFocused();
     // nothing has been sent yet
     await expect(page.getByTestId('heating-state')).toContainText('Enabled');
@@ -81,9 +82,9 @@ test.describe('heating', () => {
     const card = page.getByTestId('heating-switch');
     await card.getByRole('button', { name: 'Switch off' }).click();
 
-    await card.getByRole('button', { name: 'Cancel' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
 
-    await expect(card.getByRole('group')).toHaveCount(0);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.getByTestId('heating-state')).toContainText('Enabled');
     await expect(card.getByRole('button', { name: 'Switch off' })).toBeFocused();
     // a reload is the mock house as it started: had anything been sent, this would still say so
@@ -97,7 +98,7 @@ test.describe('heating', () => {
     const card = page.getByTestId('heating-switch');
 
     await card.getByRole('button', { name: 'Switch off' }).click();
-    await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
+    await page.getByRole('dialog').getByTestId('confirm-yes').click();
 
     await expect(card.getByRole('alert')).toContainText(
       'The heating could not be switched off. The service is not available right now (error 500).',
@@ -213,7 +214,7 @@ test.describe('heating', () => {
       await page.goto('/heating');
       const card = page.getByTestId('heating-switch');
       await card.getByRole('button', { name: 'Switch off' }).click();
-      await card.getByRole('group').getByRole('button', { name: 'Switch off' }).click();
+      await page.getByRole('dialog').getByTestId('confirm-yes').click();
 
       const rooms = page.getByTestId('rooms');
       await expect(page.getByTestId('heating-off')).toContainText(
@@ -470,9 +471,10 @@ test.describe('heating', () => {
     const card = page.getByTestId('heating-switch');
     await expect(page.getByTestId('heating-state')).toContainText('Włączone');
     await card.getByRole('button', { name: 'Wyłącz' }).click();
-    await expect(
-      card.getByRole('group', { name: 'Wyłączyć ogrzewanie całego domu?' }),
-    ).toBeVisible();
+    await expect(page.getByRole('dialog').getByTestId('heating-switch-question')).toHaveText(
+      'Wyłączyć ogrzewanie całego domu?',
+    );
+    await page.getByRole('dialog').getByRole('button', { name: 'Anuluj' }).click();
     await expect(page.getByTestId('sensor-summary')).toContainText('Milczy: 2 z 8');
     await page.getByRole('button', { name: 'Szczegóły' }).click();
     const row = page.getByRole('dialog').getByRole('row', { name: /bathroom down/ });
@@ -986,7 +988,6 @@ test.describe('the navigation with more destinations than a phone has room for',
       await bar.getByRole('button', { name: 'More' }).click();
       await expect(page.getByRole('menuitem')).toHaveText([
         /Air conditioning/,
-        /Rooms/,
         /Blinds/,
         /Lights/,
         /Appliances/,
@@ -996,6 +997,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Boiler room/,
         /Presence/,
         /Household/,
+        /Rooms/,
         /Devices/,
         /Settings/,
         /About/,
@@ -1014,7 +1016,6 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Weather/,
         /Energy/,
         /Air conditioning/,
-        /Rooms/,
         /Blinds/,
         /Lights/,
         /Appliances/,
@@ -1024,6 +1025,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Boiler room/,
         /Presence/,
         /Household/,
+        /Rooms/,
         /Devices/,
         /Settings/,
         /About/,

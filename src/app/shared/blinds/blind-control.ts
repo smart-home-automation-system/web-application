@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSliderModule } from '@angular/material/slider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -24,7 +25,7 @@ import { blindPositionLabel } from './blind-position';
  * `schedulePausedSince`, also after a pause that failed.
  *
  * The look of an air conditioner (HAS-438, owner 2026-11-13): open / stop / close as one bar, the position
- * by a step of 10 % instead of a slider and "Go", the pause as a button in the look of quiet / turbo /
+ * on a slider sent with "Send", the pause as a button in the look of quiet / turbo /
  * sleep, everything in the middle of the frame.
  */
 @Component({
@@ -32,6 +33,7 @@ import { blindPositionLabel } from './blind-position';
   imports: [
     MatButtonModule,
     MatIconModule,
+    MatSliderModule,
     MatTooltipModule,
     TranslocoDirective,
     ApiErrorStrip,
@@ -70,19 +72,14 @@ export class BlindControl {
   protected readonly command = computed(() => this.commands().stateOf(this.id()));
   /** Whether the service says the schedules of the blind are paused. */
   protected readonly paused = computed(() => this.state()?.schedulePausedSince !== undefined);
-  protected readonly POSITION_STEP = 10;
 
   protected move(command: BlindCommand): void {
     this.commands().send(this.id(), this.api.move(this.id(), command), this.refresh());
   }
 
-  /** The reported position moved by a step, kept within 0-100 %; nothing without a reported position. */
-  protected step(by: number): void {
-    const at = this.state()?.position;
-    if (at !== undefined) {
-      const position = Math.min(100, Math.max(0, at + by));
-      this.commands().send(this.id(), this.api.moveTo(this.id(), position), this.refresh());
-    }
+  /** The position of the slider, 0-100 % by tens. */
+  protected moveTo(position: number): void {
+    this.commands().send(this.id(), this.api.moveTo(this.id(), position), this.refresh());
   }
 
   /** A press asks for the other state; the button moves when the blinds read again say so. */

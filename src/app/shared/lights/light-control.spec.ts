@@ -105,7 +105,8 @@ describe('LightControl', () => {
   });
 
   // HAS-438: the brightness by a step of 10 %, as the target of an air conditioner, within 1 ... 100
-  it('steps the brightness of a light that dims, within 1 and 100', async () => {
+  // a slider sent with "Send" (owner 2026-11-13: a step per press sent a command per step), 1 ... 100
+  it('offers brightness to a light that dims and sends it within 1 and 100', async () => {
     fixture.componentInstance.light.set({
       id: 13,
       name: 'Bedroom light strip',
@@ -116,31 +117,10 @@ describe('LightControl', () => {
     const shown = await control();
     expect(words(shown.querySelector('[data-testid="light-state"]'))).toBe('on · 60 %');
 
-    shown.querySelector<HTMLButtonElement>('[data-testid="brightness-down"]')!.click();
-    expect(sent).toEqual(['brightness 50 13']);
+    slider(shown, 'brightness').value = '0';
+    shown.querySelector<HTMLButtonElement>('[data-testid="set-brightness"]')!.click();
 
-    fixture.componentInstance.light.set({
-      id: 13,
-      name: 'Bedroom light strip',
-      kind: 'rgbw',
-      on: true,
-      brightness: 5,
-    });
-    await control();
-    shown.querySelector<HTMLButtonElement>('[data-testid="brightness-down"]')!.click();
-    expect(sent.at(-1)).toBe('brightness 1 13');
-
-    fixture.componentInstance.light.set({
-      id: 13,
-      name: 'Bedroom light strip',
-      kind: 'rgbw',
-      on: true,
-      brightness: 100,
-    });
-    await control();
-    expect(shown.querySelector<HTMLButtonElement>('[data-testid="brightness-up"]')!.disabled).toBe(
-      true,
-    );
+    expect(sent).toEqual(['brightness 1 13']);
   });
 
   it('offers no brightness and no colour to a relay', async () => {
@@ -227,23 +207,6 @@ describe('LightControl', () => {
   });
 
   // a level the light did not report: raised from nothing, never lowered
-  it('raises a brightness not reported from nothing, and offers no step down', async () => {
-    fixture.componentInstance.light.set({
-      id: 13,
-      name: 'Bedroom light strip',
-      kind: 'dimmer',
-      on: true,
-    });
-    const shown = await control();
-
-    expect(
-      shown.querySelector<HTMLButtonElement>('[data-testid="brightness-down"]')!.disabled,
-    ).toBe(true);
-    shown.querySelector<HTMLButtonElement>('[data-testid="brightness-up"]')!.click();
-
-    expect(sent).toEqual(['brightness 10 13']);
-  });
-
   it('sends no white for a light without a white channel, and says so', async () => {
     fixture.componentInstance.light.set({
       id: 13,

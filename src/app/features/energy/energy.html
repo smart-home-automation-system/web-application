@@ -110,65 +110,128 @@
       </div>
     </app-domain-tile>
 
-    <!-- the grid as the SOLAX sees it, and whether each source answers -->
-    <app-domain-tile
-      heading="energy.cards.sources"
-      icon="sensors"
-      domain="energy"
-      waitingLabel="energy.page.loading"
-      [describeWith]="describe"
-      [resource]="status"
-      data-testid="card-sources"
-    >
-      @if (status.value()) {
-        @switch (gridState()) {
-          @case ('lost') {
-            <p class="tile__lead tile__lead--alert" data-testid="grid-state" data-state="lost">
+    <!-- the column beside the flow (HAS-438, owner 2026-11-13): the sources, then the next planned outage and the open
+         alarms - summaries of the cards further down, which stay as they are -->
+    <div class="live__side">
+      <!-- the grid as the SOLAX sees it, and whether each source answers -->
+      <app-domain-tile
+        heading="energy.cards.sources"
+        icon="sensors"
+        domain="energy"
+        waitingLabel="energy.page.loading"
+        [describeWith]="describe"
+        [resource]="status"
+        data-testid="card-sources"
+      >
+        @if (status.value()) {
+          @switch (gridState()) {
+            @case ('lost') {
+              <p class="tile__lead tile__lead--alert" data-testid="grid-state" data-state="lost">
+                <mat-icon aria-hidden="true">power_off</mat-icon>
+                <span>{{ t('energy.gridState.lost') }}</span>
+              </p>
+            }
+            @case ('present') {
+              <p class="tile__lead tile__lead--ok" data-testid="grid-state" data-state="present">
+                <mat-icon aria-hidden="true">power</mat-icon>
+                <span>{{ t('energy.gridState.present') }}</span>
+              </p>
+            }
+            @default {
+              <p class="tile__lead" data-testid="grid-state" data-state="unknown">
+                <mat-icon aria-hidden="true">help</mat-icon>
+                <span>{{ t('energy.gridState.unknown') }}</span>
+              </p>
+            }
+          }
+          @if (gridState() !== undefined && gridSince(); as since) {
+            <p class="tile__detail">
+              {{ t('energy.gridState.since') }} {{ since | houseDateTime }}
+            </p>
+          }
+          <dl class="tile__rows">
+            @for (source of sources(); track source.id) {
+              <div class="tile__row" [attr.data-source]="source.id">
+                <dt>{{ source.label ? t(source.label) : source.id }}</dt>
+                <dd>
+                  @if (source.lastReadingAt; as at) {
+                    <span>{{ at | houseAge }}</span>
+                  }
+                  @if (source.reachable === false) {
+                    <span class="tile__tag tile__tag--alert">{{ t('energy.reachable.no') }}</span>
+                  } @else {
+                    <strong>{{
+                      source.reachable === undefined
+                        ? t('energy.reachable.unknown')
+                        : t('energy.reachable.yes')
+                    }}</strong>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+        } @else if (!status.error()) {
+          <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+        }
+      </app-domain-tile>
+
+      <!-- the next planned outage of Tauron, if one is announced: when, what, and the charge before it - the
+           card of the planned outages below has all of them and their commands -->
+      <app-domain-tile
+        heading="energy.cards.nextOutage"
+        icon="event_upcoming"
+        domain="energy"
+        waitingLabel="energy.page.loading"
+        [describeWith]="describe"
+        [resource]="planned"
+        data-testid="card-next-outage"
+      >
+        @if (plannedList(); as list) {
+          @if (nextOutage(); as outage) {
+            <p class="tile__lead" data-testid="next-outage">
               <mat-icon aria-hidden="true">power_off</mat-icon>
-              <span>{{ t('energy.gridState.lost') }}</span>
+              <span
+                >{{ outage.startsAt | houseDateTime }} – {{ outage.endsAt | houseDateTime }}</span
+              >
             </p>
-          }
-          @case ('present') {
-            <p class="tile__lead tile__lead--ok" data-testid="grid-state" data-state="present">
-              <mat-icon aria-hidden="true">power</mat-icon>
-              <span>{{ t('energy.gridState.present') }}</span>
+            <p class="tile__detail">
+              {{ outageKindLabel(outage) | displayText }} ·
+              {{ outageScopeLabel(outage) | displayText }}
             </p>
-          }
-          @default {
-            <p class="tile__lead" data-testid="grid-state" data-state="unknown">
-              <mat-icon aria-hidden="true">help</mat-icon>
-              <span>{{ t('energy.gridState.unknown') }}</span>
+            @if (automationApplies(outage)) {
+              @if (outage.skipAutomation) {
+                <p class="tile__detail">{{ t('energy.planned.skipped') }}</p>
+              } @else if (outage.plannedChargeStart; as start) {
+                <p class="tile__detail">
+                  {{ t('energy.planned.chargeFrom') }} {{ start | houseDateTime }}
+                </p>
+              }
+            }
+            @if (list.length > 1) {
+              <p class="tile__detail">{{ t('energy.planned.more', { count: list.length - 1 }) }}</p>
+            }
+          } @else {
+            <p class="tile__lead tile__lead--ok" data-testid="next-outage-none">
+              <mat-icon aria-hidden="true">check_circle</mat-icon>
+              <span>{{ t('energy.planned.none') }}</span>
             </p>
           }
         }
-        @if (gridState() !== undefined && gridSince(); as since) {
-          <p class="tile__detail">{{ t('energy.gridState.since') }} {{ since | houseDateTime }}</p>
-        }
-        <dl class="tile__rows">
-          @for (source of sources(); track source.id) {
-            <div class="tile__row" [attr.data-source]="source.id">
-              <dt>{{ source.label ? t(source.label) : source.id }}</dt>
-              <dd>
-                @if (source.lastReadingAt; as at) {
-                  <span>{{ at | houseAge }}</span>
-                }
-                @if (source.reachable === false) {
-                  <span class="tile__tag tile__tag--alert">{{ t('energy.reachable.no') }}</span>
-                } @else {
-                  <strong>{{
-                    source.reachable === undefined
-                      ? t('energy.reachable.unknown')
-                      : t('energy.reachable.yes')
-                  }}</strong>
-                }
-              </dd>
-            </div>
-          }
-        </dl>
-      } @else if (!status.error()) {
-        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
-      }
-    </app-domain-tile>
+      </app-domain-tile>
+
+      <!-- the open alarms, as the card of the events below shows them -->
+      <app-domain-tile
+        heading="energy.cards.alerts"
+        icon="notifications_active"
+        domain="energy"
+        waitingLabel="energy.page.loading"
+        [describeWith]="describe"
+        [resource]="alerts"
+        data-testid="card-alerts-now"
+      >
+        <ng-container [ngTemplateOutlet]="alertList" />
+      </app-domain-tile>
+    </div>
   </section>
 
   <!-- HAS-373: the production forecast of the coming days, after the flows and before the history -->
@@ -369,40 +432,7 @@
       [resource]="alerts"
       data-testid="card-alerts"
     >
-      @if (alerts.value() !== undefined && alerts.value() !== null) {
-        @if (openAlerts().length === 0) {
-          <p class="tile__lead tile__lead--ok" data-testid="no-alerts">
-            <mat-icon aria-hidden="true">check_circle</mat-icon>
-            <span>{{ t('energy.alerts.none') }}</span>
-          </p>
-        } @else {
-          <ul class="events">
-            @for (alert of openAlerts(); track $index) {
-              <li class="event event--alert" [attr.data-alert]="alert.kind">
-                <span class="event__what">
-                  <strong>{{
-                    alertKindLabel(alert.kind) ? t(alertKindLabel(alert.kind)!) : alert.kind
-                  }}</strong>
-                  <span>{{
-                    sourceLabel(alert.source) ? t(sourceLabel(alert.source)!) : alert.source
-                  }}</span>
-                  @if (alert.detail; as detail) {
-                    <!-- the name of the alarm as the inverter words it -->
-                    <span class="event__detail">{{ detail }}</span>
-                  }
-                </span>
-                @if (alert.openedAt; as at) {
-                  <span class="event__when"
-                    >{{ t('energy.alerts.since') }} {{ at | houseDateTime }}</span
-                  >
-                }
-              </li>
-            }
-          </ul>
-        }
-      } @else if (!alerts.error()) {
-        <p class="tile__detail">{{ t('energy.cards.none') }}</p>
-      }
+      <ng-container [ngTemplateOutlet]="alertList" />
     </app-domain-tile>
 
     <!-- the outages of the grid of the last year -->
@@ -589,5 +619,42 @@
         · {{ at | houseAge }}
       }
     </p>
+  </ng-template>
+  <!-- the open alarms: the card of the events and the summary beside the sources show the same list -->
+  <ng-template #alertList>
+    @if (alerts.value() !== undefined && alerts.value() !== null) {
+      @if (openAlerts().length === 0) {
+        <p class="tile__lead tile__lead--ok" data-testid="no-alerts">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          <span>{{ t('energy.alerts.none') }}</span>
+        </p>
+      } @else {
+        <ul class="events">
+          @for (alert of openAlerts(); track $index) {
+            <li class="event event--alert" [attr.data-alert]="alert.kind">
+              <span class="event__what">
+                <strong>{{
+                  alertKindLabel(alert.kind) ? t(alertKindLabel(alert.kind)!) : alert.kind
+                }}</strong>
+                <span>{{
+                  sourceLabel(alert.source) ? t(sourceLabel(alert.source)!) : alert.source
+                }}</span>
+                @if (alert.detail; as detail) {
+                  <!-- the name of the alarm as the inverter words it -->
+                  <span class="event__detail">{{ detail }}</span>
+                }
+              </span>
+              @if (alert.openedAt; as at) {
+                <span class="event__when"
+                  >{{ t('energy.alerts.since') }} {{ at | houseDateTime }}</span
+                >
+              }
+            </li>
+          }
+        </ul>
+      }
+    } @else if (!alerts.error()) {
+      <p class="tile__detail">{{ t('energy.cards.none') }}</p>
+    }
   </ng-template>
 </ng-container>

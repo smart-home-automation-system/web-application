@@ -50,6 +50,12 @@ export function isShellRead(request: HttpRequest<unknown>): boolean {
   return request.method === 'GET' && SHELL_READS.includes(request.url);
 }
 
+/** HAS-438: the requests tile reads the list of the member of the profile and those of the others - by name. */
+const OVERVIEW_REQUESTS = /^\/home\/household\/member\/[^/]+\/requests$/;
+
 export function isOverviewRead(request: HttpRequest<unknown>): boolean {
-  return request.method === 'GET' && OVERVIEW_READS.includes(request.url);
+  return (
+    request.method === 'GET' &&
+    (OVERVIEW_READS.includes(request.url) || OVERVIEW_REQUESTS.test(request.url))
+  );
 }

@@ -3,6 +3,10 @@
   <!-- the calls the page is made of, each with its freshness and its failure, told once -->
   <app-sources-strip [sources]="sources" domain="appliance" loadingLabel="appliances.loading" />
 
+  <!-- the cards of every member, given by the page: under the strip, which is the first card of every view
+       (HAS-438, owner 2026-11-13) -->
+  <ng-content />
+
   <!-- the whole house: every appliance whose cycles are known, added up -->
   <mat-card appearance="outlined" class="house card--domain" data-testid="house-counters">
     <mat-card-header>
@@ -26,21 +30,6 @@
 
   <!-- the chores per member (HAS-346): who emptied what, against the cycles that finished while at home -->
   <app-members-report />
-
-  <div class="period">
-    <span class="period__label">{{ t('appliances.page.runs.period') }}</span>
-    <mat-button-toggle-group
-      hideSingleSelectionIndicator
-      data-testid="runs-period"
-      [attr.aria-label]="t('appliances.page.runs.period')"
-      [value]="listPreset()"
-      (change)="listPreset.set($event.value)"
-    >
-      @for (option of listPresets; track option) {
-        <mat-button-toggle [value]="option">{{ t(listLabels[option]) }}</mat-button-toggle>
-      }
-    </mat-button-toggle-group>
-  </div>
 
   @if (rows().length === 0 && !appliances.loading()) {
     <p class="note note--page">

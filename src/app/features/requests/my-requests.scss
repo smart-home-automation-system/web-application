@@ -1,4 +1,4 @@
-// laid out by the row of the household on My room, as the appliances card
+// two cards in the row of the requests page
 :host {
   display: contents;
 }
@@ -7,9 +7,17 @@
   --app-domain: var(--app-domain-household);
 }
 
+// a column from the top: a grid as tall as the card spread its rows over the free height, and a list opened
+// or closed moved everything above and below the button that opens it
 .requests__content {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+
+.requests__done-toggle {
+  align-self: flex-start;
+  justify-self: start;
 }
 
 .requests__list {
@@ -20,9 +28,41 @@
   list-style: none;
 }
 
+// the text and its details on the left, the commands of a request on the right as icons (HAS-438, owner
+// 2026-11-13): done in green, remove in red - each with its name in a tooltip and for a screen reader
 .request {
   display: grid;
-  gap: 4px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+
+  > .request__actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    flex-wrap: nowrap;
+    gap: 0 4px;
+  }
+
+  > .request__text,
+  > .request__detail {
+    grid-column: 1;
+  }
+
+  > app-api-error-strip {
+    grid-column: 1 / -1;
+  }
+}
+
+.request__done {
+  --mat-icon-button-icon-color: var(--app-room-reached);
+}
+
+.request__remove {
+  --mat-icon-button-icon-color: var(--mat-sys-error);
+}
+
+.request {
   padding: 8px 12px;
   border-radius: var(--mat-sys-corner-small);
   border: 1px solid var(--app-glass-edge);
@@ -64,18 +104,41 @@
   gap: 6px 12px;
 }
 
+// "Add" in the bottom right corner of its card (HAS-438, owner 2026-11-13), the word of an add on its way
+// before it
+.requests__form-actions {
+  justify-content: flex-end;
+  margin-top: 8px;
+
+  > .requests__note {
+    order: -1;
+  }
+}
+
+// the card of the form ends with it: its commands stand at the bottom whatever the height of the row
+.requests__content {
+  flex: 1;
+}
+
+.requests__form {
+  margin-top: auto;
+}
+
 .request--done .request__text {
   color: var(--mat-sys-on-surface-variant);
   text-decoration: line-through;
 }
 
-.requests__done-toggle {
-  justify-self: start;
-}
-
 .requests__form {
+  // the fields in the frame of the requests above them (HAS-438, owner 2026-11-13): a faint outline, the
+  // corners of a frame
+  --mat-form-field-outlined-outline-color: color-mix(in srgb, var(--mat-sys-outline) 60%, transparent);
+  --mat-form-field-outlined-container-shape: var(--mat-sys-corner-medium);
+
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr);
+  // a field is as tall as itself: the count under the text must not stretch the select beside it
+  align-items: start;
   gap: 4px 12px;
   padding-top: 8px;
   border-top: 1px solid var(--app-glass-edge);
@@ -84,6 +147,21 @@
   > .requests__note,
   > app-api-error-strip {
     grid-column: 1 / -1;
+  }
+
+  > .requests__note {
+    margin-top: 12px;
+  }
+}
+
+// the select as tall as the text field beside it: the text of the field, and a trigger no taller than its line
+.requests__recipient {
+  --mat-select-trigger-text-size: var(--mat-form-field-container-text-size);
+  --mat-select-trigger-text-line-height: var(--mat-form-field-container-text-line-height);
+
+  ::ng-deep .mat-mdc-select-trigger,
+  ::ng-deep .mat-mdc-select-arrow-wrapper {
+    height: auto;
   }
 }
 
@@ -96,14 +174,6 @@
 .requests__written {
   display: grid;
   gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--app-glass-edge);
-}
-
-.requests__heading {
-  margin: 0;
-  font: var(--mat-sys-title-small);
-  color: var(--mat-sys-on-surface-variant);
 }
 
 .requests__note {

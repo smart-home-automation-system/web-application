@@ -112,6 +112,13 @@ export const en = {
       gridActed: 'Switched off for the lost grid at {{ time }}',
     },
     // HAS-282: what the appliances do
+    requests: {
+      title: 'Requests',
+      forYou: 'Requests for you',
+      toOthers: 'Yours for the others',
+      nothing: 'None',
+      unknown: 'Not known',
+    },
     appliances: {
       running: 'Running',
       waiting: 'Waits to be emptied',
@@ -799,6 +806,7 @@ export const en = {
       charge: 'Charging from the grid',
       automation: 'Charging before an outage',
       planned: 'Planned outages',
+      nextOutage: 'Next planned outage',
       runs: 'Charges',
     },
     charge: {
@@ -868,6 +876,7 @@ export const en = {
       skip: 'No charge for this one',
       unskip: 'Charge for this one again',
       skipFailed: 'The outage could not be changed.',
+      more: 'More announced: {{ count }}',
       kind: {
         planned: 'planned',
         unplanned: 'failure',
@@ -1552,9 +1561,7 @@ export const en = {
     goTo: 'Go',
     pause: 'Pause the schedules until their next run',
     pauseShort: 'Pause the schedules',
-    positionDown: 'Lower the position',
-    positionUp: 'Raise the position',
-    positionUnknown: 'Position not known',
+    send: 'Send',
     pausedSince: 'Paused',
     unreachable: 'Not reachable',
   },
@@ -1753,9 +1760,7 @@ export const en = {
       on: 'On',
       off: 'Off',
       brightness: 'Brightness',
-      brightnessUnknown: 'Brightness not known',
-      dim: 'Dim',
-      brighten: 'Brighten',
+      send: 'Send',
       setColor: 'Set the colour',
       set: 'Set',
       color: 'Colour',
@@ -2193,6 +2198,7 @@ export const en = {
         energyUnknown: 'energy not known',
         acknowledgedAfter: 'emptied after {{ minutes }} min',
         notAcknowledged: 'not marked as emptied',
+        more: 'and {{ count }} earlier of the last 30 days',
       },
       power: {
         title: 'Power',
@@ -2205,7 +2211,7 @@ export const en = {
     },
   },
   requests: {
-    title: 'Requests',
+    title: 'Requests for you',
     loading: 'Loading the requests',
     none: 'Nothing is waiting for you.',
     from: 'from',
@@ -2218,7 +2224,7 @@ export const en = {
     doneAt: 'done {{ time }}',
     doneBy: 'by',
     written: {
-      title: 'Written by you for the others',
+      title: 'Your requests for the others',
       for: 'for',
       none: 'Nothing you wrote for the others is waiting.',
     },

@@ -59,6 +59,15 @@ $gap: 12px;
   }
 }
 
+// the column beside the flow (HAS-438): the sources, the next planned outage and the open alarms, one under another
+// the alarms take the rest of the height, so that the column ends where the flow does (owner 2026-11-13)
+.live__side {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: $gap;
+  min-width: 0;
+}
+
 // the value a card is looked at for
 .tile__row--lead strong {
   font: var(--mat-sys-headline-small);
