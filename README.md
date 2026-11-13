@@ -50,7 +50,7 @@ dashboards:
   the rooms with a light on, and whether the house is empty and acted on) and the appliances
   (HAS-282: which of the washing machine, the dryer and the dishwasher runs and which waits to be
   emptied - nothing to press there) and the energy (HAS-341: the panels, the house and the grid now, the
-  state of charge of the battery, a lost grid in red; since HAS-373 tomorrow of the production forecast in a line - "Tomorrow: poor, about 6 kWh") and the requests (HAS-438: how many wait for the member of the profile, the first three named, and how many of those written for the others). Every call has its own freshness and its own failure, so the
+  state of charge of the battery, a lost grid in red; since HAS-373 tomorrow of the production forecast in a line - "Tomorrow: poor, about 6 kWh") and the requests (HAS-438: how many wait for the member of the profile, the first three named). Every call has its own freshness and its own failure, so the
   page stays whole while one service is down; the title of a tile leads to the dashboard that has
   the rest.
 - **The weather strip**: in the panel of every page, for every member and on the profile picker:
