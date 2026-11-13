@@ -249,7 +249,8 @@ dashboards:
   absence.
 - **My room**: the page of a household member, made for the phone - since HAS-438 the cards of a room
   and nothing else (owner 2026-11-13; what is the household's has pages of its own, below). It shows the rooms the registry gives the profile, one at a time - a member with
-  several chooses among them, a member with none is told so. Per room: the temperature with
+  several chooses among them, a member with none is told so. The cards of a room stand in this order (owner
+  2026-11-13): the lights, the blinds, the heating, the sensors, the air conditioner. Per room: the temperature with
   the age of its reading, the humidity when the heating service reports one, the temperature
   the schedule asks for right now, each heater with what its relay last reported, the schedule
   of today, and the windows of the room with the hold of its heating, with the state of its
