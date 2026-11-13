@@ -21,7 +21,7 @@
   <!-- open, stop and close as one bar, in the look of the modes of an air conditioner (owner, 2026-11-13,
        HAS-438) - commands, not a choice: buttons, nothing stays pressed -->
   <div class="blind__row">
-    <span class="segments" role="group" [attr.aria-label]="name() ?? t('blinds.unnamed')">
+    <span class="segments">
       <button class="segment" type="button" [disabled]="sending" (click)="move('open')">
         <mat-icon class="segment__icon">arrow_upward</mat-icon>&ngsp;{{ t('blindControl.open') }}
         <span class="visually-hidden">{{ name() }}</span>
