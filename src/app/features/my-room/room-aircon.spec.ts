@@ -127,7 +127,7 @@ describe('RoomAircon', () => {
     answer(room, [OFFICE]);
     await fixture.whenStable();
 
-    // every button, the select of the fan by its role - the modes are one group with a stop each
+    // every button - the modes are one group with a stop each, the fan a step down and up (HAS-438)
     const controls = [...card()!.querySelectorAll('button, [role="combobox"]')].map((control) =>
       control.getAttribute('role') === 'switch'
         ? 'switch: ' + words(control.closest('mat-slide-toggle'))
@@ -146,7 +146,8 @@ describe('RoomAircon', () => {
       'Heating',
       'Lower the target Air conditioner',
       'Raise the target Air conditioner',
-      'select: Fan',
+      'Slower fan Air conditioner',
+      'Faster fan Air conditioner',
       'switch: Quiet Air conditioner',
       'switch: Turbo Air conditioner',
       'switch: Sleep Air conditioner',
@@ -169,6 +170,39 @@ describe('RoomAircon', () => {
     expect(words(card()!.querySelector('[data-testid="aircon-state"]'))).toBe(
       'On · Cooling · 23 °C',
     );
+  });
+
+  // HAS-438 (owner, 2026-11-13): the fan by a step, as the target - auto, then low to high
+  it('steps the fan from auto through the speeds, and stops at both ends', async () => {
+    answer(room, [OFFICE]);
+    await fixture.whenStable();
+
+    expect(words(card()!.querySelector('[data-testid="aircon-fan-speed"]'))).toBe('Auto');
+    expect(
+      (card()!.querySelector('[data-testid="aircon-fan-down"]') as HTMLButtonElement).disabled,
+    ).toBe(true);
+    press('aircon-fan-up');
+    await fixture.whenStable();
+    expect(sent).toEqual([{ id: 140, command: { fanSpeed: 'low' } }]);
+
+    answer(room, [{ ...OFFICE, fanSpeed: 'high' }]);
+    await fixture.whenStable();
+    expect(
+      (card()!.querySelector('[data-testid="aircon-fan-up"]') as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  // a speed this version does not know is printed as it came, and offers no step
+  it('offers no step from a fan speed it does not know', async () => {
+    answer(room, [{ ...OFFICE, fanSpeed: 'silent' }]);
+    await fixture.whenStable();
+
+    expect(words(card()!.querySelector('[data-testid="aircon-fan-speed"]'))).toBe('silent');
+    for (const testId of ['aircon-fan-down', 'aircon-fan-up']) {
+      expect(
+        (card()!.querySelector(`[data-testid="${testId}"]`) as HTMLButtonElement).disabled,
+      ).toBe(true);
+    }
   });
 
   // a copy of CommandRules: cooling never below 22 °C - not sent, and the minus is off at the bottom

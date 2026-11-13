@@ -161,20 +161,45 @@
         </button>
       </span>
 
-      <mat-form-field class="fan" subscriptSizing="dynamic">
-        <mat-label>{{ t('aircon.fanLabel') }}</mat-label>
-        <mat-select
-          data-testid="aircon-fan"
-          [value]="knownFan()"
-          [disabled]="busy()"
-          [placeholder]="one.fanSpeed === undefined ? '' : (fanText(one.fanSpeed) | displayText)"
-          (selectionChange)="setFan($event.value)"
+      <!-- the fan by a step, as the target (owner, 2026-11-13): auto, then low to high; a speed this
+           version does not know is printed as it came and offers no step -->
+      <span
+        class="fan"
+        role="group"
+        data-testid="aircon-fan"
+        [attr.aria-label]="t('aircon.fanLabel') + ' ' + label"
+      >
+        <button
+          matIconButton
+          type="button"
+          data-testid="aircon-fan-down"
+          [disabled]="busy() || fanIndex() <= 0"
+          [attr.aria-label]="t('aircon.fanDown') + ' ' + label"
+          (click)="stepFan(-1)"
         >
-          @for (fan of FAN_SPEEDS; track fan) {
-            <mat-option [value]="fan">{{ t(FAN_LABELS[fan]) }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+          <mat-icon>remove</mat-icon>
+        </button>
+        <span class="fan__value">
+          <mat-icon class="fan__icon" aria-hidden="true">mode_fan</mat-icon>
+          <span class="fan__word" data-testid="aircon-fan-speed">
+            @if (one.fanSpeed !== undefined) {
+              {{ fanText(one.fanSpeed) | displayText }}
+            } @else {
+              {{ t('aircon.fanUnknown') }}
+            }
+          </span>
+        </span>
+        <button
+          matIconButton
+          type="button"
+          data-testid="aircon-fan-up"
+          [disabled]="busy() || fanIndex() < 0 || fanIndex() >= FAN_SPEEDS.length - 1"
+          [attr.aria-label]="t('aircon.fanUp') + ' ' + label"
+          (click)="stepFan(1)"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+      </span>
     </div>
 
     <div class="switches">

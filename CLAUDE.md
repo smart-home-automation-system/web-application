@@ -960,8 +960,8 @@ e2e/              # Playwright tests
     `--app-domain-aircon` and the icon of the mode while on, an outline while off, dashed while not known, always with
     the word - and on / off as a toggle group whose selected toggle is the reported power (neither for a unit not read;
     their role is `radio`). Then the mode
-    (a toggle group - an icon and its word on a wide card, the icon alone below 340 px in English and 510 px in Polish,
-    the word kept for a screen reader and in the tooltip), the target by a degree, the fan (`mat-select`), quiet /
+    (a toggle group - an icon and its word on a wide card, the icon alone below 400 px in English (measured on a phone of 440 px, HAS-438) and 510 px in Polish,
+    the word kept for a screen reader and in the tooltip), the target by a degree, the fan by a step beside it in the same row (HAS-438, owner 2026-11-13: auto, then low to high; a speed this version does not know offers no step), quiet /
     turbo / sleep (`mat-slide-toggle` with `disableToggleValue`). **A unit without `power` is not known**: no settings
     are offered, never "off".
   - **`aircon-command-rules.ts` is a copy of `CommandRules` of `aircon-service`** - 16-30 °C, cooling never below

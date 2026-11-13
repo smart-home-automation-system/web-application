@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS,
@@ -16,7 +15,6 @@ import {
   AIRCON_MODES,
   AirconApi,
   AirconCommand,
-  AirconFanSpeed,
   AirconMode,
   AirconUnit,
 } from '../../data-access/aircon/aircon-api';
@@ -32,7 +30,6 @@ import { DisplayTextPipe } from '../display-text/display-text.pipe';
 import { HouseAgePipe } from '../house-age/house-age.pipe';
 import { HouseDateTimePipe } from '../house-date-time/house-date-time.pipe';
 import {
-  AIRCON_FAN_LABELS,
   AIRCON_MODE_LABELS,
   AIRCON_STATE_LABELS,
   COMMAND_PROBLEM_TEXTS,
@@ -59,7 +56,6 @@ import {
     MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
-    MatSelectModule,
     MatSlideToggleModule,
     MatTooltipModule,
     TranslocoDirective,
@@ -105,7 +101,6 @@ export class AirconControl {
   };
   /** The icon of a mode by its word; a word this version does not know has none. */
   protected readonly MODE_ICONS_BY_WORD: Readonly<Record<string, string>> = this.MODE_ICONS;
-  protected readonly FAN_LABELS = AIRCON_FAN_LABELS;
   protected readonly STATE_LABELS = AIRCON_STATE_LABELS;
   protected readonly PROBLEM_TEXTS = COMMAND_PROBLEM_TEXTS;
   protected readonly TARGET_MAX = TARGET_MAX;
@@ -135,10 +130,10 @@ export class AirconControl {
     const mode = this.unit().mode;
     return (AIRCON_MODES as readonly string[]).includes(mode ?? '') ? mode : undefined;
   });
-  protected readonly knownFan = computed(() => {
-    const fan = this.unit().fanSpeed;
-    return (AIRCON_FAN_SPEEDS as readonly string[]).includes(fan ?? '') ? fan : undefined;
-  });
+  /** Where the fan of the unit stands among the speeds of the service; -1 for one not known or not read. */
+  protected readonly fanIndex = computed(() =>
+    (AIRCON_FAN_SPEEDS as readonly string[]).indexOf(this.unit().fanSpeed ?? ''),
+  );
 
   /** Why the last command was not sent - cleared by the next command. */
   protected readonly problem = signal<CommandProblem | undefined>(undefined);
@@ -164,8 +159,12 @@ export class AirconControl {
     }
   }
 
-  protected setFan(fanSpeed: AirconFanSpeed): void {
-    this.send({ fanSpeed });
+  /** The next speed down or up, from auto through low to high (owner, 2026-11-13: a step, as the target). */
+  protected stepFan(by: number): void {
+    const next = AIRCON_FAN_SPEEDS[this.fanIndex() + by];
+    if (this.fanIndex() >= 0 && next !== undefined) {
+      this.send({ fanSpeed: next });
+    }
   }
 
   protected flip(field: 'quiet' | 'turbo' | 'sleep'): void {
