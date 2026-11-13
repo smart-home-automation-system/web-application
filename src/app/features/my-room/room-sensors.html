@@ -21,7 +21,9 @@
         }
 
         @let here = occupancy();
-        <!-- what the sensors of the room say: a room nobody senses is "not known", never empty -->
+        <!-- what the sensors of the room say: a room nobody senses is "not known", never empty - a strip as
+             the state of an air conditioner (HAS-438): tinted while occupied, plain while empty, dashed while
+             not known, the word says it too -->
         <p
           class="occupancy"
           data-testid="sensors-occupancy"
@@ -60,8 +62,17 @@
             </h3>
             <ul class="sensors__list">
               @for (row of group.sensors; track row.device.id ?? $index) {
-                <li class="sensors__row" data-testid="sensor">
-                  <span>{{ row.device.name ?? t('rooms.unnamed') }}</span>
+                <!-- a sensor in a frame of its own, as a light and a blind (HAS-438) -->
+                <li
+                  class="sensors__row"
+                  data-testid="sensor"
+                  [attr.data-reachable]="
+                    row.report.kind === 'reported' && row.report.reachable === false
+                      ? 'false'
+                      : null
+                  "
+                >
+                  <span class="sensors__name">{{ row.device.name ?? t('rooms.unnamed') }}</span>
                   <span class="sensors__state">
                     @switch (row.report.kind) {
                       @case ('reported') {

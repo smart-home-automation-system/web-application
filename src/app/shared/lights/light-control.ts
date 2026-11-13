@@ -134,13 +134,9 @@ export class LightControl {
     this.commands().send(id, this.api.turn(id, on), this.refresh());
   }
 
-  /** 1 ... 100: the service refuses 0 - "off" is the way to switch a light off. */
-  protected setBrightness(value: number): void {
-    if (!Number.isFinite(value)) {
-      return;
-    }
+  /** The level of the slider, 1 ... 100 - the service refuses 0, "off" is the way to switch a light off. */
+  protected setBrightness(brightness: number): void {
     const id = this.light().id;
-    const brightness = Math.min(100, Math.max(1, Math.round(value)));
     this.commands().send(id, this.api.brightness(id, brightness), this.refresh());
   }
 

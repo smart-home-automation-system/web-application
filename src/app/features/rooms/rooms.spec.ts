@@ -193,7 +193,7 @@ describe('Rooms', () => {
   it('pauses the schedules of a blind and shows the pause only once the service says so', async () => {
     const window = await openOffice();
     const toggle = () =>
-      window.querySelector<HTMLButtonElement>('[data-blind="1"] [role="switch"]')!;
+      window.querySelector<HTMLButtonElement>('[data-blind="1"] [data-testid="blind-pause"]')!;
 
     toggle().click();
     await settled();
@@ -206,8 +206,8 @@ describe('Rooms', () => {
     http.expectOne('/home/blinds').flush(BLINDS);
     await settled();
 
-    // the pause failed: the switch shows the service, not the click
-    expect(toggle().getAttribute('aria-checked')).toBe('false');
+    // the pause failed: the button shows the service, not the click (HAS-438: a button, no longer a switch)
+    expect(toggle().getAttribute('aria-pressed')).toBe('false');
     expect(window.querySelector('[data-blind="1"] app-api-error-strip')?.textContent).toContain(
       'The command was not confirmed',
     );

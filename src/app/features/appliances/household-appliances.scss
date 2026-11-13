@@ -58,11 +58,18 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+// "Emptied" in the bottom right corner of the appliance (HAS-438, owner 2026-11-13), the word of a
+// press on its way before it
 .appliance__actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 6px 12px;
+
+  [data-testid='acknowledging'] {
+    order: -1;
+  }
 }
 
 .appliances__note {

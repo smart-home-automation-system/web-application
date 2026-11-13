@@ -1,9 +1,11 @@
-// One blind in a frame of its own: its name and position, then the controls, which wrap on a phone
+// One blind in a frame of its own, as an air conditioner (HAS-438, owner 2026-11-13): its name and
+// position, then the controls in the middle of the frame - open / stop / close as one bar, the position by
+// a step, the pause of the schedules
 :host {
   display: grid;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 40%, transparent);
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
   border-radius: var(--mat-sys-corner-medium);
   font: var(--mat-sys-body-medium);
 }
@@ -11,15 +13,19 @@
 .blind__head {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
 }
 
 .blind__name {
-  font-weight: 600;
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface);
 }
 
 .blind__state {
   color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
 }
 
 .blind__note {
@@ -31,22 +37,14 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+.blind__note--centre {
+  justify-self: center;
+}
+
 .blind__warning {
   margin: 0;
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-error-container);
-}
-
-.blind__controls,
-.blind__slider {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.blind__slider mat-slider {
-  width: 160px;
 }
 
 .mat-icon.blind__icon {
@@ -56,6 +54,11 @@
   opacity: 0.55;
 }
 
-.blind__pause {
-  justify-self: start;
+// every control in the middle of the frame
+.blind__row {
+  display: flex;
+  justify-content: center;
 }
+
+// open / stop / close and the pause are `.segments`, the position a `.send-row` - both global, in
+// src/styles.scss, shared with a light (HAS-438)

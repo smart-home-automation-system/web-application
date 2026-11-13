@@ -1,17 +1,9 @@
 <ng-container *transloco="let t">
   @let one = light();
   @let reported = cssColorOf(one.color?.rgb);
+  @let label = name() ?? one.name ?? t('lights.unnamed');
   <div class="light__head">
-    <mat-icon class="light__bulb" [attr.data-state]="state()" aria-hidden="true">{{
-      state() === 'off' ? 'light_off' : 'lightbulb'
-    }}</mat-icon>
-    <span class="light__name">{{ name() ?? one.name ?? t('lights.unnamed') }}</span>
-    <span class="light__state" data-testid="light-state" role="status"
-      >{{ t(LIGHT_STATE_LABELS[state()]) }}
-      @if (state() === 'on' && dimmable() && one.brightness !== undefined) {
-        · {{ t('lights.light.brightness', { value: one.brightness }) }}
-      }
-    </span>
+    <span class="light__name">{{ label }}</span>
     @if (reported !== undefined) {
       <!-- the colour the light reported - a colour of the house, not of the theme -->
       <span
@@ -22,29 +14,21 @@
         [attr.aria-label]="t('lights.window.reportedColor', { rgb: one.color!.rgb!.join(', ') })"
       ></span>
     }
-    <span class="light__commands">
-      <button
-        matButton="outlined"
-        type="button"
-        data-testid="light-on"
-        [disabled]="busy()"
-        (click)="turn(true)"
-      >
-        {{ t('lights.window.on') }}
-        <span class="visually-hidden">{{ one.name }}</span>
-      </button>
-      <button
-        matButton="outlined"
-        type="button"
-        data-testid="light-off"
-        [disabled]="busy()"
-        (click)="turn(false)"
-      >
-        {{ t('lights.window.off') }}
-        <span class="visually-hidden">{{ one.name }}</span>
-      </button>
-    </span>
   </div>
+
+  <!-- the state at a glance, as an air conditioner (HAS-438, owner 2026-11-13): tinted in the colour of the
+       light while on, plain while off, dashed while not known - the word says it too -->
+  <p class="status" [attr.data-state]="state()">
+    <mat-icon class="status__icon" aria-hidden="true">{{
+      state() === 'off' ? 'light_off' : 'lightbulb'
+    }}</mat-icon>
+    <output class="status__text" data-testid="light-state"
+      >{{ t(LIGHT_STATE_LABELS[state()]) }}
+      @if (state() === 'on' && dimmable() && one.brightness !== undefined) {
+        · {{ t('lights.light.brightness', { value: one.brightness }) }}
+      }
+    </output>
+  </p>
 
   <p class="note">
     @if (one.changedAt !== undefined) {
@@ -66,11 +50,47 @@
     </p>
   }
 
+  <!-- on and off as one bar, in the look of the modes of an air conditioner; the state the light reported is
+       the one pressed, neither while it is not known - a press asks, the read-back moves it -->
+  <div class="light__row">
+    <span class="segments">
+      <button
+        class="segment"
+        type="button"
+        data-testid="light-on"
+        [class.segment--on]="state() === 'on'"
+        [attr.aria-pressed]="state() === 'on'"
+        [disabled]="busy()"
+        (click)="turn(true)"
+      >
+        <mat-icon class="segment__icon" aria-hidden="true">lightbulb</mat-icon>&ngsp;{{
+          t('lights.window.on')
+        }}
+        <span class="visually-hidden">{{ one.name }}</span>
+      </button>
+      <button
+        class="segment"
+        type="button"
+        data-testid="light-off"
+        [class.segment--on]="state() === 'off'"
+        [attr.aria-pressed]="state() === 'off'"
+        [disabled]="busy()"
+        (click)="turn(false)"
+      >
+        <mat-icon class="segment__icon" aria-hidden="true">light_off</mat-icon>&ngsp;{{
+          t('lights.window.off')
+        }}
+        <span class="visually-hidden">{{ one.name }}</span>
+      </button>
+    </span>
+  </div>
+
+  <!-- the brightness on a slider, sent with "Send" (owner 2026-11-13: a step per press sent a command per
+       step); step 1 - the level a light reports is shown as it is, and sent as it is -->
   @if (dimmable()) {
-    <div class="control">
-      <span class="control__label">{{ t('lights.window.brightness') }}</span>
-      <!-- step 1: the level a light reports is shown as it is, and sent as it is -->
-      <mat-slider min="1" max="100" step="1" discrete class="control__slider">
+    <div class="send-row">
+      <span class="send-row__label" aria-hidden="true">{{ t('lights.window.brightness') }}</span>
+      <mat-slider min="1" max="100" step="1" discrete class="send-row__slider">
         <input
           matSliderThumb
           #level
@@ -79,27 +99,28 @@
           [attr.aria-label]="t('lights.window.brightness') + ' ' + (one.name ?? '')"
         />
       </mat-slider>
-      <button
-        matButton
-        type="button"
-        data-testid="set-brightness"
-        [disabled]="busy()"
-        (click)="setBrightness(level.valueAsNumber)"
-      >
-        {{ t('lights.window.set') }}
-        <span class="visually-hidden">{{ t('lights.window.brightness') }} {{ one.name }}</span>
-      </button>
+      <span class="segments">
+        <button
+          class="segment"
+          type="button"
+          data-testid="set-brightness"
+          [disabled]="busy()"
+          (click)="setBrightness(level.valueAsNumber)"
+        >
+          <mat-icon class="segment__icon" aria-hidden="true">send</mat-icon>&ngsp;{{
+            t('lights.window.send')
+          }}
+          <span class="visually-hidden">{{ t('lights.window.brightness') }} {{ one.name }}</span>
+        </button>
+      </span>
     </div>
   }
 
   @if (colourful()) {
     @let chosen = chosenColor();
-    <div
-      class="color"
-      role="group"
-      [attr.aria-label]="t('lights.window.color') + ' ' + (one.name ?? '')"
-    >
-      <span class="control__label">{{ t('lights.window.color') }}</span>
+    <!-- the sliders of the colour, one set: a fieldset named by a legend a screen reader hears -->
+    <fieldset class="color">
+      <legend class="visually-hidden">{{ t('lights.window.color') }} {{ one.name }}</legend>
       <span class="color__sliders">
         @for (part of colorParts(); track part.index) {
           <span class="color__row">
@@ -116,24 +137,27 @@
           </span>
         }
       </span>
-      <span
-        class="swatch swatch--large"
-        data-testid="chosen-color"
-        role="img"
-        [style.background]="swatch()"
-        [attr.aria-label]="t('lights.window.chosenColor')"
-      ></span>
-      <button
-        matButton
-        type="button"
-        data-testid="set-color"
-        [disabled]="busy()"
-        (click)="setColor()"
-      >
-        {{ t('lights.window.set') }}
-        <span class="visually-hidden">{{ t('lights.window.color') }} {{ one.name }}</span>
-      </button>
-    </div>
+      <!-- the command on the right, level with the middle slider - the card stays low (owner 2026-11-13) -->
+      <span class="segments color__send">
+        <button
+          class="segment"
+          type="button"
+          data-testid="set-color"
+          [disabled]="busy()"
+          (click)="setColor()"
+        >
+          <span
+            class="swatch"
+            data-testid="chosen-color"
+            role="img"
+            [style.background]="swatch()"
+            [attr.aria-label]="t('lights.window.chosenColor')"
+          ></span
+          >&ngsp;{{ t('lights.window.setColor') }}
+          <span class="visually-hidden">{{ t('lights.window.color') }} {{ one.name }}</span>
+        </button>
+      </span>
+    </fieldset>
     @if (!hasWhite()) {
       <p class="note">{{ t('lights.window.noWhite') }}</p>
     }

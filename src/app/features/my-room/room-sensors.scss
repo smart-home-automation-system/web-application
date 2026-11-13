@@ -12,24 +12,47 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
 }
 
 .sensors__list {
   display: grid;
-  gap: 4px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+// a sensor in a frame of its own, as a light, a blind and an air conditioner (HAS-438, owner 2026-11-13):
+// its name, then when it was last heard; a frame of the error colour for one that does not answer
 .sensors__row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 12px;
-  font: var(--mat-sys-body-medium);
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
+  border-radius: var(--mat-sys-corner-medium);
+
+  &[data-reachable='false'] {
+    border-color: color-mix(in srgb, var(--mat-sys-error) 60%, transparent);
+  }
+}
+
+.sensors__name {
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface);
+}
+
+.sensors__state {
+  font: var(--mat-sys-body-small);
 }
 
 .sensors__state,
@@ -54,24 +77,38 @@ mat-card-content {
   --app-domain: var(--app-domain-devices);
 }
 
+// the room as its sensors sense it: the strip of the state of an air conditioner (HAS-438)
 .occupancy {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
-  font: var(--mat-sys-body-medium);
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 60%, transparent);
+  border-radius: var(--mat-sys-corner-small);
+  font: var(--mat-sys-title-small);
   color: var(--mat-sys-on-surface-variant);
 
   &[data-occupancy='occupied'] {
+    border-color: var(--app-domain-devices);
+    background: color-mix(in srgb, var(--app-domain-devices) 18%, transparent);
     color: var(--mat-sys-on-surface);
+  }
+
+  &[data-occupancy='unknown'] {
+    border-style: dashed;
   }
 }
 
 .mat-icon.occupancy__icon {
   flex: none;
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+}
+
+.occupancy[data-occupancy='occupied'] .mat-icon.occupancy__icon {
+  color: var(--app-domain-devices);
 }
 
 .sensors__warning {

@@ -3,7 +3,8 @@ import { expect, test, useScenario } from './support';
 /**
  * The appliances of the household (HAS-282), fed by the mock API: the washing machine runs, the
  * dryer has finished and waits to be emptied, the dishwasher is idle. The notice above every page,
- * the card of "My room" and the tile of the overview read one resource.
+ * the card of the appliances page (every member's since HAS-438) and the tile of the overview read one
+ * resource.
  */
 
 test.describe('a resident', () => {
@@ -19,8 +20,10 @@ test.describe('a resident', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('sees every appliance on My room, and empties the dryer from there', async ({ page }) => {
-    await page.goto('/room');
+  test('sees every appliance on the appliances page, and empties the dryer from there', async ({
+    page,
+  }) => {
+    await page.goto('/appliances');
 
     const card = page.getByTestId('appliances');
     await expect(card.locator('.appliance')).toHaveCount(3);
@@ -47,7 +50,7 @@ test.describe('a resident', () => {
   });
 
   test('closes the notice for the visit without emptying anything', async ({ page }) => {
-    await page.goto('/room');
+    await page.goto('/appliances');
 
     await page.getByRole('button', { name: 'Close the notice about Dryer' }).click();
 
@@ -58,7 +61,7 @@ test.describe('a resident', () => {
 
   test('is told when the acknowledgement was not carried out', async ({ page }) => {
     await useScenario(page, 'writes-fail');
-    await page.goto('/room');
+    await page.goto('/appliances');
 
     await page.getByTestId('appliances').getByRole('button', { name: 'Emptied' }).click();
 
@@ -88,18 +91,15 @@ test.describe('the administrator', () => {
 
 // HAS-283: the appliances page of the administrator - the counters, the cycles of 7 or 30 days, the draw
 test.describe('the appliances page', () => {
-  test('lists the cycles of 7 or 30 days and draws the last 24 or 48 hours', async ({ page }) => {
+  test('lists the newest cycles of 30 days and draws the last 24 or 48 hours', async ({ page }) => {
     await page.goto('/appliances');
 
     const washer = page.getByTestId('appliance-61');
     await expect(washer.getByTestId('counters')).toContainText('30 days');
-    const week = await washer.getByTestId('run').count();
-    expect(week).toBeGreaterThan(0);
-
-    await page.getByTestId('runs-period').getByRole('radio', { name: '30 days' }).click();
-    await expect(async () =>
-      expect(await washer.getByTestId('run').count()).toBeGreaterThan(week),
-    ).toPass();
+    // the newest five of 30 days, the rest counted - no switch of the period (HAS-438)
+    await expect(washer.getByTestId('run')).toHaveCount(5);
+    await expect(washer.getByTestId('runs-more')).toContainText('earlier of the last 30 days');
+    await expect(page.getByTestId('runs-period')).toHaveCount(0);
 
     const power = page.getByTestId('power-61');
     await expect(power.getByTestId('power-facts')).toContainText('Running above 20 W');
@@ -111,10 +111,13 @@ test.describe('the appliances page', () => {
   test.describe('for a resident', () => {
     test.use({ profile: 'resident' });
 
-    // the administrator's page: a resident is led to their room
-    test('is not open', async ({ page }) => {
+    // every member's page since HAS-438: the appliances and the chores, nothing that tunes them
+    test('is open, without what tunes the appliances', async ({ page }) => {
       await page.goto('/appliances');
-      await expect(page).toHaveURL(/\/room$/);
+
+      await expect(page).toHaveURL(/\/appliances$/);
+      await expect(page.getByTestId('appliances')).toBeVisible();
+      await expect(page.getByTestId('house-counters')).toHaveCount(0);
     });
   });
 });
@@ -142,8 +145,10 @@ test.describe('nobody chosen yet', () => {
 test.describe('the chores of a resident', () => {
   test.use({ profile: 'resident' });
 
-  test('are their own this month on My room, with no mute offered', async ({ page }) => {
-    await page.goto('/room');
+  test('are their own this month on the appliances page, with no mute offered', async ({
+    page,
+  }) => {
+    await page.goto('/appliances');
 
     const card = page.getByTestId('my-chores');
     await expect(card).toContainText('Mine this month');

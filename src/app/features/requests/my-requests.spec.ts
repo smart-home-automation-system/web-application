@@ -148,8 +148,14 @@ describe('MyRequests', () => {
 
   afterEach(() => vi.useRealTimers());
 
+  // two cards since HAS-438 (owner 2026-11-13): what the member asks of the others with the form, and what the
+  // others ask of the member - most checks read both
   function card(): HTMLElement {
-    return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="my-requests"]')!;
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  function cardOf(id: 'my-requests' | 'written-card'): HTMLElement {
+    return card().querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
   }
 
   function words(element: Element | null | undefined): string {
@@ -194,7 +200,7 @@ describe('MyRequests', () => {
     await shown();
 
     const lines = [...byTestId('open-requests')!.querySelectorAll('li')].map((line) =>
-      words(line).replace(/ check Done delete$/, ''),
+      words(line).replace(/ check_circle ?delete$/, ''),
     );
     // the own author is not named; a request of another day carries its date
     expect(lines).toEqual([
@@ -274,12 +280,13 @@ describe('MyRequests', () => {
     expect(words(card().querySelector('mat-error'))).toBe('At most 100 characters.');
   });
 
-  it('adds a request for the member of the profile by default, the text trimmed, and clears it', async () => {
+  // the form stands on the card of the requests for the others: the first other member is chosen (owner 2026-11-13)
+  it('adds a request for the first other member by default, the text trimmed, and clears it', async () => {
     await shown();
     await type('  Milk  ');
     await submit();
 
-    expect(calls).toEqual(['add Ola "Milk" by Ola']);
+    expect(calls).toEqual(['add Borys "Milk" by Ola']);
     expect(byTestId<HTMLInputElement>('request-text')!.value).toBe('');
   });
 
@@ -292,7 +299,9 @@ describe('MyRequests', () => {
     expect(byTestId<HTMLInputElement>('request-text')!.value).toBe('Milk');
   });
 
-  it('offers the members of the household, the member of the profile first', async () => {
+  it('offers the members of the household, the member of the profile first, the first other chosen', async () => {
+    await shown();
+    expect(words(card().querySelector('mat-select'))).toBe('Borys');
     await shown();
     const select = card().querySelector('mat-select')!;
     (select as HTMLElement).click();
@@ -395,6 +404,9 @@ describe('MyRequests', () => {
 
   it('does not read them again after a request for oneself', async () => {
     await writtenShown();
+    (card().querySelector('mat-select') as HTMLElement).click();
+    await fixture.whenStable();
+    (document.querySelectorAll('mat-option')[0] as HTMLElement).click();
     await type('Milk');
     await submit();
 
@@ -415,20 +427,20 @@ describe('MyRequests', () => {
   it('names exactly what can be pressed', async () => {
     await shown();
 
-    const controls = [...card().querySelectorAll('button, input, [role="combobox"]')].map(
-      (control) =>
-        control.getAttribute('aria-label') ?? control.getAttribute('data-testid') ?? words(control),
-    );
-    expect(controls).toEqual([
-      'request-done',
+    const controlsOf = (id: 'my-requests' | 'written-card') =>
+      [...cardOf(id).querySelectorAll('button, input, [role="combobox"]')].map(
+        (control) =>
+          control.getAttribute('aria-label') ?? control.getAttribute('data-testid') ?? words(control),
+      );
+    // done and remove are icons, named for a screen reader
+    expect(controlsOf('my-requests')).toEqual([
+      'Done',
       'Remove the request',
-      'request-done',
+      'Done',
       'Remove the request',
       'done-toggle',
-      'request-recipient',
-      'request-text',
-      'request-add',
     ]);
+    expect(controlsOf('written-card')).toEqual(['request-recipient', 'request-text', 'request-add']);
   });
 
   it('names exactly what can be pressed in the section of the others', async () => {

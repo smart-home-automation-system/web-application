@@ -91,6 +91,14 @@
   justify-self: start;
 }
 
+// the controls of the unit stand in the middle of its frame (owner, 2026-11-13, HAS-438): the modes, the row of
+// the target and the fan, quiet / turbo / sleep
+.modes-box,
+.boosts-box {
+  display: flex;
+  justify-content: center;
+}
+
 .mode {
   display: inline-flex;
   align-items: center;
@@ -108,7 +116,8 @@
   container-type: inline-size;
 }
 
-// the words of the five modes take about 340 px in English and 510 px in Polish, icons included
+// the words of the five modes take about 395 px in English (measured on the phone of 440 px, HAS-438 - the
+// 340 px of HAS-394 let them run out of the card) and 510 px in Polish, icons included
 @mixin mode-label-hidden {
   position: absolute;
   width: 1px;
@@ -118,7 +127,7 @@
   white-space: nowrap;
 }
 
-@container (max-width: 340px) {
+@container (max-width: 400px) {
   .mode__label {
     @include mode-label-hidden;
   }
@@ -133,8 +142,9 @@
 .settings {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: 8px 16px;
+  gap: 8px;
 }
 
 .target {
@@ -144,22 +154,59 @@
 }
 
 .target__value {
-  min-width: 5.5em;
+  // narrow enough for the fan beside it on a phone of 393 px (HAS-438)
+  min-width: 4.5em;
   text-align: center;
   font: var(--mat-sys-title-medium);
   color: var(--mat-sys-on-surface);
   font-variant-numeric: tabular-nums;
 }
 
+// the fan as the target: a step down, the speed, a step up (owner, 2026-11-13) - in the row of the target;
+// a long word ("Średnio wysoki") takes two lines rather than the place beside it
 .fan {
-  width: 12em;
-  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.switches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
+.fan__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 6em;
+  justify-content: center;
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+  color: var(--mat-sys-on-surface);
+}
+
+.mat-icon.fan__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.fan__word {
+  text-align: center;
+}
+
+// quiet, turbo and sleep: the look of the modes, measured by a box of their own as they are
+.boosts {
+  justify-self: start;
+}
+
+.boosts-box {
+  container-type: inline-size;
+}
+
+// the three words take about 300 px in English and 260 px in Polish, icons included
+@container (max-width: 300px) {
+  .boost__label {
+    @include mode-label-hidden;
+  }
 }
 
 // A narrow card (the five units in one row of the page of the units, HAS-395): the five modes share its
@@ -168,6 +215,7 @@
   .modes {
     display: flex;
     justify-self: stretch;
+    flex: 1 1 auto;
   }
 
   .modes .mat-button-toggle {
@@ -218,7 +266,7 @@
   grid-row: 5;
 }
 
-:host(.level) .switches {
+:host(.level) .boosts-box {
   grid-row: 6;
   align-self: start;
 }

@@ -53,8 +53,9 @@ test('sets the brightness of a light from the window of its room', async ({ page
   const lamp = window.locator('[data-testid="window-light"][data-light="40"]');
 
   await expect(lamp.getByTestId('light-state')).toHaveText('off');
+  // the slider sent with "Send" (owner 2026-11-13: a step per press sent a command per step)
   await lamp.getByRole('slider').fill('75');
-  await lamp.getByRole('button', { name: 'Set Brightness Office desk lamp' }).click();
+  await lamp.getByRole('button', { name: 'Send Brightness Office desk lamp' }).click();
 
   await expect(lamp.getByTestId('light-state')).toHaveText('on · 75 %');
   // the card behind the window follows the same read

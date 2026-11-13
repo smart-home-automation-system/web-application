@@ -39,19 +39,8 @@
       }
     </div>
 
-    <!-- what is the household's, not a room's, in a row of its own under the rooms (owner,
-         2026-10-25): the appliances (HAS-282), the notifications of this device (HAS-284) and the
-         switch of the house for a member allowed it - side by side, of one height -->
-    <div class="card-row" data-testid="household-cards">
-      <app-household-appliances />
-      <!-- the chores of the member of the profile this month (HAS-346) -->
-      <app-my-chores />
-      <!-- the errands the household wrote for the member of the profile, and the form for a new one (HAS-411) -->
-      <app-my-requests />
-      <app-device-notifications />
-      @if (switchesHeating()) {
-        <app-house-heating />
-      }
-    </div>
+    <!-- what is the household's, not a room's, is on pages of its own since HAS-438 (owner,
+         2026-11-13): the appliances and the chores, the requests, the notifications of this device on
+         the settings, the switch of the house on its own tab for a member granted it -->
   </section>
 </ng-container>

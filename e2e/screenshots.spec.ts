@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(20, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(21, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -86,12 +86,13 @@ for (const language of ['en', 'pl'] as const) {
         await page.goto('/heating');
         const card = page.getByTestId('heating-switch');
         await card.getByRole('button', { name: TEXTS[language].switchOff }).click();
-        await expect(card.getByRole('group')).toBeVisible();
+        await expect(page.getByRole('dialog').getByTestId('heating-switch-question')).toBeVisible();
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'heating-question'),
         });
 
-        await card.getByRole('group').getByRole('button').last().click();
+        await page.getByRole('dialog').getByTestId('confirm-yes').click();
         await expect(page.getByTestId('heating-state')).toContainText(TEXTS[language].disabled);
         await expect(page.getByTestId('activity')).toContainText(TEXTS[language].noRoomHeated);
         await page.screenshot({
@@ -104,7 +105,7 @@ for (const language of ['en', 'pl'] as const) {
         await page.goto('/heating');
         const card = page.getByTestId('heating-switch');
         await card.getByRole('button', { name: TEXTS[language].switchOff }).click();
-        await card.getByRole('group').getByRole('button').last().click();
+        await page.getByRole('dialog').getByTestId('confirm-yes').click();
         await expect(card.getByRole('alert')).toBeVisible();
         await expect(card.locator('mat-progress-bar')).toHaveCount(0);
         await page.screenshot({
@@ -163,7 +164,7 @@ for (const language of ['en', 'pl'] as const) {
 
         const card = page.getByTestId('heating-switch');
         await card.getByRole('button', { name: TEXTS[language].switchOff }).click();
-        await card.getByRole('group').getByRole('button').last().click();
+        await page.getByRole('dialog').getByTestId('confirm-yes').click();
         await expect(page.getByTestId('heating-off')).toBeVisible();
         await photoIsShown(page);
         // a phone scrolls inside the shell: the rooms are brought into its view, not the page
@@ -425,6 +426,26 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // HAS-438: the pages of a resident besides their room - Celina also has the heating of the house
+      test.describe('as a resident, their own pages', () => {
+        test.use({ profile: 'resident-two-rooms' });
+
+        for (const [path, name, ready] of [
+          ['/appliances', 'resident-appliances', 'appliances'],
+          ['/requests', 'resident-requests', 'my-requests'],
+          ['/settings', 'resident-settings', 'device-notifications'],
+          ['/house-heating', 'resident-house-heating', 'heating-switch'],
+        ]) {
+          test(name, async ({ page }, testInfo) => {
+            await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));
+            await page.goto(path);
+            await expect(page.getByTestId(ready)).toBeVisible();
+            await expect(page.getByRole('main').locator('mat-progress-bar')).toHaveCount(0);
+            await page.screenshot({ path: shot(testInfo.project.name, scheme, language, name) });
+          });
+        }
+      });
+
       test.describe('as a resident without a room', () => {
         test.use({ profile: 'resident-no-room' });
 
@@ -507,7 +528,7 @@ for (const language of ['en', 'pl'] as const) {
 
         await page.locator('[data-room-tile="office"] .room__actions button').click();
         await expect(page.getByTestId('blind-pause').first()).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'rooms-office'),
         });
@@ -524,7 +545,7 @@ for (const language of ['en', 'pl'] as const) {
 
         await page.locator('[data-room="office"] [data-testid="room-schedules"]').click();
         await expect(page.getByTestId('schedule').first()).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'blinds-schedules'),
         });
@@ -552,7 +573,7 @@ for (const language of ['en', 'pl'] as const) {
 
         await page.locator('[data-room="living room"] [data-testid="room-details"]').click();
         await expect(page.getByTestId('window-light').first()).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'lights-room'),
         });
@@ -594,7 +615,7 @@ for (const language of ['en', 'pl'] as const) {
         await operator.locator('[data-day="2026-10-25"]').getByTestId('operator-hours').click();
         const window = page.getByRole('dialog');
         await expect(window.locator('.chart__plot svg')).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-operator-day'),
         });
@@ -618,7 +639,7 @@ for (const language of ['en', 'pl'] as const) {
         // the question before a charge, a window over the darkened page (owner, 2026-11-11)
         const question = page.getByRole('dialog');
         await expect(question.getByTestId('charge-question')).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-charge-question'),
         });
@@ -706,7 +727,7 @@ for (const language of ['en', 'pl'] as const) {
         const dialog = page.getByRole('dialog');
         await expect(dialog.getByTestId('device')).toHaveCount(8);
         // the window fades in: a picture of it once nothing moves any more
-        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-room'),
         });
@@ -745,7 +766,7 @@ for (const language of ['en', 'pl'] as const) {
         // "Add" of a card: the window with the form open; the list of a select over it
         await card('loft').locator('.room__actions button').last().click();
         await expect(dialog.locator('app-smart-device-form')).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().length === 0);
+        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
         await dialog.locator('app-smart-device-form input').first().fill('Lo');
         await dialog.locator('app-smart-device-form [data-testid="kind"]').click();
         await expect(page.locator('.mat-mdc-select-panel')).toHaveCSS('opacity', '1');

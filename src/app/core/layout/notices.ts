@@ -106,19 +106,24 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
               }}</span>
             }
           </p>
-          <!-- never disabled: a press while one is on its way is ignored, and a button that switches
-               off under the finger loses the focus -->
-          <button matButton type="button" (click)="acknowledge(appliance.id)">
-            {{ t('appliances.acknowledge') }}
-          </button>
-          <!-- HAS-346: the administrator stops the reminders without claiming the chore - the cycle stays
-               unattributed (owner 2026-10-30: "Emptied" with the member counts as the chore, for everybody) -->
-          @if (isAdmin()) {
-            <button matButton type="button" data-testid="appliance-notice-mute" (click)="mute(appliance.id)">
-              {{ t('appliances.mute') }}
+          <!-- the commands in the bottom right corner, "Emptied" last (HAS-438, owner 2026-11-13) -->
+          <div class="notice__actions">
+            <!-- HAS-346: the administrator stops the reminders without claiming the chore - the cycle stays
+                 unattributed (owner 2026-10-30: "Emptied" with the member counts as the chore, for everybody) -->
+            @if (isAdmin()) {
+              <button matButton type="button" data-testid="appliance-notice-mute" (click)="mute(appliance.id)">
+                {{ t('appliances.mute') }}
+              </button>
+            }
+            <!-- never disabled: a press while one is on its way is ignored, and a button that switches
+                 off under the finger loses the focus -->
+            <button matButton type="button" (click)="acknowledge(appliance.id)">
+              {{ t('appliances.acknowledge') }}
             </button>
-          }
+          </div>
+          <!-- the close of a window: always in the top right corner -->
           <button
+            class="notice__close"
             matIconButton
             type="button"
             [attr.aria-label]="t('appliances.notice.dismiss') + ' ' + appliance.name"

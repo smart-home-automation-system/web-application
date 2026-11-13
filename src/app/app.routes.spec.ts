@@ -77,8 +77,14 @@ describe('routes', () => {
       .filter((route) => route.data?.['access'] !== undefined)
       .map((route) => [route.path, route.data?.['access']]);
 
+    // HAS-438 (owner, 2026-11-13): a resident's own pages - the appliances, the requests, the heating of the
+    // house (with its permission, below) and the settings - besides their room
     expect(open).toEqual([
+      ['appliances', 'member'],
+      ['requests', 'member'],
+      ['house-heating', 'member'],
       ['room', 'member'],
+      ['settings', 'member'],
       ['profiles', 'chooser'],
       ['u/:member', 'anyone'],
       ['error', 'anyone'],
@@ -93,7 +99,17 @@ describe('routes', () => {
       const route = children.find((candidate) => `/${candidate.path}` === item.path);
 
       expect(route?.data?.['access'] ?? 'admin', item.path).toBe(item.access);
+      expect(route?.data?.['permission'], item.path).toBe(item.permission);
     }
+  });
+
+  // HAS-438: a permission of the registry beyond the access is asked by one page alone so far
+  it('ask for a permission on the heating of the whole house alone', () => {
+    const asking = (shell.children ?? [])
+      .filter((route) => route.data?.['permission'] !== undefined)
+      .map((route) => [route.path, route.data?.['permission']]);
+
+    expect(asking).toEqual([['house-heating', 'heating_switch']]);
   });
 
   it('give every page a title', () => {

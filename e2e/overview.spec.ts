@@ -119,7 +119,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(20);
+    await expect(alerts).toHaveCount(21);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -169,14 +169,14 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(11);
+    expect(tops).toHaveLength(12);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(11);
+      expect(new Set(tops).size).toBe(12);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(11);
+      expect(heights).toHaveLength(12);
       expect(new Set(heights).size).toBe(1);
     }
   });

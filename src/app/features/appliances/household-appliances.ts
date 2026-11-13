@@ -22,7 +22,8 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
 import { MessageKey } from '../../i18n/messages';
 
 /**
- * The appliances of the household on "My room" (HAS-282): the washing machine, the dryer and the
+ * The appliances of the household (HAS-282; on the appliances page of every member since HAS-438, on My
+ * room before): the washing machine, the dryer and the
  * dishwasher with their state - running since, finished at - and **"Emptied"** for a finished one,
  * for every member and not by room: the appliances are the household's, so the card stands once,
  * after the cards of the rooms. "Emptied" with the member of the profile counts as the chore just as

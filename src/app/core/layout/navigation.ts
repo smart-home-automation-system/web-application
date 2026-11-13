@@ -1,14 +1,27 @@
 import { MessageKey } from '../../i18n/messages';
 import { Access } from '../profile/access';
+import { MemberPermission } from '../profile/profile';
 
 export interface NavItem {
   readonly path: string;
   /** Key of the label; the shell translates it. */
   readonly label: MessageKey;
+  /**
+   * Key of a shorter word for the bottom bar of a phone, where the full name does not fit (HAS-438:
+   * "Zapotrzebowania" and "Ogrzewanie domu" took the places beside them); the side list and the title
+   * of the page keep the full name, and so does the name of the link for a screen reader.
+   */
+  readonly shortLabel?: MessageKey;
   /** Name of a Material Symbols icon. */
   readonly icon: string;
   /** Who is offered the entry - the same as `data.access` of its route (a test compares them). */
   readonly access: Access;
+  /**
+   * The permission of the registry the entry asks for beyond its access - the same as
+   * `data.permission` of its route (a test compares them); only a member granted it is offered
+   * the entry, the administrator included (HAS-438).
+   */
+  readonly permission?: MemberPermission;
 }
 
 /**
@@ -21,7 +34,13 @@ export interface NavItem {
  * while - the settings, the build - last. The owner's order (2026-10-17, HAS-232): the overview,
  * my room, the weather and the rooms of the house first, the rest as it was; the energy after the
  * weather since HAS-341 (the task's order), which moves the rooms behind "More" on a phone; the air
- * conditioning after the energy since HAS-395.
+ * conditioning after the energy since HAS-395; the rooms just above the devices since HAS-438 (owner
+ * 2026-11-13).
+ *
+ * A resident is offered what is theirs (HAS-438, owner 2026-11-13): their room, the appliances, the
+ * requests, the settings of this device - and the heating of the whole house with its permission. At
+ * most five entries, so all of them stand on the bottom bar of a phone. The requests and the heating of
+ * the house come after the appliances, which keeps the first places of the administrator as they were.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/overview', label: 'nav.overview', icon: 'dashboard', access: 'admin' },
@@ -29,17 +48,32 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/weather', label: 'nav.weather', icon: 'partly_cloudy_day', access: 'admin' },
   { path: '/energy', label: 'nav.energy', icon: 'solar_power', access: 'admin' },
   { path: '/aircon', label: 'nav.aircon', icon: 'ac_unit', access: 'admin' },
-  { path: '/rooms', label: 'nav.rooms', icon: 'meeting_room', access: 'admin' },
   { path: '/blinds', label: 'nav.blinds', icon: 'blinds', access: 'admin' },
   { path: '/lights', label: 'nav.lights', icon: 'lightbulb', access: 'admin' },
-  { path: '/appliances', label: 'nav.appliances', icon: 'local_laundry_service', access: 'admin' },
+  { path: '/appliances', label: 'nav.appliances', icon: 'local_laundry_service', access: 'member' },
+  {
+    path: '/requests',
+    label: 'nav.requests',
+    shortLabel: 'nav.requestsShort',
+    icon: 'checklist',
+    access: 'member',
+  },
+  {
+    path: '/house-heating',
+    label: 'nav.houseHeating',
+    shortLabel: 'nav.houseHeatingShort',
+    icon: 'thermostat',
+    access: 'member',
+    permission: 'heating_switch',
+  },
   { path: '/heating', label: 'nav.heating', icon: 'mode_heat', access: 'admin' },
   { path: '/water', label: 'nav.water', icon: 'water_drop', access: 'admin' },
   { path: '/boiler', label: 'nav.boilerRoom', icon: 'water_heater', access: 'admin' },
   { path: '/presence', label: 'nav.presence', icon: 'location_home', access: 'admin' },
   { path: '/household', label: 'nav.household', icon: 'group', access: 'admin' },
+  { path: '/rooms', label: 'nav.rooms', icon: 'meeting_room', access: 'admin' },
   { path: '/devices', label: 'nav.devices', icon: 'devices_other', access: 'admin' },
-  { path: '/settings', label: 'nav.settings', icon: 'settings', access: 'admin' },
+  { path: '/settings', label: 'nav.settings', icon: 'settings', access: 'member' },
   { path: '/about', label: 'nav.about', icon: 'info', access: 'admin' },
 ];
 

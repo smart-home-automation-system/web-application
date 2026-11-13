@@ -40,23 +40,23 @@ test('moves a blind and pauses its schedules, reading the blinds back', async ({
   await expect(blind.getByTestId('blind-position')).toHaveText('0 %');
 
   await expect(blind.getByTestId('blind-paused')).toHaveCount(0);
-  await blind.getByRole('switch').click();
+  await blind.getByTestId('blind-pause').click();
   await expect(blind.getByTestId('blind-paused')).toContainText('Paused');
   // the schedules have a page of their own (owner, 2026-10-18)
   await expect(window.getByTestId('blind-schedules')).toHaveCount(0);
 });
 
-// no optimistic state: the switch shows what the blinds service says, not the click (found in review)
-test('leaves the pause switch as it was when the pause failed', async ({ page }) => {
+// no optimistic state: the button shows what the blinds service says, not the click (found in review)
+test('leaves the pause as it was when the pause failed', async ({ page }) => {
   await useScenario(page, 'writes-fail');
   await page.goto('/rooms');
   const window = await openRoom(page, 'office');
   const blind = window.locator('[data-blind="1"]');
 
-  await blind.getByRole('switch').click();
+  await blind.getByTestId('blind-pause').click();
 
   await expect(blind.getByRole('alert')).toBeVisible();
-  await expect(blind.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(blind.getByTestId('blind-pause')).toHaveAttribute('aria-pressed', 'false');
   await expect(blind.getByTestId('blind-paused')).toHaveCount(0);
 });
 

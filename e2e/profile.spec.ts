@@ -63,15 +63,16 @@ test.describe('without a profile', () => {
             'Weather',
             'Energy',
             'Air conditioning',
-            'Rooms',
             'Blinds',
             'Lights',
             'Appliances',
+            'Requests',
             'Heating',
             'Water',
             'Boiler room',
             'Presence',
             'Household',
+            'Rooms',
             'Devices',
             'Settings',
             'About',
@@ -80,18 +81,21 @@ test.describe('without a profile', () => {
     await expect(page.locator('.shell__profile')).toContainText('Aurelia');
   });
 
-  test('opens only their room from the link of a resident', async ({ page }, testInfo) => {
+  // HAS-438: their room first, and the pages of their own beside it - all of them on the bar of a phone
+  test('opens their room from the link of a resident, with their own pages beside it', async ({
+    page,
+  }, testInfo) => {
     await page.goto('/u/Borys');
 
     await expect(page).toHaveURL(/\/room$/);
     await expect(page).toHaveTitle('My room · Smart Home');
     await expect(page.getByTestId('room-heating')).toContainText('loft');
-    if (testInfo.project.name === 'phone') {
-      // a bar with one destination leads nowhere
-      await expect(page.locator('.shell__bottom-nav')).toHaveCount(0);
-    } else {
-      expect(await destinations(page, testInfo.project.name)).toEqual(['My room']);
-    }
+    expect(await destinations(page, testInfo.project.name)).toEqual([
+      'My room',
+      'Appliances',
+      'Requests',
+      'Settings',
+    ]);
     // a resident is not offered other profiles
     await expect(page.getByRole('link', { name: /Switch profile/ })).toHaveCount(0);
   });
@@ -154,7 +158,15 @@ test.describe('a resident', () => {
   test.use({ profile: 'resident' });
 
   // typed into the address bar: the navigation never offers these
-  for (const address of ['/', '/overview', '/settings', '/about', '/profiles', '/no/such/page']) {
+  // HAS-438: the heating of the whole house asks for a permission Borys was not granted
+  for (const address of [
+    '/',
+    '/overview',
+    '/house-heating',
+    '/about',
+    '/profiles',
+    '/no/such/page',
+  ]) {
     test(`is led to their room from ${address}`, async ({ page }) => {
       await page.goto(address);
 
@@ -257,7 +269,7 @@ test.describe('a profile the registry no longer agrees with', () => {
     test.use({ profile: 'demoted' });
 
     test('leaves the page of the administrator it was opened on', async ({ page }) => {
-      await page.goto('/settings');
+      await page.goto('/about');
 
       await expect(page).toHaveURL(/\/room$/);
       await expect(page.getByRole('heading', { level: 1, name: 'My room' })).toBeVisible();

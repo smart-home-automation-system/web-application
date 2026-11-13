@@ -1,18 +1,28 @@
+import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
+import { Profile } from '../../core/profile/profile';
+import { ProfileStore } from '../../core/profile/profile-store';
 import { ThemeStore } from '../../core/theme/theme-store';
 import { Settings } from './settings';
 
 describe('Settings', () => {
   let fixture: ComponentFixture<Settings>;
   let theme: ThemeStore;
+  let profile: WritableSignal<Profile | undefined>;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 9, 15, 12));
     localStorage.removeItem('smart-home.theme');
-    TestBed.configureTestingModule({ providers: [provideI18nTesting()] });
+    profile = signal<Profile | undefined>({ name: 'Aurelia', role: 'admin', rooms: [] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideI18nTesting(),
+        { provide: ProfileStore, useValue: { profile, members: signal(undefined) } },
+      ],
+    });
     theme = TestBed.inject(ThemeStore);
     fixture = TestBed.createComponent(Settings);
   });
@@ -43,6 +53,17 @@ describe('Settings', () => {
   function resetButton(): HTMLButtonElement {
     return element().querySelector<HTMLButtonElement>('mat-card-actions button')!;
   }
+
+  // HAS-438: every member opens the settings; the palette stays a tool of the administrator's
+  it('shows the palette to the administrator alone', async () => {
+    await fixture.whenStable();
+    expect(element().querySelector('[data-testid="palette"]')).not.toBeNull();
+
+    profile.set({ name: 'Borys', role: 'resident', rooms: ['loft'] });
+    await fixture.whenStable();
+    expect(element().querySelector('[data-testid="palette"]')).toBeNull();
+    expect(element().querySelector('app-device-notifications')).not.toBeNull();
+  });
 
   it('starts on automatic and says which season the calendar gives', async () => {
     await fixture.whenStable();

@@ -98,7 +98,8 @@
             <p class="appliance__note">{{ t('appliances.page.runs.none') }}</p>
           } @else {
             <ul class="runs">
-              @for (run of list; track run.key) {
+              <!-- the newest five (HAS-438, owner 2026-11-13: a longer list tells nothing more), the rest counted -->
+              @for (run of list.slice(0, RUNS_SHOWN); track run.key) {
                 <li class="run" data-testid="run">
                   <span class="run__start">{{ run.startedAt | houseDateTime: TIME }}</span>
                   <span class="run__duration">
@@ -131,6 +132,11 @@
                 </li>
               }
             </ul>
+            @if (list.length > RUNS_SHOWN) {
+              <p class="appliance__note" data-testid="runs-more">
+                {{ t('appliances.page.runs.more', { count: list.length - RUNS_SHOWN }) }}
+              </p>
+            }
           }
         } @else if (!runsError()) {
           <p class="appliance__note">{{ t('appliances.page.notKnown') }}</p>

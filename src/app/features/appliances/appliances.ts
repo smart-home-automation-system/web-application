@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -10,7 +9,6 @@ import { Ticker } from '../../core/time/ticker';
 import { ApplianceApi, RunsOf, RunsQuery } from '../../data-access/appliance/appliance-api';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
-import { MessageKey } from '../../i18n/messages';
 import { toApplianceViews } from '../../shared/appliances/appliance-views';
 import { historyPeriod } from '../../shared/history-chart/history-period';
 import { Source, SourcesStrip } from '../../shared/sources-strip/sources-strip';
@@ -18,15 +16,11 @@ import { ApplianceCard } from './appliance-card';
 import { AppliancePower } from './appliance-power';
 import { CounterRow } from './counter-row';
 import { MembersReport } from './members-report';
-import { LIST_PRESETS, ListPreset, addedUp, countersOf, runsIn } from './appliance-history';
-
-const LIST_LABELS: Readonly<Record<ListPreset, MessageKey>> = {
-  week: 'history.preset.week',
-  month: 'history.preset.month',
-};
+import { addedUp, countersOf, runsIn } from './appliance-history';
 
 /**
- * The appliances page (HAS-283, the administrator's): every appliance of `appliance-service` with its
+ * The administrator's part of the appliances page (HAS-283; since HAS-438 inside `AppliancesPage`, which
+ * creates it for the administrator only): every appliance of `appliance-service` with its
  * state, its cycles and the draw of its plug, to tune the thresholds - which are changed on the devices
  * page. Three calls, told once in the strip at the top: the appliances (the resource of the whole
  * application), their settings in the device registry, and the cycles of the last 30 days of every
@@ -36,7 +30,6 @@ const LIST_LABELS: Readonly<Record<ListPreset, MessageKey>> = {
 @Component({
   selector: 'app-appliances',
   imports: [
-    MatButtonToggleModule,
     MatCardModule,
     MatIconModule,
     TranslocoDirective,
@@ -74,10 +67,6 @@ export class Appliances {
     { id: 'runs', label: 'appliances.page.sources.runs', resource: this.runs },
   ];
 
-  /** The period of the lists of the cycles. */
-  protected readonly listPreset = signal<ListPreset>('week');
-  protected readonly listPresets = LIST_PRESETS;
-  protected readonly listLabels = LIST_LABELS;
   /** The period of the charts of the draw, shared by every chart of the page. */
   protected readonly power = historyPeriod('day');
 
@@ -93,14 +82,18 @@ export class Appliances {
     const devices = this.registry.value();
     return new Map<number, SmartDevice>(
       Array.isArray(devices)
-        ? devices.filter((device) => typeof device.id === 'number').map((device) => [device.id as number, device])
+        ? devices
+            .filter((device) => typeof device.id === 'number')
+            .map((device) => [device.id as number, device])
         : [],
     );
   });
 
   protected readonly rows = computed(() => {
     const now = this.ticker.now();
-    const list: HistoryRange = historyRange(this.listPreset(), now, this.zone);
+    // the cycles of the 30 days the page reads (HAS-438, owner 2026-11-13: no switch - the card lists the
+    // newest five and counts the rest)
+    const list: HistoryRange = historyRange('month', now, this.zone);
     const runs = this.runsById();
     return this.views().map((view) => {
       const entry = runs?.get(view.id);
@@ -116,10 +109,14 @@ export class Appliances {
 
   /** The line of the whole house: every appliance whose cycles are known, added up. */
   protected readonly house = computed(() => {
-    const counted = this.rows().flatMap((row) => (row.counters === undefined ? [] : [row.counters]));
+    const counted = this.rows().flatMap((row) =>
+      row.counters === undefined ? [] : [row.counters],
+    );
     return counted.length === 0 ? undefined : addedUp(counted);
   });
 
   /** Some appliance's cycles failed: the house line then says it is not the whole house. */
-  protected readonly houseIncomplete = computed(() => this.rows().some((row) => row.counters === undefined));
+  protected readonly houseIncomplete = computed(() =>
+    this.rows().some((row) => row.counters === undefined),
+  );
 }

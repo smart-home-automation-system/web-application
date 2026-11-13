@@ -7,6 +7,14 @@
 .power {
   --app-domain: var(--app-domain-appliance);
 
+  // the place of the chart kept while another period loads (HAS-438, owner 2026-11-13: the card shrank to its
+  // progress bar and its row jumped) - the chart (280 px) and the numbers under it (8 + 15)
+  --app-frame-body-min-height: 303px;
+
+  @media (max-width: 640px) {
+    --app-frame-body-min-height: 243px; // the same with the chart of a phone (220 px)
+  }
+
   height: 100%;
   box-sizing: border-box;
 }

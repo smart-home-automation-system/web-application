@@ -4,6 +4,7 @@ import { BackgroundName } from './core/background/backgrounds';
 import { Shell } from './core/layout/shell';
 import { Access } from './core/profile/access';
 import { profileGuard } from './core/profile/profile-guard';
+import { MemberPermission } from './core/profile/profile';
 import { ErrorPage } from './features/error/error-page';
 import { MessageKey } from './i18n/messages';
 
@@ -11,11 +12,12 @@ import { MessageKey } from './i18n/messages';
  * A page of the application: its `title` is the key of the text shown in the browser tab, and
  * `data.background` names the photo behind it (`core/background/backgrounds.ts`); without one
  * the page shows the plain glow. `data.access` says who may open it (`core/profile/access.ts`):
- * **a page that does not say is the administrator's alone**.
+ * **a page that does not say is the administrator's alone**. `data.permission` asks for a permission of
+ * the registry beyond the access (HAS-438) - only a member granted it opens the page.
  */
 type Page = Route & {
   title?: MessageKey;
-  data?: { background?: BackgroundName; access?: Access };
+  data?: { background?: BackgroundName; access?: Access; permission?: MemberPermission };
 };
 
 const pages: Page[] = [
@@ -91,8 +93,25 @@ const pages: Page[] = [
     // the appliances (HAS-283, the administrator's): cycles, counters and the draw of the plugs
     path: 'appliances',
     title: 'nav.appliances',
-    data: { background: 'appliances' },
-    loadComponent: () => import('./features/appliances/appliances').then((m) => m.Appliances),
+    // every member since HAS-438: the appliances and the chores for all, the rest for the administrator
+    data: { access: 'member', background: 'appliances' },
+    loadComponent: () =>
+      import('./features/appliances/appliances-page').then((m) => m.AppliancesPage),
+  },
+  {
+    // HAS-438: the requests of the household on a page of their own, for every member
+    path: 'requests',
+    title: 'nav.requests',
+    data: { access: 'member', background: 'requests' },
+    loadComponent: () => import('./features/requests/requests-page').then((m) => m.RequestsPage),
+  },
+  {
+    // HAS-438: the switch of the heating of the whole house, for a member granted it alone
+    path: 'house-heating',
+    title: 'nav.houseHeating',
+    data: { access: 'member', permission: 'heating_switch', background: 'heating' },
+    loadComponent: () =>
+      import('./features/house-heating/house-heating-page').then((m) => m.HouseHeatingPage),
   },
   {
     // the editor of the rule of a room (HAS-267): one page per room, the room named by the address
@@ -144,7 +163,8 @@ const pages: Page[] = [
   {
     path: 'settings',
     title: 'nav.settings',
-    data: { background: 'settings' },
+    // every member since HAS-438: the appearance and the notifications of this device
+    data: { access: 'member', background: 'settings' },
     loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
   },
   {

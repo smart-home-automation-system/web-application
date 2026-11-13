@@ -15,7 +15,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { TranslocoDirective } from '@jsverse/transloco';
 import { filter } from 'rxjs';
 
-import { PROFILES_PATH, accessOf, redirectFor } from '../profile/access';
+import { PROFILES_PATH, accessOf, permissionOf, redirectFor } from '../profile/access';
 import { ProfileStore } from '../profile/profile-store';
 import { APP_NAME } from './app-title-strategy';
 import { LanguageMenu } from './language-menu';
@@ -63,7 +63,9 @@ export class Shell {
   protected readonly profilesPath = PROFILES_PATH;
   protected readonly profile = inject(ProfileStore).profile;
   protected readonly navItems = computed(() =>
-    NAV_ITEMS.filter((item) => redirectFor(item.access, this.profile()) === undefined),
+    NAV_ITEMS.filter(
+      (item) => redirectFor(item.access, this.profile(), item.permission) === undefined,
+    ),
   );
   /** The bottom bar of a phone: the entries it has room for, and the rest behind "More". */
   protected readonly bottomBar = computed(() => splitForBottomBar(this.navItems()));
@@ -90,7 +92,8 @@ export class Shell {
       const profile = this.profile();
       this.arrived();
       untracked(() => {
-        const target = redirectFor(accessOf(this.router.routerState.snapshot.root), profile);
+        const root = this.router.routerState.snapshot.root;
+        const target = redirectFor(accessOf(root), profile, permissionOf(root));
         if (target !== undefined) {
           void this.router.navigateByUrl(target, { replaceUrl: true });
         }

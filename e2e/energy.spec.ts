@@ -89,7 +89,8 @@ test('says what is not known just after the service started', async ({ page }) =
   await expect(page.getByTestId('card-flow').locator('[data-node="house"]')).toContainText(
     'not known',
   );
-  await expect(page.getByTestId('no-alerts')).toBeVisible();
+  await expect(page.getByTestId('card-alerts').getByTestId('no-alerts')).toBeVisible();
+  await expect(page.getByTestId('card-alerts-now').getByTestId('no-alerts')).toBeVisible();
 });
 
 // HAS-373: the production forecast - the sentence, the closed days beside, seven days, 48 hours
