@@ -369,10 +369,11 @@ test.describe('the blinds and the sensors of the room', () => {
       await blind.getByRole('button', { name: 'Open Bedroom window blinds' }).click();
       await expect(blind.getByTestId('blind-position')).toHaveText('100 %');
 
-      const pause = blind.getByRole('switch');
-      await expect(pause).toHaveAttribute('aria-checked', 'false');
+      // HAS-438: the pause is a button pressed while the service says it is paused
+      const pause = blind.getByTestId('blind-pause');
+      await expect(pause).toHaveAttribute('aria-pressed', 'false');
       await pause.click();
-      await expect(pause).toHaveAttribute('aria-checked', 'true');
+      await expect(pause).toHaveAttribute('aria-pressed', 'true');
       await expect(blind.getByTestId('blind-paused')).toContainText('Paused');
       // no schedules here: they are the administrator's, on the blinds page
       await expect(page.getByTestId('schedule')).toHaveCount(0);

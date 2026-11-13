@@ -17,48 +17,85 @@
   @if (state()?.reachable === false) {
     <span class="blind__warning">{{ t('blindControl.unreachable') }}</span>
   }
-  <span class="blind__controls">
-    <button matButton="outlined" type="button" [disabled]="sending" (click)="move('open')">
-      <mat-icon>arrow_upward</mat-icon>{{ t('blindControl.open') }}
-      <span class="visually-hidden">{{ name() }}</span>
-    </button>
-    <button matButton="outlined" type="button" [disabled]="sending" (click)="move('stop')">
-      <mat-icon>stop</mat-icon>{{ t('blindControl.stop') }}
-      <span class="visually-hidden">{{ name() }}</span>
-    </button>
-    <button matButton="outlined" type="button" [disabled]="sending" (click)="move('close')">
-      <mat-icon>arrow_downward</mat-icon>{{ t('blindControl.close') }}
-      <span class="visually-hidden">{{ name() }}</span>
-    </button>
-  </span>
-  @if (positioning() === true) {
-    <span class="blind__slider">
-      <mat-slider min="0" max="100" step="10" discrete>
-        <input
-          matSliderThumb
-          #position
-          [value]="state()?.position ?? 50"
-          [attr.aria-label]="t('blindControl.positionLabel') + ' ' + (name() ?? '')"
-        />
-      </mat-slider>
-      <button matButton type="button" [disabled]="sending" (click)="moveTo(position.valueAsNumber)">
-        {{ t('blindControl.goTo') }}
+
+  <!-- open, stop and close as one bar, in the look of the modes of an air conditioner (owner, 2026-11-13,
+       HAS-438) - commands, not a choice: buttons, nothing stays pressed -->
+  <div class="blind__row">
+    <span class="segments" role="group" [attr.aria-label]="name() ?? t('blinds.unnamed')">
+      <button class="segment" type="button" [disabled]="sending" (click)="move('open')">
+        <mat-icon class="segment__icon">arrow_upward</mat-icon>&ngsp;{{ t('blindControl.open') }}
+        <span class="visually-hidden">{{ name() }}</span>
+      </button>
+      <button class="segment" type="button" [disabled]="sending" (click)="move('stop')">
+        <mat-icon class="segment__icon">stop</mat-icon>&ngsp;{{ t('blindControl.stop') }}
+        <span class="visually-hidden">{{ name() }}</span>
+      </button>
+      <button class="segment" type="button" [disabled]="sending" (click)="move('close')">
+        <mat-icon class="segment__icon">arrow_downward</mat-icon>&ngsp;{{ t('blindControl.close') }}
         <span class="visually-hidden">{{ name() }}</span>
       </button>
     </span>
+  </div>
+
+  <!-- a position by a step of 10 %, as the target of an air conditioner; a position not known offers no step -->
+  @if (positioning() === true) {
+    @let at = state()?.position;
+    <div class="blind__row">
+      <span class="stepper" data-testid="blind-stepper">
+        <button
+          matIconButton
+          type="button"
+          data-testid="blind-position-down"
+          [disabled]="sending || at === undefined || at <= 0"
+          [attr.aria-label]="t('blindControl.positionDown') + ' ' + (name() ?? '')"
+          (click)="step(-POSITION_STEP)"
+        >
+          <mat-icon>remove</mat-icon>
+        </button>
+        <span class="stepper__value">
+          @if (at !== undefined) {
+            {{ t('blindControl.position', { position: at }) }}
+          } @else {
+            {{ t('blindControl.positionUnknown') }}
+          }
+        </span>
+        <button
+          matIconButton
+          type="button"
+          data-testid="blind-position-up"
+          [disabled]="sending || at === undefined || at >= 100"
+          [attr.aria-label]="t('blindControl.positionUp') + ' ' + (name() ?? '')"
+          (click)="step(POSITION_STEP)"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+      </span>
+    </div>
   }
-  <mat-slide-toggle
-    class="blind__pause"
-    data-testid="blind-pause"
-    [checked]="state()?.schedulePausedSince !== undefined"
-    [disabled]="sending || state() === undefined"
-    (toggleChange)="pause()"
-  >
-    {{ t('blindControl.pause') }}
-    <span class="visually-hidden">{{ name() }}</span>
-  </mat-slide-toggle>
+
+  <!-- the pause of the schedules, in the look of quiet / turbo / sleep: pressed while the service says it is
+       paused - a press asks for the other state, the read-back moves it -->
+  <div class="blind__row">
+    <span class="segments">
+      <button
+        class="segment"
+        type="button"
+        data-testid="blind-pause"
+        [class.segment--on]="paused()"
+        [attr.aria-pressed]="paused()"
+        [disabled]="sending || state() === undefined"
+        [attr.aria-label]="t('blindControl.pause') + ' ' + (name() ?? '')"
+        [matTooltip]="t('blindControl.pause')"
+        matTooltipTouchGestures="off"
+        (click)="pause()"
+      >
+        <mat-icon class="segment__icon" aria-hidden="true">event_busy</mat-icon
+        >{{ t('blindControl.pauseShort') }}
+      </button>
+    </span>
+  </div>
   @if (state()?.schedulePausedSince | houseAge; as age) {
-    <span class="blind__note" data-testid="blind-paused"
+    <span class="blind__note blind__note--centre" data-testid="blind-paused"
       >{{ t('blindControl.pausedSince') }} {{ age }}</span
     >
   }

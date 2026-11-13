@@ -596,23 +596,21 @@ describe('MyRoom', () => {
       answer(lastBlinds().resource, BLINDS);
 
       const inCard = [...(await card())!.querySelectorAll('button, a, input, [tabindex]')].map(
-        // a switch is named by its label
-        (control) =>
-          control.getAttribute('role') === 'switch'
-            ? 'switch: ' + words(control.closest('mat-slide-toggle'))
-            : words(control),
+        // a control named by its aria-label (the steps, the pause) by that, any other by its words
+        (control) => control.getAttribute('aria-label') ?? words(control),
       );
       expect(inCard).toEqual([
         'arrow_upward Open Bedroom door blinds',
         'stop Stop Bedroom door blinds',
         'arrow_downward Close Bedroom door blinds',
-        'switch: Pause the schedules until their next run Bedroom door blinds',
+        // HAS-438: the pause is a button in the look of quiet / turbo / sleep, the position a step of 10 %
+        'Pause the schedules until their next run Bedroom door blinds',
         'arrow_upward Open Bedroom window blinds',
         'stop Stop Bedroom window blinds',
         'arrow_downward Close Bedroom window blinds',
-        '',
-        'Go Bedroom window blinds',
-        'switch: Pause the schedules until their next run Bedroom window blinds',
+        'Lower the position Bedroom window blinds',
+        'Raise the position Bedroom window blinds',
+        'Pause the schedules until their next run Bedroom window blinds',
       ]);
       // nothing in the card of the heating
       expect((await controls()).inTheRoom).toEqual([]);
@@ -631,6 +629,21 @@ describe('MyRoom', () => {
 
       expect(sent).toEqual(['close 4']);
       expect(refreshed).toHaveBeenCalled();
+    });
+
+    // HAS-438: the position by a step of 10 %, as the target of an air conditioner
+    it('moves a blind that takes a position by a step of 10 %', async () => {
+      await page();
+      answer(lastBlinds().resource, BLINDS);
+
+      (
+        (await card())!.querySelector(
+          '[data-blind="4"] [data-testid="blind-position-up"]',
+        ) as HTMLButtonElement
+      ).click();
+      await page();
+
+      expect(sent).toEqual(['to 50 4']);
     });
 
     it('shows no card for a room without blinds, nor while the first answer is on its way', async () => {

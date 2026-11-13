@@ -1,11 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import {
-  MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS,
-  MatSlideToggleModule,
-} from '@angular/material/slide-toggle';
-import { MatSliderModule } from '@angular/material/slider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { DeviceCommands } from '../../core/api/device-commands';
@@ -24,16 +20,19 @@ import { blindPositionLabel } from './blind-position';
  *
  * **No optimistic state**: a command is sent through the caller's `commands` - one command per
  * blind at a time, whoever sends it - and the blinds are read again (`refresh`) before anything on
- * screen moves. **The pause switch does not flip itself** (`disableToggleValue`): it shows
- * `schedulePausedSince` of the service, also after a pause that failed.
+ * screen moves. **The pause does not press itself**: its button is pressed while the service says
+ * `schedulePausedSince`, also after a pause that failed.
+ *
+ * The look of an air conditioner (HAS-438, owner 2026-11-13): open / stop / close as one bar, the position
+ * by a step of 10 % instead of a slider and "Go", the pause as a button in the look of quiet / turbo /
+ * sleep, everything in the middle of the frame.
  */
 @Component({
   selector: 'app-blind-control',
   imports: [
     MatButtonModule,
     MatIconModule,
-    MatSlideToggleModule,
-    MatSliderModule,
+    MatTooltipModule,
     TranslocoDirective,
     ApiErrorStrip,
     HouseAgePipe,
@@ -42,9 +41,6 @@ import { blindPositionLabel } from './blind-position';
   styleUrl: './blind-control.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   preserveWhitespaces: true,
-  providers: [
-    { provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } },
-  ],
 })
 export class BlindControl {
   /** The id of the device registry - what `blinds-service` addresses. */
@@ -72,16 +68,24 @@ export class BlindControl {
     return window === undefined ? undefined : toWindowView({ state: window });
   });
   protected readonly command = computed(() => this.commands().stateOf(this.id()));
+  /** Whether the service says the schedules of the blind are paused. */
+  protected readonly paused = computed(() => this.state()?.schedulePausedSince !== undefined);
+  protected readonly POSITION_STEP = 10;
 
   protected move(command: BlindCommand): void {
     this.commands().send(this.id(), this.api.move(this.id(), command), this.refresh());
   }
 
-  protected moveTo(position: number): void {
-    this.commands().send(this.id(), this.api.moveTo(this.id(), position), this.refresh());
+  /** The reported position moved by a step, kept within 0-100 %; nothing without a reported position. */
+  protected step(by: number): void {
+    const at = this.state()?.position;
+    if (at !== undefined) {
+      const position = Math.min(100, Math.max(0, at + by));
+      this.commands().send(this.id(), this.api.moveTo(this.id(), position), this.refresh());
+    }
   }
 
-  /** A click asks for the other state; the switch moves when the blinds read again say so. */
+  /** A press asks for the other state; the button moves when the blinds read again say so. */
   protected pause(): void {
     const id = this.id();
     const call =

@@ -488,15 +488,17 @@ e2e/              # Playwright tests
     A switched-off device is left out (no service uses it).
   - **The row of a blind is `BlindControl`** (`shared/blinds/blind-control`, since HAS-254 shared
     with the blinds card of "My room"): its position, window, open / stop / close, the position,
-    the pause - the rules below hold for both places.
+    the pause - the rules below hold for both places. **The look of an air conditioner** (HAS-438, owner
+    2026-11-13): open / stop / close one bar of buttons drawn as the toggle group of the modes (`.segments` - commands,
+    nothing stays pressed), the position by a step of 10 % (no slider and "Go" any more), the pause a button in the look
+    of quiet / turbo / sleep (`aria-pressed`), everything in the middle of the frame.
   - **Controls for the lights and the blinds only** (owner): the heating is shown, and set on the
     heating page only - nothing in the window leads there (owner, 2026-10-18). **No question before a command** (owner, 2026-10-17 - frequent and
     reversible; the rule of the question stays for the switch of the heating of the whole house).
   - **No optimistic state**: a command to a blind is followed by a read of the blinds
     (`refreshBlinds`), and only that answer moves the screen; one command per device at a time.
-    **The pause switch does not flip itself** (`disableToggleValue` of the slide toggle,
-    `toggleChange`): it shows `schedulePausedSince` of the service - found in review, a failed
-    pause left the toggle of Material on.
+    **The pause does not press itself**: its button is pressed while the service says
+    `schedulePausedSince` - found in review, a failed pause had left the slide toggle of Material (before HAS-438) on.
   - **The lights are `light-service`'s** (HAS-292, `LightApi` in `data-access/light/`, >= 0.6.0):
     every light, Eaton and Shelly alike, is switched by its registry id - `POST /light/{id}?turn=`,
     a dimmer or an rgbw light `/brightness?value=1..100` - always with `source=dashboard`, which the
