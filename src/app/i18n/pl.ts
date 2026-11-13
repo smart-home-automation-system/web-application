@@ -113,9 +113,7 @@ export const pl: Messages = {
     requests: {
       title: 'Zapotrzebowania',
       forYou: 'Prośby do Ciebie',
-      toOthers: 'Twoje do innych',
       nothing: 'Brak',
-      unknown: 'Nieznane',
     },
     appliances: {
       running: 'Pracuje',
@@ -1544,7 +1542,6 @@ export const pl: Messages = {
     stop: 'Stop',
     close: 'Zamknij',
     positionLabel: 'Pozycja',
-    goTo: 'Ustaw',
     pause: 'Wstrzymaj harmonogramy do ich najbliższego uruchomienia',
     pauseShort: 'Wstrzymaj harmonogramy',
     send: 'Wyślij',
@@ -1746,7 +1743,6 @@ export const pl: Messages = {
       brightness: 'Jasność',
       send: 'Wyślij',
       setColor: 'Ustaw kolor',
-      set: 'Ustaw',
       color: 'Kolor',
       red: 'Czerwony',
       green: 'Zielony',

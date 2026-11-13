@@ -1,4 +1,4 @@
-import { computed, signal } from '@angular/core';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -125,9 +125,7 @@ describe('Overview', () => {
   let energyForecast: FakeResource<EnergyForecast | null>;
   let fixture: ComponentFixture<Overview>;
   let requests: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
-  let written: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
   let requestsAsked: () => string | undefined;
-  let writtenAsked: () => string | undefined;
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
@@ -149,7 +147,6 @@ describe('Overview', () => {
     energyStatus = fakeResource();
     energyForecast = fakeResource();
     requests = fakeQueryResource();
-    written = fakeQueryResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -200,11 +197,6 @@ describe('Overview', () => {
             watch: (member: () => string | undefined) => {
               requestsAsked = member;
               return requests;
-            },
-            watchWrittenBy: (author: () => string | undefined, others: () => readonly string[]) => {
-              const query = computed(() => [author(), ...others()].join(','));
-              writtenAsked = query;
-              return { ...written, asked: query };
             },
           },
         },
@@ -688,39 +680,33 @@ describe('Overview', () => {
   });
 
   // HAS-438: the requests of the member of the profile and what the member wrote for the others - two calls
+  // HAS-438: the requests for the member of the profile - one call; what the member wrote for the others is the
+  // requests page's (it reads every other member's list)
   describe('the requests', () => {
-    it('counts the requests for the member and those written for the others, the first of them named', async () => {
+    it('counts the requests for the member, the first of them named, and leads to the requests page', async () => {
       await fixture.whenStable();
       answerQuery(requests, requestsAsked(), [
         { id: 1, text: 'Bread and milk', author: 'Borys' },
         { id: 2, text: 'Parcel', author: 'Borys', doneAt: '2026-10-01T10:00:00' },
       ]);
+
       const shown = await tile('requests');
       expect(words(shown)).toContain('Requests for you 1');
-      // the second call not answered yet: not known, never 0
-      expect(words(shown)).toContain('Yours for the others Not known');
+      expect(words(shown)).not.toContain('for the others');
       expect([...shown.querySelectorAll('[data-testid="tile-request"]')].map(words)).toEqual([
         'Bread and milk',
       ]);
-
-      answerQuery(written, writtenAsked(), [
-        { id: 7, member: 'Borys', text: 'Bulbs', author: 'Ola' },
-      ]);
-      expect(words(await tile('requests'))).toContain('Yours for the others 1');
-      expect((await tile('requests')).querySelectorAll('button')).toHaveLength(0);
-      expect((await tile('requests')).querySelector('a.tile__link')?.getAttribute('href')).toBe(
-        '/requests',
-      );
+      expect(shown.querySelectorAll('button')).toHaveLength(0);
+      expect(shown.querySelector('a.tile__link')?.getAttribute('href')).toBe('/requests');
     });
 
-    it('says when nothing waits, and tells a failed read of the others apart', async () => {
+    it('says when nothing waits, and tells a failed read', async () => {
       await fixture.whenStable();
       answerQuery(requests, requestsAsked(), []);
-      failQuery(written, writtenAsked(), new ApiError('server', 500));
+      expect(words(await tile('requests'))).toContain('Requests for you None');
 
-      const shown = await tile('requests');
-      expect(words(shown)).toContain('Requests for you None');
-      expect(shown.querySelector('app-api-error-strip .strip')).not.toBeNull();
+      failQuery(requests, requestsAsked(), new ApiError('server', 500));
+      expect((await tile('requests')).querySelector('app-api-error-strip .strip')).not.toBeNull();
     });
   });
 

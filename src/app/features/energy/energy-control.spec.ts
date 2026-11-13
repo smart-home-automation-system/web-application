@@ -105,6 +105,7 @@ describe('EnergyControl', () => {
       ],
     });
     fixture = TestBed.createComponent(EnergyControl);
+    fixture.componentRef.setInput('planned', planned);
   });
 
   afterEach(() => {
