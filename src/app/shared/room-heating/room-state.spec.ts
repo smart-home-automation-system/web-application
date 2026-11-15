@@ -56,6 +56,10 @@ describe('roomState', () => {
     expect(
       roomState(room({ temperature: 8.5, target: 9, heaters: [heater(undefined)] }), true),
     ).toBe('unknown');
+    // a heater known to work still says so above the target
+    expect(
+      roomState(room({ temperature: 21, heaters: [heater(true), heater(undefined)] }), true),
+    ).toBe('heating');
     expect(roomState(room({ temperature: 15, target: 9, heaters: undefined }), true)).toBe(
       'unknown',
     );

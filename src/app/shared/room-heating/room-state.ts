@@ -8,7 +8,8 @@ import { RoomView, SchedulePeriod, clockTime } from './room-views';
  * 3. `heating` - a heater of the room is working;
  * 4. `reached` - a schedule covers the room now and it is as warm as asked, or warmer - even while a heater
  *    has no status (HAS-440): only the relay tells heating from waiting, never warm enough from cold;
- * 5. `unknown` - no temperature, or a heater without a status: missing is never off;
+ * 5. `unknown` - no temperature, or colder than asked (or no schedule) with a heater without a status:
+ *    missing is never off;
  * 6. `waiting` - a schedule covers the room now and it is colder than asked, nothing works yet;
  * 7. `outside` - no schedule covers the room now.
  * `noHeater` stands apart: a room without a heater (the loft, the garden) has no heating to tell.
