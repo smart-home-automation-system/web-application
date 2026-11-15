@@ -11,8 +11,8 @@ import { RoomSensors } from './room-sensors';
  * by name: it renders whatever this list holds, in this order, and hands each card the room it
  * is for: the lights, the blinds and the air conditioning first (control - the air conditioning after the blinds
  * since HAS-439, owner 2026-11-15), then the heating (owner, 2026-11-13, HAS-438) and the opening, motion and
- * presence sensors (view). A new one gets an entry here
- * when its service exists - and is absent from the page until then, without a placeholder.
+ * presence sensors (view). A new one gets an entry here when its service exists - and is absent
+ * from the page until then, without a placeholder.
  */
 export interface RoomCapability {
   /** Stable name of the capability, for tracking and tests. */

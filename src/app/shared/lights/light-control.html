@@ -17,7 +17,7 @@
   </div>
 
   @if (inline()) {
-    <!-- the state and on / off in one row (HAS-439): the strip as wide as its words, the bar beside it -->
+    <!-- the state and on / off in one row (HAS-439): the strip fills the row up to the bar, one width whatever it says -->
     <div class="light__line">
       <ng-container [ngTemplateOutlet]="stateStrip" />
       <ng-container [ngTemplateOutlet]="onOff" />
