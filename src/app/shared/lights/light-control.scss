@@ -63,6 +63,20 @@
   color: var(--app-domain-light);
 }
 
+// the lights card of My room (HAS-439): the strip fills the row up to on / off at its end - one width whatever
+// it says (owner 2026-11-15); on a narrow phone the bar wraps below rather than squeezing the word of the state
+.light__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+
+  .status {
+    flex: 1 1 8em;
+    min-width: 0;
+  }
+}
+
 // every control in the middle of the frame
 .light__row {
   display: flex;

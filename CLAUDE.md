@@ -272,7 +272,7 @@ e2e/              # Playwright tests
   found in review, the lesson of the heating switch again); and **nothing about a room can be
   pressed but its blinds, its lights and its air conditioner** (owner, 2026-10-18, HAS-254; HAS-268;
   HAS-394) - `my-room.spec` lists every control there is, the blind controls and their pause switch by
-  name, `room-aircon.spec` those of a unit, and a new one fails that test on purpose. The cards, in the order of `ROOM_CAPABILITIES` (owner 2026-11-13, HAS-438: the lights, the blinds, the heating, the sensors, the air conditioning): heating (with the windows of the room and the hold of its
+  name, `room-aircon.spec` those of a unit, and a new one fails that test on purpose. The cards, in the order of `ROOM_CAPABILITIES` (owner 2026-11-13, HAS-438; the air conditioning after the blinds since HAS-439, owner 2026-11-15: the lights, the blinds, the air conditioning, the heating, the sensors): heating (with the windows of the room and the hold of its
   heating, as on the heating page), **lights** (`RoomLights`, HAS-268 - below), **blinds**
   (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, HAS-369 - since HAS-438 in the look of an air conditioner: the occupancy a strip tinted
   while occupied, dashed while not known, every sensor in a frame of its own: the motion and
@@ -298,7 +298,9 @@ e2e/              # Playwright tests
   light (white only when the light reported a white channel) - the controls of the window of the
   lights page too, since HAS-267 (one copy). **The look of an air conditioner** (HAS-438, owner 2026-11-13): the
   state a strip tinted with `--app-domain-light` while on; on / off one bar of the global `.segments`, the state
-  reported pressed (`aria-pressed`, neither while not known); **the brightness on a slider sent with "Send"** (the
+  reported pressed (`aria-pressed`, neither while not known) - **on My room the strip and the bar in one row** (HAS-439,
+  owner 2026-11-15: `inline` of `LightControl`, the strip filling the row up to the bar, one width whatever it says;
+  the window of the lights page keeps two rows); **the brightness on a slider sent with "Send"** (the
   global `.send-row`, 1-100 - owner 2026-11-13: a step of 10 % per press sent a command per step, tried and turned
   down); the colour sliders kept, "Set the colour" on their right, level with the middle one (the card stays low); "All off" and the switch of the resident buttons of `.segments` too - everything in
   the middle of the card. "All off" is `POST /light/rooms/{room}?turn=off`, shown only once the lights are known

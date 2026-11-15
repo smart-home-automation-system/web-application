@@ -19,6 +19,7 @@ const NOW = Date.parse('2026-10-08T12:30:00Z');
       [commands]="commands"
       [refresh]="refresh"
       [roomBusy]="roomBusy()"
+      [inline]="inline()"
     />
   `,
 })
@@ -26,6 +27,7 @@ class Host {
   readonly light = signal<ControlledLight>({ id: 13, name: 'Bedroom light strip', kind: 'rgbw' });
   readonly commands = new DeviceCommands<number>();
   readonly roomBusy = signal(false);
+  readonly inline = signal(false);
   readonly refreshed: number[] = [];
   readonly refresh = () => {
     this.refreshed.push(1);
@@ -102,6 +104,23 @@ describe('LightControl', () => {
     expect(sent).toEqual(['on 13']);
     expect(fixture.componentInstance.refreshed).toHaveLength(1);
     expect(words(shown.querySelector('[data-testid="light-state"]'))).toBe('not known yet');
+  });
+
+  // HAS-439: My room puts the state and on / off in one row; the window of the lights page keeps two rows
+  it('puts the state and on / off in one row only when inline', async () => {
+    let shown = await control();
+    expect(shown.querySelector('.light__line')).toBeNull();
+    expect(shown.querySelector('.light__row [data-testid="light-on"]')).not.toBeNull();
+    expect(shown.querySelectorAll('[data-testid="light-state"]')).toHaveLength(1);
+
+    fixture.componentInstance.inline.set(true);
+    shown = await control();
+    const line = shown.querySelector('.light__line')!;
+    expect(line.querySelector('[data-testid="light-state"]')).not.toBeNull();
+    expect(line.querySelector('[data-testid="light-on"]')).not.toBeNull();
+    expect(line.querySelector('[data-testid="light-off"]')).not.toBeNull();
+    expect(shown.querySelector('.light__row')).toBeNull();
+    expect(shown.querySelectorAll('[data-testid="light-on"]')).toHaveLength(1);
   });
 
   // HAS-438: the brightness by a step of 10 %, as the target of an air conditioner, within 1 ... 100
