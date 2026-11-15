@@ -6,9 +6,11 @@ import { RoomView, SchedulePeriod, clockTime } from './room-views';
  * 1. `systemOff` - the heating of the house is switched off;
  * 2. `held` - a window or a door holds the heating of the room;
  * 3. `heating` - a heater of the room is working;
- * 4. `unknown` - no temperature, or a heater without a status: missing is never off;
- * 5. `waiting` - a schedule covers the room now and it is colder than asked, nothing works yet;
- * 6. `reached` - a schedule covers the room now and it is as warm as asked, or warmer;
+ * 4. `reached` - a schedule covers the room now and it is as warm as asked, or warmer - even while a heater
+ *    has no status (HAS-440): only the relay tells heating from waiting, never warm enough from cold;
+ * 5. `unknown` - no temperature, or colder than asked (or no schedule) with a heater without a status:
+ *    missing is never off;
+ * 6. `waiting` - a schedule covers the room now and it is colder than asked, nothing works yet;
  * 7. `outside` - no schedule covers the room now.
  * `noHeater` stands apart: a room without a heater (the loft, the garden) has no heating to tell.
  *
@@ -38,6 +40,16 @@ export function roomState(room: RoomView, systemOn: boolean | undefined): RoomSt
   }
   if (room.heaters?.some((heater) => heater.working === true)) {
     return 'heating';
+  }
+  // as warm as asked whatever a relay says - a heater of no status (the radiator of sanctum, left to its air
+  // conditioner since HAS-388) does not make it unknown (HAS-440, owner 2026-11-15)
+  if (
+    room.heaters !== undefined &&
+    room.temperature !== undefined &&
+    room.target !== undefined &&
+    room.temperature >= room.target
+  ) {
+    return 'reached';
   }
   if (
     room.temperature === undefined ||

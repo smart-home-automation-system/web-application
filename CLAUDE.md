@@ -215,7 +215,8 @@ e2e/              # Playwright tests
   (`getByTestId('rooms')`): the sensor table in its window carries `data-room` too.
 - **The state of the heating of a room** (HAS-353, `shared/room-heating/room-state.ts`, pinned by its
   spec): `roomState(room, systemOn)` - the first that holds of `systemOff`, `held`, `heating`,
-  `unknown`, `waiting`, `reached`, `outside`; `noHeater` apart. What to keep:
+  `reached` (as warm as asked even while a heater has no status - HAS-440, owner 2026-11-15: the radiator of
+  sanctum, left to its air conditioner, reports nothing), `unknown`, `waiting`, `outside`; `noHeater` apart. What to keep:
   - **"A schedule covers the room" is `target` (`scheduledTemperature`) being there**, never
     `inSchedule` - the service sets that only below the target, so it cannot tell "warm enough" from
     "no schedule now"; never worked out from the schedules either. The light by the name says the
