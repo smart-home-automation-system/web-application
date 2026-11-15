@@ -1,4 +1,5 @@
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -6,6 +7,7 @@ import {
   input,
   linkedSignal,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSliderModule } from '@angular/material/slider';
@@ -59,6 +61,7 @@ const sameColor = (left: Chosen, right: Chosen) =>
 @Component({
   selector: 'app-light-control',
   imports: [
+    NgTemplateOutlet,
     MatButtonModule,
     MatIconModule,
     MatSliderModule,
@@ -82,6 +85,11 @@ export class LightControl {
   readonly refresh = input.required<() => Promise<void>>();
   /** A command for the whole room is on its way: the light waits for it. */
   readonly roomBusy = input(false);
+  /**
+   * The state and on / off in one row (HAS-439, owner 2026-11-15): the lights card of My room, where the strip
+   * needs no full width; the window of the lights page keeps the strip and the bar on rows of their own.
+   */
+  readonly inline = input(false, { transform: booleanAttribute });
 
   private readonly api = inject(LightApi);
 

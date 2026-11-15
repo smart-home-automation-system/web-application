@@ -251,7 +251,7 @@ dashboards:
 - **My room**: the page of a household member, made for the phone - since HAS-438 the cards of a room
   and nothing else (owner 2026-11-13; what is the household's has pages of its own, below). It shows the rooms the registry gives the profile, one at a time - a member with
   several chooses among them, a member with none is told so. The cards of a room stand in this order (owner
-  2026-11-13): the lights, the blinds, the heating, the sensors, the air conditioner. Per room: the temperature with
+  2026-11-13, the air conditioner after the blinds since HAS-439): the lights, the blinds, the air conditioner, the heating, the sensors. Per room: the temperature with
   the age of its reading, the humidity when the heating service reports one, the temperature
   the schedule asks for right now, each heater with what its relay last reported, the schedule
   of today, and the windows of the room with the hold of its heating, with the state of its
@@ -260,7 +260,7 @@ dashboards:
   "Send" for one that can go to one, and the pause of its schedules until their next run (no card for a room without
   blinds; the schedules themselves stay the administrator's) - and **the motion and presence
   sensors** the registry places in the room - since HAS-369 with what they sense (since HAS-438 the occupancy as a strip and each sensor in a frame, as the other cards) as `light-service` hears them: the room occupied, empty or not known, the motion going on or the last one, its light, and when each sensor was last heard and whether it is reachable. Since HAS-268 also **the
-  lights of the room**: the occupancy of the room, each light with on / off, the brightness of a
+  lights of the room**: the occupancy of the room, each light with its state and on / off (in one row since HAS-439), the brightness of a
   dimmer on a slider sent with "Send" and the colour of an rgbw light, "All off", and the rule of the room in a few words with
   **the switch of the resident**, which stops the automatic lighting of the room until it is
   switched on again (no card for a room without lights; the rules themselves stay the
