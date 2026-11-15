@@ -40,6 +40,25 @@ describe('roomState', () => {
     expect(roomState(room({ temperature: undefined }), true)).toBe('unknown');
     expect(roomState(room({ heaters: undefined }), true)).toBe('unknown');
     expect(roomState(room({ heaters: [heater(false), heater(undefined)] }), true)).toBe('unknown');
+    expect(roomState(room({ target: undefined, heaters: [heater(undefined)] }), true)).toBe(
+      'unknown',
+    );
+  });
+
+  // HAS-440: sanctum - its radiator left to the air conditioner reports nothing, the room is warm enough
+  it('is warm enough as warm as asked even with a heater of no status', () => {
+    expect(
+      roomState(room({ temperature: 15.1, target: 9, heaters: [heater(undefined)] }), true),
+    ).toBe('reached');
+    expect(roomState(room({ temperature: 9, target: 9, heaters: [heater(undefined)] }), true)).toBe(
+      'reached',
+    );
+    expect(
+      roomState(room({ temperature: 8.5, target: 9, heaters: [heater(undefined)] }), true),
+    ).toBe('unknown');
+    expect(roomState(room({ temperature: 15, target: 9, heaters: undefined }), true)).toBe(
+      'unknown',
+    );
   });
 
   it('decides by the rooms while the switch of the house is not known', () => {

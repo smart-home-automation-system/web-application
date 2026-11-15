@@ -700,9 +700,10 @@ What the application relies on, in every call:
   clock of the house, also on a phone abroad. A period the page cannot draw - an unknown day, a
   cooling period - is counted under the week, not dropped in silence.
 - **The state of a room is the first of these that holds** (HAS-353, `roomState`): the heating of
-  the house switched off; a window or a door holding the room; a heater working; not known (no
+  the house switched off; a window or a door holding the room; a heater working; warm enough (a schedule covers the
+  room and it is as warm as asked - also while a heater has no status, HAS-440); not known (no
   temperature, or a heater whose relay has not answered - missing is never "off"); waiting (a
-  schedule covers the room and it is colder than asked); warm enough; no schedule now. "A schedule
+  schedule covers the room and it is colder than asked); no schedule now. "A schedule
   covers the room" is `scheduledTemperature` being there, not `inSchedule` (which the service sets
   only below the target). My room does not read the switch of the house - only a member allowed to
   switch it asks for it - so there a room tells its own state.
