@@ -5,6 +5,7 @@ import {
   MarkAreaComponent,
   MarkLineComponent,
   TooltipComponent,
+  VisualMapPiecewiseComponent,
 } from 'echarts/components';
 import { init, use } from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
@@ -25,6 +26,8 @@ use([
   // the regenerations of the softener on its salt (HAS-402)
   MarkLineComponent,
   TooltipComponent,
+  // a line in the colour of the level of its value - PM2.5 and PM10 above their thresholds (HAS-441)
+  VisualMapPiecewiseComponent,
   SVGRenderer,
 ]);
 

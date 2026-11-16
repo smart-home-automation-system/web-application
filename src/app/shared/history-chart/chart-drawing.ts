@@ -5,7 +5,7 @@ import { ThemeStore } from '../../core/theme/theme-store';
 import { ChartEngine, DrawnChart } from './chart-engine';
 import { ChartColors } from './chart-option';
 
-const LINE_COLORS = [1, 2, 3, 4, 5].map((index) => `var(--app-chart-${index})`);
+const LINE_COLORS = [1, 2, 3, 4, 5, 6, 7].map((index) => `var(--app-chart-${index})`);
 
 /**
  * Draws a chart into the element `plot` gives - what `HistoryChart` and `BarsChart` share: the

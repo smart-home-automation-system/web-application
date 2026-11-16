@@ -69,7 +69,8 @@ dashboards:
   air quality index of GIOS in a word and its colour (very good ... very bad), PM2.5 and PM10 with the level of
   each, PM1, an open smog episode the household was told of, the sensor on the station card (whether it
   answers, its silence), and a chart for each of PM1, PM2.5 and PM10 - PM2.5 with its thresholds of 35 and
-  75 µg/m³, PM10 with 50 and 110, dashed once the readings come near them; the index has none for PM1.
+  75 µg/m³, PM10 with 50 and 110, dashed once the readings come near them - the moderate one yellow, the bad one
+  red, and the line of the fraction takes their colour above them (HAS-441); the index has none for PM1.
 - **Energy** (HAS-341, the administrator's, `/energy`): the energy of the house from `energy-service` -
   where it goes now (since HAS-438 an isometric scene of our own drawing: the house, the panels, the battery filled
   by its charge and two pylons, each on a tile, a light running along each line the way the energy flows - faster

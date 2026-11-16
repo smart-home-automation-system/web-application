@@ -9,14 +9,32 @@ import { SchedulePeriod } from '../room-heating/room-views';
  */
 export type LinePoint = readonly [at: number, value: number | null];
 
+/**
+ * Which of `--app-chart-1` ... `-7` a line takes: five colours of the theme, then the two of the air quality
+ * (HAS-441) - 6 the yellow of a moderate air, 7 the red of a bad one (`--app-air-3`, `--app-air-5`).
+ */
+export type ChartColor = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/** A value from which a line is drawn in another colour - up to the next level, or to the top. */
+export interface LineLevel {
+  readonly from: number;
+  readonly color: ChartColor;
+}
+
 /** What a line is drawn like: its place among the colours of the theme, and whether it is dashed. */
 export interface ChartLine {
   /** A name for tests and tracking; never shown. */
   readonly key: string;
   /** The name in the legend and the tooltip, in the language of the interface. */
   readonly name: string;
-  /** Which of `--app-chart-1` ... `-5` it takes. */
-  readonly color: 1 | 2 | 3 | 4 | 5;
+  /** The colour of the line, and its whole colour without `levels`. */
+  readonly color: ChartColor;
+  /**
+   * The line in the colour of the level its value is at (HAS-441: PM2.5 and PM10 yellow from the moderate threshold,
+   * red from the bad one) - `color` below the lowest. The colour is never the only sign: the thresholds are lines of
+   * their own, named in the legend. Bars and dashed lines ignore it.
+   */
+  readonly levels?: readonly LineLevel[];
   readonly points: readonly LinePoint[];
   /** A line that is not a measurement - a schedule - is dashed. */
   readonly dashed?: boolean;

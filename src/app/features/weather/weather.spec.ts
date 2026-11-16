@@ -392,6 +392,25 @@ describe('Weather', () => {
       expect(at('Bad from')).toBe(75);
     });
 
+    // HAS-441 (owner 2026-11-15): the moderate threshold yellow, the bad one red, the line in their colours above them
+    it('colours the thresholds of PM2.5 by their level and the line above them the same', async () => {
+      await answerAir({ pm25: 41 });
+
+      await drawnLines();
+      const option = charts.drawn.find((drawn) => drawn !== undefined) as {
+        series: { name: string }[];
+        visualMap: { seriesIndex: number[]; pieces: { gte?: number; lt?: number }[] }[];
+      };
+      const pm25 = option.series.findIndex((line) => line.name === 'PM2.5');
+      expect(option.visualMap).toHaveLength(1);
+      expect(option.visualMap[0].seriesIndex).toEqual([pm25]);
+      expect(option.visualMap[0].pieces.map(({ gte, lt }) => [gte, lt])).toEqual([
+        [undefined, 35],
+        [35, 75],
+        [75, undefined],
+      ]);
+    });
+
     it('draws PM1 alone, with no threshold - the index has none for it', async () => {
       await answerAir({ pm1: 80 });
 

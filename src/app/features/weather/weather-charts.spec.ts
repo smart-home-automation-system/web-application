@@ -106,6 +106,42 @@ describe('weatherChart', () => {
     TestBed.runInInjectionContext(() => weatherChart(specOf(key), period));
   const history = (points: object[]): WeatherHistory => ({ bucketSeconds: 300, points });
 
+  // HAS-441 (owner 2026-11-15): the moderate threshold yellow (6), the bad one red (7), the line in their colours above them
+  it('colours the thresholds of PM2.5 and PM10 by their level, and their lines from each threshold up', () => {
+    for (const [key, moderate, bad] of [
+      ['pm25', 35, 75],
+      ['pm10', 50, 110],
+    ] as const) {
+      expect(specOf(key).thresholds?.map(({ value, color }) => [value, color])).toEqual([
+        [moderate, 6],
+        [bad, 7],
+      ]);
+      const chart = chartOf(key);
+      answerQuery(
+        resources.get(key)!,
+        DAY,
+        history([{ at: '2026-10-16T10:00:00', avg: bad, min: bad, max: bad }]),
+      );
+      const [measured, ...thresholds] = chart.lines();
+      expect(measured.levels).toEqual([
+        { from: moderate, color: 6 },
+        { from: bad, color: 7 },
+      ]);
+      expect(thresholds.map((line) => line.color)).toEqual([6, 7]);
+    }
+  });
+
+  it('gives no levels to a line of a chart without thresholds', () => {
+    const chart = chartOf('pm1');
+    answerQuery(
+      resources.get('pm1')!,
+      DAY,
+      history([{ at: '2026-10-16T10:00:00', avg: 80, min: 80, max: 80 }]),
+    );
+
+    expect(chart.lines()[0].levels).toBeUndefined();
+  });
+
   it('asks for every metric of the chart', () => {
     chartOf('temperature');
 

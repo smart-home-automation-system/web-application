@@ -767,7 +767,7 @@ e2e/              # Playwright tests
     browser test can read the legend and the axis as text. **The download can fail** (the house
     out of reach, a file of a version a deploy replaced): the chart says so in place of the
     picture and asks again when its lines change, which every poll does.
-  - **A drawing holds colours, not variables.** `HistoryChart` reads `--app-chart-1` ... `-5`
+  - **A drawing holds colours, not variables.** `HistoryChart` reads `--app-chart-1` ... `-7`
     and the text colours back from the page (an element given the colour, `getComputedStyle`)
     after the render, and draws again when the season, the scheme or the language changes. A
     new colour of a chart goes through `readColors`, never as a literal.
@@ -1258,7 +1258,11 @@ e2e/              # Playwright tests
     wide (it stands before the light and the station so that the rows close), one column below. **A chart per fraction**
     (the owner on the PR: not PM2.5 and PM10 on one chart): `pm1`, `pm25`, `pm10` - nine charts, three rows of three,
     in rows of two the last a row of its own. **The thresholds of PM2.5 (35, 75) and PM10 (50, 110) are dashed lines of
-    the neutral fifth colour** (`thresholds` of `WeatherChartSpec`), drawn once the readings of the period reach half
+    the colour of the level they open** (HAS-441, owner 2026-11-15: the moderate one yellow - `--app-chart-6`, the
+    level 3 of the scale -, the bad one red - `--app-chart-7`, the level 5; the fifth colour before) and **the line of
+    the fraction takes their colour above them** (`levels` of a `ChartLine`: a `visualMap` of pieces by value,
+    `VisualMapPiecewiseComponent` in `echarts-kit`; below the first threshold the colour of the season - the owner
+    kept it over green) (`thresholds` of `WeatherChartSpec`), drawn once the readings of the period reach half
     of a threshold - drawn always, 110 stretched the axis of a clean week; they are in no number under the chart. PM1
     has no threshold in the index.
     **A chart card keeps its height while another period loads** (the owner on the PR - every card shrank to its
@@ -1647,7 +1651,8 @@ season. Both are nothing but values of CSS variables, in two files:
 - **Application variables** next to Material's: `--app-bar` / `--app-on-bar` (the colour of the
   page, which the status bar of a phone continues — there is no app bar any more) and
   `--app-chart-1` … `-5` (chart series, derived from the season: **a chart takes its colours
-  from these, in order**). `--app-bar-light` / `--app-bar-dark` exist as plain values because
+  from these, in order**), and `-6` / `-7`, the yellow and the red of the levels 3 and 5 of the air (HAS-441: the
+  thresholds of PM2.5 and PM10 and their line above them). `--app-bar-light` / `--app-bar-dark` exist as plain values because
   `ThemeStore` copies the one in use into `<meta name="theme-color">`, which understands neither
   `var()` nor `light-dark()`.
 - **Selected means tinted primary**: Material paints selected things (the open navigation entry,

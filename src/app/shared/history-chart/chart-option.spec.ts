@@ -6,6 +6,7 @@ import {
   chartOption,
   gapSpan,
   tooltipTime,
+  piecesOf,
   valueAt,
 } from './chart-option';
 
@@ -13,7 +14,15 @@ const at = (dateTime: string) => Date.parse(`${dateTime}Z`);
 const DAY_MS = 24 * 60 * 60 * 1_000;
 
 const COLORS: ChartColors = {
-  lines: ['rgb(1, 1, 1)', 'rgb(2, 2, 2)', 'rgb(3, 3, 3)', 'rgb(4, 4, 4)', 'rgb(5, 5, 5)'],
+  lines: [
+    'rgb(1, 1, 1)',
+    'rgb(2, 2, 2)',
+    'rgb(3, 3, 3)',
+    'rgb(4, 4, 4)',
+    'rgb(5, 5, 5)',
+    'rgb(6, 6, 6)',
+    'rgb(7, 7, 7)',
+  ],
   text: 'rgb(90, 90, 90)',
   strongText: 'rgb(10, 10, 10)',
   grid: 'rgb(120, 120, 120)',
@@ -62,6 +71,7 @@ function option(overrides: Partial<ChartInput> = {}) {
       axisLabel: { formatter(at: number): string };
     };
     tooltip: { formatter(hovered: unknown): string };
+    visualMap: { seriesIndex: number[]; dimension: number; show: boolean; pieces: unknown[] }[];
     series: {
       name: string;
       data: unknown;
@@ -199,6 +209,69 @@ describe('chartOption', () => {
 
     expect(tank.lineStyle.type).toBe('solid');
     expect(schedule.lineStyle.type).toBe('dashed');
+  });
+
+  // HAS-441: PM2.5 and PM10 take the colour of the level above its threshold
+  describe('the levels of a line', () => {
+    const PM25: ChartLine = {
+      ...TANK,
+      key: 'pm25',
+      color: 1,
+      levels: [
+        { from: 75, color: 7 },
+        { from: 35, color: 6 },
+      ],
+    };
+
+    it('colours a line by its value, in order of the thresholds, below the first in its own colour', () => {
+      expect(piecesOf(PM25, COLORS)).toEqual([
+        { lt: 35, color: 'rgb(1, 1, 1)' },
+        { gte: 35, lt: 75, color: 'rgb(6, 6, 6)' },
+        { gte: 75, color: 'rgb(7, 7, 7)' },
+      ]);
+    });
+
+    it('maps the values of the line it belongs to, and no other', () => {
+      const visualMap = option({ lines: [SCHEDULE, PM25] }).visualMap;
+
+      expect(visualMap).toHaveLength(1);
+      expect(visualMap[0]).toEqual(
+        expect.objectContaining({ seriesIndex: [1], dimension: 1, show: false }),
+      );
+    });
+
+    // a gap between two bad readings is bridged in red, not in the colour of a clean air
+    it('maps the bridges of its gaps too', () => {
+      const gapped: ChartLine = {
+        ...PM25,
+        points: [
+          [at('2026-10-08T00:00:00'), 80],
+          [at('2026-10-08T02:00:00'), null],
+          [at('2026-10-08T04:00:00'), 82],
+        ],
+      };
+      const drawn = option({ lines: [TANK, gapped, SCHEDULE] });
+
+      expect(drawn.series.map((one) => (one as { id?: string }).id)).toEqual([
+        'water',
+        'pm25',
+        'schedule',
+        'pm25-gaps',
+      ]);
+      expect(drawn.visualMap[0].seriesIndex).toEqual([1, 3]);
+    });
+
+    it('is one colour without levels', () => {
+      expect(piecesOf({ ...PM25, levels: [] }, COLORS)).toEqual([{ color: 'rgb(1, 1, 1)' }]);
+      expect(piecesOf(TANK, COLORS)).toEqual([{ color: 'rgb(1, 1, 1)' }]);
+    });
+
+    it('maps nothing of a line without levels, of bars or of a dashed line', () => {
+      expect(option().visualMap).toEqual([]);
+      expect(option({ lines: [{ ...PM25, bars: true }] }).visualMap).toEqual([]);
+      expect(option({ lines: [{ ...PM25, dashed: true }] }).visualMap).toEqual([]);
+      expect(option({ lines: [{ ...PM25, levels: [] }] }).visualMap).toEqual([]);
+    });
   });
 
   it('does not slide about when it is drawn again with every poll', () => {

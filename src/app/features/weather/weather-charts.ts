@@ -68,8 +68,11 @@ interface ThresholdSpec {
   readonly key: string;
   readonly value: number;
   readonly name: MessageKey;
-  /** The neutral colour of the chart, apart from the measured lines. */
-  readonly color: 5;
+  /**
+   * The colour of the level the threshold opens (HAS-441, owner 2026-11-15): the yellow of a moderate air, the red of
+   * a bad one - the measured line takes it too from the threshold up.
+   */
+  readonly color: 6 | 7;
 }
 
 /**
@@ -174,9 +177,9 @@ export const WEATHER_CHARTS: readonly WeatherChartSpec[] = [
         key: 'moderate',
         value: PM25_MODERATE_FROM,
         name: 'weather.charts.air.moderateFrom',
-        color: 5,
+        color: 6,
       },
-      { key: 'bad', value: PM25_BAD_FROM, name: 'weather.charts.air.badFrom', color: 5 },
+      { key: 'bad', value: PM25_BAD_FROM, name: 'weather.charts.air.badFrom', color: 7 },
     ],
   },
   {
@@ -194,9 +197,9 @@ export const WEATHER_CHARTS: readonly WeatherChartSpec[] = [
         key: 'moderate',
         value: PM10_MODERATE_FROM,
         name: 'weather.charts.air.moderateFrom',
-        color: 5,
+        color: 6,
       },
-      { key: 'bad', value: PM10_BAD_FROM, name: 'weather.charts.air.badFrom', color: 5 },
+      { key: 'bad', value: PM10_BAD_FROM, name: 'weather.charts.air.badFrom', color: 7 },
     ],
   },
 ];
@@ -300,6 +303,10 @@ export function weatherChart(spec: WeatherChartSpec, period: HistoryPeriod): Wea
         color: line.color,
         points,
         bars: line.drawn === 'rain',
+        // above a threshold the line is in the colour of its level (HAS-441)
+        ...(spec.thresholds === undefined
+          ? {}
+          : { levels: spec.thresholds.map(({ value, color }) => ({ from: value, color })) }),
       }));
       const axis = combined.axis();
       if (drawn.length === 0 || axis === undefined) {
