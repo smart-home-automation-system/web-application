@@ -71,7 +71,7 @@ function option(overrides: Partial<ChartInput> = {}) {
       axisLabel: { formatter(at: number): string };
     };
     tooltip: { formatter(hovered: unknown): string };
-    visualMap: { seriesIndex: number; dimension: number; show: boolean; pieces: unknown[] }[];
+    visualMap: { seriesIndex: number[]; dimension: number; show: boolean; pieces: unknown[] }[];
     series: {
       name: string;
       data: unknown;
@@ -236,8 +236,34 @@ describe('chartOption', () => {
 
       expect(visualMap).toHaveLength(1);
       expect(visualMap[0]).toEqual(
-        expect.objectContaining({ seriesIndex: 1, dimension: 1, show: false }),
+        expect.objectContaining({ seriesIndex: [1], dimension: 1, show: false }),
       );
+    });
+
+    // a gap between two bad readings is bridged in red, not in the colour of a clean air
+    it('maps the bridges of its gaps too', () => {
+      const gapped: ChartLine = {
+        ...PM25,
+        points: [
+          [at('2026-10-08T00:00:00'), 80],
+          [at('2026-10-08T02:00:00'), null],
+          [at('2026-10-08T04:00:00'), 82],
+        ],
+      };
+      const drawn = option({ lines: [TANK, gapped, SCHEDULE] });
+
+      expect(drawn.series.map((one) => (one as { id?: string }).id)).toEqual([
+        'water',
+        'pm25',
+        'schedule',
+        'pm25-gaps',
+      ]);
+      expect(drawn.visualMap[0].seriesIndex).toEqual([1, 3]);
+    });
+
+    it('is one colour without levels', () => {
+      expect(piecesOf({ ...PM25, levels: [] }, COLORS)).toEqual([{ color: 'rgb(1, 1, 1)' }]);
+      expect(piecesOf(TANK, COLORS)).toEqual([{ color: 'rgb(1, 1, 1)' }]);
     });
 
     it('maps nothing of a line without levels, of bars or of a dashed line', () => {

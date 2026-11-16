@@ -398,12 +398,12 @@ describe('Weather', () => {
 
       await drawnLines();
       const option = charts.drawn.find((drawn) => drawn !== undefined) as {
-        series: { name: string; lineStyle?: { color?: string } }[];
-        visualMap: { seriesIndex: number; pieces: { gte?: number; lt?: number }[] }[];
+        series: { name: string }[];
+        visualMap: { seriesIndex: number[]; pieces: { gte?: number; lt?: number }[] }[];
       };
       const pm25 = option.series.findIndex((line) => line.name === 'PM2.5');
       expect(option.visualMap).toHaveLength(1);
-      expect(option.visualMap[0].seriesIndex).toBe(pm25);
+      expect(option.visualMap[0].seriesIndex).toEqual([pm25]);
       expect(option.visualMap[0].pieces.map(({ gte, lt }) => [gte, lt])).toEqual([
         [undefined, 35],
         [35, 75],

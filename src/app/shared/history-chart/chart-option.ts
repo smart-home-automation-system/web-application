@@ -145,6 +145,15 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
       : { minimumFractionDigits: input.decimals, maximumFractionDigits: input.decimals },
   );
   const bars = input.lines.some((line) => line.bars);
+  /** The bridges of the gaps of each line, and the index of the series that draws them (after every line). */
+  const bridged = input.lines.map((line) =>
+    line.bars || line.dashed ? [] : bridgesOf(line.points),
+  );
+  const bridgeIndex = bridged.map((bridges, index) =>
+    bridges.length === 0
+      ? undefined
+      : input.lines.length + bridged.slice(0, index).filter((other) => other.length > 0).length,
+  );
   /** A value with its unit; no space and no unit where the unit is not known. */
   const withUnit = (text: string, unitText: string) => (unitText ? `${text} ${unitText}` : text);
   const axisValue = numberFormat(input.locale, { maximumFractionDigits: 1 });
@@ -288,7 +297,8 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
       axisLabel: { ...text, formatter: (at: number) => withUnit(axisValue.format(at), input.unit) },
       splitLine: { lineStyle: { color: colors.grid, opacity: 0.35 } },
     },
-    // a line of levels in the colour of the level of each stretch (HAS-441); never shown as a control of its own
+    // a line of levels in the colour of the level of each stretch (HAS-441), the bridges of its gaps too; never shown
+    // as a control of its own
     visualMap: input.lines.flatMap((line, index) =>
       line.levels === undefined || line.levels.length === 0 || line.bars || line.dashed
         ? []
@@ -296,7 +306,10 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
             {
               type: 'piecewise',
               show: false,
-              seriesIndex: index,
+              seriesIndex: [
+                index,
+                ...(bridgeIndex[index] === undefined ? [] : [bridgeIndex[index]]),
+              ],
               dimension: 1,
               pieces: piecesOf(line, colors),
             },
@@ -305,8 +318,8 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
     series: [
       ...input.lines.map(seriesOf(input, colors)),
       // after every line, so that a line keeps the index of its place in `input.lines`
-      ...input.lines.flatMap((line) => {
-        const bridges = line.bars || line.dashed ? [] : bridgesOf(line.points);
+      ...input.lines.flatMap((line, index) => {
+        const bridges = bridged[index];
         const color = colors.lines[line.color - 1];
         return bridges.length === 0
           ? []
@@ -341,6 +354,9 @@ export function piecesOf(
 ): { readonly gte?: number; readonly lt?: number; readonly color: string }[] {
   const levels = [...(line.levels ?? [])].sort((one, other) => one.from - other.from);
   const colorOf = (index: number) => colors.lines[index - 1];
+  if (levels.length === 0) {
+    return [{ color: colorOf(line.color) }];
+  }
   return [
     { lt: levels[0].from, color: colorOf(line.color) },
     ...levels.map((level, index) => ({
