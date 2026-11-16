@@ -13,7 +13,7 @@ export interface ChartBand {
 
 /** The colours of the theme as the browser resolved them: a drawing cannot hold a `var()`. */
 export interface ChartColors {
-  /** `--app-chart-1` ... `-5`, in order. */
+  /** `--app-chart-1` ... `-7`, in order (`ChartColor`). */
   readonly lines: readonly string[];
   readonly text: string;
   readonly strongText: string;
@@ -288,6 +288,20 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
       axisLabel: { ...text, formatter: (at: number) => withUnit(axisValue.format(at), input.unit) },
       splitLine: { lineStyle: { color: colors.grid, opacity: 0.35 } },
     },
+    // a line of levels in the colour of the level of each stretch (HAS-441); never shown as a control of its own
+    visualMap: input.lines.flatMap((line, index) =>
+      line.levels === undefined || line.levels.length === 0 || line.bars || line.dashed
+        ? []
+        : [
+            {
+              type: 'piecewise',
+              show: false,
+              seriesIndex: index,
+              dimension: 1,
+              pieces: piecesOf(line, colors),
+            },
+          ],
+    ),
     series: [
       ...input.lines.map(seriesOf(input, colors)),
       // after every line, so that a line keeps the index of its place in `input.lines`
@@ -315,6 +329,26 @@ export function chartOption(input: ChartInput, colors: ChartColors): EChartsCore
       }),
     ],
   };
+}
+
+/**
+ * The stretches of values of a line of levels: its own colour below the lowest level, each level from its value up
+ * to the next (a level belongs to the stretch it opens - 35 µg/m³ of PM2.5 is moderate already).
+ */
+export function piecesOf(
+  line: ChartLine,
+  colors: ChartColors,
+): { readonly gte?: number; readonly lt?: number; readonly color: string }[] {
+  const levels = [...(line.levels ?? [])].sort((one, other) => one.from - other.from);
+  const colorOf = (index: number) => colors.lines[index - 1];
+  return [
+    { lt: levels[0].from, color: colorOf(line.color) },
+    ...levels.map((level, index) => ({
+      gte: level.from,
+      ...(index + 1 < levels.length ? { lt: levels[index + 1].from } : {}),
+      color: colorOf(level.color),
+    })),
+  ];
 }
 
 /** The readings on both sides of a gap, the second without its day when it is the same day. */

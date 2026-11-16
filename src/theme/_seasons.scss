@@ -459,4 +459,7 @@ $_neutral: (
   --app-chart-3: var(--mat-sys-on-primary-container);
   --app-chart-4: var(--mat-sys-on-tertiary-container);
   --app-chart-5: var(--mat-sys-outline);
+  // the thresholds of the air and the line above them (HAS-441): the colour of the level a threshold opens
+  --app-chart-6: var(--app-air-3);
+  --app-chart-7: var(--app-air-5);
 }
