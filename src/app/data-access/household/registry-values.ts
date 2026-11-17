@@ -39,7 +39,7 @@ export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,
- * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.20.0) - copies, like the ones above,
+ * `SmartVendor`, `EatonGatewayType`, `InverterBrand` of `smart-home-sdk` 1.22.0) - copies, like the ones above,
  * and under the same rule: they are what the administration of the devices offers, and what
  * the registry already holds is shown and sent back as it is.
  */
@@ -67,6 +67,10 @@ export const DEVICE_KINDS = [
   // HAS-426 (smart-home-sdk 1.20.0, HAS-424): the air quality sensor outside the house polled by weather-service,
   // reached by its blebox binding alone
   'air quality sensor',
+  // HAS-445 (smart-home-sdk 1.22.0): the door station at the gate, reached by its hikvision binding alone, and the
+  // Shelly that pulses the drive of the gate, on the channel 0 - both read by gate-service
+  'intercom',
+  'gate',
 ] as const;
 
 export type DeviceKind = (typeof DEVICE_KINDS)[number];
@@ -89,8 +93,9 @@ export const PLACEMENTS = ['external', 'internal'] as const;
 export type Placement = (typeof PLACEMENTS)[number];
 
 // gree (HAS-392, smart-home-sdk 1.18.0): the vendor of the air conditioners, reached by the gree binding alone;
-// blebox (HAS-426, smart-home-sdk 1.20.0): the vendor of the air quality sensor, reached by the blebox binding alone
-export const VENDORS = ['shelly', 'eaton', 'gree', 'blebox', 'other'] as const;
+// blebox (HAS-426, smart-home-sdk 1.20.0): the vendor of the air quality sensor, reached by the blebox binding alone;
+// hikvision (HAS-445, smart-home-sdk 1.22.0): the vendor of the door station, reached by the hikvision binding alone
+export const VENDORS = ['shelly', 'eaton', 'gree', 'blebox', 'hikvision', 'other'] as const;
 
 export type Vendor = (typeof VENDORS)[number];
 

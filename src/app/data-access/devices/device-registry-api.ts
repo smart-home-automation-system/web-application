@@ -72,6 +72,17 @@ export interface BleboxBinding {
 }
 
 /**
+ * The door station at the gate (`HikvisionBinding` of `smart-home-sdk` 1.22.0, HAS-445): read by `gate-service`
+ * through the SDK bridge of the cluster. No account of the station is in it.
+ */
+export interface HikvisionBinding {
+  /** The IPv4 address of the station, reserved for it in DHCP. */
+  readonly address?: string;
+  /** The serial number as `System/deviceInfo` gives it: the model, the date of manufacture and the serial. */
+  readonly serialNumber?: string;
+}
+
+/**
  * A device as the registry holds it (`GET /home/device/registry`, `SmartDevice` of
  * `smart-home-sdk` 1.8.0 - `openingSensors` since 1.11.0 - served by `database-service` and
  * routed by the gateway from 0.5.0).
@@ -116,6 +127,8 @@ export interface SmartDevice {
   readonly gree?: GreeBinding;
   /** An air quality sensor only (HAS-424) - its binding. */
   readonly blebox?: BleboxBinding;
+  /** An intercom only (HAS-445) - its binding. */
+  readonly hikvision?: HikvisionBinding;
   /** A light only: `relay`, `dimmer` or `rgbw`. */
   readonly lightKind?: string;
   /** Blinds only: `external` or `internal`. */
@@ -153,6 +166,7 @@ export interface DeviceDetails {
   readonly inverter?: InverterBinding;
   readonly gree?: GreeBinding;
   readonly blebox?: BleboxBinding;
+  readonly hikvision?: HikvisionBinding;
   readonly lightKind?: string;
   readonly placement?: string;
   readonly positioning?: boolean;
@@ -202,6 +216,7 @@ const KNOWN_FIELDS: readonly string[] = [
   'inverter',
   'gree',
   'blebox',
+  'hikvision',
   'lightKind',
   'placement',
   'positioning',
@@ -304,6 +319,7 @@ const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ] satisfies readonly (keyof InverterBinding)[],
   gree: ['address', 'mac'] satisfies readonly (keyof GreeBinding)[],
   blebox: ['address', 'deviceId'] satisfies readonly (keyof BleboxBinding)[],
+  hikvision: ['address', 'serialNumber'] satisfies readonly (keyof HikvisionBinding)[],
 };
 
 /**

@@ -282,6 +282,43 @@
             }
           </mat-form-field>
         }
+        @case ('hikvision') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.hikvisionAddress') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="15"
+              data-testid="hikvision-address"
+              [formControl]="hikvisionAddress"
+            />
+            <mat-hint>{{ t('devices.form.hikvisionAddressHint') }}</mat-hint>
+            @if (problemOf(hikvisionAddress); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.hikvisionSerial') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="64"
+              data-testid="hikvision-serial"
+              [formControl]="hikvisionSerial"
+            />
+            <mat-hint>{{ t('devices.form.hikvisionSerialHint') }}</mat-hint>
+            @if (problemOf(hikvisionSerial); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+        }
         @case ('inverter') {
           <div class="form__group" role="group" [attr.aria-labelledby]="id + '-brand'">
             <h3 class="form__label" [id]="id + '-brand'">{{ t('devices.form.brand') }}</h3>

@@ -51,7 +51,7 @@ import {
   FIRST_GENERATION_ON_MQTT,
   channelNeeded,
   generationsOf,
-  WATER_VALVE_CHANNEL,
+  NEEDED_CHANNEL,
   addressProblem,
   batterySerialProblem,
   bindingOf,
@@ -62,11 +62,13 @@ import {
   deviceIdProblem,
   bleboxDeviceIdProblem,
   greeMacProblem,
+  hikvisionSerialProblem,
   loggerSerialOf,
   loggerSerialProblem,
   nameProblem,
   normaliseBleboxDeviceId,
   normaliseGreeMac,
+  normaliseHikvisionSerial,
   normaliseName,
   openingSensorsOf,
   optionalAddressProblem,
@@ -217,6 +219,15 @@ export class SmartDeviceForm implements OnInit {
     nonNullable: true,
     validators: validator(bleboxDeviceIdProblem),
   });
+  // the door station at the gate (HAS-445): its address and the serial number of its System/deviceInfo, both needed
+  protected readonly hikvisionAddress = new FormControl('', {
+    nonNullable: true,
+    validators: validator(addressProblem),
+  });
+  protected readonly hikvisionSerial = new FormControl('', {
+    nonNullable: true,
+    validators: validator(hikvisionSerialProblem),
+  });
   /** The brand decides which of the two numbers of its link the form asks for. */
   protected readonly brand = signal<string>(INVERTER_BRANDS[0]);
 
@@ -331,11 +342,12 @@ export class SmartDeviceForm implements OnInit {
         this.channel.set(undefined);
       }
     });
-    // a water valve is reached on the channel 0 and from the second generation on (HAS-313): the form puts
+    // a water valve and a gate (HAS-445) are reached on the channel 0, a water valve from the second generation on
+    // (HAS-313): the form puts
     // it there, so it can never send what database-service refuses
     effect(() => {
       if (this.channelNeeded() && untracked(this.channel) === undefined) {
-        this.channel.set(WATER_VALVE_CHANNEL);
+        this.channel.set(NEEDED_CHANNEL);
       }
     });
     effect(() => {
@@ -355,6 +367,8 @@ export class SmartDeviceForm implements OnInit {
       this.greeMac,
       this.bleboxAddress,
       this.bleboxDeviceId,
+      this.hikvisionAddress,
+      this.hikvisionSerial,
     ]) {
       control.valueChanges.subscribe(() => this.taken.set(undefined));
     }
@@ -392,6 +406,8 @@ export class SmartDeviceForm implements OnInit {
     this.greeMac.setValue(device.gree?.mac ?? '');
     this.bleboxAddress.setValue(device.blebox?.address ?? '');
     this.bleboxDeviceId.setValue(device.blebox?.deviceId ?? '');
+    this.hikvisionAddress.setValue(device.hikvision?.address ?? '');
+    this.hikvisionSerial.setValue(device.hikvision?.serialNumber ?? '');
     this.lightKind.set(device.lightKind);
     this.placement.set(device.placement);
     this.positioning.set(device.positioning);
@@ -472,6 +488,8 @@ export class SmartDeviceForm implements OnInit {
         return [this.greeAddress, this.greeMac];
       case 'blebox':
         return [this.bleboxAddress, this.bleboxDeviceId];
+      case 'hikvision':
+        return [this.hikvisionAddress, this.hikvisionSerial];
     }
   }
 
@@ -537,6 +555,14 @@ export class SmartDeviceForm implements OnInit {
             blebox: {
               address: this.bleboxAddress.value.trim(),
               deviceId: normaliseBleboxDeviceId(this.bleboxDeviceId.value),
+            },
+          }
+        : {}),
+      ...(binding === 'hikvision'
+        ? {
+            hikvision: {
+              address: this.hikvisionAddress.value.trim(),
+              serialNumber: normaliseHikvisionSerial(this.hikvisionSerial.value),
             },
           }
         : {}),

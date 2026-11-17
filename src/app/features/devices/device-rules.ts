@@ -25,11 +25,19 @@ export const POINT_MIN = 1;
 export const POINT_MAX = 99;
 
 /**
- * The six ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
+ * The seven ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
  * the part of the kind inverter and of no other kind, the gree binding (HAS-377) of the air conditioner,
- * the blebox binding (HAS-424) of the air quality sensor.
+ * the blebox binding (HAS-424) of the air quality sensor, the hikvision binding (HAS-445) of the intercom.
  */
-export const BINDINGS = ['shelly', 'eaton', 'bthome', 'inverter', 'gree', 'blebox'] as const;
+export const BINDINGS = [
+  'shelly',
+  'eaton',
+  'bthome',
+  'inverter',
+  'gree',
+  'blebox',
+  'hikvision',
+] as const;
 export type Binding = (typeof BINDINGS)[number];
 
 /**
@@ -51,6 +59,11 @@ const DEVICE_ID = /^[A-Za-z0-9_-]{3,50}$/;
 const GREE_MAC = /^[0-9a-f]{12}$/;
 /** The id of a BleBox device as its `GET /info` gives it (`BleboxBinding`): the same form as the Gree MAC. */
 const BLEBOX_DEVICE_ID = GREE_MAC;
+/**
+ * The serial number of a Hikvision station as its `System/deviceInfo` gives it (`HikvisionBinding`): letters,
+ * digits, hyphens and parentheses, 9 to 64, starting with a letter or a digit.
+ */
+const HIKVISION_SERIAL = /^[A-Za-z0-9][A-Za-z0-9()-]{8,63}$/;
 
 /**
  * The bindings a device of a kind can be reached through. What moves and what lights is wired
@@ -70,10 +83,12 @@ export function bindingsOf(kind: string): readonly Binding[] {
       return ['shelly', 'eaton'];
     case 'weather station':
       return ['bthome'];
-    // a gateway is a Shelly, and so is the plug an appliance runs on (HAS-282) and the water valve (HAS-313)
+    // a gateway is a Shelly, and so is the plug an appliance runs on (HAS-282), the water valve (HAS-313) and
+    // the Shelly 1 of the gate (HAS-445)
     case 'bthome gateway':
     case 'appliance':
     case 'water valve':
+    case 'gate':
       return ['shelly'];
     case 'inverter':
       return ['inverter'];
@@ -81,6 +96,9 @@ export function bindingsOf(kind: string): readonly Binding[] {
       return ['gree'];
     case 'air quality sensor':
       return ['blebox'];
+    // the door station at the gate (HAS-445), by its address and serial number
+    case 'intercom':
+      return ['hikvision'];
     default:
       return ANY_OTHER;
   }
@@ -101,18 +119,19 @@ function offeredChannels(kind: string): readonly number[] {
   if (kind === 'presence sensor') {
     return [...CHANNELS, MAIN_ZONE];
   }
-  return channelNeeded(kind) ? [WATER_VALVE_CHANNEL] : CHANNELS;
+  return channelNeeded(kind) ? [NEEDED_CHANNEL] : CHANNELS;
 }
 
 /**
  * The water valve (HAS-313, `checkWaterValve` of `database-service` 0.21.0): a Shelly of the second
  * generation or later - its readings are virtual components over MQTT and RPC - reached on the channel 0,
- * which it cannot do without. Every other kind may have no channel.
+ * which it cannot do without. So is the gate (HAS-445, `checkGate` of `database-service` 0.26.0): the Shelly 1
+ * of the gate has one relay, which gate-service pulses. Every other kind may have no channel.
  */
-export const WATER_VALVE_CHANNEL = 0;
+export const NEEDED_CHANNEL = 0;
 
 export function channelNeeded(kind: string): boolean {
-  return kind === 'water valve';
+  return kind === 'water valve' || kind === 'gate';
 }
 
 /** The generations on offer for a kind - with the one the device has, whatever it is. */
@@ -145,7 +164,8 @@ export function bindingOf(device: SmartDevice): Binding | undefined {
  * a gateway of the AMX system and nothing else is, the binding of a Shelly is a Shelly's, and
  * a Bluetooth sensor is of any vendor but Eaton; an inverter is of none of the vendors the
  * registry names; a Gree unit is of the vendor gree, and nothing else is (HAS-377), a BleBox sensor of the
- * vendor blebox, and nothing else is (HAS-424, the rule of `blebox` in `DeviceRules` of database-service 0.25.0).
+ * vendor blebox, and nothing else is (HAS-424, the rule of `blebox` in `DeviceRules` of database-service 0.25.0),
+ * a Hikvision station of the vendor hikvision, and nothing else is (HAS-445, database-service 0.26.0).
  */
 export function vendorsOf(binding: Binding): readonly string[] {
   switch (binding) {
@@ -161,6 +181,8 @@ export function vendorsOf(binding: Binding): readonly string[] {
       return ['gree'];
     case 'blebox':
       return ['blebox'];
+    case 'hikvision':
+      return ['hikvision'];
   }
 }
 
@@ -237,6 +259,17 @@ export function bleboxDeviceIdProblem(text: string): MessageKey | undefined {
     : 'devices.problem.bleboxDeviceId';
 }
 
+/** The serial number of a Hikvision station as it is sent: without the spaces around it, as the station gives it. */
+export function normaliseHikvisionSerial(text: string): string {
+  return text.trim();
+}
+
+export function hikvisionSerialProblem(text: string): MessageKey | undefined {
+  return HIKVISION_SERIAL.test(normaliseHikvisionSerial(text))
+    ? undefined
+    : 'devices.problem.hikvisionSerial';
+}
+
 /** A name as it is sent: without the spaces around it. */
 export function normaliseName(text: string): string {
   return text.trim();
@@ -303,12 +336,17 @@ export function bluetoothAddressProblem(text: string): MessageKey | undefined {
  * `others`: every other device of the registry - without the one being changed.
  */
 export function bindingTaken(
-  device: Pick<DeviceDetails, 'shelly' | 'eaton' | 'bthome' | 'inverter' | 'gree' | 'blebox'>,
+  device: Pick<
+    DeviceDetails,
+    'shelly' | 'eaton' | 'bthome' | 'inverter' | 'gree' | 'blebox' | 'hikvision'
+  >,
   others: readonly SmartDevice[],
 ): MessageKey | undefined {
-  const { shelly, eaton, bthome, inverter, gree, blebox } = device;
+  const { shelly, eaton, bthome, inverter, gree, blebox, hikvision } = device;
   const unitTaken =
-    (gree === undefined ? undefined : greeTaken(gree, others)) ?? bleboxTaken(blebox, others);
+    (gree === undefined ? undefined : greeTaken(gree, others)) ??
+    bleboxTaken(blebox, others) ??
+    hikvisionTaken(hikvision, others);
   if (unitTaken !== undefined) {
     return unitTaken;
   }
@@ -363,6 +401,25 @@ function bleboxTaken(
   }
   return others.some((other) => other.blebox?.address === blebox.address)
     ? 'devices.problem.bleboxAddressTaken'
+    : undefined;
+}
+
+/**
+ * One station per serial number and one per address (devices_hikvision_serial_number_uq,
+ * devices_hikvision_address_uq); nothing to find for a device of another binding.
+ */
+function hikvisionTaken(
+  hikvision: DeviceDetails['hikvision'],
+  others: readonly SmartDevice[],
+): MessageKey | undefined {
+  if (hikvision === undefined) {
+    return undefined;
+  }
+  if (others.some((other) => other.hikvision?.serialNumber === hikvision.serialNumber)) {
+    return 'devices.problem.hikvisionSerialTaken';
+  }
+  return others.some((other) => other.hikvision?.address === hikvision.address)
+    ? 'devices.problem.hikvisionAddressTaken'
     : undefined;
 }
 
@@ -429,6 +486,8 @@ export function sameDevice(before: SmartDevice, details: DeviceDetails): boolean
       device.gree?.mac,
       device.blebox?.address,
       device.blebox?.deviceId,
+      device.hikvision?.address,
+      device.hikvision?.serialNumber,
       device.lightKind,
       device.placement,
       device.positioning,

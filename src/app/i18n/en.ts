@@ -2328,6 +2328,7 @@ export const en = {
       bluetooth: 'Bluetooth',
       gree: 'Gree',
       blebox: 'BleBox',
+      hikvision: 'Hikvision',
       noBinding: 'The registry does not say how this device is reached.',
       edit: 'Edit',
       putIntoUse: 'Let the services use',
@@ -2377,6 +2378,11 @@ export const en = {
       bleboxDeviceId: 'Id of the sensor',
       bleboxDeviceIdHint:
         'As its /info gives it: 12 characters 0-9 and a-f, for example 0123456789ab',
+      hikvisionAddress: 'Address of the station',
+      hikvisionAddressHint: 'Reserved for the station in DHCP',
+      hikvisionSerial: 'Serial number of the station',
+      hikvisionSerialHint:
+        'As its System/deviceInfo gives it, for example DS-KV0000-WE1(B)0120200101RRA00000001',
       optional: 'Optional',
       registration: 'Registration number of the dongle',
       registrationHint: 'Optional - the password of the local API of the SolaX dongle',
@@ -2434,6 +2440,10 @@ export const en = {
       bleboxDeviceId: 'The id of a sensor is 12 characters 0-9 and a-f.',
       bleboxDeviceIdTaken: 'A BleBox device with this id is already registered.',
       bleboxAddressTaken: 'A BleBox device at this address is already registered.',
+      hikvisionSerial:
+        'The serial number of a station is 9 to 64 letters, digits, hyphens and parentheses.',
+      hikvisionSerialTaken: 'A station with this serial number is already registered.',
+      hikvisionAddressTaken: 'A station at this address is already registered.',
     },
     // what the registry refuses, by the code of its answer
     error: {
@@ -2458,6 +2468,8 @@ export const en = {
       waterValve: 'Water valve',
       airConditioner: 'Air conditioner',
       airQualitySensor: 'Air quality sensor',
+      intercom: 'Intercom',
+      gate: 'Gate',
     },
     lightKind: {
       relay: 'switched',
@@ -2473,6 +2485,7 @@ export const en = {
       eaton: 'Eaton',
       gree: 'Gree',
       blebox: 'BleBox',
+      hikvision: 'Hikvision',
       other: 'Other',
     },
     binding: {
@@ -2482,6 +2495,7 @@ export const en = {
       inverter: 'Inverter, read by the energy service',
       gree: 'Gree, on the network',
       blebox: 'BleBox, on the network',
+      hikvision: 'Hikvision, through the gate bridge',
     },
   },
   household: {
