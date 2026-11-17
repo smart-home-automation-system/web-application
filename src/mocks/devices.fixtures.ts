@@ -371,6 +371,25 @@ const AT_THE_START: readonly StoredDevice[] = [
     vendor: 'blebox',
     blebox: { address: '192.0.2.23', deviceId: '0123456789ab' },
   },
+  // the door station and the Shelly of the gate (HAS-445): an invented serial number, addresses of the documentation range
+  {
+    id: 69,
+    name: 'Intercom',
+    room: 'garden',
+    kind: 'intercom',
+    enabled: true,
+    vendor: 'hikvision',
+    hikvision: { address: '192.0.2.93', serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000001' },
+  },
+  {
+    id: 70,
+    name: 'Gate',
+    room: 'garden',
+    kind: 'gate',
+    enabled: true,
+    vendor: 'shelly',
+    shelly: { address: '192.0.2.85', generation: 1, channel: 0 },
+  },
   // the water valve of the garage (HAS-313): a Shelly X of generation 3, an invented id, an address of the documentation range
   {
     id: 66,
@@ -492,7 +511,20 @@ function deviceOf(body: unknown): Draft | undefined {
   if (!isRecord(body)) {
     return undefined;
   }
-  const { name, room, kind, enabled, vendor, shelly, eaton, bthome, inverter, gree, blebox } = body;
+  const {
+    name,
+    room,
+    kind,
+    enabled,
+    vendor,
+    shelly,
+    eaton,
+    bthome,
+    inverter,
+    gree,
+    blebox,
+    hikvision,
+  } = body;
   const { lightKind, placement, positioning, openingSensors } = body;
   if (typeof name !== 'string' || name.length < 3 || name.length > 50) {
     return undefined;
@@ -527,6 +559,7 @@ function deviceOf(body: unknown): Draft | undefined {
     inverter: inverterOf(inverter),
     gree: greeOf(gree),
     blebox: bleboxOf(blebox),
+    hikvision: hikvisionOf(hikvision),
   };
   if (Object.values(bindings).includes(null)) {
     return undefined;
@@ -543,6 +576,7 @@ function deviceOf(body: unknown): Draft | undefined {
     ...(bindings.inverter ? { inverter: bindings.inverter } : {}),
     ...(bindings.gree ? { gree: bindings.gree } : {}),
     ...(bindings.blebox ? { blebox: bindings.blebox } : {}),
+    ...(bindings.hikvision ? { hikvision: bindings.hikvision } : {}),
     ...(lightKind === undefined ? {} : { lightKind }),
     ...(placement === undefined ? {} : { placement }),
     ...(positioning === undefined ? {} : { positioning }),
@@ -683,6 +717,23 @@ function bleboxOf(value: unknown): SmartDevice['blebox'] | null {
     : null;
 }
 
+/** `HikvisionBinding`: the address of the station and the serial number of its System/deviceInfo - both needed. */
+function hikvisionOf(value: unknown): SmartDevice['hikvision'] | null {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    return null;
+  }
+  const { address, serialNumber } = value;
+  return typeof address === 'string' &&
+    IPV4.test(address) &&
+    typeof serialNumber === 'string' &&
+    /^[A-Za-z0-9][A-Za-z0-9()-]{8,63}$/.test(serialNumber)
+    ? { address, serialNumber }
+    : null;
+}
+
 function whole(value: unknown, least: number, most: number): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= least && value <= most;
 }
@@ -704,11 +755,11 @@ function refusalOf(device: Draft, self: StoredDevice | undefined): MockReply | u
 
 /** `DeviceRules` of `database-service`, in its words. */
 function brokenRuleOf(device: Draft): string | undefined {
-  const given = (['shelly', 'eaton', 'bthome', 'inverter', 'gree', 'blebox'] as const).filter(
-    (binding) => device[binding] !== undefined,
-  );
+  const given = (
+    ['shelly', 'eaton', 'bthome', 'inverter', 'gree', 'blebox', 'hikvision'] as const
+  ).filter((binding) => device[binding] !== undefined);
   if (given.length !== 1) {
-    return `A device is reached through exactly one binding - shelly, eaton, bthome, inverter, gree or blebox - and this one has ${
+    return `A device is reached through exactly one binding - shelly, eaton, bthome, inverter, gree, blebox or hikvision - and this one has ${
       given.length === 0 ? 'none' : given.join(' and ')
     }`;
   }
@@ -717,6 +768,7 @@ function brokenRuleOf(device: Draft): string | undefined {
     (device.vendor === 'eaton') !== (binding === 'eaton') ||
     (device.vendor === 'gree') !== (binding === 'gree') ||
     (device.vendor === 'blebox') !== (binding === 'blebox') ||
+    (device.vendor === 'hikvision') !== (binding === 'hikvision') ||
     (binding === 'shelly' && device.vendor !== 'shelly') ||
     (binding === 'inverter' && device.vendor !== 'other')
   ) {
@@ -739,6 +791,10 @@ function brokenRuleOf(device: Draft): string | undefined {
   }
   if (channel !== undefined && channel >= 200 && device.kind !== 'presence sensor') {
     return `The channel ${channel} is a zone, which only a device of the kind [presence sensor] has, not one of the kind [${device.kind}]`;
+  }
+  // the gate (HAS-445, checkGate): its one relay, on the channel 0
+  if (device.kind === 'gate' && device.shelly !== undefined && device.shelly.channel !== 0) {
+    return `A device of the kind [gate] is reached on the channel 0, not ${device.shelly.channel ?? null}`;
   }
   // the water valve (HAS-311, checkWaterValve)
   if (device.kind === 'water valve' && (device.shelly?.generation ?? 0) < 2) {
@@ -806,6 +862,10 @@ function possibleBindingsOf(kind: string): readonly string[] {
       return ['gree'];
     case 'air quality sensor':
       return ['blebox'];
+    case 'intercom':
+      return ['hikvision'];
+    case 'gate':
+      return ['shelly'];
     default:
       return ['shelly', 'eaton', 'bthome'];
   }
@@ -840,6 +900,22 @@ function bleboxTakenOf(
     : undefined;
 }
 
+/** The two unique indexes of a Hikvision station, in the words of the registry; none for another binding. */
+function hikvisionTakenOf(
+  hikvision: SmartDevice['hikvision'],
+  others: readonly StoredDevice[],
+): string | undefined {
+  if (hikvision === undefined) {
+    return undefined;
+  }
+  if (others.some((one) => one.hikvision?.serialNumber === hikvision.serialNumber)) {
+    return `A device is already registered for the Hikvision station with the serial number [${hikvision.serialNumber}]`;
+  }
+  return others.some((one) => one.hikvision?.address === hikvision.address)
+    ? `A device is already registered for the Hikvision station at [${hikvision.address}]`
+    : undefined;
+}
+
 /** A channel of a Shelly by its address or by its id (a device without a channel counts as one). */
 function shellyTakenOf(
   shelly: NonNullable<SmartDevice['shelly']>,
@@ -860,9 +936,11 @@ function shellyTakenOf(
 
 /** The unique indexes of the registry, in the words of its answer. */
 function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string | undefined {
-  const { shelly, eaton, bthome, inverter, gree, blebox } = device;
+  const { shelly, eaton, bthome, inverter, gree, blebox, hikvision } = device;
   const unitTaken =
-    (gree === undefined ? undefined : greeTakenOf(gree, others)) ?? bleboxTakenOf(blebox, others);
+    (gree === undefined ? undefined : greeTakenOf(gree, others)) ??
+    bleboxTakenOf(blebox, others) ??
+    hikvisionTakenOf(hikvision, others);
   if (unitTaken !== undefined) {
     return unitTaken;
   }

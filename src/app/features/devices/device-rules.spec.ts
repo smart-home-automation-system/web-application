@@ -13,6 +13,7 @@ import {
   generationsOf,
   bleboxDeviceIdProblem,
   greeMacProblem,
+  hikvisionSerialProblem,
   chosenProblem,
   deviceIdProblem,
   isZone,
@@ -21,6 +22,7 @@ import {
   nameProblem,
   normaliseBleboxDeviceId,
   normaliseGreeMac,
+  normaliseHikvisionSerial,
   openingSensorsOf,
   optionalAddressProblem,
   pointOf,
@@ -84,6 +86,9 @@ describe('the rules of a device', () => {
     ['air conditioner', ['gree']],
     // HAS-426: the air quality sensor is reached by its blebox binding alone
     ['air quality sensor', ['blebox']],
+    // HAS-445: the door station by its hikvision binding alone, the gate a Shelly
+    ['intercom', ['hikvision']],
+    ['gate', ['shelly']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });
@@ -111,6 +116,8 @@ describe('the rules of a device', () => {
     expect(vendorsOf('gree')).toEqual(['gree']);
     // a BleBox sensor is of the vendor blebox, and nothing else is (HAS-424)
     expect(vendorsOf('blebox')).toEqual(['blebox']);
+    // a Hikvision station is of the vendor hikvision, and nothing else is (HAS-445)
+    expect(vendorsOf('hikvision')).toEqual(['hikvision']);
   });
 
   // HAS-260: the registry takes a zone (200 to 299) as the channel of a presence sensor alone
@@ -130,6 +137,14 @@ describe('the rules of a device', () => {
     expect(generationsOf('water valve')).toEqual([2, 3, 4]);
     expect(generationsOf('water valve', 1)).toEqual([1, 2, 3, 4]);
     expect(generationsOf('light')).toEqual([1, 2, 3, 4]);
+  });
+
+  // HAS-445 (checkGate of database-service 0.26.0): the Shelly 1 of the gate has one relay, on the channel 0;
+  // any generation - the Shelly of the gate is a Gen1
+  it('offer a gate the channel 0 and every generation', () => {
+    expect(channelNeeded('gate')).toBe(true);
+    expect(channelsOf('gate')).toEqual([0]);
+    expect(generationsOf('gate')).toEqual([1, 2, 3, 4]);
   });
 
   // a channel the registry holds is never dropped by a form that does not offer it
@@ -409,6 +424,94 @@ describe('the rules of a device', () => {
         sameDevice(sensor, {
           ...details,
           blebox: { address: '192.0.2.23', deviceId: '0123456789ac' },
+        }),
+      ).toBe(false);
+    });
+  });
+
+  // HAS-445: the bounds of HikvisionBinding of smart-home-sdk 1.22.0, the unique indexes of database-service 0.26.0
+  describe('about an intercom', () => {
+    it.each([
+      ['DS-KV0000-WE1(B)0120200101RRA00000001', undefined],
+      [' DS-KV0000-WE1(B)0120200101RRA00000001 ', undefined],
+      ['ABCDEFGHI', undefined],
+      ['ABCDEFGH', 'devices.problem.hikvisionSerial'],
+      ['---------', 'devices.problem.hikvisionSerial'],
+      ['(DS-KV0000)', 'devices.problem.hikvisionSerial'],
+      ['DS-KV0000 WE1', 'devices.problem.hikvisionSerial'],
+      ['A'.repeat(65), 'devices.problem.hikvisionSerial'],
+      ['', 'devices.problem.hikvisionSerial'],
+    ])('judges the serial number "%s"', (serial, problem) => {
+      expect(hikvisionSerialProblem(serial)).toBe(problem);
+    });
+
+    it('sends the serial number as the station gives it', () => {
+      expect(normaliseHikvisionSerial(' DS-KV0000-WE1(B)0120200101RRA00000001 ')).toBe(
+        'DS-KV0000-WE1(B)0120200101RRA00000001',
+      );
+    });
+
+    it('finds the serial number or the address another station has', () => {
+      const station: SmartDevice = {
+        id: 69,
+        kind: 'intercom',
+        vendor: 'hikvision',
+        hikvision: { address: '192.0.2.93', serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000001' },
+      };
+      expect(
+        bindingTaken(
+          {
+            hikvision: {
+              address: '192.0.2.95',
+              serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000001',
+            },
+          },
+          [station],
+        ),
+      ).toBe('devices.problem.hikvisionSerialTaken');
+      expect(
+        bindingTaken(
+          {
+            hikvision: {
+              address: '192.0.2.93',
+              serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000002',
+            },
+          },
+          [station],
+        ),
+      ).toBe('devices.problem.hikvisionAddressTaken');
+      expect(
+        bindingTaken(
+          {
+            hikvision: {
+              address: '192.0.2.95',
+              serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000002',
+            },
+          },
+          [station],
+        ),
+      ).toBeUndefined();
+      expect(bindingOf(station)).toBe('hikvision');
+    });
+
+    it('sees a changed binding of a station as a change', () => {
+      const station: SmartDevice = {
+        name: 'Intercom',
+        room: 'garden',
+        kind: 'intercom',
+        enabled: true,
+        vendor: 'hikvision',
+        hikvision: { address: '192.0.2.93', serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000001' },
+      };
+      const details = { ...station } as DeviceDetails;
+      expect(sameDevice(station, details)).toBe(true);
+      expect(
+        sameDevice(station, {
+          ...details,
+          hikvision: {
+            address: '192.0.2.94',
+            serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000001',
+          },
         }),
       ).toBe(false);
     });

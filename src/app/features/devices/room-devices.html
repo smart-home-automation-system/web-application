@@ -142,6 +142,11 @@
                       <span class="code device__id">{{ device.blebox?.deviceId }}</span>
                       <span class="code">{{ device.blebox?.address }}</span>
                     }
+                    @case ('hikvision') {
+                      <span>{{ t('devices.device.hikvision') }}</span>
+                      <span class="code device__id">{{ device.hikvision?.serialNumber }}</span>
+                      <span class="code">{{ device.hikvision?.address }}</span>
+                    }
                     @default {
                       <span>{{ t('devices.device.noBinding') }}</span>
                     }

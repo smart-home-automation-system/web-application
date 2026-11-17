@@ -350,7 +350,8 @@ dashboards:
   later on the channel 0 (HAS-313), the MAC and address of an air conditioner of the vendor Gree (HAS-392, from
   `database-service` >= 0.23.0 - the MAC as the unit gives it, written with colons or dashes or without), the id and
   address of the air quality sensor of the vendor BleBox (HAS-426, from `database-service` >= 0.25.0 - the id as its
-  `GET /info` gives it). And the forms to register a device, change one, switch one off and on for the
+  `GET /info` gives it), and the door station at the gate of the vendor Hikvision with its serial number and address
+  and the Shelly that opens the gate, on the channel 0 (HAS-445, from `database-service` >= 0.26.0). And the forms to register a device, change one, switch one off and on for the
   services, and remove one. Blinds are given **the sensors of their own window** (HAS-290), picked
   from the opening sensors of the registry - none means a window that counts as closed; a sensor
   that blinds still name is not offered for removal. **The kind decides what the form asks for**: the ways such a device

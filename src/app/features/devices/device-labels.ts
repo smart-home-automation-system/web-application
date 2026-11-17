@@ -26,6 +26,8 @@ export const KIND_LABELS: Readonly<Record<DeviceKind, MessageKey>> = {
   'water valve': 'devices.kind.waterValve',
   'air conditioner': 'devices.kind.airConditioner',
   'air quality sensor': 'devices.kind.airQualitySensor',
+  intercom: 'devices.kind.intercom',
+  gate: 'devices.kind.gate',
 };
 
 /** Names of Material Symbols. */
@@ -44,6 +46,8 @@ const KIND_ICONS: Readonly<Record<DeviceKind, string>> = {
   'water valve': 'valve',
   'air conditioner': 'ac_unit',
   'air quality sensor': 'air',
+  intercom: 'doorbell',
+  gate: 'fence',
 };
 
 export const LIGHT_KIND_LABELS: Readonly<Record<LightKind, MessageKey>> = {
@@ -62,6 +66,7 @@ export const VENDOR_LABELS: Readonly<Record<Vendor, MessageKey>> = {
   eaton: 'devices.vendor.eaton',
   gree: 'devices.vendor.gree',
   blebox: 'devices.vendor.blebox',
+  hikvision: 'devices.vendor.hikvision',
   other: 'devices.vendor.other',
 };
 
@@ -72,6 +77,7 @@ export const BINDING_LABELS: Readonly<Record<Binding, MessageKey>> = {
   inverter: 'devices.binding.inverter',
   gree: 'devices.binding.gree',
   blebox: 'devices.binding.blebox',
+  hikvision: 'devices.binding.hikvision',
 };
 
 /**

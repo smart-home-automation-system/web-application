@@ -38,13 +38,16 @@ describe('the copies of the SDK', () => {
       'water valve',
       'air conditioner',
       'air quality sensor',
+      'intercom',
+      'gate',
     ]);
   });
 
   // HAS-392: gree, the vendor of the air conditioners (smart-home-sdk 1.18.0); HAS-426: blebox, the vendor of
   // the air quality sensor (smart-home-sdk 1.20.0)
   it('know every vendor of SmartVendor', () => {
-    expect(VENDORS).toEqual(['shelly', 'eaton', 'gree', 'blebox', 'other']);
+    // HAS-445: hikvision, the vendor of the door station at the gate (smart-home-sdk 1.22.0)
+    expect(VENDORS).toEqual(['shelly', 'eaton', 'gree', 'blebox', 'hikvision', 'other']);
   });
 
   it('know every brand of InverterBrand', () => {

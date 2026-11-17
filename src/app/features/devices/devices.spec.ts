@@ -854,6 +854,116 @@ describe('Devices', () => {
     expect(text(form)).toContain('The id of a sensor is 12 characters 0-9 and a-f.');
   });
 
+  // HAS-445 (smart-home-sdk 1.22.0, database-service 0.26.0): the door station is reached by its hikvision binding
+  // alone, of the vendor hikvision - the form offers nothing else; the serial number is sent as the station gives it
+  it('registers an intercom with its address and serial number, and shows how it is reached', async () => {
+    answerTheRegistryWith([]);
+    const garden = await openRoom('garden', 'Add');
+    const form = garden.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Intercom');
+    choose(form, 'kind', 'intercom');
+    await settled();
+    expect(form.querySelector('[data-testid="binding"] button')).toBeNull();
+    expect(text(form)).toContain('Hikvision, through the gate bridge');
+    type(form.querySelector<HTMLInputElement>('[data-testid="hikvision-address"]')!, '192.0.2.93');
+    type(
+      form.querySelector<HTMLInputElement>('[data-testid="hikvision-serial"]')!,
+      ' DS-KV0000-WE1(B)0120200101RRA00000001 ',
+    );
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    const request = http.expectOne({ method: 'POST', url: '/home/device/registry' });
+    expect(request.request.body).toEqual({
+      name: 'Intercom',
+      room: 'garden',
+      kind: 'intercom',
+      enabled: true,
+      vendor: 'hikvision',
+      hikvision: { address: '192.0.2.93', serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000001' },
+    });
+    request.flush({});
+    await settled();
+    answerTheRegistryWith([
+      {
+        id: 69,
+        name: 'Intercom',
+        room: 'garden',
+        kind: 'intercom',
+        enabled: true,
+        vendor: 'hikvision',
+        hikvision: { address: '192.0.2.93', serialNumber: 'DS-KV0000-WE1(B)0120200101RRA00000001' },
+      },
+    ]);
+    await settled();
+    const shown = garden.querySelector('[data-device="69"]');
+    expect(text(shown)).toContain('Intercom');
+    expect(text(shown)).toContain('DS-KV0000-WE1(B)0120200101RRA00000001');
+    expect(text(shown)).toContain('192.0.2.93');
+  });
+
+  // a serial number that is not one never leaves the form
+  it('does not send an intercom whose serial number is not one', async () => {
+    answerTheRegistryWith([]);
+    const garden = await openRoom('garden', 'Add');
+    const form = garden.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Intercom');
+    choose(form, 'kind', 'intercom');
+    await settled();
+    type(form.querySelector<HTMLInputElement>('[data-testid="hikvision-address"]')!, '192.0.2.93');
+    type(form.querySelector<HTMLInputElement>('[data-testid="hikvision-serial"]')!, '---------');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    http.expectNone({ method: 'POST', url: '/home/device/registry' });
+    expect(text(form)).toContain(
+      'The serial number of a station is 9 to 64 letters, digits, hyphens and parentheses.',
+    );
+  });
+
+  // HAS-445 (checkGate of database-service 0.26.0): the gate is a Shelly on the channel 0 - the form offers nothing else
+  it('registers a gate as a Shelly on the channel 0', async () => {
+    answerTheRegistryWith([]);
+    const garden = await openRoom('garden', 'Add');
+    const form = garden.querySelector<HTMLElement>('app-smart-device-form')!;
+    const toggles = (group: string): string[] =>
+      [...form.querySelectorAll(`[data-testid="${group}"] mat-button-toggle`)].map((one) =>
+        text(one),
+      );
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Gate');
+    choose(form, 'kind', 'gate');
+    await settled();
+    expect(form.querySelector('[data-testid="binding"] button')).toBeNull();
+    expect(text(form)).toContain('Shelly on the network');
+    expect(toggles('channel')).toEqual(['0']);
+    expect(toggles('generation')).toEqual(['1', '2', '3', '4']);
+
+    const [address] = [...form.querySelectorAll<HTMLInputElement>('input.code')];
+    type(address, '192.0.2.85');
+    // the Shelly 1 of the gate is a Gen1, which has no MQTT id to give
+    form.querySelectorAll<HTMLElement>('[data-testid="generation"] button')[0].click();
+    fixture.detectChanges();
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    const request = http.expectOne({ method: 'POST', url: '/home/device/registry' });
+    expect(request.request.body).toEqual({
+      name: 'Gate',
+      room: 'garden',
+      kind: 'gate',
+      enabled: true,
+      vendor: 'shelly',
+      shelly: { address: '192.0.2.85', generation: 1, channel: 0 },
+    });
+    request.flush({});
+    await settled();
+    answerTheRegistryWith([]);
+    await settled();
+  });
+
   it('does not send an air conditioner whose MAC is not one', async () => {
     answerTheRegistryWith([]);
     const office = await openRoom('office', 'Add');

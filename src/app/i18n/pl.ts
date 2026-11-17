@@ -2306,6 +2306,7 @@ export const pl: Messages = {
       bluetooth: 'Bluetooth',
       gree: 'Gree',
       blebox: 'BleBox',
+      hikvision: 'Hikvision',
       noBinding: 'Rejestr nie mówi, jak dotrzeć do tego urządzenia.',
       edit: 'Edytuj',
       putIntoUse: 'Pozwól serwisom używać',
@@ -2354,6 +2355,11 @@ export const pl: Messages = {
       bleboxAddressHint: 'Zarezerwowany dla czujnika w DHCP',
       bleboxDeviceId: 'Identyfikator czujnika',
       bleboxDeviceIdHint: 'Tak, jak podaje go /info: 12 znaków 0-9 i a-f, na przykład 0123456789ab',
+      hikvisionAddress: 'Adres stacji',
+      hikvisionAddressHint: 'Zarezerwowany dla stacji w DHCP',
+      hikvisionSerial: 'Numer seryjny stacji',
+      hikvisionSerialHint:
+        'Tak, jak podaje go System/deviceInfo, na przykład DS-KV0000-WE1(B)0120200101RRA00000001',
       optional: 'Nieobowiązkowe',
       registration: 'Numer rejestracyjny modułu',
       registrationHint: 'Nieobowiązkowe - hasło lokalnego API modułu SolaX',
@@ -2410,6 +2416,9 @@ export const pl: Messages = {
       bleboxDeviceId: 'Identyfikator czujnika to 12 znaków 0-9 i a-f.',
       bleboxDeviceIdTaken: 'Urządzenie BleBox o tym identyfikatorze jest już zarejestrowane.',
       bleboxAddressTaken: 'Urządzenie BleBox pod tym adresem jest już zarejestrowane.',
+      hikvisionSerial: 'Numer seryjny stacji to od 9 do 64 liter, cyfr, łączników i nawiasów.',
+      hikvisionSerialTaken: 'Stacja o tym numerze seryjnym jest już zarejestrowana.',
+      hikvisionAddressTaken: 'Stacja pod tym adresem jest już zarejestrowana.',
     },
     // what the registry refuses, by the code of its answer
     error: {
@@ -2434,6 +2443,8 @@ export const pl: Messages = {
       waterValve: 'Zawór wody',
       airConditioner: 'Klimatyzator',
       airQualitySensor: 'Czujnik jakości powietrza',
+      intercom: 'Domofon',
+      gate: 'Brama',
     },
     lightKind: {
       relay: 'przełączane',
@@ -2449,6 +2460,7 @@ export const pl: Messages = {
       eaton: 'Eaton',
       gree: 'Gree',
       blebox: 'BleBox',
+      hikvision: 'Hikvision',
       other: 'Inny',
     },
     binding: {
@@ -2458,6 +2470,7 @@ export const pl: Messages = {
       inverter: 'Falownik, odczytywany przez serwis energii',
       gree: 'Gree w sieci',
       blebox: 'BleBox w sieci',
+      hikvision: 'Hikvision, przez most bramy',
     },
   },
   household: {
