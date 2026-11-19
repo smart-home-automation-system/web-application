@@ -1227,7 +1227,7 @@ e2e/              # Playwright tests
     three missed reads (90 s) breaks the line. `shownHistory` takes the period as a function too, read
     lazily, because the card gets it as an input.
   - The mock registry holds the three appliances (ids 61-63, the ids of the mock of appliance-service): the
-    devices page counts them (30 devices with the two inverters of HAS-341, the water valve of HAS-313, the air conditioner of HAS-392, the air quality sensor of HAS-426 and the intercom and the gate of HAS-445 - 32 since). The mock answers 30 days of cycles in a rhythm per appliance (one of
+    devices page counts them (30 devices with the two inverters of HAS-341, the water valve of HAS-313, the air conditioner of HAS-392, the air quality sensor of HAS-426 and the intercom and the gate of HAS-445 - 32 since, the smoke detector of HAS-458 - 33). The mock answers 30 days of cycles in a rhythm per appliance (one of
     the dishwasher without its energy) and a power curve every 30 s with a washing pause and the turns of a
     dryer after its end.
   - The photo `appliances` (a laundry room with the washing machine, the dryer, a smart plug and a dishwasher,
@@ -1432,6 +1432,18 @@ e2e/              # Playwright tests
     `doorbell` and `fence`; the devices card counts both under "other". The mock registry holds both in the garden (69,
     70) - the devices page counts 32. **The dashboard moves before either device is registered**: a version before it
     reads a stored station with a binding it does not know, and a whole-device write would drop it.
+  - **The registry knows the kinds `smoke detector`, `co detector`, `heat detector` and the vendor `xsense`** (HAS-458,
+    `smart-home-sdk` 1.24.0, `database-service` 0.28.0, epic HAS-455): the rules of Hikvision a fourth time, for three
+    kinds - `bindingsOf` gives each the `xsense` binding alone, `vendorsOf('xsense')` the vendor `xsense` alone. The form
+    asks for the serial of the base station (`xsenseStationProblem`: `SBS50` and eight hex digits) and the id the base gives
+    the detector (`xsenseDeviceIdProblem`: eight hex digits); `normaliseXsense` trims both and sends them in capitals, as
+    the base writes them. **One detector per pair, not per id** (`xsenseTaken`, `devices_xsense_detector_uq`): two bases
+    may give the same id. **`maxlength` is a validator of the reactive form too** - a value longer than the field makes the
+    form invalid with no message, and the browser cuts a paste to it: the fields leave room for the spaces the form trims
+    (20, 16). The icons are `detector_smoke`, `detector_co` and
+    `local_fire_department`; the devices card counts them under "other". The mock registry holds a smoke detector of the
+    kitchen (71) - the devices page counts 33. **The dashboard moves before the first detector is registered**: a version
+    before it reads a stored detector with a binding it does not know.
 - **A box on a page shows something the backend reports.** The schematic of the boiler room
   had a box for the hot-water tank and one for the heating circuits, each repeating the state of
   the pump next to it in other words; the owner had them removed (2026-10-08): "I see no reason

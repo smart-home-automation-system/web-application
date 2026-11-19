@@ -28,6 +28,9 @@ export const KIND_LABELS: Readonly<Record<DeviceKind, MessageKey>> = {
   'air quality sensor': 'devices.kind.airQualitySensor',
   intercom: 'devices.kind.intercom',
   gate: 'devices.kind.gate',
+  'smoke detector': 'devices.kind.smokeDetector',
+  'co detector': 'devices.kind.coDetector',
+  'heat detector': 'devices.kind.heatDetector',
 };
 
 /** Names of Material Symbols. */
@@ -48,6 +51,9 @@ const KIND_ICONS: Readonly<Record<DeviceKind, string>> = {
   'air quality sensor': 'air',
   intercom: 'doorbell',
   gate: 'fence',
+  'smoke detector': 'detector_smoke',
+  'co detector': 'detector_co',
+  'heat detector': 'local_fire_department',
 };
 
 export const LIGHT_KIND_LABELS: Readonly<Record<LightKind, MessageKey>> = {
@@ -67,6 +73,7 @@ export const VENDOR_LABELS: Readonly<Record<Vendor, MessageKey>> = {
   gree: 'devices.vendor.gree',
   blebox: 'devices.vendor.blebox',
   hikvision: 'devices.vendor.hikvision',
+  xsense: 'devices.vendor.xsense',
   other: 'devices.vendor.other',
 };
 
@@ -78,6 +85,7 @@ export const BINDING_LABELS: Readonly<Record<Binding, MessageKey>> = {
   gree: 'devices.binding.gree',
   blebox: 'devices.binding.blebox',
   hikvision: 'devices.binding.hikvision',
+  xsense: 'devices.binding.xsense',
 };
 
 /**

@@ -2441,6 +2441,7 @@ export const en = {
       gree: 'Gree',
       blebox: 'BleBox',
       hikvision: 'Hikvision',
+      xsense: 'X-Sense',
       noBinding: 'The registry does not say how this device is reached.',
       edit: 'Edit',
       putIntoUse: 'Let the services use',
@@ -2495,6 +2496,10 @@ export const en = {
       hikvisionSerial: 'Serial number of the station',
       hikvisionSerialHint:
         'As its System/deviceInfo gives it, for example DS-KV0000-WE1(B)0120200101RRA00000001',
+      xsenseStation: 'Base station',
+      xsenseStationHint: 'Its serial: SBS50 and 8 characters 0-9 and A-F, for example SBS5000000001',
+      xsenseDeviceId: 'Id of the detector',
+      xsenseDeviceIdHint: 'As the base gives it: 8 characters 0-9 and A-F, for example 00000006',
       optional: 'Optional',
       registration: 'Registration number of the dongle',
       registrationHint: 'Optional - the password of the local API of the SolaX dongle',
@@ -2559,6 +2564,9 @@ export const en = {
         'The serial number of a station is 9 to 64 letters, digits, hyphens and parentheses.',
       hikvisionSerialTaken: 'A station with this serial number is already registered.',
       hikvisionAddressTaken: 'A station at this address is already registered.',
+      xsenseStation: 'The serial of a base station is SBS50 and 8 characters 0-9 and A-F.',
+      xsenseDeviceId: 'The id of a detector is 8 characters 0-9 and A-F.',
+      xsenseTaken: 'This detector of this base station is already registered.',
     },
     // what the registry refuses, by the code of its answer
     error: {
@@ -2585,6 +2593,9 @@ export const en = {
       airQualitySensor: 'Air quality sensor',
       intercom: 'Intercom',
       gate: 'Gate',
+      smokeDetector: 'Smoke detector',
+      coDetector: 'CO detector',
+      heatDetector: 'Heat detector',
     },
     lightKind: {
       relay: 'switched',
@@ -2601,6 +2612,7 @@ export const en = {
       gree: 'Gree',
       blebox: 'BleBox',
       hikvision: 'Hikvision',
+      xsense: 'X-Sense',
       other: 'Other',
     },
     binding: {
@@ -2611,6 +2623,7 @@ export const en = {
       gree: 'Gree, on the network',
       blebox: 'BleBox, on the network',
       hikvision: 'Hikvision, through the gate bridge',
+      xsense: 'X-Sense, through its base station',
     },
   },
   household: {

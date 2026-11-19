@@ -64,12 +64,15 @@ import {
   bleboxDeviceIdProblem,
   greeMacProblem,
   hikvisionSerialProblem,
+  xsenseDeviceIdProblem,
+  xsenseStationProblem,
   loggerSerialOf,
   loggerSerialProblem,
   nameProblem,
   normaliseBleboxDeviceId,
   normaliseGreeMac,
   normaliseHikvisionSerial,
+  normaliseXsense,
   normaliseName,
   openingSensorsOf,
   optionalAddressProblem,
@@ -229,6 +232,15 @@ export class SmartDeviceForm implements OnInit {
     nonNullable: true,
     validators: validator(hikvisionSerialProblem),
   });
+  // a fire detector (HAS-458): the serial of its base station and the id the base gives it, both needed
+  protected readonly xsenseStation = new FormControl('', {
+    nonNullable: true,
+    validators: validator(xsenseStationProblem),
+  });
+  protected readonly xsenseDeviceId = new FormControl('', {
+    nonNullable: true,
+    validators: validator(xsenseDeviceIdProblem),
+  });
   /** The brand decides which of the two numbers of its link the form asks for. */
   protected readonly brand = signal<string>(INVERTER_BRANDS[0]);
 
@@ -371,6 +383,8 @@ export class SmartDeviceForm implements OnInit {
       this.bleboxDeviceId,
       this.hikvisionAddress,
       this.hikvisionSerial,
+      this.xsenseStation,
+      this.xsenseDeviceId,
     ]) {
       control.valueChanges.subscribe(() => this.taken.set(undefined));
     }
@@ -410,6 +424,8 @@ export class SmartDeviceForm implements OnInit {
     this.bleboxDeviceId.setValue(device.blebox?.deviceId ?? '');
     this.hikvisionAddress.setValue(device.hikvision?.address ?? '');
     this.hikvisionSerial.setValue(device.hikvision?.serialNumber ?? '');
+    this.xsenseStation.setValue(device.xsense?.stationSerial ?? '');
+    this.xsenseDeviceId.setValue(device.xsense?.deviceId ?? '');
     this.lightKind.set(device.lightKind);
     this.placement.set(device.placement);
     this.positioning.set(device.positioning);
@@ -492,6 +508,8 @@ export class SmartDeviceForm implements OnInit {
         return [this.bleboxAddress, this.bleboxDeviceId];
       case 'hikvision':
         return [this.hikvisionAddress, this.hikvisionSerial];
+      case 'xsense':
+        return [this.xsenseStation, this.xsenseDeviceId];
     }
   }
 
@@ -565,6 +583,14 @@ export class SmartDeviceForm implements OnInit {
             hikvision: {
               address: this.hikvisionAddress.value.trim(),
               serialNumber: normaliseHikvisionSerial(this.hikvisionSerial.value),
+            },
+          }
+        : {}),
+      ...(binding === 'xsense'
+        ? {
+            xsense: {
+              stationSerial: normaliseXsense(this.xsenseStation.value),
+              deviceId: normaliseXsense(this.xsenseDeviceId.value),
             },
           }
         : {}),

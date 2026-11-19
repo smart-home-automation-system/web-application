@@ -903,6 +903,71 @@ describe('Devices', () => {
     expect(text(shown)).toContain('192.0.2.93');
   });
 
+  // HAS-458 (smart-home-sdk 1.24.0, database-service 0.28.0): a fire detector is reached by its xsense binding alone,
+  // of the vendor xsense - the form offers nothing else; the serial and the id are sent in capitals
+  it('registers a smoke detector with its base station and id, and shows how it is reached', async () => {
+    answerTheRegistryWith([]);
+    const kitchen = await openRoom('kitchen', 'Add');
+    const form = kitchen.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Smoke detector');
+    choose(form, 'kind', 'smoke detector');
+    await settled();
+    expect(form.querySelector('[data-testid="binding"] button')).toBeNull();
+    expect(text(form)).toContain('X-Sense, through its base station');
+    // pasted with spaces around and in small letters
+    type(form.querySelector<HTMLInputElement>('[data-testid="xsense-station"]')!, ' sbs5000000001 ');
+    type(form.querySelector<HTMLInputElement>('[data-testid="xsense-device-id"]')!, '0000000b');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    const request = http.expectOne({ method: 'POST', url: '/home/device/registry' });
+    expect(request.request.body).toEqual({
+      name: 'Smoke detector',
+      room: 'kitchen',
+      kind: 'smoke detector',
+      enabled: true,
+      vendor: 'xsense',
+      xsense: { stationSerial: 'SBS5000000001', deviceId: '0000000B' },
+    });
+    request.flush({});
+    await settled();
+    answerTheRegistryWith([
+      {
+        id: 71,
+        name: 'Smoke detector',
+        room: 'kitchen',
+        kind: 'smoke detector',
+        enabled: true,
+        vendor: 'xsense',
+        xsense: { stationSerial: 'SBS5000000001', deviceId: '0000000B' },
+      },
+    ]);
+    await settled();
+    const shown = kitchen.querySelector('[data-device="71"]');
+    expect(text(shown)).toContain('Smoke detector');
+    expect(text(shown)).toContain('0000000B');
+    expect(text(shown)).toContain('SBS5000000001');
+  });
+
+  // a serial that is not one never leaves the form
+  it('does not send a detector whose base station is not one', async () => {
+    answerTheRegistryWith([]);
+    const kitchen = await openRoom('kitchen', 'Add');
+    const form = kitchen.querySelector<HTMLElement>('app-smart-device-form')!;
+
+    type(form.querySelector<HTMLInputElement>('input')!, 'Heat detector');
+    choose(form, 'kind', 'heat detector');
+    await settled();
+    type(form.querySelector<HTMLInputElement>('[data-testid="xsense-station"]')!, 'SBS60000000');
+    type(form.querySelector<HTMLInputElement>('[data-testid="xsense-device-id"]')!, '00000006');
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await settled();
+
+    http.expectNone({ method: 'POST', url: '/home/device/registry' });
+    expect(text(form)).toContain('The serial of a base station is SBS50 and 8 characters 0-9 and A-F.');
+  });
+
   // a serial number that is not one never leaves the form
   it('does not send an intercom whose serial number is not one', async () => {
     answerTheRegistryWith([]);

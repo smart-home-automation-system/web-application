@@ -28,7 +28,7 @@ async function choose(form: Locator, label: string, option: string): Promise<voi
 
 async function open(page: Page): Promise<void> {
   await page.goto('/devices');
-  await expect(count(page)).toHaveText('Devices: 32');
+  await expect(count(page)).toHaveText('Devices: 33');
 }
 
 /** The window of a room, opened with one of the two buttons of its card. */
@@ -101,6 +101,18 @@ test('shows an air quality sensor with the id and the address of the sensor', as
   await expect(sensor.getByTestId('vendor')).toHaveText('BleBox');
   await expect(sensor.getByTestId('binding')).toContainText('BleBox 0123456789ab 192.0.2.23');
   await garden.getByRole('button', { name: 'Close' }).click();
+});
+
+// HAS-458: a fire detector of X-Sense, reached by the serial of its base station and the id it gives it
+test('shows a smoke detector with its id and base station', async ({ page }) => {
+  await open(page);
+  const kitchen = await openRoom(page, 'kitchen');
+
+  const detector = device(page, 'Smoke detector');
+  await expect(detector.getByTestId('kind')).toContainText('Smoke detector');
+  await expect(detector.getByTestId('vendor')).toHaveText('X-Sense');
+  await expect(detector.getByTestId('binding')).toContainText('X-Sense 00000006 SBS5000000001');
+  await kitchen.getByRole('button', { name: 'Close' }).click();
 });
 
 // HAS-445: the door station of Hikvision, reached by its serial number and address, and the Shelly of the gate
@@ -194,7 +206,7 @@ test.describe('adding a device', () => {
     await expect(form.getByTestId('binding-taken')).toHaveText(
       'Another device already has this channel of the Shelly at this address.',
     );
-    await expect(count(page)).toHaveText('Devices: 32');
+    await expect(count(page)).toHaveText('Devices: 33');
   });
 
   test('registers a Shelly as entered, in its room', async ({ page }) => {
@@ -218,7 +230,7 @@ test.describe('adding a device', () => {
     await expect(added.getByTestId('kind')).toContainText('outside the window');
     // the form is gone, the window shows the room, and its card counts the device
     await expect(room.locator('app-smart-device-form')).toHaveCount(0);
-    await expect(count(page)).toHaveText('Devices: 33');
+    await expect(count(page)).toHaveText('Devices: 34');
     await expect(card(page, 'loft').locator('[data-kind="blinds"]')).toHaveText(/Blinds\s*1/);
   });
 
@@ -261,7 +273,7 @@ test.describe('adding a device', () => {
     const sensor = device(page, 'Kitchen door sensor');
     await expect(sensor.getByTestId('binding')).toContainText('Bluetooth 7c:c6:b6:00:00:09');
     await expect(sensor.getByTestId('vendor')).toHaveText('Other');
-    await expect(count(page)).toHaveText('Devices: 34');
+    await expect(count(page)).toHaveText('Devices: 35');
   });
 });
 
@@ -381,7 +393,7 @@ test.describe('removing a device', () => {
 
     await question.getByRole('button', { name: 'Cancel' }).click();
     await expect(sensor.getByRole('group')).toHaveCount(0);
-    await expect(count(page)).toHaveText('Devices: 32');
+    await expect(count(page)).toHaveText('Devices: 33');
   });
 
   test('removes the device, and its room stays with none', async ({ page }) => {
@@ -394,7 +406,7 @@ test.describe('removing a device', () => {
     await expect(sensor.getByTestId('eaton-warning')).toHaveCount(0);
     await sensor.getByRole('group').getByRole('button', { name: 'Remove' }).click();
 
-    await expect(count(page)).toHaveText('Devices: 31');
+    await expect(count(page)).toHaveText('Devices: 32');
     await expect(loft.getByTestId('no-devices')).toBeVisible();
     await expect(card(page, 'loft').getByTestId('count')).toHaveText('Devices: 0');
   });

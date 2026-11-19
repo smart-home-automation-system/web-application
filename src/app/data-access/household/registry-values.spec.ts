@@ -40,6 +40,9 @@ describe('the copies of the SDK', () => {
       'air quality sensor',
       'intercom',
       'gate',
+      'smoke detector',
+      'co detector',
+      'heat detector',
     ]);
   });
 
@@ -47,7 +50,8 @@ describe('the copies of the SDK', () => {
   // the air quality sensor (smart-home-sdk 1.20.0)
   it('know every vendor of SmartVendor', () => {
     // HAS-445: hikvision, the vendor of the door station at the gate (smart-home-sdk 1.22.0)
-    expect(VENDORS).toEqual(['shelly', 'eaton', 'gree', 'blebox', 'hikvision', 'other']);
+    // HAS-458: xsense, the vendor of the fire detectors (smart-home-sdk 1.24.0)
+    expect(VENDORS).toEqual(['shelly', 'eaton', 'gree', 'blebox', 'hikvision', 'xsense', 'other']);
   });
 
   it('know every brand of InverterBrand', () => {

@@ -15,6 +15,8 @@ import {
   bleboxDeviceIdProblem,
   greeMacProblem,
   hikvisionSerialProblem,
+  xsenseDeviceIdProblem,
+  xsenseStationProblem,
   chosenProblem,
   deviceIdProblem,
   isZone,
@@ -24,6 +26,7 @@ import {
   normaliseBleboxDeviceId,
   normaliseGreeMac,
   normaliseHikvisionSerial,
+  normaliseXsense,
   openingSensorsOf,
   optionalAddressProblem,
   pointOf,
@@ -90,6 +93,10 @@ describe('the rules of a device', () => {
     // HAS-445: the door station by its hikvision binding alone, the gate a Shelly
     ['intercom', ['hikvision']],
     ['gate', ['shelly']],
+    // HAS-458: the fire detectors by their xsense binding alone
+    ['smoke detector', ['xsense']],
+    ['co detector', ['xsense']],
+    ['heat detector', ['xsense']],
   ])('reach a device of the kind "%s" through %j', (kind, bindings) => {
     expect(bindingsOf(kind)).toEqual(bindings);
   });
@@ -119,6 +126,8 @@ describe('the rules of a device', () => {
     expect(vendorsOf('blebox')).toEqual(['blebox']);
     // a Hikvision station is of the vendor hikvision, and nothing else is (HAS-445)
     expect(vendorsOf('hikvision')).toEqual(['hikvision']);
+    // an X-Sense detector is of the vendor xsense, and nothing else is (HAS-458)
+    expect(vendorsOf('xsense')).toEqual(['xsense']);
   });
 
   // HAS-260: the registry takes a zone (200 to 299) as the channel of a presence sensor alone
@@ -425,6 +434,81 @@ describe('the rules of a device', () => {
         sameDevice(sensor, {
           ...details,
           blebox: { address: '192.0.2.23', deviceId: '0123456789ac' },
+        }),
+      ).toBe(false);
+    });
+  });
+
+  // HAS-458: the bounds of XsenseBinding of smart-home-sdk 1.24.0, the unique index of database-service 0.28.0
+  describe('about a fire detector', () => {
+    it.each([
+      ['SBS5000000001', undefined],
+      [' sbs50abcdef09 ', undefined],
+      ['SBS500000001', 'devices.problem.xsenseStation'],
+      ['SBS500000000001', 'devices.problem.xsenseStation'],
+      ['SBS6000000001', 'devices.problem.xsenseStation'],
+      ['SBS50ABCDEFG9', 'devices.problem.xsenseStation'],
+      ['', 'devices.problem.xsenseStation'],
+    ])('judges the serial of the base station "%s"', (serial, problem) => {
+      expect(xsenseStationProblem(serial)).toBe(problem);
+    });
+
+    it.each([
+      ['00000006', undefined],
+      ['0000abcf', undefined],
+      ['0000006', 'devices.problem.xsenseDeviceId'],
+      ['000000006', 'devices.problem.xsenseDeviceId'],
+      ['0000000G', 'devices.problem.xsenseDeviceId'],
+      ['', 'devices.problem.xsenseDeviceId'],
+    ])('judges the id of a detector "%s"', (id, problem) => {
+      expect(xsenseDeviceIdProblem(id)).toBe(problem);
+    });
+
+    it('sends the serial and the id in capitals, as the base writes them', () => {
+      expect(normaliseXsense(' sbs50abcdef09 ')).toBe('SBS50ABCDEF09');
+      expect(normaliseXsense('0000abcf')).toBe('0000ABCF');
+    });
+
+    it('finds the pair another detector has, and takes the same id on another base', () => {
+      const detector: SmartDevice = {
+        id: 71,
+        kind: 'smoke detector',
+        vendor: 'xsense',
+        xsense: { stationSerial: 'SBS5000000001', deviceId: '00000006' },
+      };
+      expect(
+        bindingTaken({ xsense: { stationSerial: 'SBS5000000001', deviceId: '00000006' } }, [
+          detector,
+        ]),
+      ).toBe('devices.problem.xsenseTaken');
+      expect(
+        bindingTaken({ xsense: { stationSerial: 'SBS5000000002', deviceId: '00000006' } }, [
+          detector,
+        ]),
+      ).toBeUndefined();
+      expect(
+        bindingTaken({ xsense: { stationSerial: 'SBS5000000001', deviceId: '00000007' } }, [
+          detector,
+        ]),
+      ).toBeUndefined();
+      expect(bindingOf(detector)).toBe('xsense');
+    });
+
+    it('sees a changed binding of a detector as a change', () => {
+      const detector: SmartDevice = {
+        name: 'Smoke detector',
+        room: 'kitchen',
+        kind: 'smoke detector',
+        enabled: true,
+        vendor: 'xsense',
+        xsense: { stationSerial: 'SBS5000000001', deviceId: '00000006' },
+      };
+      const details = { ...detector } as DeviceDetails;
+      expect(sameDevice(detector, details)).toBe(true);
+      expect(
+        sameDevice(detector, {
+          ...details,
+          xsense: { stationSerial: 'SBS5000000001', deviceId: '00000007' },
         }),
       ).toBe(false);
     });

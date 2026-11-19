@@ -83,6 +83,17 @@ export interface HikvisionBinding {
 }
 
 /**
+ * A fire detector of X-Sense (`XsenseBinding` of `smart-home-sdk` 1.24.0, HAS-458): read by `safety-service` from what
+ * its base station publishes on MQTT. The base itself is not a device of the registry.
+ */
+export interface XsenseBinding {
+  /** The serial of the base station: `SBS50` and eight upper-case hexadecimal digits, its client id on the broker. */
+  readonly stationSerial?: string;
+  /** The id the base gives the detector: eight upper-case hexadecimal digits. */
+  readonly deviceId?: string;
+}
+
+/**
  * A device as the registry holds it (`GET /home/device/registry`, `SmartDevice` of
  * `smart-home-sdk` 1.8.0 - `openingSensors` since 1.11.0 - served by `database-service` and
  * routed by the gateway from 0.5.0).
@@ -129,6 +140,8 @@ export interface SmartDevice {
   readonly blebox?: BleboxBinding;
   /** An intercom only (HAS-445) - its binding. */
   readonly hikvision?: HikvisionBinding;
+  /** A smoke, CO or heat detector only (HAS-458) - its binding. */
+  readonly xsense?: XsenseBinding;
   /** A light only: `relay`, `dimmer` or `rgbw`. */
   readonly lightKind?: string;
   /** Blinds only: `external` or `internal`. */
@@ -167,6 +180,7 @@ export interface DeviceDetails {
   readonly gree?: GreeBinding;
   readonly blebox?: BleboxBinding;
   readonly hikvision?: HikvisionBinding;
+  readonly xsense?: XsenseBinding;
   readonly lightKind?: string;
   readonly placement?: string;
   readonly positioning?: boolean;
@@ -217,6 +231,7 @@ const KNOWN_FIELDS: readonly string[] = [
   'gree',
   'blebox',
   'hikvision',
+  'xsense',
   'lightKind',
   'placement',
   'positioning',
@@ -320,6 +335,7 @@ const KNOWN_BINDING_FIELDS: Readonly<Record<string, readonly string[]>> = {
   gree: ['address', 'mac'] satisfies readonly (keyof GreeBinding)[],
   blebox: ['address', 'deviceId'] satisfies readonly (keyof BleboxBinding)[],
   hikvision: ['address', 'serialNumber'] satisfies readonly (keyof HikvisionBinding)[],
+  xsense: ['stationSerial', 'deviceId'] satisfies readonly (keyof XsenseBinding)[],
 };
 
 /**
