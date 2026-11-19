@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(21, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(23, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -87,7 +87,13 @@ for (const language of ['en', 'pl'] as const) {
         const card = page.getByTestId('heating-switch');
         await card.getByRole('button', { name: TEXTS[language].switchOff }).click();
         await expect(page.getByRole('dialog').getByTestId('heating-switch-question')).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'heating-question'),
         });
@@ -528,7 +534,13 @@ for (const language of ['en', 'pl'] as const) {
 
         await page.locator('[data-room-tile="office"] .room__actions button').click();
         await expect(page.getByTestId('blind-pause').first()).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'rooms-office'),
         });
@@ -545,7 +557,13 @@ for (const language of ['en', 'pl'] as const) {
 
         await page.locator('[data-room="office"] [data-testid="room-schedules"]').click();
         await expect(page.getByTestId('schedule').first()).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'blinds-schedules'),
         });
@@ -573,7 +591,13 @@ for (const language of ['en', 'pl'] as const) {
 
         await page.locator('[data-room="living room"] [data-testid="room-details"]').click();
         await expect(page.getByTestId('window-light').first()).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'lights-room'),
         });
@@ -615,7 +639,13 @@ for (const language of ['en', 'pl'] as const) {
         await operator.locator('[data-day="2026-10-25"]').getByTestId('operator-hours').click();
         const window = page.getByRole('dialog');
         await expect(window.locator('.chart__plot svg')).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-operator-day'),
         });
@@ -639,7 +669,13 @@ for (const language of ['en', 'pl'] as const) {
         // the question before a charge, a window over the darkened page (owner, 2026-11-11)
         const question = page.getByRole('dialog');
         await expect(question.getByTestId('charge-question')).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-charge-question'),
         });
@@ -647,6 +683,27 @@ for (const language of ['en', 'pl'] as const) {
         await expect(page.getByTestId('charge-state')).toBeVisible();
         await page.locator('app-energy-control').screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy-charge'),
+        });
+      });
+
+      // the gates (HAS-454): the driveway gate, the garage gates - Right open with its warning -, the timeline
+      test('gate', async ({ page }, testInfo) => {
+        await page.goto('/gate');
+        await expect(page.getByTestId('gate-alert')).toHaveCount(1);
+        await expect(page.locator('.event').first()).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'gate'),
+          fullPage: true,
+        });
+      });
+
+      // the gate tile of the overview (HAS-454)
+      test('overview, the gate tile', async ({ page }, testInfo) => {
+        await page.goto('/overview');
+        const tile = page.getByTestId('tile-gate');
+        await expect(tile.getByTestId('gate-garage')).toHaveCount(2);
+        await tile.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'overview-gate'),
         });
       });
 
@@ -727,7 +784,13 @@ for (const language of ['en', 'pl'] as const) {
         const dialog = page.getByRole('dialog');
         await expect(dialog.getByTestId('device')).toHaveCount(8);
         // the window fades in: a picture of it once nothing moves any more
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'devices-room'),
         });
@@ -766,7 +829,13 @@ for (const language of ['en', 'pl'] as const) {
         // "Add" of a card: the window with the form open; the list of a select over it
         await card('loft').locator('.room__actions button').last().click();
         await expect(dialog.locator('app-smart-device-form')).toBeVisible();
-        await page.waitForFunction(() => document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).length === 0);
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
         await dialog.locator('app-smart-device-form input').first().fill('Lo');
         await dialog.locator('app-smart-device-form [data-testid="kind"]').click();
         await expect(page.locator('.mat-mdc-select-panel')).toHaveCSS('opacity', '1');

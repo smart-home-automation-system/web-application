@@ -58,10 +58,16 @@
                     >
                   }
                 </span>
-                @if (device.kind === 'blinds' && sensorsOf(device).length > 0) {
-                  <!-- HAS-290: the sensors of this window; their names are the household's own -->
+                @if (carriesOpeningSensors(device.kind) && sensorsOf(device).length > 0) {
+                  <!-- HAS-290: the sensors of this window (HAS-471: of this gate); their names are the household's own -->
                   <span class="device__sensors" data-testid="opening-sensors">
-                    <span>{{ t('devices.device.openingSensors') }}</span>
+                    <span>{{
+                      t(
+                        device.kind === 'gate'
+                          ? 'devices.device.gateSensors'
+                          : 'devices.device.openingSensors'
+                      )
+                    }}</span>
                     @for (sensor of sensorsOf(device); track sensor.id; let last = $last) {
                       <span
                         >{{ sensor.name ?? t('devices.form.unknownSensor', { id: sensor.id })
@@ -217,7 +223,7 @@
                   </p>
                   @let users = usersOf(device);
                   @if (users.length > 0) {
-                    <!-- the registry refuses it: the window of these blinds would read as closed -->
+                    <!-- the registry refuses it: the window of these blinds would read as closed, the gate as not known -->
                     <p class="question__warning" data-testid="sensor-in-use">
                       {{ t('devices.device.sensorInUse') }}
                       @for (blinds of users; track blinds.id; let last = $last) {

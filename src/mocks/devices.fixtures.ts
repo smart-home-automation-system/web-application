@@ -825,8 +825,8 @@ function brokenRuleOf(device: Draft): string | undefined {
   }
   const sensors = device.openingSensors ?? [];
   if (sensors.length > 0) {
-    if (device.kind !== 'blinds') {
-      return `openingSensors describe the window of blinds, not a device of the kind [${device.kind}]`;
+    if (device.kind !== 'blinds' && device.kind !== 'gate') {
+      return `openingSensors describe the window of blinds or a gate, not a device of the kind [${device.kind}]`;
     }
     if (sensors.some((one) => one === null)) {
       return 'openingSensors hold the ids of devices, and one of them is null';

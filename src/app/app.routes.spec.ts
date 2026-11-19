@@ -78,9 +78,10 @@ describe('routes', () => {
       .map((route) => [route.path, route.data?.['access']]);
 
     // HAS-438 (owner, 2026-11-13): a resident's own pages - the appliances, the requests, the heating of the
-    // house (with its permission, below) and the settings - besides their room
+    // house (with its permission, below) and the settings - besides their room; the gate since HAS-454
     expect(open).toEqual([
       ['appliances', 'member'],
+      ['gate', 'member'],
       ['requests', 'member'],
       ['house-heating', 'member'],
       ['room', 'member'],

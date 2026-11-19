@@ -111,6 +111,19 @@ dashboards:
   allows it (no indoor unit on, the plug at rest), after a question, its refusal printed as the service words it,
   the last cycle with who asked for it; and the draw of each plug over 24 or 48 hours with the line of 20 W above
   which a compressor runs.
+- **Gate** (HAS-454, every member, `/gate` - in the menu of everyone right after My room, the page a push of a
+  ring opens; from `gate-service` >= 0.10.0): **the driveway gate** with "Open the gate" - sent at once, with no
+  question, as the button of the indoor screen, the member of the profile with it -, when and from where it was last
+  opened (the indoor screen, or the application with who), the last ring and whether the door station is connected; a
+  Shelly that does not answer or a relay that does not switch itself off is told. **The garage gates**, each with its
+  state and since when - "Closed since 11:14", "Open for 35 min", "Not known" (a missing state is never read as closed)
+  - and **one button** whose label follows the state: "Open", "Close" or "Run the gate", one pulse sent at once and
+  never disabled after a press (a second press stops the gate half-way); "The gate did not react" while its sensor
+  did not answer the last pulse. **The alarms** of the garage gates as the service judges them - open in the cold,
+  while nobody is at home (alarms), open for long (a warning). **The rings and openings** of 7 or 30 days, the newest
+  twenty first and twenty more with every "Show more": the rings and ended calls, the unlocks from the screen, the
+  openings and pulses with who pressed, the opening and closing of a garage gate with how long it stood open. No
+  picture - the door station gives none.
 - **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
   each kind of thing in it - temperature, heating, lights (a bulb each), blinds (a position each,
   the door first), motion, presence sensors, openings (windows and doors), the rest - and a window
@@ -273,8 +286,9 @@ dashboards:
   this application for anybody yet, and will be the administrator's alone. The blinds, the
   lights and the air conditioner are the only controls of a room.
 - **A resident's own pages** (HAS-438, owner 2026-11-13): besides My room, every member is offered
-  **Appliances**, **Requests** and **Settings** - and **House heating** with the permission `heating_switch`.
-  At most five entries, so all of them stand on the bottom bar of a phone, with no "More".
+  **Gate** (since HAS-454, above), **Appliances**, **Requests** and **Settings** - and **House heating** with the
+  permission `heating_switch`. Five entries stand on the bottom bar of a phone; a sixth - the heating of the house -
+  shows the first four and "More".
   - **Appliances** (`/appliances`): for every member **the appliances of the household** (HAS-282) - the
     washing machine, the dryer and the dishwasher with their state, running since or finished at, and
     "Emptied" for one that has finished and waits (the reminders of `appliance-service` stop with it) - and
@@ -607,6 +621,12 @@ Endpoints used today:
 | `GET` | `/home/aircon/{id}/runs?from=&to=` | The changes of a unit over the last 24 hours with who made them (air conditioning), asked only while they are open, then every minute |
 | `GET` | `/home/aircon/power` | The two plugs of the units - power now, compressor, the energy of today, 7 and 30 days (air conditioning), polled every 30 s |
 | `GET` | `/home/aircon/power/samples?plug=&from=&to=` | The draw of one plug in buckets over 24 or 48 hours (air conditioning), asked when the period changes, then every minute |
+| `GET` | `/home/gate` | The driveway gate, the door station, the last ring and the last opening (gate), polled every 5 s - every 30 s for the overview. Needs `gate-service` 0.3.0 or later |
+| `POST` | `/home/gate/open?source=dashboard&member=` | Opens the driveway gate at once, with no question, the member of the profile with it (gate); read back at once and 5 s later. `OPEN_TOO_SOON`, `DEVICE_FAILED`, `UNKNOWN_MEMBER` and the other codes of `GateError` worded |
+| `GET` | `/home/gate/garage` | Every garage gate with its state, since when, whether its Shelly answers and whether it reacted to the last pulse (gate, overview), polled every 5 s - every 30 s for the overview. Needs `gate-service` 0.8.0 or later |
+| `POST` | `/home/gate/garage/{id}/pulse?source=dashboard&member=` | One pulse of a garage gate - it opens, stops or closes it alike -, at once, no question, never disabled after a press (gate) |
+| `GET` | `/home/gate/garage/alerts` | The open alarms and warnings of the garage gates (gate), polled every 30 s and right after a pulse. Needs `gate-service` 0.10.0 or later |
+| `GET` | `/home/gate/events?from=&to=` | The rings, calls, unlocks, commands and garage moves of 7 or 30 days, the newest first (gate), asked when the period changes, then every 30 s |
 | `GET`, `POST` | `/home/aircon/power-cycle` | Whether the indoor plug may be power cycled now and the last cycle, polled every 30 s; the cycle itself after a question, with the member of the profile (air conditioning). Needs `aircon-service` 0.10.0 or later |
 | `POST` | `/home/light/{id}?turn=on\|off&source=dashboard`, `/home/light/{id}/brightness?value=1..100&source=dashboard` | Switches a light by its registry id, sets the brightness of a dimmer or an rgbw light (rooms). The rules engine holds a light changed from here; the lights are read again |
 | `GET` | `/home/light/rooms/{room}/rules` | The rule of a room (my room: every 60 s; the editor of the rule: once, and again after a save); `404 NOT_FOUND_RULE` is a room without one. Needs `light-service` 0.6.0 or later |
@@ -648,7 +668,7 @@ Endpoints used today:
 | `POST` | `/home/device/registry` | Registers a device (devices); needs `database-service` 0.13.0 or later, like the three below - and 0.15.0 or later for a `push button` (its SDK knows the kind; an older one answers a 400 without a code) |
 | `PUT` | `/home/device/registry/{id}` | Replaces a device with the whole form - the registry has no partial update, so what it holds and this version does not know is sent back with it (devices). Not sent for a form nothing was changed in |
 | `POST` | `/home/device/registry/{id}/enable`, `.../disable` | Switches a device on or off for the services (devices) |
-| `DELETE` | `/home/device/registry/{id}` | Removes a device (devices), after a confirmation; an opening sensor that blinds still name is refused (`409 DEVICE_CONFLICT`, `database-service` 0.16.0) and not offered |
+| `DELETE` | `/home/device/registry/{id}` | Removes a device (devices), after a confirmation; an opening sensor that blinds or a gate still name is refused (`409 DEVICE_CONFLICT`, `database-service` 0.16.0, a gate from 0.27.0) and not offered |
 
 What the application relies on, in every call:
 

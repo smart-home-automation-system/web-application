@@ -154,6 +154,16 @@ import {
   stationStatus,
 } from './weather.fixtures';
 
+// HAS-454: the gates of gate-service
+import {
+  garageAlerts,
+  garageGates,
+  gateEvents,
+  gateRead,
+  openGate,
+  pulseGarage,
+} from './gate.fixtures';
+
 export interface MockReply {
   readonly status: number;
   readonly body: unknown;
@@ -562,6 +572,39 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/light/empty-house',
     reply: (_request, fresh) => ({ status: 200, body: emptyHouse(fresh) }),
+  },
+  // HAS-454: the gates of gate-service - the driveway gate, the garage gates, their alarms, the timeline, the writes
+  {
+    method: 'GET',
+    path: '/home/gate',
+    reply: (_request, fresh) => ({ status: 200, body: gateRead(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/gate/garage',
+    reply: (_request, fresh) => ({ status: 200, body: garageGates(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/gate/garage/alerts',
+    reply: (_request, fresh) => ({ status: 200, body: garageAlerts(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/gate/events',
+    reply: (request, fresh) =>
+      gateEvents(request.params.get('from'), request.params.get('to'), fresh),
+  },
+  {
+    method: 'POST',
+    path: '/home/gate/open',
+    reply: (request) => openGate(request.params.get('source'), request.params.get('member')),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/gate\/garage\/(\d+)\/pulse$/,
+    reply: (request, _fresh, [id]) =>
+      pulseGarage(id, request.params.get('source'), request.params.get('member')),
   },
   // HAS-394: the air conditioners of aircon-service - every unit, a room of My room, a command, the automation
   {

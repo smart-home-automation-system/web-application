@@ -99,6 +99,14 @@ const pages: Page[] = [
       import('./features/appliances/appliances-page').then((m) => m.AppliancesPage),
   },
   {
+    // HAS-454: the driveway gate, the garage gates, their alarms and the rings - for every member (owner
+    // 2026-11-19: a page in the menu of everyone, the target of the push of a ring)
+    path: 'gate',
+    title: 'nav.gate',
+    data: { access: 'member', background: 'gate' },
+    loadComponent: () => import('./features/gate/gate-page').then((m) => m.GatePage),
+  },
+  {
     // HAS-438: the requests of the household on a page of their own, for every member
     path: 'requests',
     title: 'nav.requests',

@@ -101,6 +101,9 @@ describe('translations', () => {
       'weather.metric.pm10',
       'weather.charts.pm1.title',
       'weather.charts.pm10.title',
+      // an alarm of a garage gate and a length in minutes, the same words in both languages (HAS-454)
+      'gate.alert.alarm',
+      'gate.duration.minutes',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

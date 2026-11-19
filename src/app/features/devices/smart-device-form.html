@@ -505,10 +505,14 @@
             <mat-button-toggle value="no">{{ t('devices.form.no') }}</mat-button-toggle>
           </mat-button-toggle-group>
         </div>
+      }
 
-        <!-- HAS-290: the sensors of this window, never of the room -->
+      @if (carriesOpeningSensors(chosenKind())) {
+        <!-- HAS-290: the sensors of this window, never of the room; HAS-471: the sensors on a garage gate -->
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>{{ t('devices.form.openingSensors') }}</mat-label>
+          <mat-label>{{
+            t(chosenKind() === 'gate' ? 'devices.form.gateSensors' : 'devices.form.openingSensors')
+          }}</mat-label>
           <mat-select
             data-testid="opening-sensors"
             multiple
@@ -541,7 +545,13 @@
               <mat-option disabled>{{ t('devices.form.noOpeningSensors') }}</mat-option>
             }
           </mat-select>
-          <mat-hint>{{ t('devices.form.openingSensorsHint') }}</mat-hint>
+          <mat-hint>{{
+            t(
+              chosenKind() === 'gate'
+                ? 'devices.form.gateSensorsHint'
+                : 'devices.form.openingSensorsHint'
+            )
+          }}</mat-hint>
         </mat-form-field>
       }
     }

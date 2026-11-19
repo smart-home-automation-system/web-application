@@ -57,6 +57,7 @@ import {
   bindingOf,
   bindingTaken,
   bindingsOf,
+  carriesOpeningSensors,
   bluetoothAddressProblem,
   chosenProblem,
   deviceIdProblem,
@@ -251,6 +252,7 @@ export class SmartDeviceForm implements OnInit {
 
   /** What the kind field holds, as a signal - a form control is none. */
   protected readonly chosenKind = signal('');
+  protected readonly carriesOpeningSensors = carriesOpeningSensors;
 
   /** The rooms and the kinds on offer - with the one the device has, known here or not. */
   protected readonly rooms = computed(() =>
@@ -569,7 +571,7 @@ export class SmartDeviceForm implements OnInit {
       ...(kind === 'light' && lightKind !== undefined ? { lightKind } : {}),
       ...(kind === 'blinds' && placement !== undefined ? { placement } : {}),
       ...(kind === 'blinds' && positioning !== undefined ? { positioning } : {}),
-      ...(kind === 'blinds' && openingSensors.length > 0 ? { openingSensors } : {}),
+      ...(carriesOpeningSensors(kind) && openingSensors.length > 0 ? { openingSensors } : {}),
     };
   }
 }

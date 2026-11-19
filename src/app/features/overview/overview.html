@@ -591,6 +591,76 @@
       }
     </app-domain-tile>
 
+    <!-- HAS-454: the gates - every garage gate with its state, how long an open one stands open, and at the bottom,
+         quieter, the last opening of the driveway gate; nothing here moves a gate: the buttons are on the gate page -->
+    <app-domain-tile
+      class="domain-tile--column"
+      heading="overview.gate.title"
+      icon="fence"
+      domain="gate"
+      link="/gate"
+      waitingLabel="gate.page.loading"
+      [resource]="garages"
+      data-testid="tile-gate"
+    >
+      @if (garageGates(); as gates) {
+        @if (gates.length === 0) {
+          <p class="tile__detail">{{ t('gate.garage.none') }}</p>
+        } @else {
+          <!-- three columns shared by every row: the name, how long an open gate stands open, and its state at the
+               right edge - the time never moves when the word beside it changes -->
+          <dl class="tile__rows gate-tile__rows">
+            @for (gate of gates; track gate.id) {
+              @let state = garageStateOf(gate);
+              <div
+                class="tile__row gate-tile__row"
+                [attr.data-state]="state === 'open' ? 'alert' : state"
+                data-testid="gate-garage"
+              >
+                <dt class="tile__name">{{ gate.name ?? '#' + gate.id }}</dt>
+                <dd class="gate-tile__time">
+                  @if (state === 'open') {
+                    @if (openFor(gate); as lasted) {
+                      <span class="tile__quiet">{{ lasted | displayText }}</span>
+                    }
+                  }
+                </dd>
+                <dd class="gate-tile__state">
+                  <!-- every word of a state, unseen, keeps the column as wide as the longest of them -->
+                  <span class="gate-tile__sizer" aria-hidden="true">
+                    <strong>{{ t('overview.gate.open') }}</strong>
+                    <strong>{{ t('overview.gate.closed') }}</strong>
+                    <strong>{{ t('overview.gate.unknown') }}</strong>
+                  </span>
+                  @if (state === 'open') {
+                    <strong>{{ t('overview.gate.open') }}</strong>
+                  } @else if (state === 'closed') {
+                    <strong>{{ t('overview.gate.closed') }}</strong>
+                  } @else {
+                    <strong class="tile__quiet">{{ t('overview.gate.unknown') }}</strong>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+        }
+      }
+      <!-- the driveway gate: its own call, told apart from the garage gates, a note at the bottom of the tile -->
+      @if (gateRead.value(); as read) {
+        <p class="tile__detail gate-tile__driveway" data-testid="gate-last-opening">
+          {{ t('overview.gate.lastOpening') }}:
+          @if (read.lastOpening?.at; as at) {
+            {{ at | houseDateTime }}
+          } @else {
+            {{ t('overview.gate.never') }}
+          }
+        </p>
+      }
+      <div tileFailures>
+        <app-api-error-strip [error]="gateRead.error()" />
+      </div>
+    </app-domain-tile>
+
     <!-- HAS-394: the air conditioners - what is on, by room with its mode, what does not answer, and
          what the automation switched off; nothing here commands a unit: the overview changes nothing -->
     <app-domain-tile

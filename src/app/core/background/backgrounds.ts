@@ -19,6 +19,7 @@ export const BACKGROUNDS = [
   'requests',
   'energy',
   'aircon',
+  'gate',
   'rooms',
   'settings',
   'about',

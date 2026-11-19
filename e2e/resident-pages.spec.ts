@@ -20,10 +20,19 @@ const entries = (page: Page) => page.locator('.shell__side-nav .mat-mdc-list-ite
 test.describe('a resident', () => {
   test.use({ profile: 'resident' });
 
-  test('is offered their room, the appliances, the requests and the settings', async ({ page }) => {
+  // the gate after their room since HAS-454 (owner, 2026-11-19)
+  test('is offered their room, the gate, the appliances, the requests and the settings', async ({
+    page,
+  }) => {
     await page.goto('/room');
 
-    await expect(entries(page)).toHaveText(['My room', 'Appliances', 'Requests', 'Settings']);
+    await expect(entries(page)).toHaveText([
+      'My room',
+      'Gate',
+      'Appliances',
+      'Requests',
+      'Settings',
+    ]);
   });
 
   test('sees the appliances and their chores, and nothing that tunes them', async ({ page }) => {
@@ -68,7 +77,7 @@ test.describe('a resident', () => {
     await page.goto('/room');
 
     const bar = page.locator('.shell__bottom-nav');
-    await expect(bar.getByRole('link')).toHaveCount(4);
+    await expect(bar.getByRole('link')).toHaveCount(5);
     await expect(bar.getByRole('button', { name: 'More' })).toHaveCount(0);
   });
 });
@@ -76,11 +85,13 @@ test.describe('a resident', () => {
 test.describe('a resident granted the switch of the house', () => {
   test.use({ profile: 'resident-two-rooms' });
 
-  test('is offered the heating of the house as a fifth entry', async ({ page }) => {
+  // a sixth entry since the gate (HAS-454): the bottom bar of a phone shows four and "More"
+  test('is offered the heating of the house as a sixth entry', async ({ page }) => {
     await page.goto('/room');
 
     await expect(entries(page)).toHaveText([
       'My room',
+      'Gate',
       'Appliances',
       'Requests',
       'House heating',

@@ -972,21 +972,23 @@ test.describe('the navigation with more destinations than a phone has room for',
     if (testInfo.project.name === 'phone') {
       const bar = page.locator('.shell__bottom-nav');
       // the owner's order (2026-10-17, HAS-232): the overview, my room, the weather - and the energy
-      // after the weather since HAS-341, which moves the rooms behind "More"
+      // after the weather since HAS-341, which moves the rooms behind "More"; the gate after my room since HAS-454,
+      // which moves the energy behind it
       await expect(bar.locator('.shell__bottom-label')).toHaveText([
         'Overview',
         'My room',
+        'Gate',
         'Weather',
-        'Energy',
         'More',
       ]);
 
-      await bar.getByRole('link', { name: 'Energy' }).click();
-      await expect(page).toHaveURL(/\/energy$/);
+      await bar.getByRole('link', { name: 'Gate' }).click();
+      await expect(page).toHaveURL(/\/gate$/);
 
       // what did not fit is one tap further
       await bar.getByRole('button', { name: 'More' }).click();
       await expect(page.getByRole('menuitem')).toHaveText([
+        /Energy/,
         /Air conditioning/,
         /Blinds/,
         /Lights/,
@@ -1013,6 +1015,7 @@ test.describe('the navigation with more destinations than a phone has room for',
       await expect(side.getByRole('link')).toHaveText([
         /Overview/,
         /My room/,
+        /Gate/,
         /Weather/,
         /Energy/,
         /Air conditioning/,

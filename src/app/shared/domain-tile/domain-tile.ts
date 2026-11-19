@@ -24,7 +24,8 @@ export type TileDomain =
   | 'light'
   | 'appliance'
   | 'energy'
-  | 'aircon';
+  | 'aircon'
+  | 'gate';
 
 /**
  * A card about one call of one domain of the house - a tile of the overview, whose title leads to
