@@ -108,6 +108,8 @@ describe('profiles in the application', () => {
           // HAS-268: the lights of the room and its rule
           request.url.startsWith('/home/light/rooms/') ||
           request.url.startsWith('/home/aircon/rooms/') ||
+          // HAS-454: the gate page of every member - its gates, alarms and timeline
+          request.url.startsWith('/home/gate') ||
           // HAS-346: the chores of the member this month, under the rooms
           request.url === '/home/appliance/reports/members' ||
           // HAS-411: the requests of the member, in the row of the household
@@ -501,15 +503,15 @@ describe('profiles in the application', () => {
     );
 
     // HAS-438 (owner, 2026-11-13): their room, the appliances, the requests and the settings - all of
-    // them on the bottom bar of a phone
+    // them on the bottom bar of a phone; the gate after their room since HAS-454 (owner, 2026-11-19)
     it('is offered their own pages, all of them on the bottom bar', async () => {
       await start(BORYS);
       await harness.navigateByUrl('/room');
 
-      expect(sideNavigation()).toEqual(['My room', 'Appliances', 'Requests', 'Settings']);
+      expect(sideNavigation()).toEqual(['My room', 'Gate', 'Appliances', 'Requests', 'Settings']);
       expect(
         [...page().querySelectorAll('.shell__bottom-nav a')].map((a) => a.getAttribute('href')),
-      ).toEqual(['/room', '/appliances', '/requests', '/settings']);
+      ).toEqual(['/room', '/gate', '/appliances', '/requests', '/settings']);
       expect(page().querySelector('a.shell__profile')).toBeNull();
       expect(page().querySelector('.shell__profile')?.textContent).toContain('Borys');
       // the card of their room, named by it
@@ -519,7 +521,7 @@ describe('profiles in the application', () => {
       ).toBe('loft');
     });
 
-    it.each(['/appliances', '/requests', '/settings'])('opens %s', async (address) => {
+    it.each(['/gate', '/appliances', '/requests', '/settings'])('opens %s', async (address) => {
       await start(BORYS);
 
       await harness.navigateByUrl(address);
@@ -538,12 +540,14 @@ describe('profiles in the application', () => {
       expect(url()).toBe('/house-heating');
       expect(sideNavigation()).toEqual([
         'My room',
+        'Gate',
         'Appliances',
         'Requests',
         'House heating',
         'Settings',
       ]);
-      expect(page().querySelectorAll('.shell__bottom-nav a')).toHaveLength(5);
+      // six entries: the bar shows four and "More" (HAS-454)
+      expect(page().querySelectorAll('.shell__bottom-nav a')).toHaveLength(4);
     });
 
     it('sees the weather in the panel', async () => {
@@ -583,6 +587,7 @@ describe('profiles in the application', () => {
       expect(sideNavigation()).toEqual([
         'Overview',
         'My room',
+        'Gate',
         'Weather',
         'Energy',
         'Air conditioning',

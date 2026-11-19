@@ -30,7 +30,14 @@ import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { RoomDevices as RoomGroup } from './device-groups';
 import { changeSummary, describeDeviceError } from './device-errors';
 import { kindIcon, kindLabel, lightKindLabel, placementLabel, vendorLabel } from './device-labels';
-import { bindingOf, blindsUsing, isZone, openingSensorsOf, sameDevice } from './device-rules';
+import {
+  bindingOf,
+  carriesOpeningSensors,
+  isZone,
+  openingSensorUsers,
+  openingSensorsOf,
+  sameDevice,
+} from './device-rules';
 import { SmartDeviceForm } from './smart-device-form';
 
 /** What the card shows besides its devices: nothing more, a form, or a question. */
@@ -105,6 +112,7 @@ export class RoomDevices implements OnInit {
   protected readonly vendorLabel = vendorLabel;
   protected readonly bindingOf = bindingOf;
   protected readonly isZone = isZone;
+  protected readonly carriesOpeningSensors = carriesOpeningSensors;
 
   /**
    * A value of the answer as a number - or `undefined` for anything else. Nothing checks an
@@ -173,9 +181,9 @@ export class RoomDevices implements OnInit {
     }));
   }
 
-  /** The blinds that name this device as a sensor of their window: the registry keeps it. */
+  /** The blinds and the gates that name this device as their sensor: the registry keeps it. */
   protected usersOf(device: RegisteredDevice): readonly SmartDevice[] {
-    return blindsUsing(device.id, this.all());
+    return openingSensorUsers(device.id, this.all());
   }
 
   /** Every device of the registry but one: what the binding of that one must not repeat. */

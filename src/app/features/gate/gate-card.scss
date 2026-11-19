@@ -1,0 +1,165 @@
+// The cards of the gate page (HAS-454): each a domain card in the slate of the gates.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+mat-card {
+  --app-domain: var(--app-domain-gate);
+  height: 100%;
+}
+
+mat-card-content {
+  display: grid;
+  gap: 12px;
+}
+
+.facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+    text-align: end;
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.note {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.warning {
+  margin: 0;
+  color: var(--mat-sys-on-surface);
+}
+
+.failure {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.garages__list,
+.alerts__list,
+.events {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.garage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-glass-edge);
+  border-radius: 10px;
+
+  > .warning,
+  > .failure {
+    grid-column: 1 / -1;
+  }
+
+  // the state at a glance: an open gate is tinted with the colour of the gates
+  &[data-state='open'] {
+    background: color-mix(in srgb, var(--app-domain-gate) 14%, transparent);
+  }
+}
+
+.garage__head {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.garage__name {
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}
+
+.garage__state {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.alert {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  &[data-level='warning'] {
+    background: var(--mat-sys-surface-container-high);
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.alert__level {
+  font: var(--mat-sys-label-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.alert__since {
+  font: var(--mat-sys-body-small);
+}
+
+.events {
+  gap: 4px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface);
+}
+
+// one grid for the whole list: the time, the description and who pressed each start at the same line in every row
+.events {
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  column-gap: 16px;
+}
+
+.event {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--app-glass-edge);
+}
+
+.event__time,
+.event__who {
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.events__more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}

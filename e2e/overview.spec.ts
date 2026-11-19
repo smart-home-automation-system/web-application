@@ -82,6 +82,8 @@ test.describe('overview', () => {
     ['tile-light', 'Lights', '/lights'],
     // the page of the units (HAS-395) - the tile of HAS-394 came before it and led nowhere (the owner on HAS-431)
     ['tile-aircon', 'Air conditioning', '/aircon'],
+    // HAS-454: the gate page of every member
+    ['tile-gate', 'Gate', '/gate'],
   ] as const) {
     test(`leads from "${name}" to ${address}`, async ({ page }) => {
       await page.goto('/overview');
@@ -119,7 +121,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(21);
+    await expect(alerts).toHaveCount(23);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -133,6 +135,8 @@ test.describe('overview', () => {
     await expect(page.getByTestId('tile-valve').getByRole('alert')).toHaveCount(3);
     // HAS-394: the air conditioning tile two - the units and the automation
     await expect(page.getByTestId('tile-aircon').getByRole('alert')).toHaveCount(2);
+    // HAS-454: the gate tile two - the garage gates and the driveway gate
+    await expect(page.getByTestId('tile-gate').getByRole('alert')).toHaveCount(2);
     for (const tile of [
       'tile-water',
       'tile-boiler',
@@ -169,14 +173,15 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    expect(tops).toHaveLength(12);
+    // thirteen tiles since the gate (HAS-454)
+    expect(tops).toHaveLength(13);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(12);
+      expect(new Set(tops).size).toBe(13);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(12);
+      expect(heights).toHaveLength(13);
       expect(new Set(heights).size).toBe(1);
     }
   });

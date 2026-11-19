@@ -557,7 +557,9 @@ e2e/              # Playwright tests
     start of the circulation pump (HAS-406, the water page); the eleventh the commands of the air conditioners (HAS-394, My room - every member, the units of the rooms of
     their profile; HAS-395 adds their rules, the filter cleaned and the power cycle of the indoor plug on the page of
     the units); the tenth the household requests (HAS-411, My room - every
-    member writes for anybody, ticks off and removes on their own list). (The blinds page adds the
+    member writes for anybody, ticks off and removes on their own list); and since HAS-454 the gates - "Open the
+    gate" of the driveway gate and the pulse of a garage gate, both at once with no question and the member of the
+    profile, a pulse never disabled after a press (the gate page of every member). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
@@ -1034,6 +1036,39 @@ e2e/              # Playwright tests
   - The mock (`aircon.fixtures.ts`): the sanctum keeps its room below 25 °C with the frost protection on, the office has a
     rule that does not keep it cool; the power cycle is refused while an indoor unit is on and done at once otherwise;
     the plugs draw by the units that are on; the samples have a gap of an hour.
+- **The gate page** (HAS-454, `features/gate/`, route `/gate` of every member - owner 2026-11-19: a page in the menu
+  of everyone right after My room, not a card on My room, whose cards belong to the room; the target of the push of a
+  ring; from `gate-service` >= 0.10.0). Three calls in the strip of sources (`GET /gate`, `/gate/garage` every 5 s,
+  `/gate/garage/alerts` every 30 s - `GateApi`), the timeline a `queryResource` of its own (`GET /gate/events`, 7
+  or 30 days through `historyPeriod` and `HistoryFrame`). What to keep:
+  - **Both writes are sent at once, with no question, the member of the profile with them** (owner, 2026-11-16 for
+    the driveway gate, 2026-11-18 for a garage gate) - `POST /gate/open` and `/gate/garage/{id}/pulse`, each with
+    `source=dashboard`; one `DeviceCommands` of the page (the driveway gate by its name, a garage gate by its id),
+    read back at once and `GATE_READ_AGAIN_AFTER_MS` (5 s) later (`gateReadBack`: the sensor of a garage gate tells
+    the move about 4 s after the pulse). **The button of a garage gate is never disabled after a press**: a second
+    press stops the gate half-way; it is disabled only without a profile.
+  - **One button per garage gate whose label follows the state** (`GARAGE_BUTTON_LABELS`): Open when closed, Close when
+    open, Run the gate when not known; **a state the gate does not send, or a word this version does not know, is not
+    known** (`garageStateOf`), never closed. "Open for" is counted by the clock of the page from `since`.
+  - **The alarms are judged by the service** (`GET /gate/garage/alerts`, the episodes of HAS-475): nothing here judges
+    a gate from its state - the thresholds stay in `gate-service`.
+  - **The timeline shows the newest twenty, twenty more with every "Show more"** (owner, 2026-11-19: a month is
+    hundreds of items), back to twenty with another period (`linkedSignal`); one grid for the whole list
+    (`subgrid`), so the time, the words and who pressed start at one line in every row (the owner on the preview).
+    The names of a gate and of a member are printed beside the words (`eventLine`), never inside a translation.
+  - **The tile of the overview** (`tile-gate`, two calls - `/gate/garage` and `/gate` every 30 s): every garage gate a
+    row of three columns shared by the tile - the name, how long an open gate stands open, the state at the right
+    edge, the column as wide as the longest word of a state, so the time never moves (the owner on the preview); the
+    last opening of the driveway gate quieter at the bottom of the tile (`domain-tile--column`, `margin-top: auto`).
+  - **The domain colour `gate`** (the slate of anthracite steel, `--app-domain-gate`) and the photo `gate` (the front of
+    a house with its sliding gate and two garage doors, tones `50-255`). The error codes of `GateError` are worded in
+    `GATE_ERROR_TEXTS` (its spec lists them).
+  - **The opening sensors of a gate in the devices form** (HAS-471): `carriesOpeningSensors` - blinds and a gate, a copy
+    of `checkOpeningSensors` of `DeviceRules` of `database-service` 0.27.0, changed on both sides together;
+    `openingSensorUsers` keeps a sensor a gate names from being removed.
+  - **Mock** (`gate.fixtures.ts`): invented names - the garage gates "Left" (closed) and "Right" (open for 35 min, its
+    warning), a month of visits; an opening within 15 s is refused `OPEN_TOO_SOON`, a pulse moves the gate at once;
+    `resetGate()`.
 - **The appliances are one resource for the whole application** (HAS-282, `ApplianceStore` in
   `data-access/appliance/`, `GET /appliance` of `appliance-service` every 30 s): the notice of the
   shell, the card of My room and the tile of the overview read the same `watchAppliances()`, so

@@ -448,12 +448,24 @@ export function openingSensorsOf(device: SmartDevice): readonly number[] {
 }
 
 /**
- * The blinds of the registry that name an opening sensor of their window - the registry refuses
- * to remove a sensor while any does (the 409 `DEVICE_CONFLICT`, HAS-290).
+ * Whether a device of the kind names opening sensors: blinds - the sensors of their window (HAS-290) - and a gate
+ * since HAS-471 - a gate with a sensor is a garage gate, its state read from it. A copy of `checkOpeningSensors` of
+ * `DeviceRules` of `database-service` >= 0.27.0 - changed on both sides together.
  */
-export function blindsUsing(sensor: number, all: readonly SmartDevice[]): readonly SmartDevice[] {
+export function carriesOpeningSensors(kind: string | undefined): boolean {
+  return kind === 'blinds' || kind === 'gate';
+}
+
+/**
+ * The blinds and the gates of the registry that name an opening sensor - the registry refuses to remove a sensor
+ * while any does (the 409 `DEVICE_CONFLICT`, HAS-290, HAS-471).
+ */
+export function openingSensorUsers(
+  sensor: number,
+  all: readonly SmartDevice[],
+): readonly SmartDevice[] {
   return all.filter(
-    (device) => device.kind === 'blinds' && openingSensorsOf(device).includes(sensor),
+    (device) => carriesOpeningSensors(device.kind) && openingSensorsOf(device).includes(sensor),
   );
 }
 

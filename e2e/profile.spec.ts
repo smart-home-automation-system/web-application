@@ -56,10 +56,11 @@ test.describe('without a profile', () => {
     // "More" for the rest
     expect(await destinations(page, testInfo.project.name)).toEqual(
       testInfo.project.name === 'phone'
-        ? ['Overview', 'My room', 'Weather', 'Energy', 'More']
+        ? ['Overview', 'My room', 'Gate', 'Weather', 'More']
         : [
             'Overview',
             'My room',
+            'Gate',
             'Weather',
             'Energy',
             'Air conditioning',
@@ -92,6 +93,7 @@ test.describe('without a profile', () => {
     await expect(page.getByTestId('room-heating')).toContainText('loft');
     expect(await destinations(page, testInfo.project.name)).toEqual([
       'My room',
+      'Gate',
       'Appliances',
       'Requests',
       'Settings',

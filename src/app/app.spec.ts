@@ -73,6 +73,7 @@ describe('application routing', () => {
       side: [
         'Overview',
         'My room',
+        'Gate',
         'Weather',
         'Energy',
         'Air conditioning',
@@ -90,7 +91,7 @@ describe('application routing', () => {
         'Settings',
         'About',
       ],
-      bottom: ['Overview', 'My room', 'Weather', 'Energy', 'More'],
+      bottom: ['Overview', 'My room', 'Gate', 'Weather', 'More'],
     });
   });
 
@@ -107,6 +108,7 @@ describe('application routing', () => {
 
     const offered = [...document.querySelectorAll<HTMLAnchorElement>('a[mat-menu-item]')];
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
+      '/energy',
       '/aircon',
       '/blinds',
       '/lights',
@@ -125,6 +127,7 @@ describe('application routing', () => {
     expect(
       offered.map((entry) => entry.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim()),
     ).toEqual([
+      'Energy',
       'Air conditioning',
       'Blinds',
       'Lights',
@@ -222,6 +225,7 @@ describe('application routing', () => {
         side: [
           'Przegląd',
           'Mój pokój',
+          'Brama',
           'Pogoda',
           'Energia',
           'Klimatyzacja',
@@ -239,7 +243,7 @@ describe('application routing', () => {
           'Ustawienia',
           'O aplikacji',
         ],
-        bottom: ['Przegląd', 'Mój pokój', 'Pogoda', 'Energia', 'Więcej'],
+        bottom: ['Przegląd', 'Mój pokój', 'Brama', 'Pogoda', 'Więcej'],
       });
       expect(page().querySelector('[data-testid="app-built"]')?.textContent).toContain(
         'build lokalny',

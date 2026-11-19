@@ -120,3 +120,53 @@ $max-columns: 5;
   align-items: center;
   gap: 6px;
 }
+
+// the gate tile (HAS-454): the last opening of the driveway gate is a note, below the garage gates at the bottom of the
+// tile, apart from them by a line
+.gate-tile__driveway {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--app-glass-edge);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// the garage gates of the gate tile: one grid for every row - the name, the time an open gate stands open, the state
+// at the right edge (owner, 2026-11-19)
+.gate-tile__rows {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 12px;
+}
+
+.gate-tile__row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+// flex, not text-align: the white space the template keeps around a word would push it off the edge
+// with the row in the selector: `.tile__row dd` of the tile content makes every value a flex box
+.gate-tile__row .gate-tile__time {
+  display: flex;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+// the word of the state and, under it in the same cell, every word it may be: the cell is as wide as the longest
+.gate-tile__row .gate-tile__state {
+  display: grid;
+  justify-items: end;
+  white-space: nowrap;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.gate-tile__sizer {
+  display: grid;
+  visibility: hidden;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}

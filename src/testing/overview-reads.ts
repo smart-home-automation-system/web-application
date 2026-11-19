@@ -44,6 +44,9 @@ export const OVERVIEW_READS: readonly string[] = [
   // HAS-394: the air conditioning tile, two calls
   '/home/aircon',
   '/home/aircon/automation',
+  // HAS-454: the gate tile, two calls
+  '/home/gate/garage',
+  '/home/gate',
 ];
 
 export function isShellRead(request: HttpRequest<unknown>): boolean {

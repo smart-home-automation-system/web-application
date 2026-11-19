@@ -35,6 +35,7 @@ const DOMAINS = [
   'appliance',
   'energy',
   'aircon',
+  'gate',
 ];
 
 // How much of the season's primary colour the glow (`--app-glow` in _seasons.scss) lays over

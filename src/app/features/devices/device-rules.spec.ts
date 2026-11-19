@@ -6,8 +6,9 @@ import {
   bindingOf,
   bindingsOf,
   bindingTaken,
-  blindsUsing,
   bluetoothAddressProblem,
+  carriesOpeningSensors,
+  openingSensorUsers,
   channelNeeded,
   channelsOf,
   generationsOf,
@@ -652,7 +653,7 @@ describe('the rules of a device', () => {
   });
 
   // HAS-290: the sensors of a window, read from an answer nothing checks
-  describe('about the opening sensors of blinds', () => {
+  describe('about the opening sensors of blinds and gates', () => {
     it('reads the ids that are numbers and nothing else', () => {
       expect(
         openingSensorsOf({ openingSensors: [9, '14', null, 2.5, 14] as unknown as number[] }),
@@ -661,15 +662,25 @@ describe('the rules of a device', () => {
       expect(openingSensorsOf({ openingSensors: 'none' as unknown as number[] })).toEqual([]);
     });
 
-    it('finds the blinds that name a sensor', () => {
+    // a copy of checkOpeningSensors of DeviceRules: blinds (HAS-290) and a gate - a garage gate (HAS-471)
+    it('lets blinds and a gate name opening sensors, nothing else', () => {
+      expect(DEVICE_KINDS.filter((kind) => carriesOpeningSensors(kind))).toEqual([
+        'blinds',
+        'gate',
+      ]);
+      expect(carriesOpeningSensors(undefined)).toBe(false);
+    });
+
+    it('finds the blinds and the gates that name a sensor', () => {
       const all = [
         { id: 1, kind: 'blinds', openingSensors: [14] },
         { id: 2, kind: 'blinds', openingSensors: [9, 14] },
         { id: 3, kind: 'blinds' },
         { id: 4, kind: 'light', openingSensors: [14] },
+        { id: 5, kind: 'gate', openingSensors: [14] },
       ];
-      expect(blindsUsing(14, all).map((one) => one.id)).toEqual([1, 2]);
-      expect(blindsUsing(5, all)).toEqual([]);
+      expect(openingSensorUsers(14, all).map((one) => one.id)).toEqual([1, 2, 5]);
+      expect(openingSensorUsers(5, all)).toEqual([]);
     });
   });
 });

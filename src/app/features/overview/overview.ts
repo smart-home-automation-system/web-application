@@ -42,6 +42,10 @@ import { LightApi } from '../../data-access/light/light-api';
 import { AirconApi } from '../../data-access/aircon/aircon-api';
 import { modeText } from '../../shared/aircon/aircon-labels';
 import { summariseAircon } from '../../shared/aircon/aircon-summary';
+import { GateApi, GarageGate } from '../../data-access/gate/gate-api';
+import { durationText, garageStateOf } from '../../shared/gate/gate-labels';
+import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
+import { DisplayText } from '../../i18n/messages';
 import {
   batteryDirectionLabel,
   gridDirectionLabel,
@@ -156,6 +160,30 @@ export class Overview {
   protected readonly airconAutomation = this.airconApi.watchAutomation();
   protected readonly airconSummary = computed(() => summariseAircon(this.aircon.value()));
   protected readonly modeText = modeText;
+  // HAS-454: the gates - the garage gates, which stand open and for how long, and the last opening of the driveway
+  // gate, two calls; the overview changes nothing, the buttons are on the gate page
+  private readonly gateApi = inject(GateApi);
+  protected readonly garages = this.gateApi.watchGaragesForTile();
+  protected readonly gateRead = this.gateApi.watchGate(30_000);
+  /** The garage gates with an id, by id; `undefined` until the first answer. */
+  protected readonly garageGates = computed(() => {
+    const answer = this.garages.value();
+    if (answer === undefined) {
+      return undefined;
+    }
+    return Array.isArray(answer)
+      ? answer.filter((gate) => gate.id !== undefined).sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
+      : [];
+  });
+  protected readonly garageStateOf = garageStateOf;
+
+  /** How long a garage gate has stood open, by the clock of the page; `undefined` without a time. */
+  protected openFor(gate: GarageGate): DisplayText | undefined {
+    const since = parseHouseDateTime(gate.since);
+    return since === undefined
+      ? undefined
+      : durationText(Math.max(0, this.ticker.now() - houseInstant(since, this.zone)));
+  }
   // HAS-282: the resource of the notice of the shell - one poller, so the two never disagree
   protected readonly appliances = inject(ApplianceStore).appliances;
   // HAS-341: the energy at a glance, once a minute - the flows, the battery and the grid as the
