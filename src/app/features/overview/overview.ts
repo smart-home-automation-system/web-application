@@ -3,7 +3,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { APP_CONFIG } from '../../core/config/app-config';
-import { houseDay } from '../../core/time/house-date-time';
+import { houseDay, houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
 import { MemberRequestsApi } from '../../data-access/household/member-requests-api';
@@ -24,7 +24,7 @@ import { isOutOfDate, toWaterReading } from '../../data-access/water/water-readi
 import { AIR_LEVEL_LABELS } from '../../data-access/weather/air-quality';
 import { CurrentWeatherStore } from '../../data-access/weather/current-weather-store';
 import { newestOf, toWeatherReading } from '../../data-access/weather/weather-reading';
-import { MessageKey } from '../../i18n/messages';
+import { DisplayText, MessageKey } from '../../i18n/messages';
 import { AirLevelDot } from '../../shared/air-quality/air-level-dot';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
@@ -44,8 +44,6 @@ import { modeText } from '../../shared/aircon/aircon-labels';
 import { summariseAircon } from '../../shared/aircon/aircon-summary';
 import { GateApi, GarageGate } from '../../data-access/gate/gate-api';
 import { durationText, garageStateOf } from '../../shared/gate/gate-labels';
-import { houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
-import { DisplayText } from '../../i18n/messages';
 import {
   batteryDirectionLabel,
   gridDirectionLabel,

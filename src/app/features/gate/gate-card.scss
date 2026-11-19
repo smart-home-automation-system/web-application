@@ -129,16 +129,12 @@ mat-card-content {
   font: var(--mat-sys-body-small);
 }
 
-.events {
-  gap: 4px;
-  font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface);
-}
-
 // one grid for the whole list: the time, the description and who pressed each start at the same line in every row
 .events {
   grid-template-columns: max-content minmax(0, 1fr) max-content;
-  column-gap: 16px;
+  gap: 4px 16px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface);
 }
 
 .event {

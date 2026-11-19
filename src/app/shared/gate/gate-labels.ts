@@ -131,33 +131,43 @@ export function eventLine(
           key: event.unlockType === 'HOUSEHOLDER' ? 'gate.event.unlockScreen' : 'gate.event.unlock',
         },
       };
-    case 'command': {
-      // the screen opens the driveway gate by the unlock of the door station: no member, its own words
-      const key =
-        event.source === 'screen' && event.outcome === 'opened'
-          ? 'gate.event.openedScreen'
-          : event.outcome === undefined
-            ? undefined
-            : COMMAND_TEXTS[event.outcome];
-      return {
-        what: key !== undefined ? { key } : { literal: event.outcome ?? '?' },
-        ...(gate === undefined ? {} : { gate }),
-        ...(event.member === undefined ? {} : { member: event.member }),
-      };
-    }
+    case 'command':
+      return commandLine(event, gate);
     case 'garage':
-      return {
-        what: {
-          key: event.state === 'open' ? 'gate.event.garageOpened' : 'gate.event.garageClosed',
-        },
-        ...(gate === undefined ? {} : { gate }),
-        ...(event.state !== 'open' && event.openForSeconds !== undefined
-          ? { lasted: durationText(event.openForSeconds * 1_000) }
-          : {}),
-      };
+      return garageLine(event, gate);
     default:
       return { what: { literal: event.kind ?? '?' } };
   }
+}
+
+/** A command: its outcome in our words with the gate and who pressed beside them. */
+function commandLine(event: GateEvent, gate: string | undefined): EventLine {
+  const key = commandKey(event);
+  return {
+    what: key === undefined ? { literal: event.outcome ?? '?' } : { key },
+    ...(gate === undefined ? {} : { gate }),
+    ...(event.member === undefined ? {} : { member: event.member }),
+  };
+}
+
+// the screen opens the driveway gate by the unlock of the door station: no member, its own words
+function commandKey(event: GateEvent): MessageKey | undefined {
+  if (event.source === 'screen' && event.outcome === 'opened') {
+    return 'gate.event.openedScreen';
+  }
+  return event.outcome === undefined ? undefined : COMMAND_TEXTS[event.outcome];
+}
+
+/** A garage gate opened, or closed with how long it stood open. */
+function garageLine(event: GateEvent, gate: string | undefined): EventLine {
+  const opened = event.state === 'open';
+  return {
+    what: { key: opened ? 'gate.event.garageOpened' : 'gate.event.garageClosed' },
+    ...(gate === undefined ? {} : { gate }),
+    ...(!opened && event.openForSeconds !== undefined
+      ? { lasted: durationText(event.openForSeconds * 1_000) }
+      : {}),
+  };
 }
 
 /** Where an opening of the driveway gate came from: the indoor screen, the dashboard, or a word not known. */

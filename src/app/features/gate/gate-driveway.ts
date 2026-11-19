@@ -131,9 +131,12 @@ export class GateDriveway {
   protected readonly member = computed(() => this.profile()?.name);
   protected readonly command = computed(() => this.commands().stateOf(DRIVEWAY));
 
-  protected readonly bridgeState = computed(() => {
+  protected readonly bridgeState = computed((): keyof typeof BRIDGE_LABELS => {
     const online = this.read()?.bridge?.online;
-    return online === undefined ? 'unknown' : online ? 'online' : 'offline';
+    if (online === undefined) {
+      return 'unknown';
+    }
+    return online ? 'online' : 'offline';
   });
   protected readonly bridgeKey = computed(() => BRIDGE_LABELS[this.bridgeState()]);
 
