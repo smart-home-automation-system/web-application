@@ -16,6 +16,8 @@ import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { Appliance } from '../../data-access/appliance/appliance-api';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
+import { Detector, SafetyRead } from '../../data-access/safety/safety-api';
+import { SafetyStore } from '../../data-access/safety/safety-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import {
   Battery,
@@ -103,7 +105,8 @@ type Tile =
   | 'energy'
   | 'valve'
   | 'aircon'
-  | 'requests';
+  | 'requests'
+  | 'safety';
 
 describe('Overview', () => {
   let heating: FakeResource<HeatingStatus>;
@@ -126,6 +129,7 @@ describe('Overview', () => {
   let fixture: ComponentFixture<Overview>;
   let requests: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
   let requestsAsked: () => string | undefined;
+  let safety: FakeResource<SafetyRead | null>;
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
@@ -147,6 +151,7 @@ describe('Overview', () => {
     energyStatus = fakeResource();
     energyForecast = fakeResource();
     requests = fakeQueryResource();
+    safety = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -204,6 +209,7 @@ describe('Overview', () => {
           provide: ApplianceStore,
           useFactory: () => ({ appliances: appliances }),
         },
+        { provide: SafetyStore, useFactory: () => ({ safety }) },
       ],
     });
     fixture = TestBed.createComponent(Overview);
@@ -934,6 +940,57 @@ describe('Overview', () => {
       expect(text).toContain('cannot be reached');
       // a failure is not an empty household
       expect(text).not.toContain('No active member');
+    });
+  });
+
+  // HAS-469: the fire detectors - the resource of the banner of the shell
+  describe('the safety tile', () => {
+    const SINCE = '2026-10-10T18:00:00';
+    const on = { value: true, since: SINCE };
+    const off = { value: false, since: SINCE };
+    const fine = (id: number, name: string): Detector => ({
+      id,
+      name,
+      room: 'kitchen',
+      alarm: off,
+      online: on,
+      muted: off,
+      batteryLow: off,
+      endOfLife: off,
+      fault: off,
+    });
+
+    it('says all right, counts the detectors and leads to the safety page', async () => {
+      answer(safety, { detectors: [fine(1, 'Kitchen'), fine(2, 'Office')] });
+      const shown = await tile('safety');
+
+      expect(words(shown.querySelector('[data-testid="safety-state"] span'))).toBe('Every detector is all right');
+      expect(words(shown.querySelector('[data-testid="safety-count"]'))).toBe('2');
+      expect(shown.querySelector('a')?.getAttribute('href')).toBe('/safety');
+    });
+
+    it('tells an alarm first with the names, and a detector in trouble by name', async () => {
+      answer(safety, {
+        detectors: [{ ...fine(1, 'Kitchen'), alarm: on }, { ...fine(2, 'Loft'), batteryLow: on }],
+      });
+      const shown = await tile('safety');
+
+      expect(shown.querySelector('[data-testid="safety-state"]')?.getAttribute('data-state')).toBe(
+        'alarm',
+      );
+      expect(words(shown)).toContain('Fire alarm Kitchen');
+      expect(words(shown)).toContain('Needs a look Loft');
+    });
+
+    // missing is never all right
+    it('says not known for a detector the answer says too little of', async () => {
+      answer(safety, { detectors: [fine(1, 'Kitchen'), { id: 2, name: 'Hall' }] });
+      const shown = await tile('safety');
+
+      expect(shown.querySelector('[data-testid="safety-state"]')?.getAttribute('data-state')).toBe(
+        'unknown',
+      );
+      expect(words(shown)).toContain('Not fully known 1');
     });
   });
 

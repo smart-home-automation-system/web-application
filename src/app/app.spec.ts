@@ -77,6 +77,7 @@ describe('application routing', () => {
         'Weather',
         'Energy',
         'Air conditioning',
+        'Safety',
         'Blinds',
         'Lights',
         'Appliances',
@@ -110,6 +111,7 @@ describe('application routing', () => {
     expect(offered.map((entry) => entry.getAttribute('href'))).toEqual([
       '/energy',
       '/aircon',
+      '/safety',
       '/blinds',
       '/lights',
       '/appliances',
@@ -129,6 +131,7 @@ describe('application routing', () => {
     ).toEqual([
       'Energy',
       'Air conditioning',
+      'Safety',
       'Blinds',
       'Lights',
       'Appliances',
@@ -229,6 +232,7 @@ describe('application routing', () => {
           'Pogoda',
           'Energia',
           'Klimatyzacja',
+          'Bezpieczeństwo',
           'Rolety',
           'Światła',
           'AGD',

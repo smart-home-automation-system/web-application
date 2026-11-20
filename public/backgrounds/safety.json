@@ -1,0 +1,26 @@
+{
+  "source": {
+    "width": 2560,
+    "height": 1440
+  },
+  "tones": {
+    "black": 40,
+    "white": 245
+  },
+  "files": {
+    "safety-2560.webp": {
+      "bytes": 234706,
+      "quality": 82
+    },
+    "safety-1280.webp": {
+      "bytes": 98510,
+      "quality": 82
+    }
+  },
+  "darkest": "#373132",
+  "lightest": "#e5dfe2",
+  "top": {
+    "darkest": "#553c2f",
+    "lightest": "#e9b98a"
+  }
+}

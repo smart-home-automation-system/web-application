@@ -26,6 +26,15 @@ import {
   toApplianceViews,
 } from '../../shared/appliances/appliance-views';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
+import { Detector } from '../../data-access/safety/safety-api';
+import { SafetyStatusStore, SafetyStore } from '../../data-access/safety/safety-store';
+import {
+  commandFailureOf,
+  detectorName,
+  detectorsInAlarm,
+  silentBases,
+} from '../../shared/safety/safety-labels';
+import { safetyQuestion } from '../../shared/safety/safety-question';
 import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.pipe';
 
 import { LocalDateTimePipe } from '../../shared/local-date-time/local-date-time.pipe';
@@ -44,9 +53,11 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
 
 /**
  * What concerns every page, above the open one: that the house cannot be reached - with the time
- * it last answered -, that an appliance has finished and waits to be emptied (HAS-282, for a member
- * with a profile: acknowledged here, or closed for the visit), and that a newer version of the
- * application is waiting.
+ * it last answered -, that a smoke detector is in alarm (HAS-469, for a member with a profile, never
+ * closed by hand: muted here by the administrator, after a question - and a silent base station of the
+ * detectors, for the administrator), that an appliance has finished and waits to be emptied (HAS-282,
+ * for a member with a profile: acknowledged here, or closed for the visit), and that a newer version of
+ * the application is waiting.
  *
  * One call that got no answer does not raise the banner - a single service that hangs looks the
  * same - so at the first doubt the household registry is asked here, at once: its answer clears
@@ -83,6 +94,51 @@ const DATE_AND_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeSty
           <button matButton type="button" (click)="askAgain()">
             {{ t('connection.retry') }}
           </button>
+        </div>
+      }
+      <!-- HAS-469: a fire alarm - one red strip per detector in alarm, for every member with a profile, never closed
+           by hand; the mute for the administrator alone, after a question; nothing while the call fails -->
+      @for (detector of fires(); track detector.id) {
+        <div class="notice notice--fire" data-testid="fire-notice" [attr.data-detector]="detector.id">
+          <mat-icon class="notice__icon">local_fire_department</mat-icon>
+          <p class="notice__text">
+            <!-- the room and the detector of the registry, printed beside the words: never a translation -->
+            <strong>{{ t('safety.banner.alarm') }}</strong>&ngsp;{{ detector.room ?? '' }}&ngsp;·&ngsp;{{
+              detectorName(detector)
+            }}
+            @if (detector.muted?.value === true) {
+              <span class="notice__detail" data-testid="fire-notice-muted">{{
+                t('safety.banner.muted')
+              }}</span>
+            }
+            @if (fireFailure(detector); as failure) {
+              <span class="notice__detail" data-testid="fire-notice-failure">{{
+                failure | displayText
+              }}</span>
+            }
+          </p>
+          @if (isAdmin() && detector.muted?.value !== true) {
+            <div class="notice__actions">
+              <!-- never disabled: a press while a question or the command is on its way is ignored -->
+              <button
+                matButton
+                type="button"
+                data-testid="fire-notice-mute"
+                (click)="muteFire(detector)"
+              >
+                {{ t('safety.mute') }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+      <!-- HAS-469: a base station of the detectors the technical monitor calls silent - the administrator's -->
+      @if (silentBases().length > 0) {
+        <div class="notice notice--warning" data-testid="safety-base-notice">
+          <mat-icon class="notice__icon">router</mat-icon>
+          <p class="notice__text">
+            {{ t('safety.banner.silentBase') }}&ngsp;{{ silentBases().join(', ') }}
+          </p>
         </div>
       }
       <!-- HAS-282: a finished appliance waits to be emptied - one strip each, for every member with
@@ -240,6 +296,69 @@ export class Notices {
       );
     }
   });
+
+  // ---- HAS-469: the fire detectors ----
+
+  /**
+   * The detectors of the application (`SafetyStore`), taken once a member has a profile - like the appliances: the
+   * pages around the profiles poll nothing for them.
+   */
+  private readonly safety = signal<SafetyStore | undefined>(undefined);
+  /** The technical monitor (`SafetyStatusStore`), taken once the profile is the administrator's. */
+  private readonly safetyStatus = signal<SafetyStatusStore | undefined>(undefined);
+  private readonly fireQuestion = safetyQuestion();
+  protected readonly detectorName = detectorName;
+
+  private readonly startSafety = effect(() => {
+    if (this.profiles.profile() !== undefined && untracked(this.safety) === undefined) {
+      this.safety.set(untracked(() => this.injector.get(SafetyStore)));
+    }
+    if (this.isAdmin() && untracked(this.safetyStatus) === undefined) {
+      this.safetyStatus.set(untracked(() => this.injector.get(SafetyStatusStore)));
+    }
+  });
+
+  /**
+   * The detectors in alarm. Nothing while the last call failed - the strip would tell an alarm the service may no
+   * longer have (the page and the tile tell the failure) - and nothing without a profile.
+   */
+  protected readonly fires = computed(() => {
+    const store = this.safety();
+    if (
+      store === undefined ||
+      this.profiles.profile() === undefined ||
+      store.safety.error() !== undefined
+    ) {
+      return [];
+    }
+    return detectorsInAlarm(store.safety.value());
+  });
+
+  /** The silent bases, for the administrator alone; nothing while the monitor's call fails. */
+  protected readonly silentBases = computed(() => {
+    const store = this.safetyStatus();
+    if (!this.isAdmin() || store === undefined || store.status.error() !== undefined) {
+      return [];
+    }
+    return silentBases(store.status.value()?.bases);
+  });
+
+  /** How the last mute of this detector failed, in words. */
+  protected fireFailure(detector: Detector) {
+    const state = this.safety()?.commands.stateOf(SafetyStore.keyOf(detector.id ?? -1, 'mute'));
+    return state?.error === undefined ? undefined : commandFailureOf(state);
+  }
+
+  /** The mute of the administrator, after a question that goes once the alarm is over. */
+  protected muteFire(detector: Detector): void {
+    const id = detector.id;
+    if (id === undefined || !this.isAdmin()) {
+      return;
+    }
+    void this.fireQuestion.ask(id, 'mute', () =>
+      this.fires().some((candidate) => candidate.id === id),
+    );
+  }
 
   protected sinceFormat(since: string): Intl.DateTimeFormatOptions {
     return cycleTimeFormat(since, this.today());

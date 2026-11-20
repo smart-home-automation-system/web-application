@@ -106,6 +106,10 @@ describe('translations', () => {
       // an alarm of a garage gate and a length in minutes, the same words in both languages (HAS-454)
       'gate.alert.alarm',
       'gate.duration.minutes',
+      // an alarm of a detector, a model and the name of a technology, the same in both languages (HAS-469)
+      'safety.state.alarm',
+      'safety.detector.model',
+      'safety.base.wifi',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

@@ -1,0 +1,80 @@
+// the detectors of the room one under the other, each in its own frame - the layout of the air conditioning card
+:host {
+  display: contents;
+}
+
+.safety {
+  --app-domain: var(--app-domain-safety);
+}
+
+.safety__content {
+  display: grid;
+  gap: 10px;
+}
+
+.safety__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detector {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-glass-edge);
+  border-radius: 10px;
+}
+
+.detector__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.detector__name {
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+  overflow-wrap: anywhere;
+}
+
+.detector__facts {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  strong {
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.detector__warning {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--app-warning-container);
+  color: var(--app-on-warning-container);
+}
+
+.detector__failure {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.detector__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.safety__note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

@@ -1,14 +1,19 @@
 import { HttpRequest } from '@angular/common/http';
 
 /**
- * What the shell reads on every page: the weather of its strip, for everybody, and the appliances
- * of its notice, for a member with a profile. A test that
+ * What the shell reads on every page: the weather of its strip, for everybody, the appliances
+ * and the fire detectors of its notices, for a member with a profile (the technical monitor of the detectors for
+ * the administrator). A test that
  * renders pages through the real routes lets it through with `isShellRead`.
  */
 export const SHELL_READS: readonly string[] = [
   '/home/weather/current',
   // HAS-282: the appliances of the notice, for a member with a profile
   '/home/appliance',
+  // HAS-469: the fire detectors of the banner, for a member with a profile - and the technical monitor of the
+  // administrator
+  '/home/safety',
+  '/home/safety/status',
 ];
 
 /**
@@ -47,6 +52,8 @@ export const OVERVIEW_READS: readonly string[] = [
   // HAS-454: the gate tile, two calls
   '/home/gate/garage',
   '/home/gate',
+  // HAS-469: the safety tile - the resource of the banner of the shell
+  '/home/safety',
 ];
 
 export function isShellRead(request: HttpRequest<unknown>): boolean {

@@ -12,6 +12,9 @@ import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import { DeviceRegistryApi, SmartDevice } from '../../data-access/devices/device-registry-api';
 import { HeatingApi, HeatingStatus, Room } from '../../data-access/heating/heating-api';
 import { LightApi, Occupancy, RoomLights, RoomRule } from '../../data-access/light/light-api';
+import { DeviceCommands } from '../../core/api/device-commands';
+import { SafetyRead } from '../../data-access/safety/safety-api';
+import { SafetyStore } from '../../data-access/safety/safety-store';
 import { MyRoom } from './my-room';
 
 /** Thursday 8 October 2026, 14:30:00 on the clocks of the house (Europe/Warsaw, summer time). */
@@ -87,6 +90,8 @@ describe('MyRoom', () => {
   let occupancyAsked: { name: () => string; resource: FakeResource<Occupancy | null> }[];
   /** The commands sent to the blinds, in words. */
   let sent: string[];
+  /** The fire detectors of the application (HAS-469), the one resource of the store. */
+  let detectors: FakeResource<SafetyRead | null>;
 
   beforeEach(() => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date', 'setInterval', 'clearInterval'] });
@@ -102,6 +107,7 @@ describe('MyRoom', () => {
     rulesAsked = [];
     occupancyAsked = [];
     sent = [];
+    detectors = fakeResource();
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -191,6 +197,14 @@ describe('MyRoom', () => {
               sent.push(`resident ${enabled ? 'on' : 'off'} ${room}`);
               return of(null);
             },
+          },
+        },
+        {
+          provide: SafetyStore,
+          useValue: {
+            safety: detectors,
+            commands: new DeviceCommands<string>(),
+            send: (id: number, command: string) => sent.push(`detector ${command} ${id}`),
           },
         },
         {
@@ -529,6 +543,26 @@ describe('MyRoom', () => {
         expect(shown.querySelector(`[data-testid="${testId}"]`), testId).toBeNull();
       }
       expect(switchesWatched).toBe(0);
+    });
+
+    // HAS-469: the mute of the smoke detectors of the room is a control of the room - its card names it
+    it('is the mute of the smoke detectors of the room', async () => {
+      await page();
+      answer(lastAsked().resource, BEDROOM);
+      answer(detectors, {
+        detectors: [
+          { id: 75, name: 'Bedroom smoke detector', room: 'bedroom', kind: 'smoke detector' },
+          { id: 71, name: 'Smoke detector', room: 'kitchen', kind: 'smoke detector' },
+        ],
+      });
+
+      expect(await controls()).toEqual({
+        inTheRoom: [],
+        elsewhere: ['notifications_off Mute'],
+      });
+      expect(
+        (await page()).querySelector('[data-testid="detector-mute"]')?.getAttribute('aria-label'),
+      ).toBe('Mute Bedroom smoke detector');
     });
 
     it('offers no switch of the house, and does not ask for its state', async () => {

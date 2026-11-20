@@ -82,6 +82,8 @@ test.describe('overview', () => {
     ['tile-light', 'Lights', '/lights'],
     // the page of the units (HAS-395) - the tile of HAS-394 came before it and led nowhere (the owner on HAS-431)
     ['tile-aircon', 'Air conditioning', '/aircon'],
+    // HAS-469: the safety page of the administrator
+    ['tile-safety', 'Safety', '/safety'],
     // HAS-454: the gate page of every member
     ['tile-gate', 'Gate', '/gate'],
   ] as const) {
@@ -121,7 +123,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(23);
+    await expect(alerts).toHaveCount(24);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -173,15 +175,15 @@ test.describe('overview', () => {
     );
 
     expect(overflow).toBe(0);
-    // thirteen tiles since the gate (HAS-454)
-    expect(tops).toHaveLength(13);
+    // fourteen tiles since the safety tile (HAS-469)
+    expect(tops).toHaveLength(14);
     if (testInfo.project.name === 'phone') {
-      expect(new Set(tops).size).toBe(13);
+      expect(new Set(tops).size).toBe(14);
     } else {
       // at least two tiles share the first row
       expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThan(1);
       // side by side the tiles are of one height, whatever each has to say (owner, 2026-10-10)
-      expect(heights).toHaveLength(13);
+      expect(heights).toHaveLength(14);
       expect(new Set(heights).size).toBe(1);
     }
   });

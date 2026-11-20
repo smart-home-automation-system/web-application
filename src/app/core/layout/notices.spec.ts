@@ -1,11 +1,15 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Subject } from 'rxjs';
 
 import { FakeResource, answer, fail, fakeResource } from '../../../testing/fake-resource';
 import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { Appliance, FailedAcknowledgement } from '../../data-access/appliance/appliance-api';
 import { ApplianceStore } from '../../data-access/appliance/appliance-store';
+import { Detector, SafetyRead, SafetyStatus } from '../../data-access/safety/safety-api';
+import { SafetyStatusStore, SafetyStore } from '../../data-access/safety/safety-store';
+import { DeviceCommands } from '../api/device-commands';
 import { ApiError } from '../api/api-error';
 import { ConnectionStore } from '../api/connection-store';
 import { ProfileStore } from '../profile/profile-store';
@@ -31,11 +35,17 @@ describe('Notices', () => {
   let storesMade = 0;
   let pushes: Subject<unknown>;
   const applianceRefresh = vi.fn(() => Promise.resolve(true));
+  let detectors: FakeResource<SafetyRead | null>;
+  let monitor: FakeResource<SafetyStatus | null>;
+  let sentToDetectors: string[];
+  let safetyStoresMade = 0;
+  let statusStoresMade = 0;
 
   function create(): void {
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         { provide: ProfileStore, useValue: { loading: asking, refresh, profile: member } },
         {
           provide: ApplianceStore,
@@ -50,6 +60,24 @@ describe('Notices', () => {
                 acknowledge,
               },
             };
+          },
+        },
+        {
+          provide: SafetyStore,
+          useFactory: () => {
+            safetyStoresMade++;
+            return {
+              safety: detectors,
+              commands: new DeviceCommands<string>(),
+              send: (id: number, command: string) => sentToDetectors.push(command + ' ' + id),
+            };
+          },
+        },
+        {
+          provide: SafetyStatusStore,
+          useFactory: () => {
+            statusStoresMade++;
+            return { status: monitor };
           },
         },
         { provide: AppUpdate, useValue: { available: newVersion, reload } },
@@ -93,6 +121,11 @@ describe('Notices', () => {
     storesMade = 0;
     pushes = new Subject<unknown>();
     applianceRefresh.mockClear();
+    detectors = fakeResource();
+    monitor = fakeResource();
+    sentToDetectors = [];
+    safetyStoresMade = 0;
+    statusStoresMade = 0;
     refresh.mockClear();
     reload.mockClear();
     // the timers of the component and the clock; Angular keeps its own scheduling
@@ -103,6 +136,7 @@ describe('Notices', () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     localStorage.removeItem(STORAGE_KEY);
+    document.querySelectorAll('.cdk-overlay-container').forEach((overlay) => overlay.remove());
   });
 
   // one service that hangs looks like this too, while the house is fine
@@ -417,6 +451,96 @@ describe('Notices', () => {
       await fixture.whenStable();
 
       expect(applianceNotices()).toHaveLength(0);
+    });
+  });
+
+  // HAS-469: a fire alarm - a red strip per detector in alarm on every page, for every member with a profile
+  describe('when a detector is in alarm', () => {
+    const SINCE = '2026-10-08T11:58:00';
+    const KITCHEN: Detector = {
+      id: 71,
+      name: 'Smoke detector',
+      room: 'kitchen',
+      alarm: { value: true, since: SINCE },
+      muted: { value: false, since: SINCE },
+    };
+    const OFFICE: Detector = { id: 72, name: 'Office', room: 'office', alarm: { value: false } };
+
+    function fireNotices(): HTMLElement[] {
+      return [...host().querySelectorAll<HTMLElement>('[data-testid="fire-notice"]')];
+    }
+
+    async function as(role: 'admin' | 'resident'): Promise<void> {
+      create();
+      member.set({ name: 'Ola', role } as { name: string });
+      await fixture.whenStable();
+    }
+
+    it('names the room and the detector, for a resident with no mute and no close', async () => {
+      await as('resident');
+      answer(detectors, { detectors: [KITCHEN, OFFICE] });
+      await fixture.whenStable();
+
+      expect(fireNotices()).toHaveLength(1);
+      expect(text(fireNotices()[0])).toBe('Fire alarm kitchen · Smoke detector');
+      expect(fireNotices()[0].querySelector('button')).toBeNull();
+      // a strip of the notices, never a second alert of the page
+      expect(fireNotices()[0].getAttribute('role')).toBeNull();
+    });
+
+    it('offers the administrator the mute, after a question', async () => {
+      await as('admin');
+      answer(detectors, { detectors: [KITCHEN] });
+      await fixture.whenStable();
+
+      fireNotices()[0].querySelector<HTMLButtonElement>('[data-testid="fire-notice-mute"]')!.click();
+      await vi.waitFor(() =>
+        expect(document.querySelector('[data-testid="safety-question"]')).not.toBeNull(),
+      );
+      expect(sentToDetectors).toEqual([]);
+      document.querySelector<HTMLButtonElement>('[data-testid="confirm-yes"]')!.click();
+      await fixture.whenStable();
+
+      expect(sentToDetectors).toEqual(['mute 71']);
+    });
+
+    it('says that a detector is muted, and offers no mute then', async () => {
+      await as('admin');
+      answer(detectors, { detectors: [{ ...KITCHEN, muted: { value: true, since: SINCE } }] });
+      await fixture.whenStable();
+
+      expect(text(fireNotices()[0])).toBe('Fire alarm kitchen · Smoke detector muted');
+      expect(fireNotices()[0].querySelector('[data-testid="fire-notice-mute"]')).toBeNull();
+    });
+
+    // the strip would tell an alarm the service may no longer have
+    it('says nothing while the call of the detectors fails, nor without a profile', async () => {
+      create();
+      await fixture.whenStable();
+      expect(safetyStoresMade).toBe(0);
+
+      member.set({ name: 'Ola' });
+      answer(detectors, { detectors: [KITCHEN] });
+      fail(detectors, new ApiError('server', 502));
+      await fixture.whenStable();
+
+      expect(fireNotices()).toHaveLength(0);
+    });
+
+    it('tells the administrator alone of a silent base, and asks a resident nothing of the monitor', async () => {
+      await as('resident');
+      answer(monitor, { bases: [{ stationSerial: 'SBS50ABCDEF01', silent: true }] });
+      await fixture.whenStable();
+      expect(statusStoresMade).toBe(0);
+      expect(host().querySelector('[data-testid="safety-base-notice"]')).toBeNull();
+
+      member.set({ name: 'Ola', role: 'admin' } as { name: string });
+      await fixture.whenStable();
+
+      expect(statusStoresMade).toBe(1);
+      expect(text(host().querySelector('[data-testid="safety-base-notice"]'))).toBe(
+        'The base station of the smoke detectors has not been heard for long: SBS50ABCDEF01',
+      );
     });
   });
 });

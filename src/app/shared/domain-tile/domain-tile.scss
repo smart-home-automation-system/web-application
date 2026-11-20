@@ -108,3 +108,6 @@ mat-card-content {
 .tile[data-domain='gate'] {
   --app-domain: var(--app-domain-gate);
 }
+.tile[data-domain='safety'] {
+  --app-domain: var(--app-domain-safety);
+}
