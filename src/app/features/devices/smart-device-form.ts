@@ -542,10 +542,53 @@ export class SmartDeviceForm implements OnInit {
     };
   }
 
+  /** The one binding of the device as it is sent. */
+  private bindingDetails(): Partial<DeviceDetails> {
+    switch (this.binding()) {
+      case 'shelly':
+        return { shelly: this.shellyBinding() };
+      case 'eaton':
+        return { eaton: { gateway: this.gateway(), point: pointOf(this.point.value) } };
+      case 'bthome':
+        return { bthome: { address: normaliseMac(this.bluetooth.value) } };
+      case 'inverter':
+        return { inverter: this.inverterBinding() };
+      case 'gree':
+        return {
+          gree: {
+            address: this.greeAddress.value.trim(),
+            mac: normaliseGreeMac(this.greeMac.value),
+          },
+        };
+      case 'blebox':
+        return {
+          blebox: {
+            address: this.bleboxAddress.value.trim(),
+            deviceId: normaliseBleboxDeviceId(this.bleboxDeviceId.value),
+          },
+        };
+      case 'hikvision':
+        return {
+          hikvision: {
+            address: this.hikvisionAddress.value.trim(),
+            serialNumber: normaliseHikvisionSerial(this.hikvisionSerial.value),
+          },
+        };
+      case 'xsense':
+        return {
+          xsense: {
+            stationSerial: normaliseXsense(this.xsenseStation.value),
+            deviceId: normaliseXsense(this.xsenseDeviceId.value),
+          },
+        };
+      default:
+        return {};
+    }
+  }
+
   /** The device as it is sent: one binding, and only the fields of its kind. */
   private details(): DeviceDetails {
     const kind = this.kind.value;
-    const binding = this.binding();
     const lightKind = this.lightKind();
     const placement = this.placement();
     const positioning = this.positioning();
@@ -556,44 +599,7 @@ export class SmartDeviceForm implements OnInit {
       kind,
       enabled: this.enabled(),
       vendor: this.vendor(),
-      ...(binding === 'shelly' ? { shelly: this.shellyBinding() } : {}),
-      ...(binding === 'eaton'
-        ? { eaton: { gateway: this.gateway(), point: pointOf(this.point.value) } }
-        : {}),
-      ...(binding === 'bthome' ? { bthome: { address: normaliseMac(this.bluetooth.value) } } : {}),
-      ...(binding === 'inverter' ? { inverter: this.inverterBinding() } : {}),
-      ...(binding === 'gree'
-        ? {
-            gree: {
-              address: this.greeAddress.value.trim(),
-              mac: normaliseGreeMac(this.greeMac.value),
-            },
-          }
-        : {}),
-      ...(binding === 'blebox'
-        ? {
-            blebox: {
-              address: this.bleboxAddress.value.trim(),
-              deviceId: normaliseBleboxDeviceId(this.bleboxDeviceId.value),
-            },
-          }
-        : {}),
-      ...(binding === 'hikvision'
-        ? {
-            hikvision: {
-              address: this.hikvisionAddress.value.trim(),
-              serialNumber: normaliseHikvisionSerial(this.hikvisionSerial.value),
-            },
-          }
-        : {}),
-      ...(binding === 'xsense'
-        ? {
-            xsense: {
-              stationSerial: normaliseXsense(this.xsenseStation.value),
-              deviceId: normaliseXsense(this.xsenseDeviceId.value),
-            },
-          }
-        : {}),
+      ...this.bindingDetails(),
       ...(kind === 'light' && lightKind !== undefined ? { lightKind } : {}),
       ...(kind === 'blinds' && placement !== undefined ? { placement } : {}),
       ...(kind === 'blinds' && positioning !== undefined ? { positioning } : {}),
