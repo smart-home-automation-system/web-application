@@ -153,6 +153,11 @@
                       <span class="code device__id">{{ device.hikvision?.serialNumber }}</span>
                       <span class="code">{{ device.hikvision?.address }}</span>
                     }
+                    @case ('xsense') {
+                      <span>{{ t('devices.device.xsense') }}</span>
+                      <span class="code device__id">{{ device.xsense?.deviceId }}</span>
+                      <span class="code">{{ device.xsense?.stationSerial }}</span>
+                    }
                     @default {
                       <span>{{ t('devices.device.noBinding') }}</span>
                     }

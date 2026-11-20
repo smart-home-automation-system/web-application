@@ -390,6 +390,16 @@ const AT_THE_START: readonly StoredDevice[] = [
     vendor: 'shelly',
     shelly: { address: '192.0.2.85', generation: 1, channel: 0 },
   },
+  // a smoke detector of X-Sense (HAS-458): an invented base and id
+  {
+    id: 71,
+    name: 'Smoke detector',
+    room: 'kitchen',
+    kind: 'smoke detector',
+    enabled: true,
+    vendor: 'xsense',
+    xsense: { stationSerial: 'SBS5000000001', deviceId: '00000006' },
+  },
   // the water valve of the garage (HAS-313): a Shelly X of generation 3, an invented id, an address of the documentation range
   {
     id: 66,
@@ -524,6 +534,7 @@ function deviceOf(body: unknown): Draft | undefined {
     gree,
     blebox,
     hikvision,
+    xsense,
   } = body;
   const { lightKind, placement, positioning, openingSensors } = body;
   if (typeof name !== 'string' || name.length < 3 || name.length > 50) {
@@ -560,6 +571,7 @@ function deviceOf(body: unknown): Draft | undefined {
     gree: greeOf(gree),
     blebox: bleboxOf(blebox),
     hikvision: hikvisionOf(hikvision),
+    xsense: xsenseOf(xsense),
   };
   if (Object.values(bindings).includes(null)) {
     return undefined;
@@ -577,6 +589,7 @@ function deviceOf(body: unknown): Draft | undefined {
     ...(bindings.gree ? { gree: bindings.gree } : {}),
     ...(bindings.blebox ? { blebox: bindings.blebox } : {}),
     ...(bindings.hikvision ? { hikvision: bindings.hikvision } : {}),
+    ...(bindings.xsense ? { xsense: bindings.xsense } : {}),
     ...(lightKind === undefined ? {} : { lightKind }),
     ...(placement === undefined ? {} : { placement }),
     ...(positioning === undefined ? {} : { positioning }),
@@ -734,6 +747,23 @@ function hikvisionOf(value: unknown): SmartDevice['hikvision'] | null {
     : null;
 }
 
+/** `XsenseBinding`: the serial of the base station and the id it gives the detector - both needed. */
+function xsenseOf(value: unknown): SmartDevice['xsense'] | null {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    return null;
+  }
+  const { stationSerial, deviceId } = value;
+  return typeof stationSerial === 'string' &&
+    /^SBS50[0-9A-F]{8}$/.test(stationSerial) &&
+    typeof deviceId === 'string' &&
+    /^[0-9A-F]{8}$/.test(deviceId)
+    ? { stationSerial, deviceId }
+    : null;
+}
+
 function whole(value: unknown, least: number, most: number): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= least && value <= most;
 }
@@ -756,10 +786,10 @@ function refusalOf(device: Draft, self: StoredDevice | undefined): MockReply | u
 /** `DeviceRules` of `database-service`, in its words. */
 function brokenRuleOf(device: Draft): string | undefined {
   const given = (
-    ['shelly', 'eaton', 'bthome', 'inverter', 'gree', 'blebox', 'hikvision'] as const
+    ['shelly', 'eaton', 'bthome', 'inverter', 'gree', 'blebox', 'hikvision', 'xsense'] as const
   ).filter((binding) => device[binding] !== undefined);
   if (given.length !== 1) {
-    return `A device is reached through exactly one binding - shelly, eaton, bthome, inverter, gree, blebox or hikvision - and this one has ${
+    return `A device is reached through exactly one binding - shelly, eaton, bthome, inverter, gree, blebox, hikvision or xsense - and this one has ${
       given.length === 0 ? 'none' : given.join(' and ')
     }`;
   }
@@ -769,6 +799,7 @@ function brokenRuleOf(device: Draft): string | undefined {
     (device.vendor === 'gree') !== (binding === 'gree') ||
     (device.vendor === 'blebox') !== (binding === 'blebox') ||
     (device.vendor === 'hikvision') !== (binding === 'hikvision') ||
+    (device.vendor === 'xsense') !== (binding === 'xsense') ||
     (binding === 'shelly' && device.vendor !== 'shelly') ||
     (binding === 'inverter' && device.vendor !== 'other')
   ) {
@@ -866,6 +897,10 @@ function possibleBindingsOf(kind: string): readonly string[] {
       return ['hikvision'];
     case 'gate':
       return ['shelly'];
+    case 'smoke detector':
+    case 'co detector':
+    case 'heat detector':
+      return ['xsense'];
     default:
       return ['shelly', 'eaton', 'bthome'];
   }
@@ -916,6 +951,22 @@ function hikvisionTakenOf(
     : undefined;
 }
 
+/** The unique index of an X-Sense detector, in the words of the registry; none for another binding. */
+function xsenseTakenOf(
+  xsense: SmartDevice['xsense'],
+  others: readonly StoredDevice[],
+): string | undefined {
+  if (xsense === undefined) {
+    return undefined;
+  }
+  return others.some(
+    (one) =>
+      one.xsense?.stationSerial === xsense.stationSerial && one.xsense?.deviceId === xsense.deviceId,
+  )
+    ? `A device is already registered for the X-Sense detector [${xsense.deviceId}] of the base station [${xsense.stationSerial}]`
+    : undefined;
+}
+
 /** A channel of a Shelly by its address or by its id (a device without a channel counts as one). */
 function shellyTakenOf(
   shelly: NonNullable<SmartDevice['shelly']>,
@@ -936,11 +987,12 @@ function shellyTakenOf(
 
 /** The unique indexes of the registry, in the words of its answer. */
 function takenBindingOf(device: Draft, others: readonly StoredDevice[]): string | undefined {
-  const { shelly, eaton, bthome, inverter, gree, blebox, hikvision } = device;
+  const { shelly, eaton, bthome, inverter, gree, blebox, hikvision, xsense } = device;
   const unitTaken =
     (gree === undefined ? undefined : greeTakenOf(gree, others)) ??
     bleboxTakenOf(blebox, others) ??
-    hikvisionTakenOf(hikvision, others);
+    hikvisionTakenOf(hikvision, others) ??
+    xsenseTakenOf(xsense, others);
   if (unitTaken !== undefined) {
     return unitTaken;
   }

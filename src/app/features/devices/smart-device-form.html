@@ -319,6 +319,43 @@
             }
           </mat-form-field>
         }
+        @case ('xsense') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.xsenseStation') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="20"
+              data-testid="xsense-station"
+              [formControl]="xsenseStation"
+            />
+            <mat-hint>{{ t('devices.form.xsenseStationHint') }}</mat-hint>
+            @if (problemOf(xsenseStation); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ t('devices.form.xsenseDeviceId') }}</mat-label>
+            <input
+              matInput
+              class="code"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="16"
+              data-testid="xsense-device-id"
+              [formControl]="xsenseDeviceId"
+            />
+            <mat-hint>{{ t('devices.form.xsenseDeviceIdHint') }}</mat-hint>
+            @if (problemOf(xsenseDeviceId); as problem) {
+              <mat-error>{{ t(problem) }}</mat-error>
+            }
+          </mat-form-field>
+        }
         @case ('inverter') {
           <div class="form__group" role="group" [attr.aria-labelledby]="id + '-brand'">
             <h3 class="form__label" [id]="id + '-brand'">{{ t('devices.form.brand') }}</h3>

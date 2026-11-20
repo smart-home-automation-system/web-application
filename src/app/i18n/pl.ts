@@ -2419,6 +2419,7 @@ export const pl: Messages = {
       gree: 'Gree',
       blebox: 'BleBox',
       hikvision: 'Hikvision',
+      xsense: 'X-Sense',
       noBinding: 'Rejestr nie mówi, jak dotrzeć do tego urządzenia.',
       edit: 'Edytuj',
       putIntoUse: 'Pozwól serwisom używać',
@@ -2472,6 +2473,10 @@ export const pl: Messages = {
       hikvisionSerial: 'Numer seryjny stacji',
       hikvisionSerialHint:
         'Tak, jak podaje go System/deviceInfo, na przykład DS-KV0000-WE1(B)0120200101RRA00000001',
+      xsenseStation: 'Stacja bazowa',
+      xsenseStationHint: 'Jej numer: SBS50 i 8 znaków 0-9 i A-F, na przykład SBS5000000001',
+      xsenseDeviceId: 'Identyfikator czujki',
+      xsenseDeviceIdHint: 'Tak, jak nadaje go stacja: 8 znaków 0-9 i A-F, na przykład 00000006',
       optional: 'Nieobowiązkowe',
       registration: 'Numer rejestracyjny modułu',
       registrationHint: 'Nieobowiązkowe - hasło lokalnego API modułu SolaX',
@@ -2534,6 +2539,9 @@ export const pl: Messages = {
       hikvisionSerial: 'Numer seryjny stacji to od 9 do 64 liter, cyfr, łączników i nawiasów.',
       hikvisionSerialTaken: 'Stacja o tym numerze seryjnym jest już zarejestrowana.',
       hikvisionAddressTaken: 'Stacja pod tym adresem jest już zarejestrowana.',
+      xsenseStation: 'Numer stacji bazowej to SBS50 i 8 znaków 0-9 i A-F.',
+      xsenseDeviceId: 'Identyfikator czujki to 8 znaków 0-9 i A-F.',
+      xsenseTaken: 'Ta czujka tej stacji bazowej jest już zarejestrowana.',
     },
     // what the registry refuses, by the code of its answer
     error: {
@@ -2560,6 +2568,9 @@ export const pl: Messages = {
       airQualitySensor: 'Czujnik jakości powietrza',
       intercom: 'Domofon',
       gate: 'Brama',
+      smokeDetector: 'Czujka dymu',
+      coDetector: 'Czujka czadu',
+      heatDetector: 'Czujka temperatury',
     },
     lightKind: {
       relay: 'przełączane',
@@ -2576,6 +2587,7 @@ export const pl: Messages = {
       gree: 'Gree',
       blebox: 'BleBox',
       hikvision: 'Hikvision',
+      xsense: 'X-Sense',
       other: 'Inny',
     },
     binding: {
@@ -2586,6 +2598,7 @@ export const pl: Messages = {
       gree: 'Gree w sieci',
       blebox: 'BleBox w sieci',
       hikvision: 'Hikvision, przez most bramy',
+      xsense: 'X-Sense, przez stację bazową',
     },
   },
   household: {

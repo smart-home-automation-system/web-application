@@ -64,12 +64,15 @@ import {
   bleboxDeviceIdProblem,
   greeMacProblem,
   hikvisionSerialProblem,
+  xsenseDeviceIdProblem,
+  xsenseStationProblem,
   loggerSerialOf,
   loggerSerialProblem,
   nameProblem,
   normaliseBleboxDeviceId,
   normaliseGreeMac,
   normaliseHikvisionSerial,
+  normaliseXsense,
   normaliseName,
   openingSensorsOf,
   optionalAddressProblem,
@@ -229,6 +232,15 @@ export class SmartDeviceForm implements OnInit {
     nonNullable: true,
     validators: validator(hikvisionSerialProblem),
   });
+  // a fire detector (HAS-458): the serial of its base station and the id the base gives it, both needed
+  protected readonly xsenseStation = new FormControl('', {
+    nonNullable: true,
+    validators: validator(xsenseStationProblem),
+  });
+  protected readonly xsenseDeviceId = new FormControl('', {
+    nonNullable: true,
+    validators: validator(xsenseDeviceIdProblem),
+  });
   /** The brand decides which of the two numbers of its link the form asks for. */
   protected readonly brand = signal<string>(INVERTER_BRANDS[0]);
 
@@ -371,6 +383,8 @@ export class SmartDeviceForm implements OnInit {
       this.bleboxDeviceId,
       this.hikvisionAddress,
       this.hikvisionSerial,
+      this.xsenseStation,
+      this.xsenseDeviceId,
     ]) {
       control.valueChanges.subscribe(() => this.taken.set(undefined));
     }
@@ -410,6 +424,8 @@ export class SmartDeviceForm implements OnInit {
     this.bleboxDeviceId.setValue(device.blebox?.deviceId ?? '');
     this.hikvisionAddress.setValue(device.hikvision?.address ?? '');
     this.hikvisionSerial.setValue(device.hikvision?.serialNumber ?? '');
+    this.xsenseStation.setValue(device.xsense?.stationSerial ?? '');
+    this.xsenseDeviceId.setValue(device.xsense?.deviceId ?? '');
     this.lightKind.set(device.lightKind);
     this.placement.set(device.placement);
     this.positioning.set(device.positioning);
@@ -492,6 +508,8 @@ export class SmartDeviceForm implements OnInit {
         return [this.bleboxAddress, this.bleboxDeviceId];
       case 'hikvision':
         return [this.hikvisionAddress, this.hikvisionSerial];
+      case 'xsense':
+        return [this.xsenseStation, this.xsenseDeviceId];
     }
   }
 
@@ -524,10 +542,53 @@ export class SmartDeviceForm implements OnInit {
     };
   }
 
+  /** The one binding of the device as it is sent. */
+  private bindingDetails(): Partial<DeviceDetails> {
+    switch (this.binding()) {
+      case 'shelly':
+        return { shelly: this.shellyBinding() };
+      case 'eaton':
+        return { eaton: { gateway: this.gateway(), point: pointOf(this.point.value) } };
+      case 'bthome':
+        return { bthome: { address: normaliseMac(this.bluetooth.value) } };
+      case 'inverter':
+        return { inverter: this.inverterBinding() };
+      case 'gree':
+        return {
+          gree: {
+            address: this.greeAddress.value.trim(),
+            mac: normaliseGreeMac(this.greeMac.value),
+          },
+        };
+      case 'blebox':
+        return {
+          blebox: {
+            address: this.bleboxAddress.value.trim(),
+            deviceId: normaliseBleboxDeviceId(this.bleboxDeviceId.value),
+          },
+        };
+      case 'hikvision':
+        return {
+          hikvision: {
+            address: this.hikvisionAddress.value.trim(),
+            serialNumber: normaliseHikvisionSerial(this.hikvisionSerial.value),
+          },
+        };
+      case 'xsense':
+        return {
+          xsense: {
+            stationSerial: normaliseXsense(this.xsenseStation.value),
+            deviceId: normaliseXsense(this.xsenseDeviceId.value),
+          },
+        };
+      default:
+        return {};
+    }
+  }
+
   /** The device as it is sent: one binding, and only the fields of its kind. */
   private details(): DeviceDetails {
     const kind = this.kind.value;
-    const binding = this.binding();
     const lightKind = this.lightKind();
     const placement = this.placement();
     const positioning = this.positioning();
@@ -538,36 +599,7 @@ export class SmartDeviceForm implements OnInit {
       kind,
       enabled: this.enabled(),
       vendor: this.vendor(),
-      ...(binding === 'shelly' ? { shelly: this.shellyBinding() } : {}),
-      ...(binding === 'eaton'
-        ? { eaton: { gateway: this.gateway(), point: pointOf(this.point.value) } }
-        : {}),
-      ...(binding === 'bthome' ? { bthome: { address: normaliseMac(this.bluetooth.value) } } : {}),
-      ...(binding === 'inverter' ? { inverter: this.inverterBinding() } : {}),
-      ...(binding === 'gree'
-        ? {
-            gree: {
-              address: this.greeAddress.value.trim(),
-              mac: normaliseGreeMac(this.greeMac.value),
-            },
-          }
-        : {}),
-      ...(binding === 'blebox'
-        ? {
-            blebox: {
-              address: this.bleboxAddress.value.trim(),
-              deviceId: normaliseBleboxDeviceId(this.bleboxDeviceId.value),
-            },
-          }
-        : {}),
-      ...(binding === 'hikvision'
-        ? {
-            hikvision: {
-              address: this.hikvisionAddress.value.trim(),
-              serialNumber: normaliseHikvisionSerial(this.hikvisionSerial.value),
-            },
-          }
-        : {}),
+      ...this.bindingDetails(),
       ...(kind === 'light' && lightKind !== undefined ? { lightKind } : {}),
       ...(kind === 'blinds' && placement !== undefined ? { placement } : {}),
       ...(kind === 'blinds' && positioning !== undefined ? { positioning } : {}),

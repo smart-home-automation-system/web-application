@@ -25,9 +25,10 @@ export const POINT_MIN = 1;
 export const POINT_MAX = 99;
 
 /**
- * The seven ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
+ * The eight ways a device is reached; a device has exactly one. The inverter binding (HAS-326) is
  * the part of the kind inverter and of no other kind, the gree binding (HAS-377) of the air conditioner,
- * the blebox binding (HAS-424) of the air quality sensor, the hikvision binding (HAS-445) of the intercom.
+ * the blebox binding (HAS-424) of the air quality sensor, the hikvision binding (HAS-445) of the intercom, the xsense
+ * binding (HAS-458) of the three fire detectors.
  */
 export const BINDINGS = [
   'shelly',
@@ -37,6 +38,7 @@ export const BINDINGS = [
   'gree',
   'blebox',
   'hikvision',
+  'xsense',
 ] as const;
 export type Binding = (typeof BINDINGS)[number];
 
@@ -64,6 +66,10 @@ const BLEBOX_DEVICE_ID = GREE_MAC;
  * digits, hyphens and parentheses, 9 to 64, starting with a letter or a digit.
  */
 const HIKVISION_SERIAL = /^[A-Za-z0-9][A-Za-z0-9()-]{8,63}$/;
+/** The serial of an X-Sense base station (`XsenseBinding`): its client id on the broker, `SBS50` and eight upper-case hex. */
+const XSENSE_STATION = /^SBS50[0-9A-F]{8}$/;
+/** The id an X-Sense base gives a detector: eight upper-case hexadecimal digits. */
+const XSENSE_DEVICE_ID = /^[0-9A-F]{8}$/;
 
 /**
  * The bindings a device of a kind can be reached through. What moves and what lights is wired
@@ -99,6 +105,11 @@ export function bindingsOf(kind: string): readonly Binding[] {
     // the door station at the gate (HAS-445), by its address and serial number
     case 'intercom':
       return ['hikvision'];
+    // the fire detectors (HAS-458), by the serial of their base station and the id it gives them
+    case 'smoke detector':
+    case 'co detector':
+    case 'heat detector':
+      return ['xsense'];
     default:
       return ANY_OTHER;
   }
@@ -165,7 +176,8 @@ export function bindingOf(device: SmartDevice): Binding | undefined {
  * a Bluetooth sensor is of any vendor but Eaton; an inverter is of none of the vendors the
  * registry names; a Gree unit is of the vendor gree, and nothing else is (HAS-377), a BleBox sensor of the
  * vendor blebox, and nothing else is (HAS-424, the rule of `blebox` in `DeviceRules` of database-service 0.25.0),
- * a Hikvision station of the vendor hikvision, and nothing else is (HAS-445, database-service 0.26.0).
+ * a Hikvision station of the vendor hikvision, and nothing else is (HAS-445, database-service 0.26.0), an X-Sense
+ * detector of the vendor xsense, and nothing else is (HAS-458, database-service 0.28.0).
  */
 export function vendorsOf(binding: Binding): readonly string[] {
   switch (binding) {
@@ -183,6 +195,8 @@ export function vendorsOf(binding: Binding): readonly string[] {
       return ['blebox'];
     case 'hikvision':
       return ['hikvision'];
+    case 'xsense':
+      return ['xsense'];
   }
 }
 
@@ -270,6 +284,22 @@ export function hikvisionSerialProblem(text: string): MessageKey | undefined {
     : 'devices.problem.hikvisionSerial';
 }
 
+/**
+ * The serial of an X-Sense base station or the id of a detector as it is sent: without the spaces around it, in upper
+ * case - the base writes both in capitals, and the registry takes nothing else.
+ */
+export function normaliseXsense(text: string): string {
+  return text.trim().toUpperCase();
+}
+
+export function xsenseStationProblem(text: string): MessageKey | undefined {
+  return XSENSE_STATION.test(normaliseXsense(text)) ? undefined : 'devices.problem.xsenseStation';
+}
+
+export function xsenseDeviceIdProblem(text: string): MessageKey | undefined {
+  return XSENSE_DEVICE_ID.test(normaliseXsense(text)) ? undefined : 'devices.problem.xsenseDeviceId';
+}
+
 /** A name as it is sent: without the spaces around it. */
 export function normaliseName(text: string): string {
   return text.trim();
@@ -338,15 +368,16 @@ export function bluetoothAddressProblem(text: string): MessageKey | undefined {
 export function bindingTaken(
   device: Pick<
     DeviceDetails,
-    'shelly' | 'eaton' | 'bthome' | 'inverter' | 'gree' | 'blebox' | 'hikvision'
+    'shelly' | 'eaton' | 'bthome' | 'inverter' | 'gree' | 'blebox' | 'hikvision' | 'xsense'
   >,
   others: readonly SmartDevice[],
 ): MessageKey | undefined {
-  const { shelly, eaton, bthome, inverter, gree, blebox, hikvision } = device;
+  const { shelly, eaton, bthome, inverter, gree, blebox, hikvision, xsense } = device;
   const unitTaken =
     (gree === undefined ? undefined : greeTaken(gree, others)) ??
     bleboxTaken(blebox, others) ??
-    hikvisionTaken(hikvision, others);
+    hikvisionTaken(hikvision, others) ??
+    xsenseTaken(xsense, others);
   if (unitTaken !== undefined) {
     return unitTaken;
   }
@@ -401,6 +432,26 @@ function bleboxTaken(
   }
   return others.some((other) => other.blebox?.address === blebox.address)
     ? 'devices.problem.bleboxAddressTaken'
+    : undefined;
+}
+
+/**
+ * One detector per pair of its base station and its id (devices_xsense_detector_uq) - two bases may give the same id;
+ * nothing to find for a device of another binding.
+ */
+function xsenseTaken(
+  xsense: DeviceDetails['xsense'],
+  others: readonly SmartDevice[],
+): MessageKey | undefined {
+  if (xsense === undefined) {
+    return undefined;
+  }
+  return others.some(
+    (other) =>
+      other.xsense?.stationSerial === xsense.stationSerial &&
+      other.xsense?.deviceId === xsense.deviceId,
+  )
+    ? 'devices.problem.xsenseTaken'
     : undefined;
 }
 
@@ -500,6 +551,8 @@ export function sameDevice(before: SmartDevice, details: DeviceDetails): boolean
       device.blebox?.deviceId,
       device.hikvision?.address,
       device.hikvision?.serialNumber,
+      device.xsense?.stationSerial,
+      device.xsense?.deviceId,
       device.lightKind,
       device.placement,
       device.positioning,
