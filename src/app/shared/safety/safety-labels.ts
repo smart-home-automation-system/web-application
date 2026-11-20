@@ -232,7 +232,9 @@ export function detectorsByFloor(detectors: readonly Detector[]): FloorDetectors
         ];
   };
   const placed = new Set(FLOORS.flatMap((floor) => floor.rooms));
-  const elsewhere = [...byRoom.keys()].filter((room) => !placed.has(room)).sort();
+  const elsewhere = [...byRoom.keys()]
+    .filter((room) => !placed.has(room))
+    .sort((a, b) => a.localeCompare(b));
   return [
     ...FLOORS.map(({ id, label, rooms }): FloorDetectors => ({
       id,
@@ -265,32 +267,40 @@ export function baseViews(
     return undefined;
   }
   const known = new Map((bases ?? []).map((base) => [base.stationSerial, base]));
-  const views: BaseView[] = status.map((base) => {
-    const read = known.get(base.stationSerial);
-    return {
-      ...base,
-      ...(read?.wifiSsid === undefined ? {} : { wifiSsid: read.wifiSsid }),
-      ...(base.wifiRssi === undefined && read?.wifiRssi !== undefined
-        ? { wifiRssi: read.wifiRssi }
-        : {}),
-      ...(base.lastHeardAt === undefined && read?.lastHeardAt !== undefined
-        ? { lastHeardAt: read.lastHeardAt }
-        : {}),
-    };
-  });
   const listed = new Set(status.map((base) => base.stationSerial));
-  for (const base of bases ?? []) {
-    if (!listed.has(base.stationSerial)) {
-      views.push({
-        ...(base.stationSerial === undefined ? {} : { stationSerial: base.stationSerial }),
-        ...(base.online?.value === undefined ? {} : { reachable: base.online.value }),
-        ...(base.wifiSsid === undefined ? {} : { wifiSsid: base.wifiSsid }),
-        ...(base.wifiRssi === undefined ? {} : { wifiRssi: base.wifiRssi }),
-        ...(base.lastHeardAt === undefined ? {} : { lastHeardAt: base.lastHeardAt }),
-      });
-    }
-  }
-  return views;
+  return [
+    ...status.map((base) => joinedBase(base, known.get(base.stationSerial))),
+    ...(bases ?? []).filter((base) => !listed.has(base.stationSerial)).map(unmonitoredBase),
+  ];
+}
+
+/** A base of the monitor with what `GET /safety` adds: its network, and its signal and last word where the monitor has none. */
+function joinedBase(base: BaseStatus, read: SafetyBase | undefined): BaseView {
+  return {
+    ...base,
+    ...withValue('wifiSsid', read?.wifiSsid),
+    ...withValue('wifiRssi', base.wifiRssi ?? read?.wifiRssi),
+    ...withValue('lastHeardAt', base.lastHeardAt ?? read?.lastHeardAt),
+  };
+}
+
+/** A base only `GET /safety` names. */
+function unmonitoredBase(base: SafetyBase): BaseView {
+  return {
+    ...withValue('stationSerial', base.stationSerial),
+    ...withValue('reachable', base.online?.value),
+    ...withValue('wifiSsid', base.wifiSsid),
+    ...withValue('wifiRssi', base.wifiRssi),
+    ...withValue('lastHeardAt', base.lastHeardAt),
+  };
+}
+
+/** A field set only when there is a value - a field left out is "not known", never sent as `undefined`. */
+function withValue<K extends keyof BaseView>(
+  key: K,
+  value: BaseView[K] | undefined,
+): Partial<BaseView> {
+  return value === undefined ? {} : ({ [key]: value } as Partial<BaseView>);
 }
 
 /** The bases the technical monitor calls silent - the banner of the administrator. */

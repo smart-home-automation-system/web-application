@@ -161,6 +161,7 @@ mat-card {
   list-style: none;
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-surface);
+  align-content: start;
 }
 
 .history__item {
@@ -176,10 +177,6 @@ mat-card {
 .history__state {
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
-}
-
-.history {
-  align-content: start;
 }
 
 // five lines at most, the card of one height whatever the period holds (owner, the preview of HAS-469): the room of

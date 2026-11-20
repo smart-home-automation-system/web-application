@@ -181,13 +181,21 @@ function current(now: Date): Detector[] {
       ...(changed.tested === undefined
         ? {}
         : { selfTestProblem: flag(false, houseTime(now, secondsSince(changed.tested, now))) }),
-      ...(lastAt > 0
-        ? { lastHeardAt: houseTime(now, secondsSince(lastAt, now)), lastCommandConfirmed: true }
-        : heardSecondsAgo === undefined
-          ? {}
-          : { lastHeardAt: houseTime(now, heardSecondsAgo) }),
+      ...heardOf(lastAt, heardSecondsAgo, now),
     };
   });
+}
+
+/** When a detector was last heard: at its last command, else as at the start, else left out. */
+function heardOf(
+  lastAt: number,
+  heardSecondsAgo: number | undefined,
+  now: Date,
+): Partial<Detector> {
+  if (lastAt > 0) {
+    return { lastHeardAt: houseTime(now, secondsSince(lastAt, now)), lastCommandConfirmed: true };
+  }
+  return heardSecondsAgo === undefined ? {} : { lastHeardAt: houseTime(now, heardSecondsAgo) };
 }
 
 /** `GET /home/safety`. */
@@ -336,18 +344,16 @@ export function safetyAlarms(
       startedAt: houseTime(now, 18 * DAY),
       clearedAt: houseTime(now, 18 * DAY - 60),
     },
-    ...[6, 9, 12, 22, 26].map(
-      (days, index): SafetyAlarm => ({
-        id: -1 - index,
-        detectorId: 75,
-        name: 'Bedroom smoke detector',
-        room: 'bedroom',
-        startedAt: houseTime(now, days * DAY),
-        clearedAt: houseTime(now, days * DAY - 5),
-        alarmToldAt: houseTime(now, days * DAY - 1),
-        overToldAt: houseTime(now, days * DAY - 5),
-      }),
-    ),
+    ...[6, 9, 12, 22, 26].map((days, index): SafetyAlarm => ({
+      id: -1 - index,
+      detectorId: 75,
+      name: 'Bedroom smoke detector',
+      room: 'bedroom',
+      startedAt: houseTime(now, days * DAY),
+      clearedAt: houseTime(now, days * DAY - 5),
+      alarmToldAt: houseTime(now, days * DAY - 1),
+      overToldAt: houseTime(now, days * DAY - 5),
+    })),
   ];
   return {
     status: 200,
@@ -416,15 +422,13 @@ export function safetyRuns(
       outcome: 'failed',
     },
     // the alarm of the kitchen four days ago: the way out lit, the blinds of the kitchen opened
-    ...['kitchen', 'hall down', 'hall up'].map(
-      (target): SafetyRun => ({
-        episode: 2,
-        reaction: 'lightsOn',
-        target,
-        sentAt: houseTime(now, 4 * DAY + 2 * HOUR - 1),
-        outcome: 'sent',
-      }),
-    ),
+    ...['kitchen', 'hall down', 'hall up'].map((target): SafetyRun => ({
+      episode: 2,
+      reaction: 'lightsOn',
+      target,
+      sentAt: houseTime(now, 4 * DAY + 2 * HOUR - 1),
+      outcome: 'sent',
+    })),
     {
       episode: 2,
       reaction: 'blindsUp',
