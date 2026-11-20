@@ -69,6 +69,14 @@ const pages: Page[] = [
     loadComponent: () => import('./features/aircon/aircon').then((m) => m.Aircon),
   },
   {
+    // the fire detectors (HAS-469, the administrator's): every detector by room with its mute and self test, the base,
+    // the alarms of 30 days and the switches of the reactions; its photo `safety` (public/backgrounds/README.md)
+    path: 'safety',
+    title: 'nav.safety',
+    data: { background: 'safety' },
+    loadComponent: () => import('./features/safety/safety-page').then((m) => m.SafetyPage),
+  },
+  {
     // every room of the house, its devices, and the lights and blinds controlled from it (HAS-232)
     path: 'rooms',
     title: 'nav.rooms',

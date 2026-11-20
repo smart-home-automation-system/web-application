@@ -163,6 +163,16 @@ import {
   openGate,
   pulseGarage,
 } from './gate.fixtures';
+// HAS-469: the fire detectors of safety-service
+import {
+  commandDetector,
+  safetyAlarms,
+  safetyAutomation,
+  safetyRead,
+  safetyRuns,
+  safetyStatus,
+  saveSafetyAutomation,
+} from './safety.fixtures';
 
 export interface MockReply {
   readonly status: number;
@@ -605,6 +615,43 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: /^\/home\/gate\/garage\/(\d+)\/pulse$/,
     reply: (request, _fresh, [id]) =>
       pulseGarage(id, request.params.get('source'), request.params.get('member')),
+  },
+  // HAS-469: the fire detectors of safety-service - the detectors, the monitor, the alarms, the switches, the commands
+  {
+    method: 'GET',
+    path: '/home/safety',
+    reply: (_request, fresh) => safetyRead(fresh),
+  },
+  {
+    method: 'GET',
+    path: '/home/safety/status',
+    reply: (_request, fresh) => ({ status: 200, body: safetyStatus(fresh) }),
+  },
+  {
+    method: 'GET',
+    path: '/home/safety/alarms',
+    reply: (request, fresh) => safetyAlarms(from(request), to(request), fresh),
+  },
+  {
+    method: 'GET',
+    path: '/home/safety/automation',
+    reply: (_request, fresh) => ({ status: 200, body: safetyAutomation(fresh) }),
+  },
+  {
+    method: 'PUT',
+    path: '/home/safety/automation',
+    reply: (request) => saveSafetyAutomation(request.body),
+  },
+  {
+    method: 'GET',
+    path: '/home/safety/automation/runs',
+    reply: (request, fresh) => safetyRuns(from(request), to(request), fresh),
+  },
+  {
+    method: 'POST',
+    path: /^\/home\/safety\/(\d+)\/(mute|self-test)$/,
+    reply: (request, _fresh, [id, command]) =>
+      commandDetector(id, command as 'mute' | 'self-test', request.params.get('source')),
   },
   // HAS-394: the air conditioners of aircon-service - every unit, a room of My room, a command, the automation
   {

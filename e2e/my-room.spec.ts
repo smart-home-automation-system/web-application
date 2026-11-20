@@ -32,17 +32,18 @@ test.describe('a resident with one room', () => {
   });
 
   // residents view temperatures and schedules; setting them is the administrator's alone - and since
-  // HAS-438 nothing of the household is on the page: the loft has no blinds, lights nor unit, so there
-  // is nothing at all to press
-  test('can press nothing about the room, and finds nothing of the household here', async ({
+  // HAS-438 nothing of the household is on the page: the loft has no blinds, lights nor unit, so the one
+  // thing to press is the mute of its smoke detector (HAS-469)
+  test('can press nothing about the room but the mute of its detector, and finds nothing of the household', async ({
     page,
   }) => {
     await page.goto('/room');
     await expect(page.getByTestId('room-temperature')).toBeVisible();
+    await expect(page.getByTestId('room-safety')).toBeVisible();
 
-    await expect(page.getByRole('main').locator('button, a, input, select, textarea')).toHaveCount(
-      0,
-    );
+    const controls = page.getByRole('main').locator('button, a, input, select, textarea');
+    await expect(controls).toHaveCount(1);
+    await expect(controls).toHaveAccessibleName('Mute Loft smoke detector');
     for (const card of [
       'heating-switch',
       'appliances',
@@ -147,8 +148,8 @@ test.describe('a resident with two rooms', () => {
     // the cards of the room: each tells its call - the lights card two, its lights and its rule
     // (HAS-268), the sensors card two, the registry and the occupancy (HAS-369); the blinds, the lights,
     // the sensors and the air conditioning (HAS-394) are shown for the failure - nobody knows then if
-    // there are any
-    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(7);
+    // there are any - and the smoke detectors (HAS-469), told by the call of the whole application
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(8);
     await expect(page.getByTestId('room-sensors').getByRole('alert')).toHaveCount(2);
     await expect(page.getByTestId('room-lights').getByRole('alert')).toHaveCount(2);
     for (const card of [
@@ -157,6 +158,7 @@ test.describe('a resident with two rooms', () => {
       'room-sensors',
       'room-lights',
       'room-aircon',
+      'room-safety',
     ]) {
       await expect(page.getByTestId(card).getByRole('alert').first()).toContainText(
         'The service is not available right now (error 502).',

@@ -819,5 +819,70 @@
         <app-api-error-strip [error]="energyForecast.error()" />
       </div>
     </app-domain-tile>
+    <!-- HAS-469: the fire detectors - an alarm, a detector that needs a look, not known or all right, and how many there
+         are; the resource of the banner of the shell (one poller), nothing here mutes a detector -->
+    <app-domain-tile
+      heading="overview.safety.title"
+      icon="detector_smoke"
+      domain="safety"
+      link="/safety"
+      waitingLabel="safety.page.loading"
+      [resource]="safety"
+      [describeWith]="describeSafetyError"
+      data-testid="tile-safety"
+    >
+      @if (safetySummary(); as summary) {
+        @if (summary.total === 0) {
+          <p class="tile__detail">{{ t('safety.detectors.none') }}</p>
+        } @else {
+          @switch (summary.state) {
+            @case ('alarm') {
+              <p class="tile__lead tile__lead--alert" data-testid="safety-state" data-state="alarm">
+                <mat-icon aria-hidden="true">local_fire_department</mat-icon>
+                <span>{{ t('overview.safety.alarm') }}</span>
+              </p>
+              <!-- the names of the registry, joined in TypeScript -->
+              <p class="tile__detail">{{ summary.inAlarm }}</p>
+            }
+            @case ('trouble') {
+              <p class="tile__lead" data-testid="safety-state" data-state="trouble">
+                <mat-icon aria-hidden="true">warning</mat-icon>
+                <span>{{ t('overview.safety.trouble') }}</span>
+              </p>
+            }
+            @case ('unknown') {
+              <p class="tile__lead" data-testid="safety-state" data-state="unknown">
+                <mat-icon aria-hidden="true">help</mat-icon>
+                <span>{{ t('overview.safety.unknown') }}</span>
+              </p>
+            }
+            @default {
+              <p class="tile__lead tile__lead--ok" data-testid="safety-state" data-state="ok">
+                <mat-icon aria-hidden="true">check_circle</mat-icon>
+                <span>{{ t('overview.safety.ok') }}</span>
+              </p>
+            }
+          }
+          <dl class="tile__rows">
+            <div class="tile__row">
+              <dt>{{ t('overview.safety.detectors') }}</dt>
+              <dd><strong data-testid="safety-count">{{ summary.total }}</strong></dd>
+            </div>
+            @if (summary.inTrouble !== '') {
+              <div class="tile__row" data-state="alert">
+                <dt>{{ t('overview.safety.inTrouble') }}</dt>
+                <dd class="tile__name"><strong>{{ summary.inTrouble }}</strong></dd>
+              </div>
+            }
+            @if (summary.unknown > 0) {
+              <div class="tile__row" data-state="unknown">
+                <dt>{{ t('overview.safety.notKnown') }}</dt>
+                <dd><strong class="tile__quiet">{{ summary.unknown }}</strong></dd>
+              </div>
+            }
+          </dl>
+        }
+      }
+    </app-domain-tile>
   </section>
 </ng-container>

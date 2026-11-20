@@ -271,9 +271,10 @@ e2e/              # Playwright tests
   the code stays a failure; **the choice of a room that is gone is forgotten in an effect**, not
   hidden by a computed (hidden, it pulled the page back by itself when the room returned -
   found in review, the lesson of the heating switch again); and **nothing about a room can be
-  pressed but its blinds, its lights and its air conditioner** (owner, 2026-10-18, HAS-254; HAS-268;
-  HAS-394) - `my-room.spec` lists every control there is, the blind controls and their pause switch by
-  name, `room-aircon.spec` those of a unit, and a new one fails that test on purpose. The cards, in the order of `ROOM_CAPABILITIES` (owner 2026-11-13, HAS-438; the air conditioning after the blinds since HAS-439, owner 2026-11-15: the lights, the blinds, the air conditioning, the heating, the sensors): heating (with the windows of the room and the hold of its
+  pressed but its blinds, its lights, its air conditioner and the mute of its smoke detectors** (owner, 2026-10-18,
+  HAS-254; HAS-268; HAS-394; HAS-469) - `my-room.spec` lists every control there is, the blind controls and their pause
+  switch by name, `room-aircon.spec` those of a unit, `room-safety.spec` the mute of a detector, and a new one fails
+  that test on purpose. The cards, in the order of `ROOM_CAPABILITIES` (owner 2026-11-13, HAS-438; the air conditioning after the blinds since HAS-439, owner 2026-11-15: the lights, the blinds, the air conditioning, the smoke detectors since HAS-469, the heating, the sensors): heating (with the windows of the room and the hold of its
   heating, as on the heating page), **lights** (`RoomLights`, HAS-268 - below), **blinds**
   (`RoomBlinds`, `GET /blinds/rooms/{room}`) and **sensors** (`RoomSensors`, HAS-369 - since HAS-438 in the look of an air conditioner: the occupancy a strip tinted
   while occupied, dashed while not known, every sensor in a frame of its own: the motion and
@@ -559,7 +560,10 @@ e2e/              # Playwright tests
     the units); the tenth the household requests (HAS-411, My room - every
     member writes for anybody, ticks off and removes on their own list); and since HAS-454 the gates - "Open the
     gate" of the driveway gate and the pulse of a garage gate, both at once with no question and the member of the
-    profile, a pulse never disabled after a press (the gate page of every member). (The blinds page adds the
+    profile, a pulse never disabled after a press (the gate page of every member); and since HAS-469 the fire
+    detectors - the mute and the self test of a detector after a question (the safety page; the mute also on the
+    banner for the administrator and on My room for every member in the rooms of their profile) and the switches of
+    the reactions to an alarm (the safety page). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
@@ -1069,6 +1073,77 @@ e2e/              # Playwright tests
   - **Mock** (`gate.fixtures.ts`): invented names - the garage gates "Left" (closed) and "Right" (open for 35 min, its
     warning), a month of visits; an opening within 15 s is refused `OPEN_TOO_SOON`, a pulse moves the gate at once;
     `resetGate()`.
+- **The fire detectors are one resource for the whole application** (HAS-469, epic HAS-455; `SafetyStore` in
+  `data-access/safety/`, `GET /safety` of `safety-service` every 30 s - the pattern of `ApplianceStore`): the banner of
+  the shell, the tile of the overview, the card of My room and the safety page read the same `safety`, so an alarm is
+  never told in one place and not in another. Created by `Notices` in an effect only once `ProfileStore.profile()`
+  exists; the technical monitor (`GET /safety/status`) is `SafetyStatusStore`, made by `Notices` only once the profile
+  is the administrator's (and by the safety page) - known limit: once made it polls until a reload, also after a
+  demotion (the banner then shows nothing of it). What to keep:
+  - **Missing is never all right** (`shared/safety/safety-labels.ts`, pinned by its spec): every flag of a detector is
+    `{ value, since }` and either may be left out - `flagOf` answers `yes` / `no` / `unknown`. The state
+    (`detectorStateOf`) is the first that holds of alarm, muted, offline; **all right only when the answer says so of
+    the alarm, the base and the mute alike**, "not known" otherwise. The colour is never the only sign
+    (`DetectorState`: a word and an icon on a strip - the alarm `error-container`, muted and offline the amber
+    `warning-container`, all right `primary-container`, not known dashed - pairs `check:contrast` knows). The battery,
+    the end of life, a fault and the self test each say "not known" for a flag left out.
+  - **The banner** (`core/layout/notices.ts`, `notice--fire`): one red strip per detector whose `alarm.value` is true,
+    for every member with a profile - the room and the name of the registry printed beside "Fire alarm", never inside
+    a translation; "muted" once it is. **No close**: it goes when the service no longer reports the alarm. **Mute for
+    the administrator alone**, never disabled (a press while a question or the command is on its way is ignored). A
+    silent base (`bases[].silent` of the monitor) is an amber strip for the administrator alone. Nothing while the
+    call fails. No `role` - the pages ask for *the* `alert`.
+  - **Every command asks first** (`safetyQuestion()` in `shared/safety/safety-question.ts`, `ConfirmDialog`, the safe
+    answer focused): one question per place, closed for good when what it was asked in is gone (the detector left the
+    answer, the alarm of the banner is over). **The dialog is loaded with the first question** (`import()`): the
+    banner is in the shell, the first download of every page, and Material's dialog there cost 40 kB. A unit test
+    waits for the window with `vi.waitFor`. The buttons that open it are `disabledInteractive` while it is open.
+  - **No optimistic state**: `SafetyStore.send(id, command)` - one `DeviceCommands` keyed `<command>-<id>` for the
+    banner, My room and the page alike - reads the detectors at once and `SAFETY_READ_AGAIN_AFTER_MS` (2.5 s) later; the
+    answer of the `POST` is never used. A command without an answer "may have been carried out"; `lastCommandConfirmed:
+    false` of the read is "The base did not confirm the last command".
+  - **The card of My room** (`RoomSafety`, a capability with the input `room`) filters the store by `room` - no call
+    of its own; no card for a room without a detector nor while the first answer is on its way; a failure before any
+    answer is drawn. The mute is the fourth control of a room (`room-safety.spec`, `my-room.spec`, the e2e of Borys).
+  - **The tile** (`tile-safety`, `summariseSafety`): alarm (with the names, joined in TypeScript), a detector in
+    trouble (offline, low battery, end of life, fault - named), not known (counted), all right; the count. It presses
+    nothing. `overview-reads.ts` has `/home/safety` in the overview and, with `/home/safety/status`, in the shell reads.
+  - The codes `NOT_FOUND_DETECTOR`, `COMMAND_TOO_SOON`, `INVALID_AUTOMATION`, `REGISTRY_UNAVAILABLE`, `NOT_FOUND_ROOM`,
+    `INVALID_RANGE` have texts in `SAFETY_ERROR_TEXTS` (its spec lists them); `SourcesStrip` takes `describeWith`
+    since this task, for the 503 `REGISTRY_UNAVAILABLE` of the store.
+- **The safety page** (HAS-469, `features/safety/`, the administrator's; route `/safety` after the air conditioning,
+  domain colour `safety`; the photo `safety` - a warm hall and living room the owner generated, tones 40-245 for the
+  contrast of its glass, see `public/backgrounds/README.md`). Two
+  calls in the strip of sources (the store and the monitor); the switches, the alarms and the reactions a call each,
+  told on their card. What to keep:
+  - **The detectors by floor and room** (`detectorsByFloor`: `FLOORS`, an unknown room and a detector without one in
+    the last group), **a card of one size per detector** (`grid-auto-rows: 1fr` per floor, every line always
+    rendered): the state, the four flags, last heard, model, firmware, the notes, Mute and Self test in the bottom
+    right corner.
+  - **The base** (`baseViews`): the bases of the monitor joined by serial with the network of `GET /safety`; the bases
+    of `GET /safety` alone while the monitor has not answered (a service before 0.3.0).
+  - **The switches of the reactions** (`SafetyAutomation`): offered only while all three are known booleans - the `PUT`
+    replaces them all, so a value left out would be sent back made up; a change sends the whole body with one switch
+    turned, one at a time, then reads back; **no switch flips itself** (`disableToggleValue`). No question before a
+    switch (the task names none).
+  - **The alarms and the reactions sent**: a `queryResource` each, 7 or 30 days (`SAFETY_PRESETS` - the service
+    answers at most 30; the month of `historyRange` is exactly 30 days), `HistoryFrame` with `empty` false and a "none"
+    line of their own. The target and the outcome of a run are the service's words, printed as they come.
+  - **The contracts still to come** (built against them; against an older service the card shows the 404 and the rest
+    works): HAS-464 (`safety-service` 0.4.0) - `POST /safety/{id}/mute?source=dashboard` and
+    `/safety/{id}/self-test?source=dashboard` answering 202, `404 NOT_FOUND_DETECTOR`, `429 COMMAND_TOO_SOON` (one
+    command per detector a minute), and `lastCommandConfirmed?: boolean` on a detector (false when the base did not
+    confirm the last command within 60 s, left out with no command); HAS-468 (0.5.0) - `GET /safety/automation`
+    answering `{ lightsOn?, blindsUp?, airconOff? }` (all false by default), `PUT` with the whole body (`400
+    INVALID_AUTOMATION`), `GET /safety/automation/runs?from=&to=` (at most 30 days) answering
+    `[{ episode?, reaction? ("lightsOn" | "blindsUp" | "airconOff"), target?, sentAt?, outcome? }]`.
+  - **Mock** (`safety.fixtures.ts`, invented base `SBS50ABCDEF01`): the kitchen (71, the detector of the mock registry)
+    and the office all right, the living room muted, the loft low on battery (the card of Borys), the bedroom off the
+    base, the hall up never heard (every flag left out), a CO detector of the boiler room not confirmed;
+    `localStorage['mock-fire'] = 'on'` puts the kitchen in alarm, `localStorage['mock-safety-base'] = 'silent'` makes
+    the base silent; a mute or a self test changes the next read and a second command within a minute is
+    `COMMAND_TOO_SOON`; the switches are stored whole; `no-readings` answers the detectors with what the registry gives
+    alone; `resetSafety()`. The detectors 72-77 are not in the mock registry - the devices page still counts 33.
 - **The appliances are one resource for the whole application** (HAS-282, `ApplianceStore` in
   `data-access/appliance/`, `GET /appliance` of `appliance-service` every 30 s): the notice of the
   shell, the card of My room and the tile of the overview read the same `watchAppliances()`, so
@@ -1671,7 +1746,7 @@ season. Both are nothing but values of CSS variables, in two files:
   counterpart, the glass as it reads over the page, text, outline, error), per season a primary
   and a secondary colour, each with a light-scheme and a dark-scheme shade — spring green, summer
   gold, autumn rust, winter blue, four hues told apart at a glance in either scheme — and the
-  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` / `-appliance` / `-energy` / `-aircon` (the sky of cool air, HAS-394) with
+  **domains**: `--app-domain-heating` / `-water` / `-boiler` / `-household` / `-devices` / `-weather` / `-blinds` / `-light` / `-appliance` / `-energy` / `-aircon` (the sky of cool air, HAS-394) / `-gate` (HAS-454) / `-safety` (the red of a fire engine, HAS-469) with
   `--app-on-domain`, the same in every season. Everything else (containers, "on" colours) is
   derived there. `mat.theme()` is called **without colours** — no palette of Material's is in
   the build. Every colour is written as `light-dark(<light>, <dark>)`, so one declaration serves
@@ -1942,6 +2017,8 @@ up in a production build.
   (204) and is refused with `409 NOTHING_TO_ACKNOWLEDGE` for one that does not wait, `writes-fail`
   answers it with a 500. Runs and samples are fixed pictures. `resetAppliances()` for a unit test
   that changed them.
+- **And so can the mock fire detectors** (`safety.fixtures.ts`, HAS-469): see "The safety page" above - `mock-fire`
+  and `mock-safety-base` switch the special states; `resetSafety()` for a unit test that changed them.
 - **And so can the mock device registry** (`devices.fixtures.ts`): invented devices - fourteen of
   every kind with ids 1-14, and since HAS-267 the lights and sensors the mock rules are judged by
   (ids 40-54, the same ids as the mock lights; an added device still gets id 15) -

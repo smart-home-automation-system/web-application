@@ -591,6 +591,7 @@ describe('profiles in the application', () => {
         'Weather',
         'Energy',
         'Air conditioning',
+        'Safety',
         'Blinds',
         'Lights',
         'Appliances',

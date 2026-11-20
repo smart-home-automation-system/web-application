@@ -44,6 +44,8 @@ import { modeText } from '../../shared/aircon/aircon-labels';
 import { summariseAircon } from '../../shared/aircon/aircon-summary';
 import { GateApi, GarageGate } from '../../data-access/gate/gate-api';
 import { durationText, garageStateOf } from '../../shared/gate/gate-labels';
+import { SafetyStore } from '../../data-access/safety/safety-store';
+import { describeSafetyError, summariseSafety } from '../../shared/safety/safety-labels';
 import {
   batteryDirectionLabel,
   gridDirectionLabel,
@@ -182,6 +184,10 @@ export class Overview {
       ? undefined
       : durationText(Math.max(0, this.ticker.now() - houseInstant(since, this.zone)));
   }
+  // HAS-469: the fire detectors - the resource of the banner of the shell, one poller
+  protected readonly safety = inject(SafetyStore).safety;
+  protected readonly safetySummary = computed(() => summariseSafety(this.safety.value()));
+  protected readonly describeSafetyError = describeSafetyError;
   // HAS-282: the resource of the notice of the shell - one poller, so the two never disagree
   protected readonly appliances = inject(ApplianceStore).appliances;
   // HAS-341: the energy at a glance, once a minute - the flows, the battery and the grid as the

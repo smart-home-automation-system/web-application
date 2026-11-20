@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(23, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(24, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -704,6 +704,52 @@ for (const language of ['en', 'pl'] as const) {
         await expect(tile.getByTestId('gate-garage')).toHaveCount(2);
         await tile.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-gate'),
+        });
+      });
+
+      // the fire detectors (HAS-469): every detector by floor, the base, the switches, the alarms and the reactions
+      test('safety', async ({ page }, testInfo) => {
+        await page.goto('/safety');
+        await expect(page.getByTestId('safety-detector')).toHaveCount(7);
+        await expect(page.getByTestId('safety-alarm').first()).toBeVisible();
+        await expect(page.getByTestId('safety-run').first()).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'safety'),
+          fullPage: true,
+        });
+      });
+
+      // a fire alarm (HAS-469): the red banner over a page, the tile of the overview in alarm
+      test('safety, a fire alarm', async ({ page }, testInfo) => {
+        await page.addInitScript(() => localStorage.setItem('mock-fire', 'on'));
+        await page.goto('/overview');
+        await expect(page.getByTestId('fire-notice')).toBeVisible();
+        await expect(page.getByTestId('tile-safety').getByTestId('safety-state')).toHaveAttribute(
+          'data-state',
+          'alarm',
+        );
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'safety-fire'),
+        });
+        await page.getByTestId('tile-safety').screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'overview-safety'),
+        });
+      });
+
+      // the question before a mute, a window over the darkened page
+      test('safety, the question of a mute', async ({ page }, testInfo) => {
+        await page.goto('/safety');
+        await page.locator('[data-detector="72"]').getByTestId('detector-mute').click();
+        await expect(page.getByRole('dialog').getByTestId('safety-question')).toBeVisible();
+        await page.waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+              .length === 0,
+        );
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'safety-question'),
         });
       });
 

@@ -64,6 +64,7 @@ test.describe('without a profile', () => {
             'Weather',
             'Energy',
             'Air conditioning',
+            'Safety',
             'Blinds',
             'Lights',
             'Appliances',

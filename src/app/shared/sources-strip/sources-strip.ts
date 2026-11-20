@@ -3,9 +3,11 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { ApiError } from '../../core/api/api-error';
 import { PollingResource } from '../../core/api/polling-resource';
-import { MessageKey } from '../../i18n/messages';
+import { DisplayText, MessageKey } from '../../i18n/messages';
 import { ApiErrorStrip } from '../api-error/api-error-strip';
+import { describeApiError } from '../api-error/describe-api-error';
 import { DataFreshness } from '../data-freshness/data-freshness';
 
 /** One call a page is made of. */
@@ -39,7 +41,7 @@ export interface Source {
                 [lastUpdated]="source.resource.lastUpdated()"
                 [stale]="source.resource.stale()"
               />
-              <app-api-error-strip [error]="source.resource.error()" />
+              <app-api-error-strip [error]="source.resource.error()" [describeWith]="describeWith()" />
             </div>
           }
         </mat-card-content>
@@ -81,4 +83,6 @@ export class SourcesStrip {
   readonly domain = input.required<string>();
   /** The words of the progress bar of the first call. */
   readonly loadingLabel = input.required<MessageKey>();
+  /** How a failure is worded - a service whose refusals have codes of its own words them (HAS-469). */
+  readonly describeWith = input<(error: ApiError) => DisplayText>(describeApiError);
 }

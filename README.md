@@ -124,6 +124,18 @@ dashboards:
   twenty first and twenty more with every "Show more": the rings and ended calls, the unlocks from the screen, the
   openings and pulses with who pressed, the opening and closing of a garage gate with how long it stood open. No
   picture - the door station gives none.
+- **Safety** (HAS-469, the administrator's, `/safety` after the air conditioning; from `safety-service` >= 0.1.0 for the
+  detectors, >= 0.2.0 for the alarms, >= 0.3.0 for the base, >= 0.4.0 for the commands, >= 0.5.0 for the reactions; gateway
+  >= 0.13.0): **the smoke, CO and heat detectors** of the house by floor and room, a card of one size each - the state
+  in a word, an icon and its colour (alarm, muted, offline, all right, not known - a flag the service leaves out is never
+  read as all right), the battery, the end of life, a fault, the last self test, when it was last heard, the model and
+  the firmware; **Mute** and **Self test** after a question in a window over the page, the detectors read back at once
+  and 2.5 s later, "The base did not confirm the last command" when it did not. **The base station**: connected or not,
+  its Wi-Fi network and signal, when it was last heard and whether the technical monitor calls it silent. **The alarms**
+  of 7 or 30 days - which detector, going on or over, whether the household was told. **The reactions to an alarm** -
+  light the way out, open the blinds of the room, stop the air conditioners - each a switch that shows what the
+  service stored (sent whole, read back), with the reactions sent in 7 or 30 days. No photo yet: the page shows the
+  plain glow until the owner generates it (prompt in `public/backgrounds/README.md`).
 - **Rooms** (HAS-232): every room of the house floor by floor, a card per room with one line for
   each kind of thing in it - temperature, heating, lights (a bulb each), blinds (a position each,
   the door first), motion, presence sensors, openings (windows and doors), the rest - and a window
@@ -283,8 +295,10 @@ dashboards:
   window that holds it and until when it is set back, whether it answers - and on / off, the mode, the
   target by a degree (cooling never below 22 °C, as the service refuses it), the fan by a step beside it (auto, then low
   to high - HAS-438) and quiet / turbo / sleep as buttons in the look of the modes (HAS-438), each read back (no card for a room without a unit). The heating is read-only; setting a temperature or a schedule is not part of
-  this application for anybody yet, and will be the administrator's alone. The blinds, the
-  lights and the air conditioner are the only controls of a room.
+  this application for anybody yet, and will be the administrator's alone. Since HAS-469 also **the smoke detectors
+  of the room** (`safety-service` >= 0.1.0, the mute from 0.4.0): each with its state, its battery and when it was last
+  heard, and **Mute** after a question (no card for a room without a detector). The blinds, the lights, the air
+  conditioner and the mute of a smoke detector are the only controls of a room.
 - **A resident's own pages** (HAS-438, owner 2026-11-13): besides My room, every member is offered
   **Gate** (since HAS-454, above), **Appliances**, **Requests** and **Settings** - and **House heating** with the
   permission `heating_switch`. Five entries stand on the bottom bar of a phone; a sixth - the heating of the house -
@@ -300,6 +314,12 @@ dashboards:
     dashboard, for a member the household registry granted `heating_switch` and nobody else - the
     administrator included, who switches the heating on its dashboard. Without the permission the address
     leads to My room and nothing is read.
+- **The fire alarm** (HAS-469): above every page, for every member with a profile, a red strip for each detector in
+  alarm - the room and the detector, "muted" once it is - with no close: it goes when the service no longer reports
+  the alarm. The administrator alone gets **Mute** on it, after a question, and a strip for a base station of the
+  detectors the technical monitor calls silent. Nothing is said while the call fails (the safety page and the tile
+  tell that). The detectors are one call for the whole application, shared with the tile of the overview, My room and
+  the safety page.
 - **The appliance notice**: above every page, for every member with a profile, a strip for each
   appliance that has finished and waits to be emptied, with since when, "Emptied" and a close
   button that hides it for the visit - it comes back with the next finished cycle. Nothing is
@@ -629,6 +649,12 @@ Endpoints used today:
 | `POST` | `/home/gate/garage/{id}/pulse?source=dashboard&member=` | One pulse of a garage gate - it opens, stops or closes it alike -, at once, no question, never disabled after a press (gate) |
 | `GET` | `/home/gate/garage/alerts` | The open alarms and warnings of the garage gates (gate), polled every 30 s and right after a pulse. Needs `gate-service` 0.10.0 or later |
 | `GET` | `/home/gate/events?from=&to=` | The rings, calls, unlocks, commands and garage moves of 7 or 30 days, the newest first (gate), asked when the period changes, then every 30 s |
+| `GET` | `/home/safety` | Every fire detector with its flags (alarm, online, battery, end of life, fault, muted, self test), model, firmware, last heard and whether its last command was confirmed, and the base stations (the banner of every page, the safety page, the overview, my room), polled every 30 s and right after a command. Needs `safety-service` 0.1.0 and `api-gateway-service` 0.13.0 or later |
+| `POST` | `/home/safety/{id}/mute?source=dashboard`, `/home/safety/{id}/self-test?source=dashboard` | Mutes a detector or starts its self test, after a question (the safety page; the mute also on the banner for the administrator and on my room); the detectors are read back at once and 2.5 s later, the answer is not used. `NOT_FOUND_DETECTOR`, `COMMAND_TOO_SOON` worded. Needs `safety-service` 0.4.0 or later |
+| `GET` | `/home/safety/status` | The technical monitor - the bases (reachable, last heard, signal, silent) and the open alerts (the safety page, the banner of the administrator), polled every 30 s for the administrator alone. Needs `safety-service` 0.3.0 or later |
+| `GET` | `/home/safety/alarms?from=&to=` | The alarm episodes of 7 or 30 days, the newest first (safety), asked when the period changes, then every minute; `INVALID_RANGE` worded. Needs `safety-service` 0.2.0 or later |
+| `GET`, `PUT` | `/home/safety/automation` | The switches of the reactions to an alarm - `lightsOn`, `blindsUp`, `airconOff` -, read every minute; a change sends the whole body and reads it back (safety). `INVALID_AUTOMATION` worded. Needs `safety-service` 0.5.0 or later |
+| `GET` | `/home/safety/automation/runs?from=&to=` | The reactions the automation sent in 7 or 30 days (safety), asked when the period changes, then every minute. Needs `safety-service` 0.5.0 or later |
 | `GET`, `POST` | `/home/aircon/power-cycle` | Whether the indoor plug may be power cycled now and the last cycle, polled every 30 s; the cycle itself after a question, with the member of the profile (air conditioning). Needs `aircon-service` 0.10.0 or later |
 | `POST` | `/home/light/{id}?turn=on\|off&source=dashboard`, `/home/light/{id}/brightness?value=1..100&source=dashboard` | Switches a light by its registry id, sets the brightness of a dimmer or an rgbw light (rooms). The rules engine holds a light changed from here; the lights are read again |
 | `GET` | `/home/light/rooms/{room}/rules` | The rule of a room (my room: every 60 s; the editor of the rule: once, and again after a save); `404 NOT_FOUND_RULE` is a room without one. Needs `light-service` 0.6.0 or later |

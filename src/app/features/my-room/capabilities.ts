@@ -4,6 +4,7 @@ import { RoomAircon } from './room-aircon';
 import { RoomBlinds } from './room-blinds';
 import { RoomHeating } from './room-heating';
 import { RoomLights } from './room-lights';
+import { RoomSafety } from './room-safety';
 import { RoomSensors } from './room-sensors';
 
 /**
@@ -32,6 +33,8 @@ export const ROOM_CAPABILITIES: readonly RoomCapability[] = [
   { id: 'blinds', component: RoomBlinds },
   // HAS-394: the air conditioners of the room with their controls - after the blinds (HAS-439)
   { id: 'aircon', component: RoomAircon },
+  // HAS-469: the smoke detectors of the room with their mute - the last control, before what is only shown
+  { id: 'safety', component: RoomSafety },
   { id: 'heating', component: RoomHeating },
   // HAS-254: the sensors the registry places there
   { id: 'sensors', component: RoomSensors },

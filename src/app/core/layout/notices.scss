@@ -117,3 +117,33 @@
   align-items: center;
   gap: 4px 8px;
 }
+
+// HAS-469: a fire alarm - the red of an error, never closed by hand; the mute of the administrator in its colour
+.notice--fire {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  --mat-button-text-label-text-color: var(--mat-sys-on-error-container);
+  --mat-button-text-state-layer-color: var(--mat-sys-on-error-container);
+  --mat-button-text-ripple-color: color-mix(
+    in srgb,
+    var(--mat-sys-on-error-container) 12%,
+    transparent
+  );
+
+  // on a phone the mute under the sentence in the bottom right corner, as the commands of an appliance
+  @media (max-width: 599.98px) {
+    flex-wrap: wrap;
+
+    .notice__actions {
+      flex-basis: 100%;
+      justify-content: flex-end;
+    }
+  }
+}
+
+// HAS-469: a silent base station of the detectors, for the administrator - the amber of a warning
+.notice--warning {
+  background: var(--app-warning-container);
+  color: var(--app-on-warning-container);
+}

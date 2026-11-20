@@ -42,6 +42,8 @@ export interface NavItem {
  * most five entries, so all of them stand on the bottom bar of a phone. The requests and the heating of
  * the house come after the appliances, which keeps the first places of the administrator as they were.
  *
+ * The safety page right after the air conditioning (HAS-469, the administrator's).
+ *
  * The gate right after my room, for every member (HAS-454, owner 2026-11-19): opened every day and the target of
  * the push of a ring. It is a sixth entry for a resident with the heating of the house, whose bar then shows four
  * and "More".
@@ -53,6 +55,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/weather', label: 'nav.weather', icon: 'partly_cloudy_day', access: 'admin' },
   { path: '/energy', label: 'nav.energy', icon: 'solar_power', access: 'admin' },
   { path: '/aircon', label: 'nav.aircon', icon: 'ac_unit', access: 'admin' },
+  { path: '/safety', label: 'nav.safety', icon: 'detector_smoke', access: 'admin' },
   { path: '/blinds', label: 'nav.blinds', icon: 'blinds', access: 'admin' },
   { path: '/lights', label: 'nav.lights', icon: 'lightbulb', access: 'admin' },
   { path: '/appliances', label: 'nav.appliances', icon: 'local_laundry_service', access: 'member' },
