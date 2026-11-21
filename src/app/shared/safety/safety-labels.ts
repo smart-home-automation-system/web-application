@@ -23,11 +23,35 @@ export const SAFETY_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   REGISTRY_UNAVAILABLE: 'safety.error.registryUnavailable',
   NOT_FOUND_ROOM: 'safety.error.notFoundRoom',
   INVALID_RANGE: 'safety.error.invalidRange',
+  COMMAND_NOT_SENT: 'safety.error.commandNotSent',
+  NOTHING_TO_MUTE: 'safety.error.nothingToMute',
 };
 
 export function describeSafetyError(error: ApiError): DisplayText {
   const named = Object.entries(SAFETY_ERROR_TEXTS).find(([code]) => error.hasCode(code));
   return named ? { key: named[1] } : describeApiError(error);
+}
+
+/**
+ * One command per detector a minute (`DetectorCommands` of `safety-service`, a copy - change both together): a
+ * `COMMAND_TOO_SOON` is true for that long at most.
+ */
+export const SAFETY_COMMAND_EVERY_MS = 60_000;
+
+/**
+ * The failure of the last command to show on a card, `undefined` for none: a `COMMAND_TOO_SOON` goes once its minute
+ * is over (HAS-464 - "wait a minute" stood on a card for hours); every other failure stays until the next command.
+ */
+export function shownFailureOf(
+  state: CommandState<unknown> | undefined,
+  now: number,
+): DisplayText | undefined {
+  if (state?.error === undefined) {
+    return undefined;
+  }
+  const waited =
+    state.error.hasCode('COMMAND_TOO_SOON') && now - (state.at ?? now) >= SAFETY_COMMAND_EVERY_MS;
+  return waited ? undefined : commandFailureOf(state);
 }
 
 /** A failed command in words: one that got no answer may have been carried out all the same. */
@@ -46,6 +70,15 @@ export function flagOf(flag: SafetyFlag | undefined): FlagValue {
     return 'yes';
   }
   return flag?.value === false ? 'no' : 'unknown';
+}
+
+/**
+ * Whether a mute is offered (HAS-464): only while the answer says the detector is in alarm - the base takes a mute of a
+ * quiet detector and does nothing (tried on 2026-11-21), and `safety-service` refuses it (`409 NOTHING_TO_MUTE`) - and
+ * not while it says it is muted already (as the banner); offered again once the mute is over.
+ */
+export function canMute(detector: Detector): boolean {
+  return flagOf(detector.alarm) === 'yes' && flagOf(detector.muted) !== 'yes';
 }
 
 /**

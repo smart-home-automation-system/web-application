@@ -2345,7 +2345,8 @@ export const pl: Messages = {
       unknownMember: 'Twojego profilu nie ma w rejestrze domowników.',
       openTooSoon: 'Brama dostała polecenie przed chwilą - odczekaj kilka sekund.',
       deviceFailed: 'Shelly bramy nie przyjął polecenia - brama mogła się jednak ruszyć.',
-      gateUnavailable: 'Bramy nie można teraz sterować - jej przekaźnik nie wyłącza się sam albo nie jest znana.',
+      gateUnavailable:
+        'Bramy nie można teraz sterować - jej przekaźnik nie wyłącza się sam albo nie jest znana.',
       registryUnavailable: 'Nie udało się odczytać rejestru domowników - spróbuj za chwilę.',
       invalidRange: 'Usługa odrzuciła ten okres.',
       notFoundGate: 'Tej bramy garażowej nie ma już w rejestrze.',
@@ -2458,6 +2459,8 @@ export const pl: Messages = {
       registryUnavailable: 'Rejestru urządzeń nie udało się jeszcze odczytać - spróbuj za chwilę.',
       notFoundRoom: 'Usługa bezpieczeństwa nie zna tego pokoju.',
       invalidRange: 'Usługa odrzuciła ten okres.',
+      commandNotSent: 'Nie udało się wysłać polecenia do centrali - spróbuj jeszcze raz.',
+      nothingToMute: 'Czujka nie jest już w alarmie - nie ma czego wyciszać.',
     },
     commandFailed: 'Polecenie nie dostało odpowiedzi - mogło jednak zostać wykonane.',
   },

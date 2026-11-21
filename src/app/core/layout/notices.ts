@@ -29,9 +29,9 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { Detector } from '../../data-access/safety/safety-api';
 import { SafetyStatusStore, SafetyStore } from '../../data-access/safety/safety-store';
 import {
-  commandFailureOf,
   detectorName,
   detectorsInAlarm,
+  shownFailureOf,
   silentBases,
 } from '../../shared/safety/safety-labels';
 import { safetyQuestion } from '../../shared/safety/safety-question';
@@ -346,7 +346,7 @@ export class Notices {
   /** How the last mute of this detector failed, in words. */
   protected fireFailure(detector: Detector) {
     const state = this.safety()?.commands.stateOf(SafetyStore.keyOf(detector.id ?? -1, 'mute'));
-    return state?.error === undefined ? undefined : commandFailureOf(state);
+    return shownFailureOf(state, this.ticker.now());
   }
 
   /** The mute of the administrator, after a question that goes once the alarm is over. */

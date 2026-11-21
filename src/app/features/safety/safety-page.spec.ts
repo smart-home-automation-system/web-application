@@ -176,7 +176,9 @@ describe('SafetyPage', () => {
 
     const floors = [...page().querySelectorAll('.floor')].map((floor) => [
       floor.getAttribute('data-floor'),
-      [...floor.querySelectorAll('[data-detector]')].map((card) => card.getAttribute('data-detector')),
+      [...floor.querySelectorAll('[data-detector]')].map((card) =>
+        card.getAttribute('data-detector'),
+      ),
     ]);
     expect(floors).toEqual([
       ['ground', ['71']],
@@ -267,6 +269,29 @@ describe('SafetyPage', () => {
     );
   });
 
+  // HAS-464: "wait a minute" stood on a card for hours - it is true for the minute alone
+  it('takes a minute to wait away once the minute is over, and keeps every other failure', async () => {
+    answer(safety, READ);
+    commands.send(
+      SafetyStore.keyOf(71, 'mute'),
+      throwError(
+        () => new ApiError('client', 429, [{ message: 'too soon', code: 'COMMAND_TOO_SOON' }]),
+      ),
+    );
+    commands.send(
+      SafetyStore.keyOf(72, 'selfTest'),
+      throwError(() => new ApiError('network', 0)),
+    );
+    expect((await detector(71)).querySelector('[data-testid="detector-failure"]')).not.toBeNull();
+
+    vi.setSystemTime(Date.now() + 60_000);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await fixture.whenStable();
+
+    expect((await detector(71)).querySelector('[data-testid="detector-failure"]')).toBeNull();
+    expect((await detector(72)).querySelector('[data-testid="detector-failure"]')).not.toBeNull();
+  });
+
   it('tells the base: not connected, its network, its signal and that it is silent', async () => {
     answer(safety, READ);
     answer(status, STATUS);
@@ -302,7 +327,9 @@ describe('SafetyPage', () => {
 
     it('tells a change that failed, the switch where the service has it', async () => {
       saveReply = () =>
-        throwError(() => new ApiError('client', 400, [{ message: 'x', code: 'INVALID_AUTOMATION' }]));
+        throwError(
+          () => new ApiError('client', 400, [{ message: 'x', code: 'INVALID_AUTOMATION' }]),
+        );
       answer(automation, { lightsOn: false, blindsUp: false, airconOff: false });
       await fixture.whenStable();
 
@@ -329,7 +356,14 @@ describe('SafetyPage', () => {
   it('lists the alarms of the period, one going on and one over', async () => {
     await fixture.whenStable();
     answerQuery(alarms, alarmsRange(), [
-      { id: 2, detectorId: 71, name: 'Smoke detector', room: 'kitchen', startedAt: SINCE, alarmToldAt: SINCE },
+      {
+        id: 2,
+        detectorId: 71,
+        name: 'Smoke detector',
+        room: 'kitchen',
+        startedAt: SINCE,
+        alarmToldAt: SINCE,
+      },
       {
         id: 1,
         detectorId: 72,
@@ -385,7 +419,11 @@ describe('SafetyPage', () => {
     await fixture.whenStable();
 
     expect(words(page())).toContain('Bezpieczeństwo');
-    expect(words((await detector(72)).querySelector('[data-testid="detector-mute"]'))).toBe('Wycisz');
+    expect(words((await detector(71)).querySelector('[data-testid="detector-mute"]'))).toBe(
+      'Wycisz',
+    );
+    // HAS-464: no mute of a detector not in alarm - the base would do nothing
+    expect((await detector(72)).querySelector('[data-testid="detector-mute"]')).toBeNull();
     expect(fact(await detector(72), 'battery')).toBe('Słaba - do wymiany');
   });
 });

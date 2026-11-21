@@ -129,7 +129,8 @@ dashboards:
   >= 0.13.0): **the smoke, CO and heat detectors** of the house by floor and room, a card of one size each - the state
   in a word, an icon and its colour (alarm, muted, offline, all right, not known - a flag the service leaves out is never
   read as all right), the battery, the end of life, a fault, the last self test, when it was last heard, the model and
-  the firmware; **Mute** and **Self test** after a question in a window over the page, the detectors read back at once
+  the firmware; **Mute** (only while the detector sounds - HAS-464: the base does nothing with a mute of a quiet
+  detector) and **Self test** after a question in a window over the page, the detectors read back at once
   and 2.5 s later, "The base did not confirm the last command" when it did not. **The base station**: connected or not,
   its Wi-Fi network and signal, when it was last heard and whether the technical monitor calls it silent. **The alarms**
   of 7 or 30 days - which detector, going on or over, whether the household was told. **The reactions to an alarm** -
@@ -297,7 +298,7 @@ dashboards:
   to high - HAS-438) and quiet / turbo / sleep as buttons in the look of the modes (HAS-438), each read back (no card for a room without a unit). The heating is read-only; setting a temperature or a schedule is not part of
   this application for anybody yet, and will be the administrator's alone. Since HAS-469 also **the smoke detectors
   of the room** (`safety-service` >= 0.1.0, the mute from 0.4.0): each with its state, its battery and when it was last
-  heard, and **Mute** after a question (no card for a room without a detector). The blinds, the lights, the air
+  heard, and **Mute** after a question while it sounds (no card for a room without a detector). The blinds, the lights, the air
   conditioner and the mute of a smoke detector are the only controls of a room.
 - **A resident's own pages** (HAS-438, owner 2026-11-13): besides My room, every member is offered
   **Gate** (since HAS-454, above), **Appliances**, **Requests** and **Settings** - and **House heating** with the

@@ -33,10 +33,11 @@ test.describe('a resident with one room', () => {
 
   // residents view temperatures and schedules; setting them is the administrator's alone - and since
   // HAS-438 nothing of the household is on the page: the loft has no blinds, lights nor unit, so the one
-  // thing to press is the mute of its smoke detector (HAS-469)
+  // thing to press is the mute of its smoke detector (HAS-469), offered while it sounds (HAS-464)
   test('can press nothing about the room but the mute of its detector, and finds nothing of the household', async ({
     page,
   }) => {
+    await page.addInitScript(() => localStorage.setItem('mock-fire', 'loft'));
     await page.goto('/room');
     await expect(page.getByTestId('room-temperature')).toBeVisible();
     await expect(page.getByTestId('room-safety')).toBeVisible();

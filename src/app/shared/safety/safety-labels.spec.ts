@@ -1,8 +1,10 @@
 import { ApiError } from '../../core/api/api-error';
 import { Detector } from '../../data-access/safety/safety-api';
 import {
+  SAFETY_COMMAND_EVERY_MS,
   SAFETY_ERROR_TEXTS,
   baseViews,
+  canMute,
   commandFailureOf,
   describeSafetyError,
   detectorKindText,
@@ -12,6 +14,7 @@ import {
   detectorsOfRoom,
   flagOf,
   reactionText,
+  shownFailureOf,
   silentBases,
   summariseSafety,
 } from './safety-labels';
@@ -39,6 +42,16 @@ const refusal = (code: string) =>
   new ApiError('client', 409, [{ message: 'Something the service said', code }]);
 
 describe('the safety labels', () => {
+  // HAS-464: the base does nothing with a mute of a quiet detector; a muted one is not offered it again
+  it('offers a mute only of a detector in alarm and not muted already', () => {
+    expect(canMute({ ...fine(1, 'kitchen'), alarm: on })).toBe(true);
+    expect(canMute({ ...fine(1, 'kitchen'), alarm: on, muted: undefined })).toBe(true);
+    expect(canMute({ ...fine(1, 'kitchen'), alarm: on, muted: on })).toBe(false);
+    expect(canMute(fine(1, 'kitchen'))).toBe(false);
+    expect(canMute({ ...fine(1, 'kitchen'), alarm: undefined })).toBe(false);
+    expect(canMute({ ...fine(1, 'kitchen'), alarm: { since: SINCE } })).toBe(false);
+  });
+
   // the refusals of safety-service - a new code needs a text, and this list is where it is noticed
   it('word every code of the service', () => {
     expect(Object.keys(SAFETY_ERROR_TEXTS)).toEqual([
@@ -48,6 +61,8 @@ describe('the safety labels', () => {
       'REGISTRY_UNAVAILABLE',
       'NOT_FOUND_ROOM',
       'INVALID_RANGE',
+      'COMMAND_NOT_SENT',
+      'NOTHING_TO_MUTE',
     ]);
     for (const [code, key] of Object.entries(SAFETY_ERROR_TEXTS)) {
       expect(describeSafetyError(refusal(code))).toEqual({ key });
@@ -67,6 +82,19 @@ describe('the safety labels', () => {
     expect(commandFailureOf({ sending: false, error: refusal('COMMAND_TOO_SOON') })).toEqual({
       key: 'safety.error.commandTooSoon',
     });
+  });
+
+  // HAS-464: "wait a minute" is true for the minute alone; the other failures stay until the next command
+  it('show a minute to wait only while it lasts, every other failure until the next command', () => {
+    const at = Date.parse('2026-11-21T14:14:00Z');
+    const soon = { sending: false, error: refusal('COMMAND_TOO_SOON'), at };
+    const lost = { sending: false, error: new ApiError('network', 0), at };
+
+    expect(shownFailureOf(soon, at + 59_999)).toEqual({ key: 'safety.error.commandTooSoon' });
+    expect(shownFailureOf(soon, at + SAFETY_COMMAND_EVERY_MS)).toBeUndefined();
+    expect(shownFailureOf(lost, at + 3 * 60 * 60_000)).toEqual({ key: 'safety.commandFailed' });
+    expect(shownFailureOf({ sending: false, sent: true, at }, at)).toBeUndefined();
+    expect(shownFailureOf(undefined, at)).toBeUndefined();
   });
 
   // missing is never off
@@ -103,7 +131,9 @@ describe('the safety labels', () => {
   });
 
   it('find the detectors in alarm, and none in an answer without a list', () => {
-    const read = { detectors: [fine(1, 'kitchen'), { ...fine(2, 'office'), alarm: on }, { alarm: on }] };
+    const read = {
+      detectors: [fine(1, 'kitchen'), { ...fine(2, 'office'), alarm: on }, { alarm: on }],
+    };
 
     expect(detectorsInAlarm(read).map((detector) => detector.id)).toEqual([2]);
     expect(detectorsInAlarm(null)).toEqual([]);
@@ -197,7 +227,13 @@ describe('the safety labels', () => {
     );
 
     expect(views).toEqual([
-      { stationSerial: 'SBS50ABCDEF01', reachable: true, wifiRssi: -60, silent: false, wifiSsid: 'house' },
+      {
+        stationSerial: 'SBS50ABCDEF01',
+        reachable: true,
+        wifiRssi: -60,
+        silent: false,
+        wifiSsid: 'house',
+      },
       { stationSerial: 'SBS50ABCDEF02', reachable: false, wifiSsid: 'garage' },
     ]);
     expect(baseViews(undefined, [])).toBeUndefined();

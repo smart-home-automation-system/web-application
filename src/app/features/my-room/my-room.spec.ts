@@ -545,13 +545,20 @@ describe('MyRoom', () => {
       expect(switchesWatched).toBe(0);
     });
 
-    // HAS-469: the mute of the smoke detectors of the room is a control of the room - its card names it
+    // HAS-469: the mute of the smoke detectors of the room is a control of the room - its card names it; offered only
+    // while the detector is in alarm (HAS-464)
     it('is the mute of the smoke detectors of the room', async () => {
       await page();
       answer(lastAsked().resource, BEDROOM);
       answer(detectors, {
         detectors: [
-          { id: 75, name: 'Bedroom smoke detector', room: 'bedroom', kind: 'smoke detector' },
+          {
+            id: 75,
+            name: 'Bedroom smoke detector',
+            room: 'bedroom',
+            kind: 'smoke detector',
+            alarm: { value: true, since: '2026-11-20T08:00:00' },
+          },
           { id: 71, name: 'Smoke detector', room: 'kitchen', kind: 'smoke detector' },
         ],
       });

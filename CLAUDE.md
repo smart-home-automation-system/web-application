@@ -1105,12 +1105,21 @@ e2e/              # Playwright tests
   - **The card of My room** (`RoomSafety`, a capability with the input `room`) filters the store by `room` - no call
     of its own; no card for a room without a detector nor while the first answer is on its way; a failure before any
     answer is drawn. The mute is the fourth control of a room (`room-safety.spec`, `my-room.spec`, the e2e of Borys).
+  - **Mute is offered only while the detector is in alarm** (HAS-464, `canMute` - `alarm.value` true, never a flag
+    left out - and not while it is muted already, as the banner): the first real try on 2026-11-21 showed the base takes a mute of a quiet detector and does nothing, and
+    `safety-service` >= 0.4.1 refuses it (`409 NOTHING_TO_MUTE`). The question of a mute closes for good when the
+    alarm is over (My room and the page; the banner goes with the alarm). The self test is offered always. The mock:
+    `mock-fire` = `on` the kitchen, `loft` the loft of Borys, whose e2e mutes it.
   - **The tile** (`tile-safety`, `summariseSafety`): alarm (with the names, joined in TypeScript), a detector in
     trouble (offline, low battery, end of life, fault - named), not known (counted), all right; the count. It presses
     nothing. `overview-reads.ts` has `/home/safety` in the overview and, with `/home/safety/status`, in the shell reads.
   - The codes `NOT_FOUND_DETECTOR`, `COMMAND_TOO_SOON`, `INVALID_AUTOMATION`, `REGISTRY_UNAVAILABLE`, `NOT_FOUND_ROOM`,
-    `INVALID_RANGE` have texts in `SAFETY_ERROR_TEXTS` (its spec lists them); `SourcesStrip` takes `describeWith`
+    `INVALID_RANGE`, `COMMAND_NOT_SENT`, `NOTHING_TO_MUTE` (HAS-464) have texts in `SAFETY_ERROR_TEXTS` (its spec lists them); `SourcesStrip` takes `describeWith`
     since this task, for the 503 `REGISTRY_UNAVAILABLE` of the store.
+  - **A minute to wait goes with its minute** (HAS-464 - "wait a minute" stood on a card for hours): `DeviceCommands` dates
+    every outcome (`at`), and `shownFailureOf` drops a `COMMAND_TOO_SOON` `SAFETY_COMMAND_EVERY_MS` (60 s, a copy of the one
+    command per detector a minute of `safety-service` - change both together) after it, by the `Ticker`; every other failure
+    of a command stays until the next one - on the safety page, My room and the banner alike.
 - **The safety page** (HAS-469, `features/safety/`, the administrator's; route `/safety` after the air conditioning,
   domain colour `safety`; the photo `safety` - a warm hall and living room the owner generated, tones 40-245 for the
   contrast of its glass, see `public/backgrounds/README.md`). Two
@@ -1129,10 +1138,10 @@ e2e/              # Playwright tests
   - **The alarms and the reactions sent**: a `queryResource` each, 7 or 30 days (`SAFETY_PRESETS` - the service
     answers at most 30; the month of `historyRange` is exactly 30 days), `HistoryFrame` with `empty` false and a "none"
     line of their own. The target and the outcome of a run are the service's words, printed as they come.
-  - **The contracts still to come** (built against them; against an older service the card shows the 404 and the rest
-    works): HAS-464 (`safety-service` 0.4.0) - `POST /safety/{id}/mute?source=dashboard` and
-    `/safety/{id}/self-test?source=dashboard` answering 202, `404 NOT_FOUND_DETECTOR`, `429 COMMAND_TOO_SOON` (one
-    command per detector a minute), and `lastCommandConfirmed?: boolean` on a detector (false when the base did not
+  - **The contracts** (built against them; against an older service the card shows the 404 and the rest works): HAS-464
+    (`safety-service` 0.4.0, deployed 2026-11-21; 0.4.1 the refusal of a mute) - `POST /safety/{id}/mute?source=dashboard`
+    and `/safety/{id}/self-test?source=dashboard` answering 202, `404 NOT_FOUND_DETECTOR`, `409 NOTHING_TO_MUTE` (a mute
+    of a detector not in alarm), `429 COMMAND_TOO_SOON` (one command per detector a minute), `502 COMMAND_NOT_SENT`, and `lastCommandConfirmed?: boolean` on a detector (false when the base did not
     confirm the last command within 60 s, left out with no command); HAS-468 (0.5.0) - `GET /safety/automation`
     answering `{ lightsOn?, blindsUp?, airconOff? }` (all false by default), `PUT` with the whole body (`400
     INVALID_AUTOMATION`), `GET /safety/automation/runs?from=&to=` (at most 30 days) answering
