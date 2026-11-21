@@ -23,6 +23,8 @@ export const SAFETY_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   REGISTRY_UNAVAILABLE: 'safety.error.registryUnavailable',
   NOT_FOUND_ROOM: 'safety.error.notFoundRoom',
   INVALID_RANGE: 'safety.error.invalidRange',
+  COMMAND_NOT_SENT: 'safety.error.commandNotSent',
+  NOTHING_TO_MUTE: 'safety.error.nothingToMute',
 };
 
 export function describeSafetyError(error: ApiError): DisplayText {
@@ -46,6 +48,15 @@ export function flagOf(flag: SafetyFlag | undefined): FlagValue {
     return 'yes';
   }
   return flag?.value === false ? 'no' : 'unknown';
+}
+
+/**
+ * Whether a mute is offered (HAS-464): only while the answer says the detector is in alarm - the base takes a mute of a
+ * quiet detector and does nothing (tried on 2026-11-21), and `safety-service` refuses it (`409 NOTHING_TO_MUTE`) - and
+ * not while it says it is muted already (as the banner); offered again once the mute is over.
+ */
+export function canMute(detector: Detector): boolean {
+  return flagOf(detector.alarm) === 'yes' && flagOf(detector.muted) !== 'yes';
 }
 
 /**

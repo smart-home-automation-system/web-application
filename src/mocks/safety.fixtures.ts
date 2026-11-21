@@ -14,7 +14,8 @@ import { houseTime } from './house-time';
  * The fire detectors of the mock house (HAS-469), the shape of `safety-service` 0.3.0 plus the commands of HAS-464 and
  * the switches of HAS-468, with invented names and an invented base: the kitchen and the office all right, the living
  * room muted, the loft with a low battery, the bedroom off the base, the hall up never heard (every flag left out), a
- * CO detector in the boiler room read back at the start and not confirmed. `localStorage['mock-fire']` = `on`: the
+ * CO detector in the boiler room read back at the start and not confirmed. `localStorage['mock-fire']` = `loft` puts the
+ * loft in alarm instead (a mute is refused unless the detector is in alarm - HAS-464). `localStorage['mock-fire']` = `on`: the
  * kitchen in alarm (the banner of every page). `localStorage['mock-safety-base']` = `silent`: the base silent (the
  * banner of the administrator). A mute or a self test changes the next read and is refused as the service refuses it
  * (`COMMAND_TOO_SOON` within a minute per detector, `NOT_FOUND_DETECTOR`, a source that is not the dashboard); the
@@ -22,7 +23,9 @@ import { houseTime } from './house-time';
  */
 const BASE = 'SBS50ABCDEF01';
 
-const fireOn = (): boolean => readText('mock-fire') === 'on';
+/** The detector `mock-fire` sets sounding: `on` the kitchen (71), `loft` the loft of Borys (74 - HAS-464, his mute). */
+const FIRE_DETECTORS: Readonly<Record<string, number>> = { on: 71, loft: 74 };
+const fireDetector = (): number | undefined => FIRE_DETECTORS[readText('mock-fire') ?? ''];
 const baseSilent = (): boolean => readText('mock-safety-base') === 'silent';
 
 interface StoredDetector {
@@ -171,7 +174,7 @@ function current(now: Date): Detector[] {
   return detectorsAtTheStart(now).map(({ detector, heardSecondsAgo }) => {
     const changed = changes.get(detector.id ?? -1) ?? {};
     const lastAt = Math.max(changed.muted ?? 0, changed.tested ?? 0);
-    const fire = fireOn() && detector.id === 71;
+    const fire = detector.id === fireDetector();
     return {
       ...detector,
       ...(fire ? { alarm: flag(true, houseTime(now, 95)) } : {}),
@@ -289,7 +292,7 @@ function badRange(from: string | null, to: string | null): boolean {
 
 /**
  * `GET /home/safety/alarms?from=&to=`: eight episodes of the month - more than the five a card shows, so its "Show more"
- * appears (the preview of HAS-469) - and the kitchen going on with `mock-fire`.
+ * appears (the preview of HAS-469) - and the detector of `mock-fire` going on (the kitchen, or the loft).
  */
 export function safetyAlarms(
   from: string | null,
@@ -303,14 +306,15 @@ export function safetyAlarms(
   if (fresh) {
     return { status: 200, body: [] };
   }
+  const sounding = current(now).find((detector) => detector.id === fireDetector());
   const episodes: SafetyAlarm[] = [
-    ...(fireOn()
+    ...(sounding !== undefined
       ? [
           {
             id: 4,
-            detectorId: 71,
-            name: 'Smoke detector',
-            room: 'kitchen',
+            detectorId: sounding.id,
+            name: sounding.name,
+            room: sounding.room,
             startedAt: houseTime(now, 95),
             alarmToldAt: houseTime(now, 93),
           },
@@ -443,7 +447,10 @@ export function safetyRuns(
   };
 }
 
-/** `POST /home/safety/{id}/mute|self-test?source=dashboard`: 202, one command per detector a minute. */
+/**
+ * `POST /home/safety/{id}/mute|self-test?source=dashboard`: 202, one command per detector a minute; a mute only of a
+ * detector in alarm (`409 NOTHING_TO_MUTE`).
+ */
 export function commandDetector(
   id: string,
   command: 'mute' | 'self-test',
@@ -462,6 +469,13 @@ export function commandDetector(
   }
   const key = Number(id);
   const changed = changes.get(key) ?? {};
+  // HAS-464: the service refuses a mute of a detector not in alarm - the base would do nothing
+  if (command === 'mute' && current(now).find((one) => one.id === key)?.alarm?.value !== true) {
+    return {
+      status: 409,
+      body: { errors: [{ message: 'Nothing to mute', code: 'NOTHING_TO_MUTE' }] },
+    };
+  }
   if (
     changed.lastCommandAt !== undefined &&
     now.getTime() - changed.lastCommandAt < COMMAND_IGNORE_REPEAT_FOR_MS

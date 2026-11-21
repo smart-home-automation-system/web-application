@@ -17,6 +17,7 @@ import {
   describeSafetyError,
   detectorName,
   detectorsOfRoom,
+  canMute,
   flagOf,
 } from '../../shared/safety/safety-labels';
 import { safetyQuestion } from '../../shared/safety/safety-question';
@@ -24,7 +25,8 @@ import { safetyQuestion } from '../../shared/safety/safety-question';
 /**
  * The smoke detectors of one room on "My room" (HAS-469): every detector of the room - the resource of the whole
  * application (`SafetyStore`) filtered by the room, no call of its own - with its state, its battery and when it was
- * last heard, and **Mute** after a question in a window over the page, for every member in the rooms of their profile.
+ * last heard, and **Mute** after a question in a window over the page, for every member in the rooms of their profile -
+ * only while the detector is in alarm (HAS-464: a mute of a quiet detector does nothing).
  * **No card for a room without a detector**, nor while the first answer is on its way; a failure before any answer is
  * drawn - nobody knows then whether the room has one. Nothing optimistic: the detectors are read back and only that
  * answer moves the card.
@@ -93,20 +95,22 @@ import { safetyQuestion } from '../../shared/safety/safety-question';
                       {{ failure | displayText }}
                     </p>
                   }
-                  <div class="detector__actions">
-                    <button
-                      matButton
-                      type="button"
-                      data-testid="detector-mute"
-                      [attr.aria-label]="t('safety.mute') + ' ' + row.fullName"
-                      disabledInteractive
-                      [disabled]="busy(row.detector)"
-                      (click)="ask(row.detector)"
-                    >
-                      <mat-icon>notifications_off</mat-icon>
-                      {{ t('safety.mute') }}
-                    </button>
-                  </div>
+                  @if (mutable(row.detector)) {
+                    <div class="detector__actions">
+                      <button
+                        matButton
+                        type="button"
+                        data-testid="detector-mute"
+                        [attr.aria-label]="t('safety.mute') + ' ' + row.fullName"
+                        disabledInteractive
+                        [disabled]="busy(row.detector)"
+                        (click)="ask(row.detector)"
+                      >
+                        <mat-icon>notifications_off</mat-icon>
+                        {{ t('safety.mute') }}
+                      </button>
+                    </div>
+                  }
                 </li>
               }
             </ul>
@@ -144,6 +148,10 @@ export class RoomSafety {
     return detectors === undefined ? this.safety.error() !== undefined : detectors.length > 0;
   });
 
+  protected mutable(detector: Detector): boolean {
+    return canMute(detector);
+  }
+
   protected battery(detector: Detector) {
     return flagOf(detector.batteryLow);
   }
@@ -165,9 +173,9 @@ export class RoomSafety {
     if (id === undefined) {
       return;
     }
-    // the question stands while the detector is still a detector of this room
+    // the question stands while the detector is still a detector of this room, in alarm
     void this.question.ask(id, 'mute', () =>
-      (this.detectors() ?? []).some((row) => row.detector.id === id),
+      (this.detectors() ?? []).some((row) => row.detector.id === id && canMute(row.detector)),
     );
   }
 }

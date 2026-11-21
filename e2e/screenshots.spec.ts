@@ -738,8 +738,10 @@ for (const language of ['en', 'pl'] as const) {
 
       // the question before a mute, a window over the darkened page
       test('safety, the question of a mute', async ({ page }, testInfo) => {
+        // a mute is offered only while the detector sounds (HAS-464)
+        await page.addInitScript(() => localStorage.setItem('mock-fire', 'on'));
         await page.goto('/safety');
-        await page.locator('[data-detector="72"]').getByTestId('detector-mute').click();
+        await page.locator('[data-detector="71"]').getByTestId('detector-mute').click();
         await expect(page.getByRole('dialog').getByTestId('safety-question')).toBeVisible();
         await page.waitForFunction(
           () =>

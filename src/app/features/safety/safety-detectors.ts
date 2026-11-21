@@ -14,6 +14,7 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
 import { DetectorState } from '../../shared/safety/detector-state';
 import {
   FlagValue,
+  canMute,
   commandFailureOf,
   detectorKindText,
   detectorName,
@@ -188,16 +189,18 @@ const FLAG_ROWS: readonly FlagRow[] = [
                         >
                           {{ t('safety.selfTest') }}
                         </button>
-                        <button
-                          matButton="filled"
-                          type="button"
-                          data-testid="detector-mute"
-                          disabledInteractive
-                          [disabled]="busy(detector, 'mute')"
-                          (click)="ask(detector, 'mute')"
-                        >
-                          {{ t('safety.mute') }}
-                        </button>
+                        @if (mutable(detector)) {
+                          <button
+                            matButton="filled"
+                            type="button"
+                            data-testid="detector-mute"
+                            disabledInteractive
+                            [disabled]="busy(detector, 'mute')"
+                            (click)="ask(detector, 'mute')"
+                          >
+                            {{ t('safety.mute') }}
+                          </button>
+                        }
                       </div>
                     </mat-card-content>
                   </mat-card>
@@ -249,6 +252,10 @@ export class SafetyDetectors {
     return (mute?.order ?? 0) >= (test?.order ?? 0) ? (mute ?? test) : test;
   }
 
+  protected mutable(detector: Detector): boolean {
+    return canMute(detector);
+  }
+
   protected busy(detector: Detector, command: SafetyCommand): boolean {
     const id = detector.id ?? -1;
     return (
@@ -262,9 +269,11 @@ export class SafetyDetectors {
     if (id === undefined) {
       return;
     }
-    // the question stands while the detector is still in the answer
+    // the question stands while the detector is still in the answer - a mute only while it is in alarm
     void this.question.ask(id, command, () =>
-      (this.detectors() ?? []).some((candidate) => candidate.id === id),
+      (this.detectors() ?? []).some(
+        (candidate) => candidate.id === id && (command !== 'mute' || canMute(candidate)),
+      ),
     );
   }
 }

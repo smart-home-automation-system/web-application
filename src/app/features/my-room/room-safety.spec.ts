@@ -31,6 +31,13 @@ const READ: SafetyRead = {
   ],
 };
 
+/** The office detector sounding - the one moment a mute does anything (HAS-464). */
+const IN_ALARM: SafetyRead = {
+  detectors: READ.detectors!.map((detector) =>
+    detector.id === 72 ? { ...detector, alarm: on } : detector,
+  ),
+};
+
 describe('RoomSafety', () => {
   let fixture: ComponentFixture<RoomSafety>;
   let safety: FakeResource<SafetyRead | null>;
@@ -77,9 +84,11 @@ describe('RoomSafety', () => {
     answer(safety, READ);
     const shown = (await card())!;
 
-    expect([...shown.querySelectorAll('[data-detector]')].map((row) => row.getAttribute('data-detector'))).toEqual([
-      '72',
-    ]);
+    expect(
+      [...shown.querySelectorAll('[data-detector]')].map((row) =>
+        row.getAttribute('data-detector'),
+      ),
+    ).toEqual(['72']);
     expect(words(shown.querySelector('.detector__name'))).toBe('Smoke detector');
     expect(words(shown.querySelector('[data-testid="detector-state"]'))).toContain('All right');
     expect(words(shown.querySelector('.detector__facts'))).toContain('Battery: Low - replace it');
@@ -87,8 +96,8 @@ describe('RoomSafety', () => {
 
   // a resident presses nothing about a room but its lights, its blinds, its air conditioner - and the mute of its
   // detectors (HAS-469)
-  it('names the mute of each detector as the one thing to press', async () => {
-    answer(safety, READ);
+  it('names the mute of each detector in alarm as the one thing to press', async () => {
+    answer(safety, IN_ALARM);
     const controls = [...(await card())!.querySelectorAll('button, a, input, [tabindex]')].map(
       (control) => control.getAttribute('aria-label') ?? words(control),
     );
@@ -96,8 +105,31 @@ describe('RoomSafety', () => {
     expect(controls).toEqual(['Mute Office smoke detector']);
   });
 
-  it('asks before a mute and sends it for yes alone', async () => {
+  // HAS-464: the base takes a mute of a quiet detector and does nothing - the service refuses it
+  it('offers no mute while the detector is not in alarm', async () => {
     answer(safety, READ);
+
+    expect((await card())!.querySelectorAll('button, a, input, [tabindex]')).toHaveLength(0);
+  });
+
+  it('takes the question of a mute away when the alarm is over', async () => {
+    answer(safety, IN_ALARM);
+    (await card())!.querySelector<HTMLButtonElement>('[data-testid="detector-mute"]')!.click();
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-testid="safety-question"]')).not.toBeNull(),
+    );
+
+    answer(safety, READ);
+    await fixture.whenStable();
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-testid="safety-question"]')).toBeNull(),
+    );
+    expect(sent).toEqual([]);
+  });
+
+  it('asks before a mute and sends it for yes alone', async () => {
+    answer(safety, IN_ALARM);
     (await card())!.querySelector<HTMLButtonElement>('[data-testid="detector-mute"]')!.click();
     await vi.waitFor(() =>
       expect(document.querySelector('[data-testid="safety-question"]')).not.toBeNull(),
@@ -111,7 +143,10 @@ describe('RoomSafety', () => {
 
   it('tells a mute that got no answer as one that may have been carried out', async () => {
     answer(safety, READ);
-    commands.send(SafetyStore.keyOf(72, 'mute'), throwError(() => new ApiError('network', 0)));
+    commands.send(
+      SafetyStore.keyOf(72, 'mute'),
+      throwError(() => new ApiError('network', 0)),
+    );
 
     expect(words((await card())!.querySelector('[data-testid="detector-failure"]'))).toBe(
       'The command got no answer - it may have been carried out all the same.',

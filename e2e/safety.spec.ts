@@ -60,7 +60,12 @@ test('asks before a self test, sends it for yes, and words a second command with
   await question.getByTestId('confirm-yes').click();
   await expect(question).toHaveCount(0);
 
-  await office.getByTestId('detector-mute').click();
+  // the second self test once the first was read back (HAS-464: a mute is offered only while the detector sounds)
+  await expect(office.getByTestId('detector-self-test')).not.toHaveAttribute(
+    'aria-disabled',
+    'true',
+  );
+  await office.getByTestId('detector-self-test').click();
   await page.getByRole('dialog').getByTestId('confirm-yes').click();
   await expect(office.getByTestId('detector-failure')).toHaveText(
     'The detector was commanded a moment ago - wait a minute.',
@@ -116,7 +121,9 @@ test.describe('a resident', () => {
     await expect(banner.getByRole('button')).toHaveCount(0);
   });
 
+  // a mute is offered only while the detector sounds (HAS-464): the loft in alarm
   test('mutes a smoke detector of their room after a question', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('mock-fire', 'loft'));
     await page.goto('/room');
     const card = page.getByTestId('room-safety');
 
@@ -126,7 +133,15 @@ test.describe('a resident', () => {
     await card.getByTestId('detector-mute').click();
     await page.getByRole('dialog').getByTestId('confirm-yes').click();
 
-    await expect(card.getByTestId('detector-state')).toHaveText(/Muted/);
+    await expect(page.getByTestId('fire-notice')).toContainText('muted');
+  });
+
+  test('is offered no mute of a detector that does not sound', async ({ page }) => {
+    await page.goto('/room');
+    const card = page.getByTestId('room-safety');
+
+    await expect(card.locator('[data-detector="74"]')).toBeVisible();
+    await expect(card.getByTestId('detector-mute')).toHaveCount(0);
   });
 
   test('is not offered the safety page', async ({ page }) => {

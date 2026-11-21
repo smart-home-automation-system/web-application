@@ -2365,8 +2365,10 @@ export const en = {
     error: {
       unknownMember: 'Your profile is not a member the household registry knows.',
       openTooSoon: 'The gate was commanded a moment ago - wait a few seconds.',
-      deviceFailed: 'The Shelly of the gate did not take the command - the gate may have moved all the same.',
-      gateUnavailable: 'The gate cannot be commanded now - its relay does not switch itself off, or it is not known.',
+      deviceFailed:
+        'The Shelly of the gate did not take the command - the gate may have moved all the same.',
+      gateUnavailable:
+        'The gate cannot be commanded now - its relay does not switch itself off, or it is not known.',
       registryUnavailable: 'The household registry could not be read - try again in a moment.',
       invalidRange: 'The service refused this period.',
       notFoundGate: 'This garage gate is no longer in the registry.',
@@ -2480,6 +2482,8 @@ export const en = {
       registryUnavailable: 'The device registry could not be read yet - try again in a moment.',
       notFoundRoom: 'The safety service does not know this room.',
       invalidRange: 'The service refused this period.',
+      commandNotSent: 'The command could not be sent to the base station - try again.',
+      nothingToMute: 'The detector is not in alarm any more - there is nothing to mute.',
     },
     commandFailed: 'The command got no answer - it may have been carried out all the same.',
   },
@@ -2623,7 +2627,8 @@ export const en = {
       hikvisionSerialHint:
         'As its System/deviceInfo gives it, for example DS-KV0000-WE1(B)0120200101RRA00000001',
       xsenseStation: 'Base station',
-      xsenseStationHint: 'Its serial: SBS50 and 8 characters 0-9 and A-F, for example SBS5000000001',
+      xsenseStationHint:
+        'Its serial: SBS50 and 8 characters 0-9 and A-F, for example SBS5000000001',
       xsenseDeviceId: 'Id of the detector',
       xsenseDeviceIdHint: 'As the base gives it: 8 characters 0-9 and A-F, for example 00000006',
       optional: 'Optional',
