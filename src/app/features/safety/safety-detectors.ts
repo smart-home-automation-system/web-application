@@ -7,6 +7,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { CommandState } from '../../core/api/device-commands';
 import { Detector, SafetyCommand, SafetyRead } from '../../data-access/safety/safety-api';
 import { SafetyStore } from '../../data-access/safety/safety-store';
+import { Ticker } from '../../core/time/ticker';
 import { MessageKey } from '../../i18n/messages';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
@@ -15,12 +16,12 @@ import { DetectorState } from '../../shared/safety/detector-state';
 import {
   FlagValue,
   canMute,
-  commandFailureOf,
   detectorKindText,
   detectorName,
   detectorsByFloor,
   detectorsOf,
   flagOf,
+  shownFailureOf,
 } from '../../shared/safety/safety-labels';
 import { safetyQuestion } from '../../shared/safety/safety-question';
 
@@ -169,12 +170,10 @@ const FLAG_ROWS: readonly FlagRow[] = [
                             {{ t('safety.detector.notReacted') }}
                           </p>
                         }
-                        @if (lastCommandOf(detector); as command) {
-                          @if (command.error) {
-                            <p class="failure" role="alert" data-testid="detector-failure">
-                              {{ failureOf(command) | displayText }}
-                            </p>
-                          }
+                        @if (failureOf(detector); as failure) {
+                          <p class="failure" role="alert" data-testid="detector-failure">
+                            {{ failure | displayText }}
+                          </p>
                         }
                       </div>
                       <!-- the commands in the bottom right corner, after a question in a window over the page -->
@@ -217,6 +216,7 @@ const FLAG_ROWS: readonly FlagRow[] = [
 })
 export class SafetyDetectors {
   private readonly store = inject(SafetyStore);
+  private readonly ticker = inject(Ticker);
   private readonly question = safetyQuestion();
 
   /** What `safety-service` last answered; `undefined` until the first answer. */
@@ -225,7 +225,6 @@ export class SafetyDetectors {
   protected readonly FLAG_ROWS = FLAG_ROWS;
   protected readonly nameOf = detectorName;
   protected readonly kindOf = (detector: Detector) => detectorKindText(detector.kind);
-  protected readonly failureOf = commandFailureOf;
 
   private readonly detectors = computed(() => detectorsOf(this.read()));
   protected readonly floors = computed(() => {
@@ -245,7 +244,12 @@ export class SafetyDetectors {
   }
 
   /** The newer of the two commands of the detector - what the card tells. */
-  protected lastCommandOf(detector: Detector): CommandState | undefined {
+  /** How the last command of the detector failed, in words - a minute to wait only while it lasts. */
+  protected failureOf(detector: Detector) {
+    return shownFailureOf(this.lastCommandOf(detector), this.ticker.now());
+  }
+
+  private lastCommandOf(detector: Detector): CommandState | undefined {
     const id = detector.id ?? -1;
     const mute = this.store.commands.stateOf(SafetyStore.keyOf(id, 'mute'));
     const test = this.store.commands.stateOf(SafetyStore.keyOf(id, 'selfTest'));

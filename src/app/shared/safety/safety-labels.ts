@@ -32,6 +32,28 @@ export function describeSafetyError(error: ApiError): DisplayText {
   return named ? { key: named[1] } : describeApiError(error);
 }
 
+/**
+ * One command per detector a minute (`DetectorCommands` of `safety-service`, a copy - change both together): a
+ * `COMMAND_TOO_SOON` is true for that long at most.
+ */
+export const SAFETY_COMMAND_EVERY_MS = 60_000;
+
+/**
+ * The failure of the last command to show on a card, `undefined` for none: a `COMMAND_TOO_SOON` goes once its minute
+ * is over (HAS-464 - "wait a minute" stood on a card for hours); every other failure stays until the next command.
+ */
+export function shownFailureOf(
+  state: CommandState<unknown> | undefined,
+  now: number,
+): DisplayText | undefined {
+  if (state?.error === undefined) {
+    return undefined;
+  }
+  const waited =
+    state.error.hasCode('COMMAND_TOO_SOON') && now - (state.at ?? now) >= SAFETY_COMMAND_EVERY_MS;
+  return waited ? undefined : commandFailureOf(state);
+}
+
 /** A failed command in words: one that got no answer may have been carried out all the same. */
 export function commandFailureOf(state: CommandState<unknown>): DisplayText {
   const error = state.error;

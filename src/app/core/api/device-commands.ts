@@ -17,6 +17,8 @@ export interface CommandState<A = void> {
    * has since made old (HAS-252, found in review).
    */
   readonly order?: number;
+  /** When the outcome came, epoch milliseconds - an outcome true only for a while (a minute to wait) ends by it. */
+  readonly at?: number;
 }
 
 // shared by every tracker, so that a room command and a command to one of its blinds compare
@@ -50,10 +52,10 @@ export class DeviceCommands<K, A = void> {
     let answer: A | undefined;
     const done = (state: CommandState<A>) => {
       if (readBack === undefined) {
-        this.set(key, state);
+        this.set(key, { ...state, at: Date.now() });
         return;
       }
-      void readBack().then(() => this.set(key, state));
+      void readBack().then(() => this.set(key, { ...state, at: Date.now() }));
     };
     call.subscribe({
       next: (value) => (answer = value),

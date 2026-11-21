@@ -1116,6 +1116,10 @@ e2e/              # Playwright tests
   - The codes `NOT_FOUND_DETECTOR`, `COMMAND_TOO_SOON`, `INVALID_AUTOMATION`, `REGISTRY_UNAVAILABLE`, `NOT_FOUND_ROOM`,
     `INVALID_RANGE`, `COMMAND_NOT_SENT`, `NOTHING_TO_MUTE` (HAS-464) have texts in `SAFETY_ERROR_TEXTS` (its spec lists them); `SourcesStrip` takes `describeWith`
     since this task, for the 503 `REGISTRY_UNAVAILABLE` of the store.
+  - **A minute to wait goes with its minute** (HAS-464 - "wait a minute" stood on a card for hours): `DeviceCommands` dates
+    every outcome (`at`), and `shownFailureOf` drops a `COMMAND_TOO_SOON` `SAFETY_COMMAND_EVERY_MS` (60 s, a copy of the one
+    command per detector a minute of `safety-service` - change both together) after it, by the `Ticker`; every other failure
+    of a command stays until the next one - on the safety page, My room and the banner alike.
 - **The safety page** (HAS-469, `features/safety/`, the administrator's; route `/safety` after the air conditioning,
   domain colour `safety`; the photo `safety` - a warm hall and living room the owner generated, tones 40-245 for the
   contrast of its glass, see `public/backgrounds/README.md`). Two

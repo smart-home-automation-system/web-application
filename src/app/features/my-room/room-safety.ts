@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { Ticker } from '../../core/time/ticker';
 import { Detector } from '../../data-access/safety/safety-api';
 import { SafetyStore } from '../../data-access/safety/safety-store';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
@@ -13,12 +14,12 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { HouseAgePipe } from '../../shared/house-age/house-age.pipe';
 import { DetectorState } from '../../shared/safety/detector-state';
 import {
-  commandFailureOf,
   describeSafetyError,
   detectorName,
   detectorsOfRoom,
   canMute,
   flagOf,
+  shownFailureOf,
 } from '../../shared/safety/safety-labels';
 import { safetyQuestion } from '../../shared/safety/safety-question';
 
@@ -128,6 +129,7 @@ export class RoomSafety {
   readonly room = input.required<string>();
 
   private readonly store = inject(SafetyStore);
+  private readonly ticker = inject(Ticker);
   private readonly question = safetyQuestion();
   protected readonly safety = this.store.safety;
   protected readonly describeError = describeSafetyError;
@@ -158,7 +160,7 @@ export class RoomSafety {
 
   protected failureOf(detector: Detector) {
     const state = this.store.commands.stateOf(SafetyStore.keyOf(detector.id ?? -1, 'mute'));
-    return state?.error === undefined ? undefined : commandFailureOf(state);
+    return shownFailureOf(state, this.ticker.now());
   }
 
   protected busy(detector: Detector): boolean {

@@ -269,6 +269,29 @@ describe('SafetyPage', () => {
     );
   });
 
+  // HAS-464: "wait a minute" stood on a card for hours - it is true for the minute alone
+  it('takes a minute to wait away once the minute is over, and keeps every other failure', async () => {
+    answer(safety, READ);
+    commands.send(
+      SafetyStore.keyOf(71, 'mute'),
+      throwError(
+        () => new ApiError('client', 429, [{ message: 'too soon', code: 'COMMAND_TOO_SOON' }]),
+      ),
+    );
+    commands.send(
+      SafetyStore.keyOf(72, 'selfTest'),
+      throwError(() => new ApiError('network', 0)),
+    );
+    expect((await detector(71)).querySelector('[data-testid="detector-failure"]')).not.toBeNull();
+
+    vi.setSystemTime(Date.now() + 60_000);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await fixture.whenStable();
+
+    expect((await detector(71)).querySelector('[data-testid="detector-failure"]')).toBeNull();
+    expect((await detector(72)).querySelector('[data-testid="detector-failure"]')).not.toBeNull();
+  });
+
   it('tells the base: not connected, its network, its signal and that it is silent', async () => {
     answer(safety, READ);
     answer(status, STATUS);
