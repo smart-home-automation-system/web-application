@@ -93,6 +93,7 @@ describe('gate labels', () => {
   it('words where an opening came from', () => {
     expect(openingSourceText('screen')).toEqual({ key: 'gate.driveway.fromScreen' });
     expect(openingSourceText('dashboard')).toEqual({ key: 'gate.driveway.fromDashboard' });
+    expect(openingSourceText('panel')).toEqual({ key: 'gate.driveway.fromPanel' });
     expect(openingSourceText('remote')).toEqual({ literal: 'remote' });
   });
 
@@ -113,7 +114,7 @@ describe('gate labels', () => {
     });
 
     // the names from outside stay beside the words, never inside them
-    it('words a command with its gate and who pressed, the screen without a member', () => {
+    it('words a command with its gate and who pressed, the screen and the panel without a member', () => {
       expect(
         eventLine(
           { kind: 'command', source: 'dashboard', member: 'Aurelia', outcome: 'pulsed', gate: 31 },
@@ -122,6 +123,10 @@ describe('gate labels', () => {
       ).toEqual({ what: { key: 'gate.event.pulsed' }, gate: 'Left', member: 'Aurelia' });
       expect(eventLine({ kind: 'command', source: 'screen', outcome: 'opened' }, names)).toEqual({
         what: { key: 'gate.event.openedScreen' },
+      });
+      // HAS-482: the entrance panel opens with no member, in its own words
+      expect(eventLine({ kind: 'command', source: 'panel', outcome: 'opened' }, names)).toEqual({
+        what: { key: 'gate.event.openedPanel' },
       });
       expect(
         eventLine(
