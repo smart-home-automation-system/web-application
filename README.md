@@ -114,7 +114,7 @@ dashboards:
 - **Gate** (HAS-454, every member, `/gate` - in the menu of everyone right after My room, the page a push of a
   ring opens; from `gate-service` >= 0.10.0): **the driveway gate** with "Open the gate" - sent at once, with no
   question, as the button of the indoor screen, the member of the profile with it -, when and from where it was last
-  opened (the indoor screen, or the application with who), the last ring and whether the door station is connected; a
+  opened (the indoor screen, the entrance panel at the door - since HAS-482 -, or the application with who), the last ring and whether the door station is connected; a
   Shelly that does not answer or a relay that does not switch itself off is told. **The garage gates**, each with its
   state and since when - "Closed since 11:14", "Open for 35 min", "Not known" (a missing state is never read as closed)
   - and **one button** whose label follows the state: "Open", "Close" or "Run the gate", one pulse sent at once and
@@ -122,7 +122,7 @@ dashboards:
   did not answer the last pulse. **The alarms** of the garage gates as the service judges them - open in the cold,
   while nobody is at home (alarms), open for long (a warning). **The rings and openings** of 7 or 30 days, the newest
   twenty first and twenty more with every "Show more": the rings and ended calls, the unlocks from the screen, the
-  openings and pulses with who pressed, the opening and closing of a garage gate with how long it stood open. No
+  openings from the entrance panel, the openings and pulses with who pressed, the opening and closing of a garage gate with how long it stood open. No
   picture - the door station gives none.
 - **Safety** (HAS-469, the administrator's, `/safety` after the air conditioning; from `safety-service` >= 0.1.0 for the
   detectors, >= 0.2.0 for the alarms, >= 0.3.0 for the base, >= 0.4.0 for the commands, >= 0.5.0 for the reactions; gateway
