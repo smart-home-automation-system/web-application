@@ -1064,6 +1064,10 @@ e2e/              # Playwright tests
     row of three columns shared by the tile - the name, how long an open gate stands open, the state at the right
     edge, the column as wide as the longest word of a state, so the time never moves (the owner on the preview); the
     last opening of the driveway gate quieter at the bottom of the tile (`domain-tile--column`, `margin-top: auto`).
+  - **The entrance panel at the door** (HAS-482, epic HAS-479, `gate-service` >= 0.11.0): the source `panel` is "from
+    the entrance panel" / "z panelu w wejściu" in the last opening (`openingSourceText`) and "Driveway gate opened from
+    the entrance panel" on the timeline (`commandKey`, no member - as the screen); the Polish screen is "z panelu w domu"
+    there too since, so the two panels are never one word. A source this version does not know is printed as it came.
   - **The domain colour `gate`** (the slate of anthracite steel, `--app-domain-gate`) and the photo `gate` (the front of
     a house with its sliding gate and two garage doors, tones `50-255`). The error codes of `GateError` are worded in
     `GATE_ERROR_TEXTS` (its spec lists them).

@@ -30,7 +30,10 @@ export interface GateRing {
   readonly button?: string;
 }
 
-/** The last opening of the driveway gate: `screen` (the indoor screen) or `dashboard`, and who opened it there. */
+/**
+ * The last opening of the driveway gate: `screen` (the indoor screen), `dashboard` - with who opened it there - or
+ * `panel` (the entrance panel at the door, gate-service >= 0.11.0, HAS-482).
+ */
 export interface GateOpening {
   readonly at?: string;
   readonly source?: string;
