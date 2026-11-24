@@ -4,7 +4,7 @@ import { TranslocoService } from '@jsverse/transloco';
 import { LanguageStore } from '../../core/i18n/language-store';
 import { EnergyApi, EnergyMetric } from '../../data-access/energy/energy-api';
 import { MessageKey } from '../../i18n/messages';
-import { ChartLine, summarise, toLine } from '../../shared/history-chart/chart-data';
+import { ChartColor, ChartLine, summarise, toLine } from '../../shared/history-chart/chart-data';
 import {
   CombinedHistory,
   HistoryPeriod,
@@ -15,7 +15,15 @@ import {
 interface LineSpec {
   readonly metric: EnergyMetric;
   readonly name: MessageKey;
-  readonly color: 1 | 2 | 5;
+  readonly color: ChartColor;
+}
+
+/** A level drawn across the chart as a dashed line, never in the numbers under it. */
+interface ThresholdSpec {
+  readonly key: string;
+  readonly value: number;
+  readonly name: MessageKey;
+  readonly color: ChartColor;
 }
 
 /** One chart of the energy page: what it draws and how its numbers read. */
@@ -31,13 +39,23 @@ export interface EnergyChartSpec {
   /** A sentence under the chart, for what the picture cannot say. */
   readonly note?: MessageKey;
   readonly lines: readonly LineSpec[];
+  /**
+   * Dashed lines across the chart, drawn whenever a line has a reading - never a band alone (HAS-507: the band of
+   * the grid frequency of energy-service, `GRID_FREQUENCY_BAND`).
+   */
+  readonly thresholds?: readonly ThresholdSpec[];
 }
+
+/** The band of the grid frequency of energy-service (`energy.frequency.low` / `high`, HAS-503) - a copy. */
+export const GRID_FREQUENCY_BAND = { low: 49.8, high: 50.2 } as const;
 
 /**
  * The charts of the energy page (HAS-341), in its order: the powers of the house - the panels, the
  * house and the grid, the grid below zero while the house returns energy - and the state of charge
- * of the battery. Every line is the average of a bucket; a sum (`pv-power`, `house-load`) has
- * nothing else.
+ * of the battery in a row; the voltage and the current of each phase of the grid meter and the grid
+ * frequency with its band (HAS-507, owner 2026-11-24) in the next. Every line is the average of a
+ * bucket; a sum (`pv-power`, `house-load`) has nothing else. The currents and the frequency are
+ * stored since energy-service 0.20.0: a period before it has no readings.
  */
 export const ENERGY_CHARTS: readonly EnergyChartSpec[] = [
   {
@@ -63,6 +81,57 @@ export const ENERGY_CHARTS: readonly EnergyChartSpec[] = [
     decimals: 0,
     bounds: { min: 0, max: 100 },
     lines: [{ metric: 'battery-soc', name: 'energy.charts.battery.soc', color: 1 }],
+  },
+  {
+    key: 'voltage',
+    title: 'energy.charts.voltage.title',
+    label: 'energy.charts.voltage.label',
+    icon: 'electric_meter',
+    unit: 'V',
+    decimals: 1,
+    lines: [
+      { metric: 'grid-voltage-a', name: 'energy.charts.phaseA', color: 1 },
+      { metric: 'grid-voltage-b', name: 'energy.charts.phaseB', color: 2 },
+      { metric: 'grid-voltage-c', name: 'energy.charts.phaseC', color: 5 },
+    ],
+  },
+  {
+    key: 'current',
+    title: 'energy.charts.current.title',
+    label: 'energy.charts.current.label',
+    icon: 'electric_bolt',
+    unit: 'A',
+    decimals: 1,
+    bounds: { min: 0 },
+    lines: [
+      { metric: 'grid-current-a', name: 'energy.charts.phaseA', color: 1 },
+      { metric: 'grid-current-b', name: 'energy.charts.phaseB', color: 2 },
+      { metric: 'grid-current-c', name: 'energy.charts.phaseC', color: 5 },
+    ],
+  },
+  {
+    key: 'frequency',
+    title: 'energy.charts.frequency.title',
+    label: 'energy.charts.frequency.label',
+    icon: 'airwave',
+    unit: 'Hz',
+    decimals: 2,
+    note: 'energy.charts.frequency.note',
+    lines: [{ metric: 'grid-frequency', name: 'energy.charts.frequency.frequency', color: 1 }],
+    thresholds: [
+      {
+        key: 'low',
+        value: GRID_FREQUENCY_BAND.low,
+        name: 'energy.charts.frequency.low',
+        color: 7,
+      },
+      {
+        key: 'high',
+        value: GRID_FREQUENCY_BAND.high,
+        name: 'energy.charts.frequency.high',
+        color: 7,
+      },
+    ],
   },
 ];
 
@@ -104,17 +173,36 @@ export function energyChart(spec: EnergyChartSpec, period: HistoryPeriod): Energ
     });
   });
 
+  const combined = combinedHistory(histories);
   return {
     spec,
-    ...combinedHistory(histories),
-    lines: computed(() =>
-      measured().map(({ line, name, points }): ChartLine => ({
+    ...combined,
+    lines: computed(() => {
+      const drawn = measured().map(({ line, name, points }): ChartLine => ({
         key: line.metric,
         name,
         color: line.color,
         points,
-      })),
-    ),
+      }));
+      const axis = combined.axis();
+      if (drawn.length === 0 || axis === undefined) {
+        return drawn;
+      }
+      // the language is read by measured() above
+      return [
+        ...drawn,
+        ...(spec.thresholds ?? []).map((threshold): ChartLine => ({
+          key: threshold.key,
+          name: transloco.translate(threshold.name),
+          color: threshold.color,
+          dashed: true,
+          points: [
+            [axis.from, threshold.value],
+            [axis.to, threshold.value],
+          ],
+        })),
+      ];
+    }),
     facts: computed(() =>
       measured().flatMap(({ line, name, points }): EnergyChartFact[] => {
         const summary = summarise(points);

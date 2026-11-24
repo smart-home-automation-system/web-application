@@ -1453,6 +1453,17 @@ e2e/              # Playwright tests
     `localStorage['mock-generator']` = `on` - 51.02 Hz and the frequency episode among the alarms; otherwise 50.01 Hz. The
     tile is three calls (flows, battery, status) like the heating tile, the flows its own, the other two told in
     `tileFailures`.
+  - **The charts of the grid** (HAS-507, `energy-service` >= 0.20.0 / HAS-506): `ENERGY_CHARTS` is the power and the
+    battery, then the voltage and the current of the three phases of the meter (`grid-voltage-a|b|c`,
+    `grid-current-a|b|c`, Phase A / B / C in the colours 1, 2, 5) and the grid frequency (`grid-frequency`, the phase
+    furthest from 50 Hz) - **the power and the battery in a row, the three of the grid in the next** (owner 2026-11-24: six
+    columns from 1180 px of the page, a card of the pair three, a card of the three two; between 900 and 1180 px the
+    frequency across the row under the other two). The frequency draws the band as two red dashed lines
+    (`thresholds` of `EnergyChartSpec`, drawn always while a line has a reading - never a band alone), `GRID_FREQUENCY_BAND`
+    **a copy** of `energy.frequency.low` / `high` (49.8 / 50.2 Hz) of energy-service: change both together. The
+    currents and the frequency are stored since 2026-11-24 18:10 - a period before that has no readings. The mock
+    (`energyBucket` of `history.fixtures.ts`): the phases share the load of the grid 35 / 45 / 20 %, the frequency 50 Hz
+    with a breath of hundredths, 51.0 Hz for the last ten hours under `mock-generator`.
   - **The days are bars by category** (`BarsChart` of `shared/history-chart/`, the counterpart of `HistoryChart`
     through the same `ChartEngine`): the closed days up to yesterday, the yield of each inverter apart (the
     service leaves `production` out when one of them is not known - the days before the SOFAR was read), a value

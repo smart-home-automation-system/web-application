@@ -88,7 +88,9 @@ dashboards:
   category of the service in words and a colour, the share of the house load (the days from the fourth on paler),
   the mean house load of the last days as a dashed line across, the expected power of the next 48 hours and the
   performance ratio of each inverter; then the powers and the state of charge over 24 hours, 7
-  or 30 days, the closed days as bars, and **the net-metering of the billing year** ("opusty") - per month
+  or 30 days in a row, and under them **the voltage, the current and the frequency of the grid** (HAS-507, from
+  `energy-service` 0.20.0) - the three phases of the meter, the frequency with the band of 49.8 - 50.2 Hz as dashed
+  lines (outside it the inverters do not connect) - in a row of three; the closed days as bars, and **the net-metering of the billing year** ("opusty") - per month
   what was returned, credited at the ratio, taken, covered by the credit and bought, and the credit "in the
   grid" now - all in kWh, never money; **the meter of Tauron** (HAS-417, from `energy-service` 0.17.0): every closed
   day of 7 or 30 the import and the export as the meter of the operator counts them (read from the eLicznik portal the
@@ -693,7 +695,7 @@ Endpoints used today:
 | `GET`, `PUT` | `/home/energy/automation` | The switch and the settings of the charge before a planned outage, written whole and read again (energy, every 60 s); `INVALID_AUTOMATION` has a text |
 | `GET` | `/home/energy/outages/planned` | The outages Tauron announces for the house, with the planned start of the charge (energy, every 60 s) |
 | `PUT` | `/home/energy/outages/planned/{id}/skip`, `.../unskip` | No automatic charge for an outage, or allowed again (energy) |
-| `GET` | `/home/energy/history?metric=&from=&to=` | `pv-power`, `house-load`, `grid-power` and `battery-soc` over the period of the page (energy, every 3 min); `UNKNOWN_METRIC` and `INVALID_RANGE` have texts |
+| `GET` | `/home/energy/history?metric=&from=&to=` | `pv-power`, `house-load`, `grid-power` and `battery-soc` over the period of the page (energy, every 3 min); since `energy-service` 0.20.0 also `grid-voltage-a|b|c`, `grid-current-a|b|c` and `grid-frequency` (HAS-507 - the currents and the frequency stored since 2026-11-24, a period before has no readings); `UNKNOWN_METRIC` and `INVALID_RANGE` have texts |
 | `GET` | `/home/energy/days?from=&to=` | The closed days up to yesterday, 7 or 30 (energy, every 15 min) - since `energy-service` 0.17.0 with `elicznikImport` / `elicznikExport`, the meter of Tauron (HAS-417: the days card and the card of the meter, two calls) |
 | `GET` | `/home/energy/elicznik?from=&to=` | One day of the meter of Tauron hour by hour, with the registers of the meter (energy: the window of a day, every 15 min). Needs `energy-service` 0.17.0 |
 | `GET` | `/home/energy/months?year=` | The net-metering of a billing year (energy, every 15 min); since `energy-service` 0.17.0 the months of the meter of Tauron (`elicznik*`) settled beside it |

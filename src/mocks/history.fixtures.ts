@@ -1,6 +1,7 @@
 import { RoomHistory } from '../app/data-access/heating/heating-api';
 import { WaterHistory } from '../app/data-access/water/water-api';
 import { WeatherHistory } from '../app/data-access/weather/weather-api';
+import { onGenerator } from './energy.fixtures';
 import { houseTime } from './house-time';
 
 /** A refusal of a range, as the services answer it: a 400 with the reason, without a code. */
@@ -347,7 +348,30 @@ const ENERGY_METRICS = [
   'house-load',
   'battery-power',
   'battery-soc',
+  // the grid meter (HAS-506)
+  'grid-voltage-a',
+  'grid-voltage-b',
+  'grid-voltage-c',
+  'grid-current-a',
+  'grid-current-b',
+  'grid-current-c',
+  'grid-frequency',
 ] as const;
+
+/** How the house shares its load among the phases of the grid meter: B the heaviest, invented. */
+const PHASE_SHARE = { a: 0.35, b: 0.45, c: 0.2 } as const;
+
+/**
+ * The grid frequency: 50 Hz with a breath of a few hundredths; on the generator of Tauron
+ * (`mock-generator`, HAS-504) 51.0 Hz for the last ten hours - the day of 2026-11-24.
+ */
+function gridFrequency(middle: number): { avg: number; min: number; max: number } {
+  const current = wallClock(houseTime(new Date(), 0).slice(0, 19));
+  if (onGenerator() && middle >= current - 10 * HOUR) {
+    return spread(51.0, 0.02);
+  }
+  return spread(50 + 0.015 * Math.sin(middle / 1300), 0.03);
+}
 
 /** What the panels give at a moment of the day: nothing at night, a bell around 12:30. */
 function sun(seconds: number, peak: number): number {
@@ -384,6 +408,24 @@ function energyBucket(metric: (typeof ENERGY_METRICS)[number], at: number, width
       return spread(soc, 0.5);
     case 'grid-power':
       return spread(house - solax - sofar + battery, 60);
+    case 'grid-frequency':
+      return gridFrequency(middle);
+    case 'grid-voltage-a':
+    case 'grid-voltage-b':
+    case 'grid-voltage-c':
+    case 'grid-current-a':
+    case 'grid-current-b':
+    case 'grid-current-c': {
+      const phase = PHASE_SHARE[metric.slice(-1) as keyof typeof PHASE_SHARE];
+      // the grid carries what the panels and the battery do not, never less than nothing on a phase
+      const watts = Math.abs(house - solax - sofar + battery) * phase;
+      if (metric.startsWith('grid-voltage')) {
+        return spread(236 - watts / 250, 1.2);
+      }
+      // a current is never below nothing
+      const current = spread(watts / 230, watts / 2300 + 0.1);
+      return { ...current, min: Math.max(0, current.min) };
+    }
   }
 }
 

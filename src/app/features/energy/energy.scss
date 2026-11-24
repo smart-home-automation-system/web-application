@@ -75,6 +75,33 @@ app-energy-sources-strip {
   .charts > app-energy-settlement {
     grid-column: 1 / -1;
   }
+
+  // the frequency of the grid across the row of two under the voltage and the current (HAS-507)
+  .charts > app-energy-chart-card:has([data-testid='chart-frequency']) {
+    grid-column: 1 / -1;
+  }
+}
+
+// the power and the battery in a row, the voltage, the current and the frequency of the grid in the next (HAS-507,
+// owner 2026-11-24): six columns - a card of a pair takes three, a card of the three two
+@container (min-width: 1180px) {
+  .charts {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .charts > * {
+    grid-column: span 3;
+  }
+
+  .charts > app-energy-chart-card:has([data-testid='chart-voltage']),
+  .charts > app-energy-chart-card:has([data-testid='chart-current']),
+  .charts > app-energy-chart-card:has([data-testid='chart-frequency']) {
+    grid-column: span 2;
+  }
+
+  .charts > app-energy-settlement {
+    grid-column: 1 / -1;
+  }
 }
 
 @container (min-width: 1180px) {
