@@ -211,9 +211,70 @@ describe('Energy', () => {
     answer(status, { sources: [], grid: { state: 'lost', since: '2026-11-02T14:02:18' } });
     sources = await card('sources');
     expect(words(sources.querySelector('[data-testid="grid-state"]'))).toBe(
-      'power_off The grid is lost - the house runs on the battery',
+      'The grid is lost - the house runs on the battery',
     );
-    expect(sources.querySelector('.tile__lead--alert')).not.toBeNull();
+    expect(sources.querySelector('.source__value--alert')).not.toBeNull();
+  });
+
+  // HAS-504: a grid present at 51 Hz is a generator, likely - the frequency on its alarm and on the meter card, nothing
+  // of it on the strip of the sources (owner, 2026-11-24: the alarm says it)
+  it('shows the frequency on its alarm and on the meter card, in red', async () => {
+    answer(status, { sources: [], grid: { state: 'present', frequency: 51.02, frequencyOff: true } });
+    answer(grid, { phases: {}, stale: false });
+    answer(alerts, [{ source: 'meter', kind: 'frequency', openedAt: '2026-11-24T07:05:00' }]);
+
+    expect(words((await card('alerts')).querySelector('[data-alert="frequency"]'))).toBe(
+      'Grid frequency off - a generator? Grid meter 51.02 Hz since 24 Nov 2026, 07:05',
+    );
+    expect((await card('sources')).querySelector('[data-testid="grid-frequency-off"]')).toBeNull();
+    const meter = await card('grid');
+    expect(words(meter.querySelector('[data-field="frequency"]'))).toBe('Frequency off the band 51.02 Hz');
+    expect(meter.querySelector('[data-field="frequency"]')?.classList).toContain('row--off');
+  });
+
+  // the frequency is the status call's: its failure is told on the meter card too
+  it('tells a failure of the status call on the meter card, apart from the meter', async () => {
+    answer(grid, { phases: {}, stale: false });
+    fail(status, new ApiError('server', 503));
+
+    const meter = await card('grid');
+    expect(meter.querySelector('[data-field="total"]')).not.toBeNull();
+    expect(meter.querySelector('app-api-error-strip .strip')).not.toBeNull();
+  });
+
+  it('shows a frequency inside the band plainly and one not known as not known', async () => {
+    answer(status, { sources: [], grid: { state: 'present', frequency: 50.01, frequencyOff: false } });
+    answer(grid, { phases: {}, stale: false });
+    let meter = await card('grid');
+    expect(words(meter.querySelector('[data-field="frequency"]'))).toBe('Frequency 50.01 Hz');
+    expect(meter.querySelector('[data-field="frequency"]')?.classList).not.toContain('row--off');
+
+    answer(status, { sources: [], grid: { state: null, frequencyOff: null } });
+    meter = await card('grid');
+    expect(words(meter.querySelector('[data-field="frequency"]'))).toBe('Frequency not known');
+  });
+
+  // HAS-504 (owner, 2026-11-24): the newest five outages of the year, five more with every "Show more"
+  it('shows the newest five outages and five more with every press', async () => {
+    answerQuery(
+      outages,
+      outagesAsked(),
+      Array.from({ length: 12 }, (_, day) => ({
+        startedAt: `2026-10-${String(day + 10).padStart(2, '0')}T08:00:00`,
+        endedAt: `2026-10-${String(day + 10).padStart(2, '0')}T08:10:00`,
+      })),
+    );
+    const card_ = await card('outages');
+    expect(card_.querySelectorAll('[data-testid="outage"]')).toHaveLength(5);
+    expect(words(card_.querySelector('.events__more'))).toContain('5 of 12');
+
+    (card_.querySelector('[data-testid="outages-more"]') as HTMLElement).click();
+    await fixture.whenStable();
+    expect(card_.querySelectorAll('[data-testid="outage"]')).toHaveLength(10);
+    (card_.querySelector('[data-testid="outages-more"]') as HTMLElement).click();
+    await fixture.whenStable();
+    expect(card_.querySelectorAll('[data-testid="outage"]')).toHaveLength(12);
+    expect(card_.querySelector('[data-testid="outages-more"]')).toBeNull();
   });
 
   it('shows each inverter in its card from the one call, in the words of the service', async () => {

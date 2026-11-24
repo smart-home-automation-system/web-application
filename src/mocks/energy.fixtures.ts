@@ -13,6 +13,7 @@ import {
   GridReading,
   Inverter,
 } from '../app/data-access/energy/energy-api';
+import { readText } from '../app/core/storage/browser-storage';
 import { houseTime } from './house-time';
 import type { MockReply } from './handlers';
 
@@ -24,6 +25,13 @@ import type { MockReply } from './handlers';
  */
 const at = (now: Date, secondsAgo: number) => houseTime(now, secondsAgo).slice(0, 26);
 
+/**
+ * HAS-504: `localStorage['mock-generator']` = `on` puts the mock house on a generator of Tauron - the grid
+ * at 51.02 Hz, `frequencyOff` true and the frequency episode among the open alarms (the day of
+ * 2026-11-24); otherwise the grid holds 50.01 Hz.
+ */
+export const onGenerator = (): boolean => readText('mock-generator') === 'on';
+
 export function energyStatus(fresh: boolean, now: Date = new Date()): EnergyStatus {
   if (fresh) {
     // after a start nothing has been read: reachable null, the grid not known
@@ -32,7 +40,7 @@ export function energyStatus(fresh: boolean, now: Date = new Date()): EnergyStat
         source,
         reachable: null,
       })),
-      grid: { state: null },
+      grid: { state: null, frequencyOff: null },
     };
   }
   return {
@@ -42,7 +50,12 @@ export function energyStatus(fresh: boolean, now: Date = new Date()): EnergyStat
       { source: 'sofar', reachable: true, lastReadingAt: at(now, 185) },
       { source: 'solaxCloud', reachable: false, lastReadingAt: at(now, 3_905) },
     ],
-    grid: { state: 'present', since: at(now, 9 * 86_400) },
+    grid: {
+      state: 'present',
+      since: at(now, 9 * 86_400),
+      frequency: onGenerator() ? 51.02 : 50.01,
+      frequencyOff: onGenerator(),
+    },
   };
 }
 
@@ -201,6 +214,7 @@ export function energyAlerts(fresh: boolean, now: Date = new Date()): EnergyAler
   return [
     { source: 'sofar', kind: 'alarm', openedAt: at(now, 2 * 3_600 + 5), detail: 'GridOVP' },
     { source: 'phase b', kind: 'overload', openedAt: at(now, 7 * 60 + 5) },
+    ...(onGenerator() ? [{ source: 'meter', kind: 'frequency', openedAt: at(now, 3 * 3_600 + 5) }] : []),
   ];
 }
 
@@ -216,6 +230,14 @@ export function gridOutages(fresh: boolean, now: Date = new Date()): GridOutage[
       socAtEnd: 47,
       lowestSoc: 46,
     },
+    // short outages of the year (HAS-504: more than the five the card shows at first)
+    ...[41, 58, 77, 96, 118].map((days, index) => ({
+      startedAt: at(now, days * 86_400),
+      endedAt: at(now, days * 86_400 - (5 + index * 7) * 60),
+      socAtStart: 70 - index * 6,
+      socAtEnd: 68 - index * 6,
+      lowestSoc: 68 - index * 6,
+    })),
     // one long ago without a known end SOC
     { startedAt: at(now, 140 * 86_400), endedAt: at(now, 140 * 86_400 - 900), socAtStart: 55 },
   ];

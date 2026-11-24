@@ -627,6 +627,14 @@ for (const language of ['en', 'pl'] as const) {
         });
       });
 
+      // the house on a generator of Tauron (HAS-504): the grid frequency off its band on the sources and the meter
+      test('energy generator', async ({ page }, testInfo) => {
+        await page.addInitScript(() => localStorage.setItem('mock-generator', 'on'));
+        await page.goto('/energy');
+        await expect(page.getByTestId('card-alerts-now').getByTestId('alert-frequency')).toBeVisible();
+        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'energy-generator') });
+      });
+
       // the meter of Tauron (HAS-417): the days beside the 3EM, and the hours of the night the clocks went back
       test('energy operator', async ({ page }, testInfo) => {
         await page.clock.setFixedTime(new Date('2026-10-28T10:00:00+01:00'));
@@ -724,10 +732,7 @@ for (const language of ['en', 'pl'] as const) {
         await page.addInitScript(() => localStorage.setItem('mock-fire', 'on'));
         await page.goto('/overview');
         await expect(page.getByTestId('fire-notice')).toBeVisible();
-        await expect(page.getByTestId('tile-safety').getByTestId('safety-state')).toHaveAttribute(
-          'data-state',
-          'alarm',
-        );
+        await expect(page.getByTestId('tile-safety').getByTestId('tile-signal')).toBeVisible();
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'safety-fire'),
         });

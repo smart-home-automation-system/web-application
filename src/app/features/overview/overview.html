@@ -661,8 +661,8 @@
       </div>
     </app-domain-tile>
 
-    <!-- HAS-394: the air conditioners - what is on, by room with its mode, what does not answer, and
-         what the automation switched off; nothing here commands a unit: the overview changes nothing -->
+    <!-- HAS-394: the air conditioners - what is on, by room with its mode, and what the automation switched off; a unit that
+         does not answer is the blinking light by the title (owner, 2026-11-24); nothing here commands a unit -->
     <app-domain-tile
       heading="overview.aircon.title"
       icon="ac_unit"
@@ -670,6 +670,11 @@
       link="/aircon"
       waitingLabel="aircon.loading"
       [resource]="aircon"
+      [signal]="
+        (airconSummary()?.unreachable ?? 0) > 0
+          ? t('overview.aircon.unreachable') + ': ' + airconSummary()!.unreachable
+          : undefined
+      "
       data-testid="tile-aircon"
     >
       @if (airconSummary(); as count) {
@@ -694,14 +699,6 @@
                 <dt>{{ t('overview.aircon.unknown') }}</dt>
                 <dd>
                   <strong class="tile__quiet">{{ count.unknown }}</strong>
-                </dd>
-              </div>
-            }
-            @if (count.unreachable > 0) {
-              <div class="tile__row" data-state="unreachable" data-testid="aircon-unreachable">
-                <dt>{{ t('overview.aircon.unreachable') }}</dt>
-                <dd>
-                  <strong>{{ count.unreachable }}</strong>
                 </dd>
               </div>
             }
@@ -740,7 +737,8 @@
       </div>
     </app-domain-tile>
 
-    <!-- HAS-341: the energy now - the panels, the house, the battery, the grid; the grid lost in red -->
+    <!-- HAS-341: the energy now - the panels, the house, the battery, the grid; the grid lost or its frequency off the band is
+         the blinking light by the title, its words in the tooltip (HAS-504, owner 2026-11-24 - the lost grid first) -->
     <app-domain-tile
       heading="energy.page.title"
       icon="solar_power"
@@ -748,14 +746,17 @@
       link="/energy"
       waitingLabel="energy.page.loading"
       [resource]="energyFlows"
+      [signal]="
+        gridLost()
+          ? t('energy.gridState.lost')
+          : gridFrequency().off === true
+          ? gridFrequency().hz === undefined
+            ? t('energy.gridState.frequencyOffNoValue')
+            : t('energy.gridState.frequencyOff', { hz: gridFrequency().hz | localNumber: TWO })
+          : undefined
+      "
       data-testid="tile-energy"
     >
-      @if (gridLost()) {
-        <p class="tile__lead tile__lead--alert" data-testid="energy-grid-lost">
-          <mat-icon aria-hidden="true">power_off</mat-icon>
-          <span>{{ t('energy.gridState.lost') }}</span>
-        </p>
-      }
       @if (energyFlows.value()) {
         @let f = energyFlow();
         <dl class="tile__rows">
@@ -819,8 +820,9 @@
         <app-api-error-strip [error]="energyForecast.error()" />
       </div>
     </app-domain-tile>
-    <!-- HAS-469: the fire detectors - an alarm, a detector that needs a look, not known or all right, and how many there
-         are; the resource of the banner of the shell (one poller), nothing here mutes a detector -->
+    <!-- HAS-469: the fire detectors - how many there are and how many not fully known; an alarm or a detector that needs a
+         look is the blinking light by the title, the names in its tooltip (owner, 2026-11-24: the overview tells the state,
+         the safety page the details); the resource of the banner of the shell (one poller), nothing here mutes a detector -->
     <app-domain-tile
       heading="overview.safety.title"
       icon="detector_smoke"
@@ -829,51 +831,24 @@
       waitingLabel="safety.page.loading"
       [resource]="safety"
       [describeWith]="describeSafetyError"
+      [signal]="
+        safetySummary()?.state === 'alarm'
+          ? t('overview.safety.alarm') + ': ' + safetySummary()!.inAlarm
+          : safetySummary()?.state === 'trouble'
+            ? t('overview.safety.trouble') + ': ' + safetySummary()!.inTrouble
+            : undefined
+      "
       data-testid="tile-safety"
     >
       @if (safetySummary(); as summary) {
         @if (summary.total === 0) {
           <p class="tile__detail">{{ t('safety.detectors.none') }}</p>
         } @else {
-          @switch (summary.state) {
-            @case ('alarm') {
-              <p class="tile__lead tile__lead--alert" data-testid="safety-state" data-state="alarm">
-                <mat-icon aria-hidden="true">local_fire_department</mat-icon>
-                <span>{{ t('overview.safety.alarm') }}</span>
-              </p>
-              <!-- the names of the registry, joined in TypeScript -->
-              <p class="tile__detail">{{ summary.inAlarm }}</p>
-            }
-            @case ('trouble') {
-              <p class="tile__lead" data-testid="safety-state" data-state="trouble">
-                <mat-icon aria-hidden="true">warning</mat-icon>
-                <span>{{ t('overview.safety.trouble') }}</span>
-              </p>
-            }
-            @case ('unknown') {
-              <p class="tile__lead" data-testid="safety-state" data-state="unknown">
-                <mat-icon aria-hidden="true">help</mat-icon>
-                <span>{{ t('overview.safety.unknown') }}</span>
-              </p>
-            }
-            @default {
-              <p class="tile__lead tile__lead--ok" data-testid="safety-state" data-state="ok">
-                <mat-icon aria-hidden="true">check_circle</mat-icon>
-                <span>{{ t('overview.safety.ok') }}</span>
-              </p>
-            }
-          }
           <dl class="tile__rows">
             <div class="tile__row">
               <dt>{{ t('overview.safety.detectors') }}</dt>
               <dd><strong data-testid="safety-count">{{ summary.total }}</strong></dd>
             </div>
-            @if (summary.inTrouble !== '') {
-              <div class="tile__row" data-state="alert">
-                <dt>{{ t('overview.safety.inTrouble') }}</dt>
-                <dd class="tile__name"><strong>{{ summary.inTrouble }}</strong></dd>
-              </div>
-            }
             @if (summary.unknown > 0) {
               <div class="tile__row" data-state="unknown">
                 <dt>{{ t('overview.safety.notKnown') }}</dt>

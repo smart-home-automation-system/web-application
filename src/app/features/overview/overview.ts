@@ -49,6 +49,7 @@ import { describeSafetyError, summariseSafety } from '../../shared/safety/safety
 import {
   batteryDirectionLabel,
   gridDirectionLabel,
+  gridFrequencyOf,
   gridStateOf,
   numberOf,
   toFlowView,
@@ -416,6 +417,9 @@ export class Overview {
   );
   /** The grid lost is the one thing of the tile in red; not known is never lost. */
   protected readonly gridLost = computed(() => gridStateOf(this.energyStatus.value()) === 'lost');
+  /** HAS-504: the grid frequency off its band - a generator, likely; red too, only when the service says so. */
+  protected readonly gridFrequency = computed(() => gridFrequencyOf(this.energyStatus.value()));
+  protected readonly TWO: Intl.NumberFormatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
   /** Tomorrow of the forecast: its word and kWh, as much as the answer says. */
   protected readonly energyTomorrow = computed(() => tomorrowOf(this.energyForecast.value()));
   /** The way the grid flows, by the dead band of the service the diagram uses too; none while not known. */

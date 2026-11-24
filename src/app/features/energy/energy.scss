@@ -7,8 +7,32 @@ $gap: 12px;
   container-type: inline-size;
 }
 
+// "Show more" of the outages (HAS-504): the count and the button at the right, under the list
+.events__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  // the gap of the entries of the list above, so the highlight of the button never touches the last one (owner)
+  margin-top: 6px;
+}
+
+// the count on the line of the button - no margin of a paragraph (owner, 2026-11-24)
+.events__count {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// the strip of the sources (HAS-504) as wide as the rows under it, a gap of the page between
+app-energy-sources-strip {
+  max-width: 1600px;
+  margin: 0 auto $gap;
+}
+
 // The page stands in the middle of a wide screen, like the weather page, and its rows are full:
-// the flow beside the sources, the four devices in a row (two of two, one column), the alarms
+// the flow beside the flow column, the four devices in a row (two of two, one column), the alarms
 // beside the outages, the charts in rows of two. Cards side by side end on one line.
 .live,
 .forecast,
@@ -59,11 +83,12 @@ $gap: 12px;
   }
 }
 
-// the column beside the flow (HAS-438): the sources, the next planned outage and the open alarms, one under another
+// the column beside the flow (HAS-438): the next planned outage and the open alarms, one under another (the sources
+// a strip at the top since HAS-504)
 // the alarms take the rest of the height, so that the column ends where the flow does (owner 2026-11-13)
 .live__side {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto 1fr;
   gap: $gap;
   min-width: 0;
 }
@@ -97,7 +122,8 @@ $gap: 12px;
 }
 
 // a phase above the warning current: its row on the error strip, and its words beside it
-.phase--overloaded {
+.phase--overloaded,
+.row--off {
   padding: 2px 6px;
   border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-error-container);

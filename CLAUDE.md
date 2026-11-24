@@ -935,6 +935,10 @@ e2e/              # Playwright tests
       `COMMAND_TOO_SOON`, `LIVE_THROTTLED` (`water-errors.ts`). The overview tile "Water" has the salt and the days it
       lasts as a third call, its failure in `tileFailures`. The mock softener (`softener.fixtures.ts`): 15 % salt (low - the amber warning), 31 days
       of the salt going down, five regenerations, two alerts, the regeneration and the live stream as the service answers.
+- **A problem on a tile of the overview is the blinking light by its title, never a red line or a row of names** (owner,
+  2026-11-24, HAS-504): `signal` of `DomainTile`, the words in its tooltip and its name - the silent sensors of the heating,
+  a unit of the air conditioning that does not answer, a lost grid or a grid frequency off its band (the lost grid first),
+  an alarm or a detector in trouble. The tile keeps its counts and states; the details are the page's.
 - **The overview is one tile per call** (HAS-201, `features/overview/`): `DomainTile`
   (`shared/domain-tile/`, shared with the weather page since HAS-241, the styles of its content
   in `_tile-content.scss`, which the page that projects them `@use`s) tells
@@ -976,7 +980,8 @@ e2e/              # Playwright tests
   the card `RoomAircon` of My room - a capability of a room, `GET /aircon/rooms/{room}` every 10 s, **no card for a
   room without a unit** (the 404 `NOT_FOUND_ROOM`, an empty list) nor while the first answer is on its way - and the
   tile `tile-aircon` of the overview (`GET /aircon` and `/aircon/automation` once a minute, the second told in
-  `tileFailures`; units on by room with their mode, how many do not answer, what the empty house or a lost grid
+  `tileFailures`; units on by room with their mode, a unit that does not answer the blinking light by the title (HAS-504,
+  owner 2026-11-24 - no row of its own), what the empty house or a lost grid
   switched off; its title leads to the page of the units since HAS-431 - the tile came before the page and led nowhere). What to keep:
   - **One unit is `AirconControl`** (`shared/aircon/`, for the page of the units of HAS-395 too). **The state is read at a
     glance** (owner, 2026-11-08, on the iPhone: on or off was not to be told): a strip under the name - tinted with
@@ -1114,9 +1119,10 @@ e2e/              # Playwright tests
     `safety-service` >= 0.4.1 refuses it (`409 NOTHING_TO_MUTE`). The question of a mute closes for good when the
     alarm is over (My room and the page; the banner goes with the alarm). The self test is offered always. The mock:
     `mock-fire` = `on` the kitchen, `loft` the loft of Borys, whose e2e mutes it.
-  - **The tile** (`tile-safety`, `summariseSafety`): alarm (with the names, joined in TypeScript), a detector in
-    trouble (offline, low battery, end of life, fault - named), not known (counted), all right; the count. It presses
-    nothing. `overview-reads.ts` has `/home/safety` in the overview and, with `/home/safety/status`, in the shell reads.
+  - **The tile** (`tile-safety`, `summariseSafety`): the count and the detectors not fully known; **an alarm or a
+    detector in trouble is the blinking light by the title** (owner, 2026-11-24 - the overview tells the state, the safety
+    page the details): "Fire alarm: <names>" first, else "A detector needs a look: <names>" in its tooltip and its name
+    (the names joined in TypeScript, beside the translated words, never inside them). It presses nothing. `overview-reads.ts` has `/home/safety` in the overview and, with `/home/safety/status`, in the shell reads.
   - The codes `NOT_FOUND_DETECTOR`, `COMMAND_TOO_SOON`, `INVALID_AUTOMATION`, `REGISTRY_UNAVAILABLE`, `NOT_FOUND_ROOM`,
     `INVALID_RANGE`, `COMMAND_NOT_SENT`, `NOTHING_TO_MUTE` (HAS-464) have texts in `SAFETY_ERROR_TEXTS` (its spec lists them); `SourcesStrip` takes `describeWith`
     since this task, for the 503 `REGISTRY_UNAVAILABLE` of the store.
@@ -1419,7 +1425,11 @@ e2e/              # Playwright tests
     reduced motion the light stands in the middle. Its glow is a wide faint copy of the light under it - **no SVG filter
     referenced by `url(#id)`**: WebKit resolves it against the `<base href>` of the page. The words of each line are a visually hidden `img` (`.arrow--*`),
     the names and powers HTML over the scene in per cent (`LABELS`); on a phone the split by inverter is left out.
-    **Beside it** a column of three cards ending with it: the sources, "Next planned outage" (`card-next-outage`,
+    **The sources are a strip at the top of the page** (`EnergySourcesStrip`, `card-sources`, HAS-504 - owner 2026-11-24:
+    the look of the strip of the air conditioning page, as wide as the rows under it, a gap of the page between): the grid
+    (its state and since when one under another, no icon) and every source (answers / silent / not known, the age of its
+    reading), the freshness of the one call the last cell of the row at its right, its failure under the strip only when
+    there is one. **Beside the flow** a column of two cards ending with it: "Next planned outage" (`card-next-outage`,
     the soonest outage of `GET /energy/outages/planned` not over yet, placed by its start - one without a start is
     never the next; no commands - the page polls the outages once and hands the resource to `EnergyControl`, whose
     card of the planned outages reads the same answer) and the open alarms
@@ -1432,6 +1442,15 @@ e2e/              # Playwright tests
     `settlement.period-start`), the words of `RunMode`, `BatteryDirection`, `GridDirection` and the kinds of
     `source_alert` (`energy-views.ts`) - a value this version does not know is printed as it came.
   - **A grid not known is never lost** (`gridStateOf`); the overview tile shows the lost grid in red only. The
+    **grid frequency** (HAS-504, `gridFrequencyOf`, `energy-service` >= 0.19.0 / HAS-503): `grid.frequency` and
+    `grid.frequencyOff` of `/status` - **off only when the service says so** (the band 49.8 - 50.2 Hz is the service's,
+    not copied); then the row "Frequency" of the meter card tinted (`row--off`, the status failure told there too, in
+    `tileFailures`), a note on the charge card with **"Charge from the grid" disabled** (`frequencyOff` input of
+    `EnergyControl`, passed only while the status call has not failed - owner 2026-11-24: a button that cannot start
+    anything is not offered; the cancel of a charge going on stays), the frequency in Hz beside its alarm in the open alarms
+    (the alarm has no detail of its own) and the blinking light of the overview tile. The alert kind `frequency` is worded
+    in `ALERT_KINDS`. The mock:
+    `localStorage['mock-generator']` = `on` - 51.02 Hz and the frequency episode among the alarms; otherwise 50.01 Hz. The
     tile is three calls (flows, battery, status) like the heating tile, the flows its own, the other two told in
     `tileFailures`.
   - **The days are bars by category** (`BarsChart` of `shared/history-chart/`, the counterpart of `HistoryChart`
@@ -1443,6 +1462,9 @@ e2e/              # Playwright tests
     last month with a day (`storedNow`).
   - The mock house is a bright afternoon (`energy.fixtures.ts`): phase B overloaded, one SOFAR fault, the SolaX
     cloud silent; the mock registry holds the two inverters (ids 64, 65), the water valve (66, HAS-313), the air conditioner of sanctum (67, HAS-392), the air quality sensor of the garden (68, HAS-426), the intercom and the gate (69, 70, HAS-445) - the devices page counts 30.
+  - **The outages of the grid** (`card-outages`): the newest five of the year, five more with every "Show more"
+    (`OUTAGES_SHOWN`, owner 2026-11-24 - a card of dozens of entries says nothing more), back to five when the year moves
+    on a day; the count and the button on one line at the right, the gap of the entries above them.
   - **The charge of the battery** (HAS-342, `EnergyControl` in `energy-control.ts`, its own four cards in the section
     under the flow): the charge, the automation, the planned outages and the charges of 30 days. **These are writes to
     the real inverter** (`POST` / `DELETE /energy/battery/charge`): **the start asks first** (owner, 2026-11-11, HAS-417 -
@@ -1455,7 +1477,9 @@ e2e/              # Playwright tests
     is a time of day (`untilOf`: today while ahead, tomorrow otherwise). **Copied facts** (`energy-charge.ts`): the target
     10 - 100, the power 1 - 8 kW, the margin 0 - 720 min of `ChargeRules` / `AutomationRules` of energy-service; the
     automation applies to a planned outage of the street only (owner, 2026-11-03). The settings follow the stored answer
-    until edited; "Save" is off until then. The mock (`charge.fixtures.ts`) charges until stopped, refuses as the service
+    until edited; "Save" is off until then - "Undo changes" and "Save" in the bottom right corner of the card (the card
+    `domain-tile--column`, HAS-504, owner 2026-11-24), the main one last. A planned outage of the street has "Do not charge
+    before it" / "Charge before it again" on the right of its row (the skip of the automatic charge for that one outage). The mock (`charge.fixtures.ts`) charges until stopped, refuses as the service
     does; `resetCharge()`.
   - **The production forecast** (HAS-373, `EnergyForecastCard` in `energy-forecast.ts`, `GET /energy/forecast` of
     energy-service >= 0.16.0, every 5 min; its read is in `isOverviewRead` for the tile): **the categories and the bands

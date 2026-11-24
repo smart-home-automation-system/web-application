@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -26,11 +27,13 @@ import { describeEnergyError } from './energy-errors';
 import { EnergyFlow } from './energy-flow';
 import { EnergyForecastCard } from './energy-forecast';
 import { EnergySettlement } from './energy-settlement';
+import { EnergySourcesStrip } from './energy-sources-strip';
 import {
   alertKindLabel,
   alertsOf,
   batteryDirectionLabel,
   gridDirectionLabel,
+  gridFrequencyOf,
   gridStateOf,
   numberOf,
   readingSourceLabel,
@@ -70,11 +73,15 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
  * **What the answer leaves out is "not known"**, never 0 - the service leaves out what it has not
  * read. The charts share one period; the days and the settlement choose their own.
  */
+/** How many outages of the year the card shows at first, and how many more with every "Show more". */
+export const OUTAGES_SHOWN = 5;
+
 @Component({
   selector: 'app-energy',
   imports: [
     NgTemplateOutlet,
     DisplayTextPipe,
+    MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
     TranslocoDirective,
@@ -88,6 +95,7 @@ const STRING_LABELS: Readonly<Record<(typeof STRINGS)[number], MessageKey>> = {
     EnergyForecastCard,
     EnergySettlement,
     HouseAgePipe,
+    EnergySourcesStrip,
     HouseDateTimePipe,
     LocalNumberPipe,
     PowerValue,
@@ -155,6 +163,8 @@ export class Energy {
   protected readonly sources = computed(() => sourcesOf(this.status.value()));
   protected readonly gridState = computed(() => gridStateOf(this.status.value()));
   protected readonly gridSince = computed(() => this.status.value()?.grid?.since);
+  /** HAS-504: the frequency of the grid meter as the service judges it - off means a generator, likely. */
+  protected readonly gridFrequency = computed(() => gridFrequencyOf(this.status.value()));
 
   /** An inverter of the answer by its id; `undefined` while the answer does not name it. */
   private inverterOf(id: string): Inverter | undefined {
@@ -201,6 +211,19 @@ export class Energy {
       ? [...answer].sort((a, b) => String(b?.startedAt).localeCompare(String(a?.startedAt)))
       : undefined;
   });
+  /**
+   * The newest five outages of the year, five more with every "Show more" (owner, 2026-11-24: a card of dozens of
+   * entries says nothing more) - back to five when the year moves on a day.
+   */
+  protected readonly outagesShown = linkedSignal({
+    source: this.outageRange,
+    computation: () => OUTAGES_SHOWN,
+  });
+  protected readonly visibleOutages = computed(() => this.outageList()?.slice(0, this.outagesShown()));
+
+  protected showMoreOutages(): void {
+    this.outagesShown.update((shown) => shown + OUTAGES_SHOWN);
+  }
 
   protected readonly runModeLabel = runModeLabel;
   protected readonly runModeAlarming = runModeAlarming;
@@ -231,7 +254,4 @@ export class Energy {
     const soc = numberOf(this.battery.value()?.soc);
     return soc === undefined ? undefined : Math.min(100, Math.max(0, soc));
   });
-
-  /** The range the history of the outages is asked for - for the words under the list. */
-  protected readonly outagesSince = computed(() => this.outageRange().from);
 }

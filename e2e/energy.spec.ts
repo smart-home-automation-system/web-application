@@ -20,7 +20,7 @@ test('shows where the energy goes now, the devices, the alarms and the history',
   await expect(flow.getByRole('img', { name: 'The house charges the battery' })).toBeVisible();
   await expect(flow.getByTestId('flow-soc')).toHaveText('Charged 68 %');
 
-  await expect(page.getByTestId('grid-state')).toHaveText('power The grid is there');
+  await expect(page.getByTestId('grid-state')).toHaveText('The grid is there');
   await expect(
     page.getByTestId('card-sources').locator('[data-source="solaxCloud"]'),
   ).toContainText('silent');
@@ -35,7 +35,10 @@ test('shows where the energy goes now, the devices, the alarms and the history',
     'overloaded',
   );
   await expect(page.getByTestId('card-alerts').locator('li')).toHaveCount(2);
-  await expect(page.getByTestId('outage')).toHaveCount(2);
+  // the newest five of the year, "Show more" for the rest (HAS-504)
+  await expect(page.getByTestId('outage')).toHaveCount(5);
+  await page.getByTestId('outages-more').click();
+  await expect(page.getByTestId('outage')).toHaveCount(7);
 
   // the power, the battery, the days and the 48 hours of the forecast (HAS-373)
   await expect(main.locator('.chart__plot svg')).toHaveCount(4);
@@ -91,6 +94,36 @@ test('says what is not known just after the service started', async ({ page }) =
   );
   await expect(page.getByTestId('card-alerts').getByTestId('no-alerts')).toBeVisible();
   await expect(page.getByTestId('card-alerts-now').getByTestId('no-alerts')).toBeVisible();
+});
+
+// HAS-504: the house on a generator - the frequency off its band in red on the sources, the meter, the charge and the
+// alarms, and on the overview; a frequency inside the band shown plainly
+test('tells the grid frequency off its band - a generator, likely', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('mock-generator', 'on'));
+  await page.goto('/energy');
+
+  await expect(page.getByTestId('card-alerts').getByTestId('alert-frequency')).toHaveText('51.02 Hz');
+  await expect(page.getByTestId('card-grid').locator('[data-field="frequency"]')).toHaveText(
+    /off the band\s*51.02 Hz/,
+  );
+  await expect(page.getByTestId('charge-frequency-off')).toBeVisible();
+  await expect(page.getByTestId('charge-start')).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByTestId('card-alerts')).toContainText('Grid frequency off - a generator?');
+
+  await page.goto('/overview');
+  await expect(page.getByTestId('tile-energy').getByTestId('tile-signal')).toHaveAttribute(
+    'aria-label',
+    /off the band \(51\.02 Hz\)/,
+  );
+});
+
+test('shows a grid frequency inside the band plainly', async ({ page }) => {
+  await page.goto('/energy');
+  await expect(page.getByTestId('card-grid').locator('[data-field="frequency"]')).toHaveText(
+    /Frequency\s*50.01 Hz/,
+  );
+  await expect(page.getByTestId('alert-frequency')).toHaveCount(0);
+  await expect(page.getByTestId('charge-frequency-off')).toHaveCount(0);
 });
 
 // HAS-373: the production forecast - the sentence, the closed days beside, seven days, 48 hours

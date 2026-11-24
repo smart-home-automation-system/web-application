@@ -206,6 +206,24 @@ describe('EnergyControl', () => {
     expect(api.startCharge).not.toHaveBeenCalled();
   });
 
+  // HAS-504: the grid frequency off its band - the card says a charge cannot run and leaves the commands offered
+  it('says a charge from the grid cannot run while the grid frequency is off', async () => {
+    answer(charge, { active: false });
+    await settle();
+    expect(byId('charge-frequency-off')).toBeNull();
+
+    fixture.componentRef.setInput('frequencyOff', true);
+    await settle();
+    expect(words(byId('charge-frequency-off'))).toBe(
+      'warning The grid frequency is off the band - the inverter does not connect to such a grid, so a charge from the grid cannot run now.',
+    );
+    // a start that cannot run is not offered (owner, 2026-11-24): disabled, and a submit sends nothing
+    expect(byId('charge-start').getAttribute('aria-disabled')).toBe('true');
+    byId('charge-start').click();
+    await settle();
+    expect(api.startCharge).not.toHaveBeenCalled();
+  });
+
   it('shows the charge going on with the battery now, and stops it at once', async () => {
     answer(charge, { active: true, run: CHARGING, soc: 62.4, power: 4980, minutesLeft: 101 });
     await settle();

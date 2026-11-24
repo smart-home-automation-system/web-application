@@ -64,7 +64,8 @@ test.describe('overview', () => {
     const aircon = page.getByTestId('tile-aircon');
     await expect(aircon).toContainText(/On\s+2/);
     await expect(aircon).toContainText(/Off\s+3/);
-    await expect(aircon.getByTestId('aircon-unreachable')).toContainText(/Not answering\s+1/);
+    // a unit that does not answer is the blinking light by the title (HAS-504, owner 2026-11-24)
+    await expect(aircon.getByTestId('tile-signal')).toHaveAttribute('aria-label', 'Not answering: 1');
     await expect(aircon.getByTestId('aircon-running')).toHaveText([
       'office: Cooling 23 °C',
       'sanctum: Heating 21 °C',

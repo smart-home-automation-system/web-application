@@ -3,6 +3,9 @@
     <h1>{{ t('energy.page.title') }}</h1>
   </header>
 
+  <!-- the grid as the SOLAX sees it and whether each source answers, a strip at the top (HAS-504, owner 2026-11-24) -->
+  <app-energy-sources-strip [status]="status" [describeWith]="describe" />
+
   <section class="live" [attr.aria-label]="t('energy.page.now')">
     <!-- where the energy goes now, and the day so far -->
     <app-domain-tile
@@ -110,71 +113,9 @@
       </div>
     </app-domain-tile>
 
-    <!-- the column beside the flow (HAS-438, owner 2026-11-13): the sources, then the next planned outage and the open
-         alarms - summaries of the cards further down, which stay as they are -->
+    <!-- the column beside the flow (HAS-438, owner 2026-11-13): the next planned outage and the open alarms - summaries
+         of the cards further down, which stay as they are; the sources a strip at the top since HAS-504 -->
     <div class="live__side">
-      <!-- the grid as the SOLAX sees it, and whether each source answers -->
-      <app-domain-tile
-        heading="energy.cards.sources"
-        icon="sensors"
-        domain="energy"
-        waitingLabel="energy.page.loading"
-        [describeWith]="describe"
-        [resource]="status"
-        data-testid="card-sources"
-      >
-        @if (status.value()) {
-          @switch (gridState()) {
-            @case ('lost') {
-              <p class="tile__lead tile__lead--alert" data-testid="grid-state" data-state="lost">
-                <mat-icon aria-hidden="true">power_off</mat-icon>
-                <span>{{ t('energy.gridState.lost') }}</span>
-              </p>
-            }
-            @case ('present') {
-              <p class="tile__lead tile__lead--ok" data-testid="grid-state" data-state="present">
-                <mat-icon aria-hidden="true">power</mat-icon>
-                <span>{{ t('energy.gridState.present') }}</span>
-              </p>
-            }
-            @default {
-              <p class="tile__lead" data-testid="grid-state" data-state="unknown">
-                <mat-icon aria-hidden="true">help</mat-icon>
-                <span>{{ t('energy.gridState.unknown') }}</span>
-              </p>
-            }
-          }
-          @if (gridState() !== undefined && gridSince(); as since) {
-            <p class="tile__detail">
-              {{ t('energy.gridState.since') }} {{ since | houseDateTime }}
-            </p>
-          }
-          <dl class="tile__rows">
-            @for (source of sources(); track source.id) {
-              <div class="tile__row" [attr.data-source]="source.id">
-                <dt>{{ source.label ? t(source.label) : source.id }}</dt>
-                <dd>
-                  @if (source.lastReadingAt; as at) {
-                    <span>{{ at | houseAge }}</span>
-                  }
-                  @if (source.reachable === false) {
-                    <span class="tile__tag tile__tag--alert">{{ t('energy.reachable.no') }}</span>
-                  } @else {
-                    <strong>{{
-                      source.reachable === undefined
-                        ? t('energy.reachable.unknown')
-                        : t('energy.reachable.yes')
-                    }}</strong>
-                  }
-                </dd>
-              </div>
-            }
-          </dl>
-        } @else if (!status.error()) {
-          <p class="tile__detail">{{ t('energy.cards.none') }}</p>
-        }
-      </app-domain-tile>
-
       <!-- the next planned outage of Tauron, if one is announced: when, what, and the charge before it - the
            card of the planned outages below has all of them and their commands -->
       <app-domain-tile
@@ -240,7 +181,10 @@
   </section>
 
   <section class="control" [attr.aria-label]="t('energy.page.control')">
-    <app-energy-control [planned]="planned" />
+    <app-energy-control
+      [planned]="planned"
+      [frequencyOff]="gridFrequency().off === true && !status.error()"
+    />
   </section>
 
   <section class="cards" [attr.aria-label]="t('energy.page.devices')">
@@ -405,6 +349,21 @@
               }}</strong>
             </dd>
           </div>
+          <!-- HAS-504: the frequency as the service judges it (GET /status) - off the band is a generator, likely -->
+          @let frequency = gridFrequency();
+          <div class="tile__row" data-field="frequency" [class.row--off]="frequency.off === true">
+            <dt>{{ t('energy.grid.frequency') }}</dt>
+            <dd>
+              @if (frequency.off === true) {
+                <span class="tile__tag tile__tag--alert">{{ t('energy.grid.frequencyOff') }}</span>
+              }
+              <strong>{{
+                frequency.hz === undefined
+                  ? t('energy.notKnown')
+                  : (frequency.hz | localNumber: TWO) + ' Hz'
+              }}</strong>
+            </dd>
+          </div>
         </dl>
         <p class="tile__detail" data-field="reading">
           @if (g.stale) {
@@ -418,6 +377,10 @@
       } @else if (!grid.error()) {
         <p class="tile__detail">{{ t('energy.cards.none') }}</p>
       }
+      <!-- the frequency is the status call's (HAS-504): its failure is told here too, apart from the meter -->
+      <div tileFailures>
+        <app-api-error-strip [error]="status.error()" [describeWith]="describe" />
+      </div>
     </app-domain-tile>
   </section>
 
@@ -453,7 +416,7 @@
           </p>
         } @else {
           <ul class="events">
-            @for (outage of list; track $index) {
+            @for (outage of visibleOutages(); track $index) {
               <li class="event" [class.event--alert]="!outage.endedAt" data-testid="outage">
                 <span class="event__what">
                   <strong>{{ outage.startedAt | houseDateTime }}</strong>
@@ -483,10 +446,17 @@
               </li>
             }
           </ul>
+          @if (list.length > (visibleOutages()?.length ?? 0)) {
+            <div class="events__more">
+              <span class="events__count">{{
+                t('energy.outages.shown', { shown: visibleOutages()?.length ?? 0, total: list.length })
+              }}</span>
+              <button matButton type="button" data-testid="outages-more" (click)="showMoreOutages()">
+                {{ t('energy.outages.more') }}
+              </button>
+            </div>
+          }
         }
-        <p class="tile__detail">
-          {{ t('energy.outages.since') }} {{ outagesSince() | houseDateTime }}
-        </p>
       } @else if (!outages.error()) {
         <p class="tile__detail">{{ t('energy.cards.none') }}</p>
       }
@@ -642,6 +612,11 @@
                 @if (alert.detail; as detail) {
                   <!-- the name of the alarm as the inverter words it -->
                   <span class="event__detail">{{ detail }}</span>
+                } @else if (alert.kind === 'frequency' && gridFrequency().hz !== undefined) {
+                  <!-- HAS-504: the frequency now, from GET /status (the alarm has no detail of its own) -->
+                  <span class="event__detail" data-testid="alert-frequency"
+                    >{{ gridFrequency().hz | localNumber: TWO }} Hz</span
+                  >
                 }
               </span>
               @if (alert.openedAt; as at) {

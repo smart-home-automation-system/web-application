@@ -25,8 +25,18 @@ export interface EnergySource {
 /** `GET /energy/status` (energy-service >= 0.4.0): the sources and the grid as the SOLAX sees it. */
 export interface EnergyStatus {
   readonly sources?: readonly EnergySource[];
-  /** `state` `present` or `lost`, `null` while not known (after a start, before two reads agree). */
-  readonly grid?: { readonly state?: string | null; readonly since?: string };
+  /**
+   * `state` `present` or `lost`, `null` while not known (after a start, before two reads agree).
+   * Since energy-service 0.19.0 (HAS-503) `frequency` - Hz of the grid meter, the phase furthest
+   * from 50 Hz, left out while not known - and `frequencyOff` - outside the band of the service
+   * (49.8 - 50.2 Hz) now, the house likely on a generator; `null` while not known, never read as inside.
+   */
+  readonly grid?: {
+    readonly state?: string | null;
+    readonly since?: string;
+    readonly frequency?: number;
+    readonly frequencyOff?: boolean | null;
+  };
 }
 
 /** One phase of the grid meter or of an inverter: V, A, W (signed), VA, the power factor, Hz. */

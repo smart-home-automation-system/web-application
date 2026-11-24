@@ -77,7 +77,11 @@ dashboards:
   with more power, still where nothing flows, dashed where a power is not known), the day so far, the grid as the SOLAX
   sees it and whether each source answers, beside it the next planned outage and the open alarms, a card each for the SOLAX (the strings, the run mode in words),
   the battery (the state of charge as a gauge, the energy left), the SOFAR (its state and faults in the
-  words of the Solarman cloud) and the grid meter (per phase, a phase above 22 A marked), the open alarms
+  words of the Solarman cloud) and the grid meter (per phase, a phase above 22 A marked; since HAS-504 the frequency of
+  the grid on the meter card and beside its alarm, the start of a charge from the grid disabled and the light of the
+  overview tile blinking while `energy-service` 0.19.0 says it is off its band - the house likely on a generator of Tauron,
+  the inverters not connecting; the sources a strip at the top of the page, the outages five at a time with "Show more"),
+  the open alarms
   and the outages of the grid of the last year; **the production forecast** (HAS-373) - one sentence of the coming
   days ("Little production for 3 days, better on Saturday (about 28 kWh, above the house load)"), the two closed days
   with what the forecast gave beside what was produced, seven days with the kWh of each inverter stacked, the
@@ -677,7 +681,7 @@ Endpoints used today:
 | `GET` | `/home/appliance/{id}/samples?from=&to=` | The draw of the plug, a sample every 30 s (appliances: the last 24 or 48 hours of each appliance, every 60 s) |
 | `GET` | `/home/device/registry?kind=appliance&enabled=true` | The appliances with their settings (appliances, read only, every 60 s) |
 | `GET` | `/home/energy/flows` | Where the energy goes now and the day so far (energy: every 15 s; overview: every 60 s). The SOC beside the battery of the diagram is the read of `/home/energy/battery`. Needs `energy-service` 0.8.0 and `api-gateway-service` 0.10.0 or later |
-| `GET` | `/home/energy/status` | The sources and the grid as the SOLAX sees it (energy: every 30 s; overview: every 60 s) |
+| `GET` | `/home/energy/status` | The sources and the grid as the SOLAX sees it (energy: every 30 s; overview: every 60 s); since `energy-service` 0.19.0 `grid.frequency` and `grid.frequencyOff` (HAS-504) |
 | `GET` | `/home/energy/grid`, `/home/energy/inverters`, `/home/energy/battery` | The grid meter, both inverters and the battery now (energy, every 15 s; the battery also on the overview, every 60 s) |
 | `GET` | `/home/energy/forecast` | The production forecast of the coming days (energy and overview, every 5 min). Needs `energy-service` 0.16.0; the categories are the service's, no band is copied |
 | `GET` | `/home/energy/alerts` | The open alarms (energy, every 60 s). Needs `energy-service` 0.10.0 |
