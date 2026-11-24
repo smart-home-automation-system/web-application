@@ -1055,6 +1055,25 @@ export const en = {
         label: 'The state of charge of the battery over time',
         soc: 'State of charge',
       },
+      frequency: {
+        title: 'Grid frequency',
+        label: 'The frequency of the grid at the meter over time, with the band of 49.8 - 50.2 Hz',
+        note: 'The phase furthest from 50 Hz. Outside the dashed band the inverters do not connect to the grid.',
+        frequency: 'Frequency',
+        low: 'Lowest allowed',
+        high: 'Highest allowed',
+      },
+      voltage: {
+        title: 'Grid voltage',
+        label: 'The voltage of each phase at the meter over time',
+      },
+      current: {
+        title: 'Grid current',
+        label: 'The current of each phase at the meter over time',
+      },
+      phaseA: 'Phase A',
+      phaseB: 'Phase B',
+      phaseC: 'Phase C',
     },
     forecast: {
       title: 'Production forecast',

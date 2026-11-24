@@ -619,8 +619,9 @@ for (const language of ['en', 'pl'] as const) {
         await expect(
           page.getByRole('main').locator('mat-progress-bar[mode="indeterminate"]'),
         ).toHaveCount(0);
-        // the two charts of the history and the bars of the days are drawn before the picture
-        await expect(page.locator('.chart__plot svg')).toHaveCount(4);
+        // the charts of the history - the power, the battery, the voltage, the current and the frequency (HAS-507) - the
+        // bars of the days and the 48 hours of the forecast are drawn before the picture
+        await expect(page.locator('.chart__plot svg')).toHaveCount(7);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'energy'),
           fullPage: true,

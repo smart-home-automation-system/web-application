@@ -40,8 +40,12 @@ test('shows where the energy goes now, the devices, the alarms and the history',
   await page.getByTestId('outages-more').click();
   await expect(page.getByTestId('outage')).toHaveCount(7);
 
-  // the power, the battery, the days and the 48 hours of the forecast (HAS-373)
-  await expect(main.locator('.chart__plot svg')).toHaveCount(4);
+  // the power, the battery, the voltage, the current and the frequency of the grid (HAS-507), the days and the 48 hours
+  // of the forecast (HAS-373)
+  await expect(main.locator('.chart__plot svg')).toHaveCount(7);
+  await expect(page.getByTestId('chart-voltage')).toContainText('Phase B');
+  await expect(page.getByTestId('chart-current')).toContainText('Phase C');
+  await expect(page.getByTestId('chart-frequency')).toContainText('Highest allowed');
   await expect(page.getByTestId('in-the-grid')).toBeVisible();
   // the net-metering in kWh, never money
   await expect(main).not.toContainText('zł');
@@ -110,11 +114,34 @@ test('tells the grid frequency off its band - a generator, likely', async ({ pag
   await expect(page.getByTestId('charge-start')).toHaveAttribute('aria-disabled', 'true');
   await expect(page.getByTestId('card-alerts')).toContainText('Grid frequency off - a generator?');
 
+  // HAS-507: the history of the frequency above its band - the averages of the buckets under the chart
+  await expect(page.getByTestId('chart-frequency').getByTestId('history-facts')).toContainText(
+    /Frequency[\s\S]*–\s*51\.00\s*Hz/,
+  );
+
   await page.goto('/overview');
   await expect(page.getByTestId('tile-energy').getByTestId('tile-signal')).toHaveAttribute(
     'aria-label',
     /off the band \(51\.02 Hz\)/,
   );
+});
+
+// HAS-507 (owner 2026-11-24): the power and the battery in a row, the voltage, the current and the frequency in the next
+test('lays the charts of the grid out in a row of three', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'phone', 'one column on a phone');
+  await page.setViewportSize({ width: 1700, height: 1000 });
+  await page.goto('/energy');
+  const topOf = async (key: string) => {
+    const card = page.getByTestId(`chart-${key}`);
+    await expect(card).toBeVisible();
+    return Math.round((await card.boundingBox())!.y);
+  };
+
+  expect(await topOf('battery')).toBe(await topOf('power'));
+  const row = await topOf('voltage');
+  expect(row).toBeGreaterThan(await topOf('power'));
+  expect(await topOf('current')).toBe(row);
+  expect(await topOf('frequency')).toBe(row);
 });
 
 test('shows a grid frequency inside the band plainly', async ({ page }) => {

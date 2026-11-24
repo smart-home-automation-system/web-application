@@ -166,7 +166,15 @@ export type EnergyMetric =
   | 'pv-power'
   | 'house-load'
   | 'battery-power'
-  | 'battery-soc';
+  | 'battery-soc'
+  // the grid meter (energy-service >= 0.20.0, HAS-506): the currents and the frequency stored since its deploy
+  | 'grid-voltage-a'
+  | 'grid-voltage-b'
+  | 'grid-voltage-c'
+  | 'grid-current-a'
+  | 'grid-current-b'
+  | 'grid-current-c'
+  | 'grid-frequency';
 
 /** `GET /energy/history?metric=&from=&to=`: the rules of the weather history. */
 export interface EnergyHistory {

@@ -1047,6 +1047,25 @@ export const pl: Messages = {
         label: 'Stan naładowania magazynu w czasie',
         soc: 'Stan naładowania',
       },
+      frequency: {
+        title: 'Częstotliwość sieci',
+        label: 'Częstotliwość sieci na liczniku w czasie, z pasmem 49,8 - 50,2 Hz',
+        note: 'Faza najdalsza od 50 Hz. Poza przerywanym pasmem falowniki nie łączą się z siecią.',
+        frequency: 'Częstotliwość',
+        low: 'Najniższa dozwolona',
+        high: 'Najwyższa dozwolona',
+      },
+      voltage: {
+        title: 'Napięcie sieci',
+        label: 'Napięcie każdej fazy na liczniku w czasie',
+      },
+      current: {
+        title: 'Prąd sieci',
+        label: 'Prąd każdej fazy na liczniku w czasie',
+      },
+      phaseA: 'Faza A',
+      phaseB: 'Faza B',
+      phaseC: 'Faza C',
     },
     forecast: {
       title: 'Prognoza produkcji',
