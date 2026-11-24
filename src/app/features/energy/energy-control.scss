@@ -81,14 +81,6 @@ $gap: 12px;
   color: var(--mat-sys-on-error-container);
 }
 
-// the form is a column: its buttons at the start of their line
-.form__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-self: flex-start;
-  gap: 8px;
-}
-
 .planned,
 .runs {
   display: grid;
@@ -100,13 +92,17 @@ $gap: 12px;
 
 .planned__item {
   display: grid;
-  gap: 2px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 2px 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
 
-  button {
-    justify-self: start;
-  }
+.planned__info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .planned__kind,

@@ -825,6 +825,8 @@ export const pl: Messages = {
     },
     charge: {
       none: 'Magazyn nie ładuje się z sieci.',
+      frequencyOff:
+        'Częstotliwość sieci jest poza normą - falownik nie przyłącza się do takiej sieci, więc ładowanie z sieci teraz nie ruszy.',
       start: 'Ładuj z sieci',
       sending: 'Wysyłanie polecenia do falownika',
       target: 'Cel',
@@ -887,8 +889,8 @@ export const pl: Messages = {
       none: 'Tauron nie ogłasza wyłączenia dla domu.',
       chargeFrom: 'Ładowanie ruszyłoby o',
       skipped: 'Bez automatycznego ładowania dla tego wyłączenia.',
-      skip: 'Bez ładowania dla tego',
-      unskip: 'Jednak ładuj dla tego',
+      skip: 'Nie ładuj przed nim',
+      unskip: 'Jednak ładuj przed nim',
       skipFailed: 'Nie udało się zmienić wyłączenia.',
       more: 'Kolejne zapowiedziane: {{ count }}',
       kind: {
@@ -934,10 +936,15 @@ export const pl: Messages = {
       unknown: 'Nieznane',
     },
     gridState: {
+      label: 'Sieć',
       present: 'Sieć jest',
       lost: 'Brak sieci - dom pracuje na magazynie',
       unknown: 'Stan sieci jeszcze nieznany',
       since: 'od',
+      frequencyOff:
+        'Częstotliwość sieci poza normą ({{ hz }} Hz) - dom prawdopodobnie zasila agregat, falowniki się nie przyłączają',
+      frequencyOffNoValue:
+        'Częstotliwość sieci poza normą - dom prawdopodobnie zasila agregat, falowniki się nie przyłączają',
     },
     reachable: {
       yes: 'odpowiada',
@@ -989,6 +996,8 @@ export const pl: Messages = {
       importEnergy: 'Pobrano od instalacji',
       exportEnergy: 'Oddano od instalacji',
       warnAt: 'Faza powyżej {{ amperes }} A jest przeciążona',
+      frequency: 'Częstotliwość',
+      frequencyOff: 'poza normą',
     },
     readingSource: {
       local: 'odczyt z urządzenia',
@@ -1012,11 +1021,14 @@ export const pl: Messages = {
         overload: 'Przeciążenie',
         alarm: 'Alarm',
         production: 'Nie produkuje w słońcu',
+        frequency: 'Częstotliwość sieci poza normą - agregat?',
       },
     },
     outages: {
       none: 'Brak awarii sieci w ostatnim roku',
       lasts: 'trwa',
+      shown: '{{ shown }} z {{ total }}',
+      more: 'Pokaż więcej',
       soc: 'Magazyn',
       lowest: 'najniżej',
       since: 'Od',

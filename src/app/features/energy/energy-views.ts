@@ -89,6 +89,7 @@ const ALERT_KINDS: Readonly<Record<string, MessageKey>> = {
   overload: 'energy.alerts.kind.overload',
   alarm: 'energy.alerts.kind.alarm',
   production: 'energy.alerts.kind.production',
+  frequency: 'energy.alerts.kind.frequency',
 };
 
 export const alertKindLabel = (kind: unknown) => labelIn(ALERT_KINDS, kind);
@@ -128,6 +129,24 @@ export function gridStateOf(
 ): 'present' | 'lost' | undefined {
   const state = status?.grid?.state;
   return state === 'present' || state === 'lost' ? state : undefined;
+}
+
+/**
+ * The grid frequency of `GET /status` (HAS-504, energy-service >= 0.19.0): `hz` while known, `off`
+ * only when the service says so - `undefined` is not known, never read as inside the band (the band
+ * is the service's, not copied here).
+ */
+export interface GridFrequency {
+  readonly hz: number | undefined;
+  readonly off: boolean | undefined;
+}
+
+export function gridFrequencyOf(status: EnergyStatus | null | undefined): GridFrequency {
+  const off = status?.grid?.frequencyOff;
+  return {
+    hz: numberOf(status?.grid?.frequency),
+    off: typeof off === 'boolean' ? off : undefined,
+  };
 }
 
 /** Which way the energy flows along one line of the diagram. */

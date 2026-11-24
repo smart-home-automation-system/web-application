@@ -135,6 +135,12 @@ export class EnergyControl {
    * call for both cards.
    */
   readonly planned = input.required<PollingResource<readonly PlannedOutage[] | null>>();
+  /**
+   * HAS-504: the grid frequency off its band (a generator, likely) - the inverter does not connect,
+   * so a charge from the grid cannot run; the card says so and the start is disabled (owner, 2026-11-24: a button
+   * that cannot start anything is not offered).
+   */
+  readonly frequencyOff = input(false);
 
   private readonly readBack = lightReadBack(async () => {
     await Promise.all([
@@ -248,7 +254,7 @@ export class EnergyControl {
   /** The form checked first; a valid charge asked about in the window, sent only for yes. */
   protected start(): void {
     this.chargeTried.set(true);
-    if (!this.targetValid() || this.untilValue() === 'invalid' || this.chargeBusy()) {
+    if (!this.targetValid() || this.untilValue() === 'invalid' || this.chargeBusy() || this.frequencyOff()) {
       return;
     }
     this.ask('start', () => this.sendStart());
@@ -256,7 +262,8 @@ export class EnergyControl {
 
   private sendStart(): void {
     const until = this.untilValue();
-    if (!this.targetValid() || until === 'invalid' || this.chargeBusy()) {
+    // the frequency may have gone off while the question was open (the review of HAS-504)
+    if (!this.targetValid() || until === 'invalid' || this.chargeBusy() || this.frequencyOff()) {
       return;
     }
     this.send(

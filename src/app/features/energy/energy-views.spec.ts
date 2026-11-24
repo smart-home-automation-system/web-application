@@ -1,7 +1,9 @@
 import {
+  alertKindLabel,
   alertsOf,
   billingYearOf,
   directionOf,
+  gridFrequencyOf,
   gridStateOf,
   monthsOf,
   powerText,
@@ -93,6 +95,24 @@ describe('the energy page reads', () => {
     expect(gridStateOf({ grid: { state: 'present' } })).toBe('present');
     expect(gridStateOf({ grid: { state: null } })).toBeUndefined();
     expect(gridStateOf({})).toBeUndefined();
+  });
+
+  // HAS-504: off only when the service says so - null and a missing field are not known, never inside
+  it('the grid frequency as known, off or not known', () => {
+    expect(gridFrequencyOf({ grid: { frequency: 51.02, frequencyOff: true } })).toEqual({
+      hz: 51.02,
+      off: true,
+    });
+    expect(gridFrequencyOf({ grid: { frequency: 50.01, frequencyOff: false } })).toEqual({
+      hz: 50.01,
+      off: false,
+    });
+    expect(gridFrequencyOf({ grid: { state: null, frequencyOff: null } })).toEqual({
+      hz: undefined,
+      off: undefined,
+    });
+    expect(gridFrequencyOf(null)).toEqual({ hz: undefined, off: undefined });
+    expect(alertKindLabel('frequency')).toBe('energy.alerts.kind.frequency');
   });
 
   it('the open alarms newest first, leaving out what it cannot name', () => {

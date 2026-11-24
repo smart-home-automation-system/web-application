@@ -833,6 +833,8 @@ export const en = {
     },
     charge: {
       none: 'The battery is not charging from the grid.',
+      frequencyOff:
+        'The grid frequency is off the band - the inverter does not connect to such a grid, so a charge from the grid cannot run now.',
       start: 'Charge from the grid',
       sending: 'Sending the command to the inverter',
       target: 'Target',
@@ -895,8 +897,8 @@ export const en = {
       none: 'Tauron announces no outage for the house.',
       chargeFrom: 'The charge would start at',
       skipped: 'No automatic charge for this outage.',
-      skip: 'No charge for this one',
-      unskip: 'Charge for this one again',
+      skip: 'Do not charge before it',
+      unskip: 'Charge before it again',
       skipFailed: 'The outage could not be changed.',
       more: 'More announced: {{ count }}',
       kind: {
@@ -942,10 +944,15 @@ export const en = {
       unknown: 'Not known',
     },
     gridState: {
+      label: 'Grid',
       present: 'The grid is there',
       lost: 'The grid is lost - the house runs on the battery',
       unknown: 'The state of the grid is not known yet',
       since: 'since',
+      frequencyOff:
+        'The grid frequency is off the band ({{ hz }} Hz) - the house is likely on a generator, the inverters do not connect',
+      frequencyOffNoValue:
+        'The grid frequency is off the band - the house is likely on a generator, the inverters do not connect',
     },
     reachable: {
       yes: 'answers',
@@ -997,6 +1004,8 @@ export const en = {
       importEnergy: 'Taken, since it was set up',
       exportEnergy: 'Returned, since it was set up',
       warnAt: 'A phase above {{ amperes }} A is overloaded',
+      frequency: 'Frequency',
+      frequencyOff: 'off the band',
     },
     readingSource: {
       local: 'read from the device',
@@ -1020,11 +1029,14 @@ export const en = {
         overload: 'Overloaded',
         alarm: 'Alarm',
         production: 'Produces nothing in the sun',
+        frequency: 'Grid frequency off - a generator?',
       },
     },
     outages: {
       none: 'No outage in the last year',
       lasts: 'lasts',
+      shown: '{{ shown }} of {{ total }}',
+      more: 'Show more',
       soc: 'Battery',
       lowest: 'lowest',
       since: 'Since',

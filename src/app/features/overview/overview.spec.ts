@@ -736,16 +736,29 @@ describe('Overview', () => {
       );
     });
 
-    it('says the grid is lost in red, and what is not known as not known', async () => {
+    // HAS-504 (owner, 2026-11-24): a problem of a tile is the blinking light by its title, its words in the tooltip
+    it('lights the signal for a lost grid, and says what is not known as not known', async () => {
       answer(energyFlows, { production: 0 });
       answer(energyBattery, { stale: true });
-      answer(energyStatus, { grid: { state: 'lost' } });
+      answer(energyStatus, { grid: { state: 'lost', frequency: 51.02, frequencyOff: true } });
 
-      expect(
-        words((await tile('energy')).querySelector('[data-testid="energy-grid-lost"]')),
-      ).toContain('The grid is lost');
+      expect((await tile('energy')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBe(
+        'The grid is lost - the house runs on the battery',
+      );
       expect(await row('grid')).toBe('Grid not known');
       expect(await row('battery')).toBe('Battery not known');
+    });
+
+    // HAS-504: the grid present at 51 Hz - a generator, likely; red only when the service says so
+    it('lights the signal for a grid frequency off the band, and none for one inside it', async () => {
+      answer(energyFlows, { production: 0 });
+      answer(energyStatus, { grid: { state: 'present', frequency: 51.02, frequencyOff: true } });
+      expect((await tile('energy')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toContain(
+        'The grid frequency is off the band (51.02 Hz)',
+      );
+
+      answer(energyStatus, { grid: { state: 'present', frequency: 50.01, frequencyOff: false } });
+      expect((await tile('energy')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBeUndefined();
     });
 
     // HAS-373: tomorrow of the forecast, as much as the answer says
@@ -964,22 +977,21 @@ describe('Overview', () => {
       answer(safety, { detectors: [fine(1, 'Kitchen'), fine(2, 'Office')] });
       const shown = await tile('safety');
 
-      expect(words(shown.querySelector('[data-testid="safety-state"] span'))).toBe('Every detector is all right');
+      expect(shown.querySelector('[data-testid="tile-signal"]')).toBeNull();
       expect(words(shown.querySelector('[data-testid="safety-count"]'))).toBe('2');
       expect(shown.querySelector('a')?.getAttribute('href')).toBe('/safety');
     });
 
-    it('tells an alarm first with the names, and a detector in trouble by name', async () => {
+    // HAS-504 (owner, 2026-11-24): the overview tells the state by the light, the safety page the details
+    it('lights the signal for an alarm first with its names, then for a detector in trouble', async () => {
       answer(safety, {
         detectors: [{ ...fine(1, 'Kitchen'), alarm: on }, { ...fine(2, 'Loft'), batteryLow: on }],
       });
-      const shown = await tile('safety');
+      expect((await tile('safety')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBe('Fire alarm: Kitchen');
 
-      expect(shown.querySelector('[data-testid="safety-state"]')?.getAttribute('data-state')).toBe(
-        'alarm',
-      );
-      expect(words(shown)).toContain('Fire alarm Kitchen');
-      expect(words(shown)).toContain('Needs a look Loft');
+      answer(safety, { detectors: [fine(1, 'Kitchen'), { ...fine(2, 'Loft'), batteryLow: on }] });
+      expect((await tile('safety')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBe('A detector needs a look: Loft');
+      expect(words(await tile('safety'))).not.toContain('Loft');
     });
 
     // missing is never all right
@@ -987,9 +999,7 @@ describe('Overview', () => {
       answer(safety, { detectors: [fine(1, 'Kitchen'), { id: 2, name: 'Hall' }] });
       const shown = await tile('safety');
 
-      expect(shown.querySelector('[data-testid="safety-state"]')?.getAttribute('data-state')).toBe(
-        'unknown',
-      );
+      expect(shown.querySelector('[data-testid="tile-signal"]')).toBeNull();
       expect(words(shown)).toContain('Not fully known 1');
     });
   });

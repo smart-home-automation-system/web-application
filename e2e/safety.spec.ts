@@ -102,9 +102,10 @@ test.describe('a fire alarm', () => {
   test('is told on the tile of the overview', async ({ page }) => {
     await page.goto('/overview');
 
-    await expect(page.getByTestId('tile-safety').getByTestId('safety-state')).toHaveAttribute(
-      'data-state',
-      'alarm',
+    // the blinking light by the title, the names in its tooltip (HAS-504, owner 2026-11-24)
+    await expect(page.getByTestId('tile-safety').getByTestId('tile-signal')).toHaveAttribute(
+      'aria-label',
+      /^Fire alarm: /,
     );
   });
 });

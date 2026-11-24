@@ -92,9 +92,20 @@
   letter-spacing: var(--mat-sys-headline-small-tracking);
 }
 
-// a name from outside may be long: it breaks instead of pushing the value out of the tile
+// a name from outside may be long: it breaks instead of pushing the value out of the tile - a list of names too
+// (the detectors that need a look on a tile of 310 px ran out of it: the strong of a value never wraps)
 .tile__name {
+  min-width: 0;
   overflow-wrap: anywhere;
+
+  strong {
+    white-space: normal;
+  }
+}
+
+// the short name of such a row stays on one line - the names beside it take the breaks
+.tile__row:has(> .tile__name) > dt {
+  white-space: nowrap;
 }
 
 // how old a reading is: the service keeps the last one of a sensor that fell silent

@@ -18,6 +18,12 @@
     [resource]="charge"
     data-testid="card-charge"
   >
+    @if (frequencyOff()) {
+      <p class="tile__lead tile__lead--alert" data-testid="charge-frequency-off">
+        <mat-icon aria-hidden="true">warning</mat-icon>
+        <span>{{ t('energy.charge.frequencyOff') }}</span>
+      </p>
+    }
     @if (charge.value() !== undefined) {
       @if (run(); as r) {
         <p class="charge__state" data-testid="charge-state">
@@ -125,7 +131,7 @@
               type="submit"
               disabledInteractive
               data-testid="charge-start"
-              [disabled]="chargeBusy() || question() !== undefined"
+              [disabled]="chargeBusy() || question() !== undefined || frequencyOff()"
             >
               <mat-icon>bolt</mat-icon>{{ t('energy.charge.start') }}
             </button>
@@ -147,7 +153,7 @@
 
   <!-- the automation before a planned outage -->
   <app-domain-tile
-    class="control__automation"
+    class="control__automation domain-tile--column"
     heading="energy.cards.automation"
     icon="event_upcoming"
     domain="energy"
@@ -222,15 +228,13 @@
             }
           </ul>
         }
-        <div class="form__actions">
-          <button
-            matButton="filled"
-            type="submit"
-            data-testid="automation-save"
-            [disabled]="autoBusy() || !autoEdited()"
-          >
-            {{ t('energy.automation.save') }}
-          </button>
+        @if (automation.value()?.updatedAt; as at) {
+          <p class="tile__detail">
+            {{ t('energy.automation.updatedAt') }} {{ at | houseDateTime }}
+          </p>
+        }
+        <!-- the commands in the bottom right corner of the card, as the charge (owner, 2026-11-24) - the main one last -->
+        <div class="commands">
           <button
             matButton
             type="button"
@@ -240,12 +244,15 @@
           >
             {{ t('energy.automation.reset') }}
           </button>
+          <button
+            matButton="filled"
+            type="submit"
+            data-testid="automation-save"
+            [disabled]="autoBusy() || !autoEdited()"
+          >
+            {{ t('energy.automation.save') }}
+          </button>
         </div>
-        @if (automation.value()?.updatedAt; as at) {
-          <p class="tile__detail">
-            {{ t('energy.automation.updatedAt') }} {{ at | houseDateTime }}
-          </p>
-        }
       </form>
       @if (autoFailure(); as failed) {
         <app-api-error-strip
@@ -275,6 +282,8 @@
         <ul class="planned" data-testid="planned-list">
           @for (outage of list; track outage.id ?? $index) {
             <li class="planned__item" data-testid="planned-outage" [attr.data-id]="outage.id">
+              <!-- the outage on the left, the skip of its charge on the right of the same row (owner, 2026-11-24) -->
+              <div class="planned__info">
               <strong
                 >{{ outage.startsAt | houseDateTime }} – {{ outage.endsAt | houseDateTime }}</strong
               >
@@ -295,6 +304,9 @@
                     >{{ t('energy.planned.chargeFrom') }} {{ start | houseDateTime }}</span
                   >
                 }
+              }
+              </div>
+              @if (automationApplies(outage)) {
                 <button
                   matButton
                   type="button"
