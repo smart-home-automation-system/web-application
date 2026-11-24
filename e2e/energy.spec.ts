@@ -106,7 +106,9 @@ test('tells the grid frequency off its band - a generator, likely', async ({ pag
   await page.addInitScript(() => localStorage.setItem('mock-generator', 'on'));
   await page.goto('/energy');
 
-  await expect(page.getByTestId('card-alerts').getByTestId('alert-frequency')).toHaveText('51.02 Hz');
+  await expect(page.getByTestId('card-alerts').getByTestId('alert-frequency')).toHaveText(
+    '51.02 Hz',
+  );
   await expect(page.getByTestId('card-grid').locator('[data-field="frequency"]')).toHaveText(
     /off the band\s*51.02 Hz/,
   );
@@ -126,22 +128,38 @@ test('tells the grid frequency off its band - a generator, likely', async ({ pag
   );
 });
 
-// HAS-507 (owner 2026-11-24): the power and the battery in a row, the voltage, the current and the frequency in the next
+// HAS-507 (owner 2026-11-24): the power and the battery in a row, the voltage, the current and the frequency in the next;
+// on a phone one under another in that order
 test('lays the charts of the grid out in a row of three', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === 'phone', 'one column on a phone');
-  await page.setViewportSize({ width: 1700, height: 1000 });
+  const phone = testInfo.project.name === 'phone';
+  if (!phone) {
+    await page.setViewportSize({ width: 1700, height: 1000 });
+  }
   await page.goto('/energy');
   const topOf = async (key: string) => {
     const card = page.getByTestId(`chart-${key}`);
-    await expect(card).toBeVisible();
+    await expect(card).toBeAttached();
     return Math.round((await card.boundingBox())!.y);
   };
+  const [power, battery, voltage, current, frequency] = [
+    await topOf('power'),
+    await topOf('battery'),
+    await topOf('voltage'),
+    await topOf('current'),
+    await topOf('frequency'),
+  ];
 
-  expect(await topOf('battery')).toBe(await topOf('power'));
-  const row = await topOf('voltage');
-  expect(row).toBeGreaterThan(await topOf('power'));
-  expect(await topOf('current')).toBe(row);
-  expect(await topOf('frequency')).toBe(row);
+  if (phone) {
+    expect([power, battery, voltage, current, frequency]).toEqual(
+      [power, battery, voltage, current, frequency].toSorted((a, b) => a - b),
+    );
+    expect(new Set([power, battery, voltage, current, frequency]).size).toBe(5);
+  } else {
+    expect(battery).toBe(power);
+    expect(voltage).toBeGreaterThan(power);
+    expect(current).toBe(voltage);
+    expect(frequency).toBe(voltage);
+  }
 });
 
 test('shows a grid frequency inside the band plainly', async ({ page }) => {
