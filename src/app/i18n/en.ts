@@ -48,6 +48,7 @@ export const en = {
       battery: 'Battery',
       tomorrow: 'Tomorrow: {{ word }}, about {{ kwh }} kWh',
       tomorrowKwh: 'Tomorrow: about {{ kwh }} kWh',
+      workMode: 'Inverter',
       tomorrowUnknown: 'Tomorrow: forecast not known',
     },
     title: 'Overview',
@@ -830,6 +831,8 @@ export const en = {
       planned: 'Planned outages',
       nextOutage: 'Next planned outage',
       runs: 'Charges',
+      reserve: 'Battery reserve',
+      workMode: 'Inverter mode',
     },
     charge: {
       none: 'The battery is not charging from the grid.',
@@ -893,6 +896,55 @@ export const en = {
       updatedAt: 'Last changed',
       saveFailed: 'The settings could not be saved.',
     },
+    workMode: {
+      charging: 'Charging from the grid to {{ target }}\u00a0%',
+      backUp: 'Back Up - reserve {{ level }}\u00a0%',
+      selfUse: 'Self Use',
+      note: 'The work mode the energy service set - the SolaX cloud reads none back; the run mode is read from the SOLAX.',
+    },
+    reserve: {
+      title: 'Battery reserve',
+      held: 'Held at {{ level }}\u00a0%',
+      off: 'Switched off',
+      until: 'until',
+      untilOff: 'until switched off',
+      lastWrite: 'Last write',
+      write: {
+        none: 'never written',
+        pending: 'waiting to be written',
+        sent: 'sent to the inverter',
+        taken: 'taken by the inverter',
+        failed: 'not written - tried again every 10 minutes',
+      },
+      switch: 'Hold a reserve',
+      level: 'Level',
+      endLabel: 'How long it holds',
+      end: {
+        none: 'Until switched off',
+        tomorrow: 'Until tomorrow 18:00',
+        date: 'Until a time',
+      },
+      endDate: 'Holds until',
+      explain:
+        'While the grid is there the house does not take the battery below the level, the grid charges it up to it and the panels above it; in an outage the battery is used.',
+      floorNote:
+        'The SolaX cloud does not take the floor: set Min SoC to {{ level }}\u00a0% in the work mode of SolaxCloud by hand.',
+      problem: {
+        level: 'The level is from {{ min }} to {{ max }} % in steps of {{ step }}.',
+        untilMissing: 'Choose the date and the time the reserve holds until.',
+        untilPast: 'The end of the reserve must be ahead.',
+        untilTooFar: 'The reserve can be set at most {{ days }} days ahead.',
+      },
+      question:
+        'Hold {{ level }}\u00a0% of the battery? Below it the battery charges from the grid at up to 5 kW, now and whenever it falls under it.',
+      confirm: 'Hold the reserve',
+      dontChange: 'Do not change',
+      undo: 'Undo changes',
+      send: 'Send',
+      saveFailed: 'The reserve could not be written.',
+      noAnswer:
+        'The energy service did not answer - the reserve may have been written all the same.',
+    },
     planned: {
       none: 'Tauron announces no outage for the house.',
       chargeFrom: 'The charge would start at',
@@ -913,7 +965,7 @@ export const en = {
     runs: {
       none: 'No charge in the last 30 days.',
       range: 'The last 30 days, the newest first.',
-      toTarget: 'to {{ target }} %',
+      toTarget: 'to {{ target }}\u00a0%',
     },
     today: {
       title: 'Today so far',
@@ -1054,6 +1106,7 @@ export const en = {
         title: 'Battery',
         label: 'The state of charge of the battery over time',
         soc: 'State of charge',
+        reserve: 'Reserve',
       },
       frequency: {
         title: 'Grid frequency',
@@ -1201,6 +1254,7 @@ export const en = {
       deviceFailed: 'The SolaX cloud refused the command, or the inverter did not carry it out.',
       invalidAutomation: 'The energy service refused these settings.',
       plannedOutageNotFound: 'Tauron no longer announces this outage.',
+      invalidReserve: 'The energy service refused the level or the end of the reserve.',
     },
   },
   profiles: {

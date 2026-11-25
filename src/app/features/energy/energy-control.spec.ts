@@ -15,6 +15,7 @@ import { provideI18nTesting, useLanguage } from '../../../testing/i18n';
 import { ApiError } from '../../core/api/api-error';
 import { HistoryRange } from '../../core/time/history-range';
 import {
+  BatteryReserve,
   Automation,
   ChargeRun,
   ChargeState,
@@ -64,6 +65,7 @@ describe('EnergyControl', () => {
   let runs: FakeQueryResource<HistoryRange, readonly ChargeRun[] | null>;
   let automation: FakeResource<Automation | null>;
   let planned: FakeResource<readonly PlannedOutage[] | null>;
+  let reserve: FakeResource<BatteryReserve | null>;
   let runsAsked: () => HistoryRange;
   let api: {
     startCharge: ReturnType<typeof vi.fn>;
@@ -79,6 +81,7 @@ describe('EnergyControl', () => {
     runs = fakeQueryResource();
     automation = fakeResource();
     planned = fakeResource();
+    reserve = fakeResource();
     api = {
       startCharge: vi.fn(() => of(undefined)),
       cancelCharge: vi.fn(() => of(undefined)),
@@ -106,6 +109,8 @@ describe('EnergyControl', () => {
     });
     fixture = TestBed.createComponent(EnergyControl);
     fixture.componentRef.setInput('planned', planned);
+    fixture.componentRef.setInput('charge', charge);
+    fixture.componentRef.setInput('reserve', reserve);
   });
 
   afterEach(() => {

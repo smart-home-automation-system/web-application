@@ -65,7 +65,10 @@ test.describe('overview', () => {
     await expect(aircon).toContainText(/On\s+2/);
     await expect(aircon).toContainText(/Off\s+3/);
     // a unit that does not answer is the blinking light by the title (HAS-504, owner 2026-11-24)
-    await expect(aircon.getByTestId('tile-signal')).toHaveAttribute('aria-label', 'Not answering: 1');
+    await expect(aircon.getByTestId('tile-signal')).toHaveAttribute(
+      'aria-label',
+      'Not answering: 1',
+    );
     await expect(aircon.getByTestId('aircon-running')).toHaveText([
       'office: Cooling 23 °C',
       'sanctum: Heating 21 °C',
@@ -124,7 +127,7 @@ test.describe('overview', () => {
     await page.goto('/overview');
 
     const alerts = page.getByRole('alert');
-    await expect(alerts).toHaveCount(24);
+    await expect(alerts).toHaveCount(26);
     for (const alert of await alerts.all()) {
       await expect(alert).toContainText('(error 502)');
     }
@@ -132,8 +135,9 @@ test.describe('overview', () => {
     // the lights tile two - the lights and the empty house
     await expect(page.getByTestId('tile-heating').getByRole('alert')).toHaveCount(3);
     await expect(page.getByTestId('tile-light').getByRole('alert')).toHaveCount(2);
-    // HAS-341: the energy tile four - the flows, the battery, the grid and the forecast (HAS-373)
-    await expect(page.getByTestId('tile-energy').getByRole('alert')).toHaveCount(4);
+    // HAS-341: the energy tile six - the flows, the battery, the grid, the forecast (HAS-373), the reserve and the charge
+    // of its work mode (HAS-496)
+    await expect(page.getByTestId('tile-energy').getByRole('alert')).toHaveCount(6);
     // HAS-322: the water tile three - the valve, the water of today and the salt of the softener (HAS-402)
     await expect(page.getByTestId('tile-valve').getByRole('alert')).toHaveCount(3);
     // HAS-394: the air conditioning tile two - the units and the automation

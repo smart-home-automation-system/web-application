@@ -10,6 +10,7 @@ describe('the refusals of energy-service', () => {
       'INVALID_AUTOMATION',
       'INVALID_CHARGE',
       'INVALID_RANGE',
+      'INVALID_RESERVE',
       'INVERTER_UNAVAILABLE',
       'NOT_FOUND_CHARGE',
       'NOT_FOUND_INVERTER',

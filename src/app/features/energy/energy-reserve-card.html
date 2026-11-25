@@ -1,0 +1,160 @@
+<ng-container *transloco="let t">
+  <app-domain-tile
+    class="domain-tile--column"
+    heading="energy.cards.reserve"
+    icon="battery_saver"
+    domain="energy"
+    waitingLabel="energy.page.loading"
+    [describeWith]="describe"
+    [resource]="reserve()"
+    data-testid="card-reserve"
+  >
+    @if (reserve().value() !== undefined) {
+      @let held = stored();
+      <!-- what the service says: on at a level, off, or not known -->
+      <p class="reserve__state" data-testid="reserve-state" [attr.data-on]="storedOn()">
+        @if (held?.enabled === undefined) {
+          {{ t('energy.notKnown') }}
+        } @else if (storedOn()) {
+          <strong>{{ t('energy.reserve.held', { level: storedLevel() ?? '?' }) }}</strong>
+          @if (held?.until; as until) {
+            <span class="reserve__until" data-testid="reserve-until">
+              {{ t('energy.reserve.until') }} {{ until | houseDateTime }}
+            </span>
+          } @else {
+            <span class="reserve__until">{{ t('energy.reserve.untilOff') }}</span>
+          }
+        } @else {
+          <strong>{{ t('energy.reserve.off') }}</strong>
+        }
+      </p>
+      <dl class="facts">
+        <dt>{{ t('energy.reserve.lastWrite') }}</dt>
+        <dd data-testid="reserve-write" [attr.data-state]="held?.writeState">
+          {{ writeStateLabel(held) | displayText }}
+          @if (held?.writeAttemptedAt; as at) {
+            · {{ at | houseDateTime }}
+          }
+        </dd>
+      </dl>
+
+      <form class="form" data-testid="reserve-form" (submit)="$event.preventDefault(); send()">
+        <mat-slide-toggle
+          data-testid="reserve-switch"
+          [checked]="on()"
+          [disabled]="busy()"
+          (toggleChange)="edit(() => on.set(!on()))"
+        >
+          {{ t('energy.reserve.switch') }}
+        </mat-slide-toggle>
+
+        <div class="reserve__level">
+          <span class="reserve__label" id="reserve-level-label">{{
+            t('energy.reserve.level')
+          }}</span>
+          <mat-slider
+            [min]="LEVEL.min"
+            [max]="LEVEL.max"
+            [step]="LEVEL.step"
+            discrete
+            class="reserve__slider"
+            [disabled]="busy() || !on()"
+          >
+            <input
+              matSliderThumb
+              data-testid="reserve-level"
+              aria-labelledby="reserve-level-label"
+              [value]="level()"
+              (valueChange)="edit(() => level.set($event))"
+            />
+          </mat-slider>
+          <strong class="reserve__value" data-testid="reserve-level-value">{{ level() }} %</strong>
+        </div>
+
+        <div class="reserve__end" role="group" [attr.aria-label]="t('energy.reserve.endLabel')">
+          <span class="segments">
+            @for (choice of ['none', 'tomorrow', 'date']; track choice) {
+              <button
+                class="segment"
+                type="button"
+                [class.segment--on]="end() === choice"
+                [attr.aria-pressed]="end() === choice"
+                [attr.data-testid]="'reserve-end-' + choice"
+                [disabled]="busy() || !on()"
+                (click)="chooseEnd($any(choice))"
+              >
+                {{ t('energy.reserve.end.' + choice) }}
+              </button>
+            }
+          </span>
+          @if (end() === 'date' && on()) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="reserve__date">
+              <mat-label>{{ t('energy.reserve.endDate') }}</mat-label>
+              <input
+                matInput
+                type="datetime-local"
+                data-testid="reserve-date"
+                [min]="dateMin()"
+                [value]="date()"
+                [disabled]="busy()"
+                (input)="edit(() => date.set(textOf($event)))"
+              />
+            </mat-form-field>
+          }
+        </div>
+
+        @if (on()) {
+          <p class="tile__detail" data-testid="reserve-explain">
+            {{ t('energy.reserve.explain') }}
+          </p>
+          <!-- the SolaX cloud takes the work mode and the level to charge to, never the floor (2026-11-24) -->
+          <p class="tile__detail reserve__note" data-testid="reserve-floor-note">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <span>{{ t('energy.reserve.floorNote', { level: level() }) }}</span>
+          </p>
+        }
+
+        @if (tried() && problem(); as p) {
+          <p class="form__problems" data-testid="reserve-problem">
+            {{
+              t('energy.reserve.problem.' + p, {
+                min: LEVEL.min,
+                max: LEVEL.max,
+                step: LEVEL.step,
+                days: LONGEST,
+              })
+            }}
+          </p>
+        }
+
+        <!-- the commands in the bottom right corner of the card, the main one last -->
+        <div class="commands">
+          <button
+            matButton
+            type="button"
+            data-testid="reserve-undo"
+            [disabled]="busy() || !edited()"
+            (click)="undo()"
+          >
+            {{ t('energy.reserve.undo') }}
+          </button>
+          <button
+            matButton="filled"
+            type="submit"
+            data-testid="reserve-send"
+            [disabled]="busy() || asking() || !edited()"
+          >
+            {{ t('energy.reserve.send') }}
+          </button>
+        </div>
+      </form>
+      @if (failure(); as failed) {
+        <app-api-error-strip
+          [error]="failed.error"
+          [summary]="t(failed.summary)"
+          [describeWith]="describe"
+        />
+      }
+    }
+  </app-domain-tile>
+</ng-container>

@@ -372,6 +372,28 @@ export interface Automation {
   readonly updatedAt?: string;
 }
 
+/**
+ * `GET /energy/battery/reserve` (energy-service >= 0.18.0, HAS-494; the Back Up work mode since 0.21.0): the battery
+ * reserve - `enabled` (always written, false until switched on), `level` (%), `until` (left out for a reserve that
+ * holds until switched off), `updatedAt` (left out before the first change), `writeState` - what became of the last
+ * write to the inverter: `none`, `pending`, `sent`, `taken`, `failed` - and `writeAttemptedAt`. Replaced whole by `PUT`.
+ */
+export interface BatteryReserve {
+  readonly enabled?: boolean;
+  readonly level?: number;
+  readonly until?: string;
+  readonly updatedAt?: string;
+  readonly writeState?: string;
+  readonly writeAttemptedAt?: string;
+}
+
+/** The body of `PUT /energy/battery/reserve`: the switch and the level always, `until` only for a reserve switched on. */
+export interface ReserveBody {
+  readonly enabled: boolean;
+  readonly level: number;
+  readonly until?: string;
+}
+
 /** The body of `PUT /energy/automation`: every field. */
 export interface AutomationBody {
   readonly chargeBeforeOutage: boolean;
@@ -589,9 +611,9 @@ export class EnergyApi {
   }
 
   /** The charge going on or being set back, with the battery now (HAS-336). Call in an injection context. */
-  watchCharge(): PollingResource<ChargeState | null> {
+  watchCharge(intervalMs = POLL_CHARGE_EVERY_MS): PollingResource<ChargeState | null> {
     return pollingResource(() => this.api.get<ChargeState | null>('/energy/battery/charge'), {
-      intervalMs: POLL_CHARGE_EVERY_MS,
+      intervalMs,
     });
   }
 
@@ -612,6 +634,21 @@ export class EnergyApi {
     return pollingResource(() => this.api.get<Automation | null>('/energy/automation'), {
       intervalMs: POLL_SETTINGS_EVERY_MS,
     });
+  }
+
+  /** The battery reserve (HAS-494), every 10 s for its card. Call in an injection context. */
+  watchReserve(intervalMs = POLL_CHARGE_EVERY_MS): PollingResource<BatteryReserve | null> {
+    return pollingResource(() => this.api.get<BatteryReserve | null>('/energy/battery/reserve'), {
+      intervalMs,
+    });
+  }
+
+  /**
+   * The battery reserve written whole - **a write to the inverter** (switched on, it charges from the grid). The answer
+   * is not used: the page reads the reserve again.
+   */
+  saveReserve(body: ReserveBody): Observable<void> {
+    return this.api.put<unknown>('/energy/battery/reserve', body).pipe(map(() => undefined));
   }
 
   /** The outages Tauron announces for the house that have not ended (HAS-337). Call in an injection context. */

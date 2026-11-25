@@ -47,6 +47,7 @@ export const pl: Messages = {
       battery: 'Magazyn',
       tomorrow: 'Jutro: {{ word }}, ok. {{ kwh }} kWh',
       tomorrowKwh: 'Jutro: ok. {{ kwh }} kWh',
+      workMode: 'Falownik',
       tomorrowUnknown: 'Jutro: prognoza nieznana',
     },
     title: 'Przegląd',
@@ -822,6 +823,8 @@ export const pl: Messages = {
       planned: 'Planowane wyłączenia',
       nextOutage: 'Najbliższe wyłączenie',
       runs: 'Ładowania',
+      reserve: 'Rezerwa baterii',
+      workMode: 'Tryb falownika',
     },
     charge: {
       none: 'Magazyn nie ładuje się z sieci.',
@@ -885,6 +888,54 @@ export const pl: Messages = {
       updatedAt: 'Ostatnia zmiana',
       saveFailed: 'Nie udało się zapisać ustawień.',
     },
+    workMode: {
+      charging: 'Ładowanie z sieci do {{ target }}\u00a0%',
+      backUp: 'Back Up - rezerwa {{ level }}\u00a0%',
+      selfUse: 'Autokonsumpcja (Self Use)',
+      note: 'Tryb pracy ustawiony przez serwis energii - chmura SolaX nie oddaje go z powrotem; stan pracy jest odczytany z SOLAX-a.',
+    },
+    reserve: {
+      title: 'Rezerwa baterii',
+      held: 'Trzymana na {{ level }}\u00a0%',
+      off: 'Wyłączona',
+      until: 'do',
+      untilOff: 'do wyłączenia',
+      lastWrite: 'Ostatni zapis',
+      write: {
+        none: 'nigdy nie zapisana',
+        pending: 'czeka na zapis',
+        sent: 'wysłana do falownika',
+        taken: 'przyjęta przez falownik',
+        failed: 'nie zapisana - ponawiana co 10 minut',
+      },
+      switch: 'Trzymaj rezerwę',
+      level: 'Poziom',
+      endLabel: 'Jak długo trzyma',
+      end: {
+        none: 'Do wyłączenia',
+        tomorrow: 'Do jutra 18:00',
+        date: 'Do wybranej chwili',
+      },
+      endDate: 'Trzyma do',
+      explain:
+        'Przy sieci dom nie bierze z baterii poniżej poziomu, sieć ją do niego doładowuje, a panele powyżej; przy zaniku sieci bateria jest używana.',
+      floorNote:
+        'Chmura SolaX nie przyjmuje dna: ustaw w trybie pracy SolaxCloud ręcznie Min SoC na {{ level }}\u00a0%.',
+      problem: {
+        level: 'Poziom to od {{ min }} do {{ max }} % co {{ step }}.',
+        untilMissing: 'Wybierz datę i godzinę, do której rezerwa ma trzymać.',
+        untilPast: 'Koniec rezerwy musi być w przyszłości.',
+        untilTooFar: 'Rezerwę można ustawić najwyżej {{ days }} dni naprzód.',
+      },
+      question:
+        'Trzymać {{ level }}\u00a0% baterii? Poniżej tego poziomu bateria ładuje się z sieci mocą do 5 kW, teraz i za każdym razem, gdy pod niego zejdzie.',
+      confirm: 'Trzymaj rezerwę',
+      dontChange: 'Nie zmieniaj',
+      undo: 'Cofnij zmiany',
+      send: 'Wyślij',
+      saveFailed: 'Nie udało się zapisać rezerwy.',
+      noAnswer: 'Serwis energii nie odpowiedział - rezerwa mogła zostać zapisana mimo to.',
+    },
     planned: {
       none: 'Tauron nie ogłasza wyłączenia dla domu.',
       chargeFrom: 'Ładowanie ruszyłoby o',
@@ -905,7 +956,7 @@ export const pl: Messages = {
     runs: {
       none: 'Brak ładowań w ostatnich 30 dniach.',
       range: 'Ostatnie 30 dni, najnowsze na górze.',
-      toTarget: 'do {{ target }} %',
+      toTarget: 'do {{ target }}\u00a0%',
     },
     today: {
       title: 'Dzisiaj do tej pory',
@@ -1046,6 +1097,7 @@ export const pl: Messages = {
         title: 'Magazyn energii',
         label: 'Stan naładowania magazynu w czasie',
         soc: 'Stan naładowania',
+        reserve: 'Rezerwa',
       },
       frequency: {
         title: 'Częstotliwość sieci',
@@ -1194,6 +1246,7 @@ export const pl: Messages = {
       deviceFailed: 'Chmura SolaX odrzuciła polecenie albo falownik go nie wykonał.',
       invalidAutomation: 'Serwis energii odrzucił te ustawienia.',
       plannedOutageNotFound: 'Tauron nie ogłasza już tego wyłączenia.',
+      invalidReserve: 'Serwis energii odrzucił poziom albo koniec rezerwy.',
     },
   },
   profiles: {

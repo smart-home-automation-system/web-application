@@ -8,7 +8,12 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { APP_CONFIG } from '../../core/config/app-config';
 import { houseDay, houseInstant, parseHouseDateTime } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
-import { EnergyApi, EnergyPhase, Inverter, PlannedOutage } from '../../data-access/energy/energy-api';
+import {
+  EnergyApi,
+  EnergyPhase,
+  Inverter,
+  PlannedOutage,
+} from '../../data-access/energy/energy-api';
 import { automationApplies, outageKindLabel, outageScopeLabel } from './energy-charge';
 import { MessageKey } from '../../i18n/messages';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
@@ -20,7 +25,8 @@ import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { EnergyChartCard } from './energy-chart-card';
 import { EnergyControl } from './energy-control';
-import { ENERGY_CHARTS, energyChart } from './energy-charts';
+import { ENERGY_CHARTS, ThresholdSpec, energyChart } from './energy-charts';
+import { WorkMode, heldLevel, workModeOf } from './energy-reserve';
 import { EnergyDays, shiftDay } from './energy-days';
 import { EnergyOperator } from './energy-operator';
 import { describeEnergyError } from './energy-errors';
@@ -128,7 +134,28 @@ export class Energy {
   protected readonly outages = this.api.watchOutages(this.outageRange);
 
   protected readonly period = historyPeriod();
-  protected readonly charts = ENERGY_CHARTS.map((spec) => energyChart(spec, this.period));
+  /** HAS-496: the battery reserve - its card in the control section and its level on the battery chart, one call. */
+  protected readonly reserve = this.api.watchReserve();
+  /** The charge going on - the control section and the mode of the inverter beside the flow, one call (HAS-496). */
+  protected readonly charge = this.api.watchCharge();
+  protected readonly workMode = computed(() =>
+    workModeOf(this.charge.value(), this.reserve.value()),
+  );
+  protected readonly workModeIcon: Readonly<Record<WorkMode['kind'], string>> = {
+    charging: 'battery_charging_full',
+    backUp: 'battery_saver',
+    selfUse: 'solar_power',
+    notKnown: 'help',
+  };
+  private readonly reserveLine = computed((): readonly ThresholdSpec[] => {
+    const level = heldLevel(this.reserve.value());
+    return level === undefined
+      ? []
+      : [{ key: 'reserve', name: 'energy.charts.battery.reserve', value: level, color: 4 }];
+  });
+  protected readonly charts = ENERGY_CHARTS.map((spec) =>
+    energyChart(spec, this.period, spec.key === 'battery' ? this.reserveLine : undefined),
+  );
 
   protected readonly phases = PHASES;
   protected readonly strings = STRINGS;
@@ -199,7 +226,9 @@ export class Energy {
     return (answer as PlannedOutage[])
       .flatMap((outage) => {
         const start = instantOf(outage.startsAt);
-        return start !== undefined && (instantOf(outage.endsAt) ?? start) > now ? [{ outage, start }] : [];
+        return start !== undefined && (instantOf(outage.endsAt) ?? start) > now
+          ? [{ outage, start }]
+          : [];
       })
       .sort((a, b) => a.start - b.start)
       .map(({ outage }) => outage);
@@ -219,7 +248,9 @@ export class Energy {
     source: this.outageRange,
     computation: () => OUTAGES_SHOWN,
   });
-  protected readonly visibleOutages = computed(() => this.outageList()?.slice(0, this.outagesShown()));
+  protected readonly visibleOutages = computed(() =>
+    this.outageList()?.slice(0, this.outagesShown()),
+  );
 
   protected showMoreOutages(): void {
     this.outagesShown.update((shown) => shown + OUTAGES_SHOWN);

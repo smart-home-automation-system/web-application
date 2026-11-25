@@ -21,6 +21,8 @@ import { SafetyStore } from '../../data-access/safety/safety-store';
 import { BlindsApi, RoomBlinds } from '../../data-access/blinds/blinds-api';
 import {
   Battery,
+  BatteryReserve,
+  ChargeState,
   EnergyApi,
   EnergyFlows,
   EnergyForecast,
@@ -126,6 +128,8 @@ describe('Overview', () => {
   let energyBattery: FakeResource<Battery | null>;
   let energyStatus: FakeResource<EnergyStatus | null>;
   let energyForecast: FakeResource<EnergyForecast | null>;
+  let energyReserve: FakeResource<BatteryReserve | null>;
+  let energyCharge: FakeResource<ChargeState | null>;
   let fixture: ComponentFixture<Overview>;
   let requests: FakeQueryResource<string | undefined, readonly MemberRequest[] | null>;
   let requestsAsked: () => string | undefined;
@@ -150,6 +154,8 @@ describe('Overview', () => {
     energyBattery = fakeResource();
     energyStatus = fakeResource();
     energyForecast = fakeResource();
+    energyReserve = fakeResource();
+    energyCharge = fakeResource();
     requests = fakeQueryResource();
     safety = fakeResource();
     TestBed.configureTestingModule({
@@ -187,6 +193,8 @@ describe('Overview', () => {
             watchBattery: () => energyBattery,
             watchStatus: () => energyStatus,
             watchForecast: () => energyForecast,
+            watchReserve: () => energyReserve,
+            watchCharge: () => energyCharge,
           },
         },
         {
@@ -742,9 +750,11 @@ describe('Overview', () => {
       answer(energyBattery, { stale: true });
       answer(energyStatus, { grid: { state: 'lost', frequency: 51.02, frequencyOff: true } });
 
-      expect((await tile('energy')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBe(
-        'The grid is lost - the house runs on the battery',
-      );
+      expect(
+        (await tile('energy'))
+          .querySelector('mat-card-title [data-testid="tile-signal"]')
+          ?.getAttribute('aria-label'),
+      ).toBe('The grid is lost - the house runs on the battery');
       expect(await row('grid')).toBe('Grid not known');
       expect(await row('battery')).toBe('Battery not known');
     });
@@ -753,12 +763,33 @@ describe('Overview', () => {
     it('lights the signal for a grid frequency off the band, and none for one inside it', async () => {
       answer(energyFlows, { production: 0 });
       answer(energyStatus, { grid: { state: 'present', frequency: 51.02, frequencyOff: true } });
-      expect((await tile('energy')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toContain(
-        'The grid frequency is off the band (51.02 Hz)',
-      );
+      expect(
+        (await tile('energy'))
+          .querySelector('mat-card-title [data-testid="tile-signal"]')
+          ?.getAttribute('aria-label'),
+      ).toContain('The grid frequency is off the band (51.02 Hz)');
 
       answer(energyStatus, { grid: { state: 'present', frequency: 50.01, frequencyOff: false } });
-      expect((await tile('energy')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBeUndefined();
+      expect(
+        (await tile('energy'))
+          .querySelector('mat-card-title [data-testid="tile-signal"]')
+          ?.getAttribute('aria-label'),
+      ).toBeUndefined();
+    });
+
+    // HAS-496 (owner 2026-11-25): the work mode the energy service set - a charge, the reserve in Back Up, Self Use
+    it('tells the work mode of the inverter, and not known before the reserve is', async () => {
+      answer(energyFlows, { production: 0 });
+      expect(await row('workMode')).toBe('Inverter not known');
+
+      answer(energyReserve, { enabled: false, level: 80, writeState: 'none' });
+      expect(await row('workMode')).toBe('Inverter Self Use');
+
+      answer(energyReserve, { enabled: true, level: 80, writeState: 'sent' });
+      expect(await row('workMode')).toBe('Inverter Back Up - reserve 80 %');
+
+      answer(energyCharge, { active: true, run: { state: 'charging', targetSoc: 90 } });
+      expect(await row('workMode')).toBe('Inverter Charging from the grid to 90 %');
     });
 
     // HAS-373: tomorrow of the forecast, as much as the answer says
@@ -985,12 +1016,23 @@ describe('Overview', () => {
     // HAS-504 (owner, 2026-11-24): the overview tells the state by the light, the safety page the details
     it('lights the signal for an alarm first with its names, then for a detector in trouble', async () => {
       answer(safety, {
-        detectors: [{ ...fine(1, 'Kitchen'), alarm: on }, { ...fine(2, 'Loft'), batteryLow: on }],
+        detectors: [
+          { ...fine(1, 'Kitchen'), alarm: on },
+          { ...fine(2, 'Loft'), batteryLow: on },
+        ],
       });
-      expect((await tile('safety')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBe('Fire alarm: Kitchen');
+      expect(
+        (await tile('safety'))
+          .querySelector('mat-card-title [data-testid="tile-signal"]')
+          ?.getAttribute('aria-label'),
+      ).toBe('Fire alarm: Kitchen');
 
       answer(safety, { detectors: [fine(1, 'Kitchen'), { ...fine(2, 'Loft'), batteryLow: on }] });
-      expect((await tile('safety')).querySelector('mat-card-title [data-testid="tile-signal"]')?.getAttribute('aria-label')).toBe('A detector needs a look: Loft');
+      expect(
+        (await tile('safety'))
+          .querySelector('mat-card-title [data-testid="tile-signal"]')
+          ?.getAttribute('aria-label'),
+      ).toBe('A detector needs a look: Loft');
       expect(words(await tile('safety'))).not.toContain('Loft');
     });
 

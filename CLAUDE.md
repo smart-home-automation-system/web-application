@@ -1492,6 +1492,36 @@ e2e/              # Playwright tests
     `domain-tile--column`, HAS-504, owner 2026-11-24), the main one last. A planned outage of the street has "Do not charge
     before it" / "Charge before it again" on the right of its row (the skip of the automatic charge for that one outage). The mock (`charge.fixtures.ts`) charges until stopped, refuses as the service
     does; `resetCharge()`.
+  - **The battery reserve** (HAS-496, `EnergyReserveCard` in `energy-reserve-card.ts`, `GET` / `PUT /energy/battery/reserve`
+    of energy-service >= 0.18.0, the Back Up work mode since 0.21.0): a card of the control section beside the charge. What
+    to keep:
+    - **One call for the page**: `Energy` polls the reserve and the charge (every 10 s) and hands them to `EnergyControl`
+      (inputs `reserve`, `charge`) - the reserve card, the battery chart (a dashed "Reserve" line at the level while it
+      holds - `energyChart` takes extra thresholds as a signal, `heldLevel`) and the card of the mode of the inverter read
+      the same answers. A charge reads the reserve back too (its end writes it again).
+    - **A copy of `ReserveRules`** (`energy-reserve.ts`, pinned by its spec): the level 10 - 100 by 5, `until` only for a
+      reserve switched on, after now and at most 7 days ahead - on the wall clock of the house (`houseNow`), the times
+      compared as text. A rule changed there is changed here.
+    - **Switching on or raising the level asks first** (`needsQuestion`, `ConfirmDialog` testId `reserve-question`, "Do not
+      change" focused - it charges from the grid at up to 5 kW); lowering it, another end or switching it off are sent at
+      once. `ConfirmData.params` carries the level into the question since this task.
+    - The form follows what the service stored until edited (a stored `until` shows as "Until a time" with its date);
+      "Send" writes the whole body, then the reserve is read at once and 2.5 s later - only that answer moves the card. A
+      write without an answer may have been made.
+    - **The SolaX cloud never takes the floor** (`minSoc` - Self Use kept 10, Back Up 30 for a sent 80, 2026-11-24): while
+      the reserve is on, the card says Min SoC is set in SolaxCloud by hand. A word of `writeState` this version does not
+      know is printed as it came.
+    - **The mode of the inverter** (owner 2026-11-25, `card-work-mode` between the next planned outage and the open alarms
+      beside the flow; `workModeOf`): the work mode the energy service set - a charge going on, else the reserve (Back Up
+      at its level), else Self Use; not known while the reserve is not - **what the service wrote, not what the inverter
+      reports** (the cloud reads none back; a change made by hand in SolaxCloud is not seen), said under the card - and
+      the run mode the SOLAX reads. The energy tile of the overview has the same work mode as its row "Inverter" (the
+      reserve and the charge once a minute, two more calls of the tile).
+    - **The control section** (owner 2026-11-25): twelve columns from 1180 px of the page - the charge and the reserve 6 +
+      6, then the automation 3 (its three fields narrow, side by side), the planned outages 4 and the charges 5 (a run on
+      one line); two columns between 900 and 1180 px with the charges across the last row.
+    - The mock (`charge.fixtures.ts`): off at 80 %, never written; a write stored whole and answered `sent`, refused with
+      `INVALID_RESERVE` as the service refuses.
   - **The production forecast** (HAS-373, `EnergyForecastCard` in `energy-forecast.ts`, `GET /energy/forecast` of
     energy-service >= 0.16.0, every 5 min; its read is in `isOverviewRead` for the tile): **the categories and the bands
     are the service's** - nothing here compares a coverage with a number; the four words are `energy-forecast-views.ts`

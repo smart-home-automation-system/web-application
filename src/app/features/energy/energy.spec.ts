@@ -130,6 +130,8 @@ describe('Energy', () => {
             watchCharge: () => fakeResource(),
             watchChargeRuns: () => fakeQueryResource(),
             watchAutomation: () => fakeResource(),
+            // the battery reserve (HAS-496) - its card has a test of its own
+            watchReserve: () => fakeResource(),
             // the card of the planned outages (HAS-342) has a test of its own; the next one beside the flow reads it too
             watchPlannedOutages: () => planned,
           },

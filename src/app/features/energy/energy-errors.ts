@@ -23,6 +23,8 @@ export const ENERGY_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   DEVICE_FAILED: 'energy.error.deviceFailed',
   INVALID_AUTOMATION: 'energy.error.invalidAutomation',
   NOT_FOUND_PLANNED_OUTAGE: 'energy.error.plannedOutageNotFound',
+  // the battery reserve (HAS-494)
+  INVALID_RESERVE: 'energy.error.invalidReserve',
 };
 
 /** A failed call of the energy page: a code of the service in our words, anything else as usual. */

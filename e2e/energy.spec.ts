@@ -272,3 +272,39 @@ test('tells a charge the house did not take', async ({ page }) => {
   await expect(page.getByTestId('card-charge')).toContainText('The charge could not be started.');
   await expect(page.getByTestId('charge-none')).toBeVisible();
 });
+
+// HAS-496: the battery reserve - against the mock API only, never the real inverter. Switched on after a question (it
+// charges from the grid), shown on the card, as the work mode beside the flow, on the battery chart and on the overview
+test('holds a battery reserve after a question and tells it everywhere', async ({ page }) => {
+  await page.goto('/energy');
+  const card = page.getByTestId('card-reserve');
+  await expect(card.getByTestId('reserve-state')).toHaveText('Switched off');
+  await expect(page.getByTestId('work-mode')).toContainText('Self Use');
+
+  await card.getByTestId('reserve-switch').getByRole('switch').click();
+  await card.getByTestId('reserve-end-tomorrow').click();
+  await expect(card.getByTestId('reserve-floor-note')).toContainText('Min SoC to 80 %');
+  await card.getByTestId('reserve-send').click();
+  const question = page.getByRole('dialog');
+  await expect(question.getByTestId('reserve-question')).toContainText('Hold 80 % of the battery?');
+  await expect(question.getByRole('button', { name: 'Do not change' })).toBeFocused();
+  await question.getByTestId('confirm-yes').click();
+  await expect(question).toHaveCount(0);
+
+  await expect(card.getByTestId('reserve-state')).toContainText('Held at 80 %');
+  await expect(card.getByTestId('reserve-write')).toContainText('sent to the inverter');
+  await expect(page.getByTestId('work-mode')).toContainText('Back Up - reserve 80 %');
+  await expect(page.getByTestId('chart-battery')).toContainText('Reserve');
+
+  // lowering it is sent at once
+  await card.getByTestId('reserve-level').focus();
+  await page.keyboard.press('ArrowLeft');
+  await card.getByTestId('reserve-send').click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(card.getByTestId('reserve-state')).toContainText('Held at 75 %');
+
+  await page.getByRole('link', { name: 'Overview' }).first().click();
+  await expect(page.getByTestId('tile-energy').locator('[data-energy="workMode"]')).toContainText(
+    'Back Up - reserve 75 %',
+  );
+});

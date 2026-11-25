@@ -97,7 +97,14 @@ dashboards:
   morning after) beside the 3EM, how far apart in %, the sums of the days both know, "not yet" for a day the portal has
   not served; a day opens its hours in a window (the 25 hours of the night the clocks go back, the registers of the
   meter at its end), and the net-metering card settles the months of the operator beside the house's estimate, a month on one line of one table - the
-  side of the invoice. **Charging the battery** (HAS-342): the charge from the grid started with
+  side of the invoice. **The battery reserve** (HAS-496, `energy-service` >= 0.21.0 - the Back Up work mode): a card beside
+  the charge with its switch, the level on a slider (10 - 100 % by 5) and how long it holds (until switched off, until
+  tomorrow 18:00, until a time at most 7 days ahead), written with "Send" - switching it on or raising the level asks
+  first (it charges from the grid at up to 5 kW); what became of the last write; a note that the SolaX cloud takes no
+  floor, so Min SoC is set in SolaxCloud by hand. Its level is a dashed line on the battery chart. **The mode of the
+  inverter** beside the flow: the work mode the energy service set (a charge from the grid, Back Up with the reserve,
+  Self Use - the cloud reads none back) and the run mode of the SOLAX; the same work mode on the energy tile of the
+  overview. **Charging the battery** (HAS-342): the charge from the grid started with
   its target and an optional end time, and while it goes on its state, who started it, its window, the battery
   now and the minutes to the target with "Stop charging" (a charge the automation started is asked about first:
   stopping it skips its outage); the switch of the charge before a planned outage of the street with its
@@ -692,6 +699,8 @@ Endpoints used today:
 | `POST` | `/home/energy/battery/charge?source=dashboard` | Starts a charge from the grid - **a write to the inverter** - with `{targetSoc, until}` (energy); the codes of the service have texts |
 | `DELETE` | `/home/energy/battery/charge` | Stops the charge going on and sets the inverter back (energy) |
 | `GET` | `/home/energy/battery/charge/runs?from=&to=` | The charges of the last 30 days (energy, every 60 s) |
+| `GET` | `/home/energy/battery/reserve` | The battery reserve - the switch, the level, the end, what became of the last write (energy, every 10 s; the overview tile every 60 s). Needs `energy-service` 0.18.0, Back Up since 0.21.0 |
+| `PUT` | `/home/energy/battery/reserve` | Writes the reserve whole - **a write to the inverter** - with `{enabled, level, until}` (energy); `INVALID_RESERVE` has a text |
 | `GET`, `PUT` | `/home/energy/automation` | The switch and the settings of the charge before a planned outage, written whole and read again (energy, every 60 s); `INVALID_AUTOMATION` has a text |
 | `GET` | `/home/energy/outages/planned` | The outages Tauron announces for the house, with the planned start of the charge (energy, every 60 s) |
 | `PUT` | `/home/energy/outages/planned/{id}/skip`, `.../unskip` | No automatic charge for an outage, or allowed again (energy) |

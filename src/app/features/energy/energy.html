@@ -160,6 +160,69 @@
         }
       </app-domain-tile>
 
+      <!-- HAS-496 (owner 2026-11-25): the mode of the inverter - the work mode the energy service set (the cloud reads
+           none back) and the run mode the SOLAX reads -->
+      <app-domain-tile
+        heading="energy.cards.workMode"
+        icon="settings_power"
+        domain="energy"
+        waitingLabel="energy.page.loading"
+        [describeWith]="describe"
+        [resource]="reserve"
+        data-testid="card-work-mode"
+      >
+        @if (reserve.value() !== undefined) {
+          @let mode = workMode();
+          <p class="tile__lead" data-testid="work-mode" [attr.data-mode]="mode.kind">
+            <mat-icon aria-hidden="true">{{ workModeIcon[mode.kind] }}</mat-icon>
+            <span>
+              @switch (mode.kind) {
+                @case ('charging') {
+                  {{ t('energy.workMode.charging', { target: mode.target ?? '?' }) }}
+                }
+                @case ('backUp') {
+                  {{ t('energy.workMode.backUp', { level: mode.level ?? '?' }) }}
+                }
+                @case ('selfUse') {
+                  {{ t('energy.workMode.selfUse') }}
+                }
+                @default {
+                  {{ t('energy.notKnown') }}
+                }
+              }
+            </span>
+          </p>
+          @if (mode.kind === 'backUp' && mode.until) {
+            <p class="tile__detail">
+              {{ t('energy.reserve.until') }} {{ mode.until | houseDateTime }}
+            </p>
+          }
+          <dl class="tile__rows">
+            <div class="tile__row" data-field="runMode">
+              <dt>{{ t('energy.inverter.runMode') }}</dt>
+              <dd>
+                @let run = solax()?.runMode;
+                @if (runModeAlarming(run)) {
+                  <span class="tile__tag tile__tag--alert">!</span>
+                }
+                <strong>{{
+                  run === undefined
+                    ? t('energy.notKnown')
+                    : runModeLabel(run)
+                      ? t(runModeLabel(run)!)
+                      : run
+                }}</strong>
+              </dd>
+            </div>
+          </dl>
+          <p class="tile__detail">{{ t('energy.workMode.note') }}</p>
+        }
+        <div tileFailures>
+          <app-api-error-strip [error]="charge.error()" [describeWith]="describe" />
+          <app-api-error-strip [error]="inverters.error()" [describeWith]="describe" />
+        </div>
+      </app-domain-tile>
+
       <!-- the open alarms, as the card of the events below shows them -->
       <app-domain-tile
         heading="energy.cards.alerts"
@@ -184,6 +247,8 @@
     <app-energy-control
       [planned]="planned"
       [frequencyOff]="gridFrequency().off === true && !status.error()"
+      [reserve]="reserve"
+      [charge]="charge"
     />
   </section>
 
@@ -449,9 +514,17 @@
           @if (list.length > (visibleOutages()?.length ?? 0)) {
             <div class="events__more">
               <span class="events__count">{{
-                t('energy.outages.shown', { shown: visibleOutages()?.length ?? 0, total: list.length })
+                t('energy.outages.shown', {
+                  shown: visibleOutages()?.length ?? 0,
+                  total: list.length,
+                })
               }}</span>
-              <button matButton type="button" data-testid="outages-more" (click)="showMoreOutages()">
+              <button
+                matButton
+                type="button"
+                data-testid="outages-more"
+                (click)="showMoreOutages()"
+              >
                 {{ t('energy.outages.more') }}
               </button>
             </div>

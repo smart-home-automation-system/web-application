@@ -11,6 +11,8 @@ export interface ConfirmData {
   readonly icon: string;
   readonly title: MessageKey;
   readonly question: MessageKey;
+  /** The parameters of the question (HAS-496: the level of the battery reserve). */
+  readonly params?: Readonly<Record<string, string | number>>;
   readonly confirm: MessageKey;
   readonly cancel: MessageKey;
   /** A test id for the question, so that a page test finds the one it opened. */
@@ -35,14 +37,28 @@ export const CONFIRM_DIALOG_SIZE = { width: 'min(440px, calc(100vw - 32px))' } a
         <mat-icon>{{ data.icon }}</mat-icon>
         {{ t(data.title) }}
       </h2>
-      <mat-dialog-content class="confirm__content" [attr.data-testid]="data.testId ?? 'confirm-question'">
-        <p>{{ t(data.question) }}</p>
+      <mat-dialog-content
+        class="confirm__content"
+        [attr.data-testid]="data.testId ?? 'confirm-question'"
+      >
+        <p>{{ t(data.question, data.params ?? {}) }}</p>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
-        <button matButton type="button" [mat-dialog-close]="false" cdkFocusInitial data-testid="confirm-cancel">
+        <button
+          matButton
+          type="button"
+          [mat-dialog-close]="false"
+          cdkFocusInitial
+          data-testid="confirm-cancel"
+        >
           {{ t(data.cancel) }}
         </button>
-        <button matButton="filled" type="button" [mat-dialog-close]="true" data-testid="confirm-yes">
+        <button
+          matButton="filled"
+          type="button"
+          [mat-dialog-close]="true"
+          data-testid="confirm-yes"
+        >
           {{ t(data.confirm) }}
         </button>
       </mat-dialog-actions>

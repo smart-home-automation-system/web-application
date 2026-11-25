@@ -2,8 +2,10 @@
 
 $gap: 12px;
 
-// The control of the charge (HAS-342): the charge and the automation side by side, the planned outages
-// and the charges under them; one column on a phone.
+// The control of the charge (HAS-342, HAS-496 - owner 2026-11-25): the charge and the battery reserve in a row, the
+// automation narrow, the planned outages and the charges wide enough for a run on one line in the next - twelve columns
+// from 1180 px of the page (6 + 6, then 3 + 4 + 5); two columns between 900 and 1180 px (the charges across the last row);
+// one column on a phone.
 :host {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -17,6 +19,35 @@ $gap: 12px;
 @container (min-width: 900px) {
   :host {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .control__runs {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (min-width: 1180px) {
+  :host {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .control__charge,
+  .control__reserve {
+    grid-column: span 6;
+  }
+
+  // the cards of the second row by what they hold (owner, 2026-11-25): the automation narrow, the charges wide enough
+  // for a run on one line
+  .control__automation {
+    grid-column: span 3;
+  }
+
+  .control__planned {
+    grid-column: span 4;
+  }
+
+  .control__runs {
+    grid-column: span 5;
   }
 }
 
@@ -64,6 +95,17 @@ $gap: 12px;
   display: grid;
   gap: 8px;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+// the three settings of the automation as narrow fields side by side (owner, 2026-11-25: they need not be large)
+.control__automation .form__row {
+  display: flex;
+  flex-wrap: wrap;
+
+  mat-form-field {
+    flex: 1 1 96px;
+    max-width: 150px;
+  }
 }
 
 .form__hint {

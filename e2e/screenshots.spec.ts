@@ -61,7 +61,7 @@ for (const language of ['en', 'pl'] as const) {
         await useScenario(page, 'offline');
         await page.goto('/');
         // every call has told its failure before the picture is taken (HAS-282: eleven of them)
-        await expect(page.getByRole('alert')).toHaveCount(24, { timeout: 15_000 });
+        await expect(page.getByRole('alert')).toHaveCount(26, { timeout: 15_000 });
         await expect(page.getByTestId('offline-notice')).toContainText(TEXTS[language].offline);
         await page.screenshot({
           path: shot(testInfo.project.name, scheme, language, 'overview-offline'),
@@ -632,8 +632,12 @@ for (const language of ['en', 'pl'] as const) {
       test('energy generator', async ({ page }, testInfo) => {
         await page.addInitScript(() => localStorage.setItem('mock-generator', 'on'));
         await page.goto('/energy');
-        await expect(page.getByTestId('card-alerts-now').getByTestId('alert-frequency')).toBeVisible();
-        await page.screenshot({ path: shot(testInfo.project.name, scheme, language, 'energy-generator') });
+        await expect(
+          page.getByTestId('card-alerts-now').getByTestId('alert-frequency'),
+        ).toBeVisible();
+        await page.screenshot({
+          path: shot(testInfo.project.name, scheme, language, 'energy-generator'),
+        });
       });
 
       // the meter of Tauron (HAS-417): the days beside the 3EM, and the hours of the night the clocks went back

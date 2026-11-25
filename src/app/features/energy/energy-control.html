@@ -1,6 +1,6 @@
 <ng-container *transloco="let t">
   <ng-template #plannedStart>
-    @if (charge.value()?.plannedStart; as planned) {
+    @if (charge().value()?.plannedStart; as planned) {
       <p class="tile__detail" data-testid="charge-planned">
         {{ t('energy.charge.plannedStart') }} {{ planned | houseDateTime }}
       </p>
@@ -15,7 +15,7 @@
     domain="energy"
     waitingLabel="energy.page.loading"
     [describeWith]="describe"
-    [resource]="charge"
+    [resource]="charge()"
     data-testid="card-charge"
   >
     @if (frequencyOff()) {
@@ -24,7 +24,7 @@
         <span>{{ t('energy.charge.frequencyOff') }}</span>
       </p>
     }
-    @if (charge.value() !== undefined) {
+    @if (charge().value() !== undefined) {
       @if (run(); as r) {
         <p class="charge__state" data-testid="charge-state">
           <strong>{{ runStateLabel(r) | displayText }}</strong>
@@ -49,18 +49,18 @@
           </dd>
           <dt>{{ t('energy.charge.socNow') }}</dt>
           <dd data-testid="charge-soc">
-            @if (numberOf(charge.value()?.soc) !== undefined) {
-              {{ charge.value()?.soc | localNumber: WHOLE }}&nbsp;%
+            @if (numberOf(charge().value()?.soc) !== undefined) {
+              {{ charge().value()?.soc | localNumber: WHOLE }}&nbsp;%
             } @else {
               {{ t('energy.notKnown') }}
             }
           </dd>
           <dt>{{ t('energy.charge.power') }}</dt>
-          <dd><app-power-value [watts]="charge.value()?.power" /></dd>
-          @if (numberOf(charge.value()?.minutesLeft) !== undefined) {
+          <dd><app-power-value [watts]="charge().value()?.power" /></dd>
+          @if (numberOf(charge().value()?.minutesLeft) !== undefined) {
             <dt>{{ t('energy.charge.left') }}</dt>
             <dd data-testid="charge-left">
-              {{ t('energy.charge.minutes', { minutes: charge.value()?.minutesLeft }) }}
+              {{ t('energy.charge.minutes', { minutes: charge().value()?.minutesLeft }) }}
             </dd>
           }
         </dl>
@@ -150,6 +150,9 @@
       }
     }
   </app-domain-tile>
+
+  <!-- the battery reserve (HAS-496) -->
+  <app-energy-reserve-card class="control__reserve" [reserve]="reserve()" />
 
   <!-- the automation before a planned outage -->
   <app-domain-tile
@@ -284,27 +287,28 @@
             <li class="planned__item" data-testid="planned-outage" [attr.data-id]="outage.id">
               <!-- the outage on the left, the skip of its charge on the right of the same row (owner, 2026-11-24) -->
               <div class="planned__info">
-              <strong
-                >{{ outage.startsAt | houseDateTime }} – {{ outage.endsAt | houseDateTime }}</strong
-              >
-              <span class="planned__kind"
-                >{{ outageKindLabel(outage) | displayText }} ·
-                {{ outageScopeLabel(outage) | displayText }}</span
-              >
-              @if (outage.description; as words) {
-                <span class="planned__words">{{ words }}</span>
-              }
-              @if (automationApplies(outage)) {
-                @if (outage.skipAutomation) {
-                  <span class="planned__note" data-testid="planned-skipped">{{
-                    t('energy.planned.skipped')
-                  }}</span>
-                } @else if (outage.plannedChargeStart; as start) {
-                  <span class="planned__note" data-testid="planned-start"
-                    >{{ t('energy.planned.chargeFrom') }} {{ start | houseDateTime }}</span
-                  >
+                <strong
+                  >{{ outage.startsAt | houseDateTime }} –
+                  {{ outage.endsAt | houseDateTime }}</strong
+                >
+                <span class="planned__kind"
+                  >{{ outageKindLabel(outage) | displayText }} ·
+                  {{ outageScopeLabel(outage) | displayText }}</span
+                >
+                @if (outage.description; as words) {
+                  <span class="planned__words">{{ words }}</span>
                 }
-              }
+                @if (automationApplies(outage)) {
+                  @if (outage.skipAutomation) {
+                    <span class="planned__note" data-testid="planned-skipped">{{
+                      t('energy.planned.skipped')
+                    }}</span>
+                  } @else if (outage.plannedChargeStart; as start) {
+                    <span class="planned__note" data-testid="planned-start"
+                      >{{ t('energy.planned.chargeFrom') }} {{ start | houseDateTime }}</span
+                    >
+                  }
+                }
               </div>
               @if (automationApplies(outage)) {
                 <button
