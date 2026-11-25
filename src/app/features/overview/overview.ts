@@ -55,6 +55,7 @@ import {
   toFlowView,
 } from '../energy/energy-views';
 import { tomorrowOf } from '../energy/energy-forecast-views';
+import { workModeOf } from '../energy/energy-reserve';
 import { PowerValue } from '../energy/power-value';
 import { stateOf } from '../../shared/lights/light-labels';
 import { describeWaterError } from '../hot-water/water-errors';
@@ -86,7 +87,8 @@ const GRID_WORDS = { in: 'import', out: 'export', idle: 'idle' } as const;
  * facts somebody looks for first, each leading to the page that has the rest. Nothing here changes
  * the house: the switch of the heating is on the heating page only (owner, 2026-10-21, HAS-266).
  *
- * Seventeen calls feed the page (the appliances since HAS-282, the energy since HAS-341, its forecast since HAS-373, the water
+ * Nineteen calls feed the page (the appliances since HAS-282, the energy since HAS-341, its forecast since HAS-373, the
+ * reserve and the charge of the work mode of the inverter since HAS-496, the water
  * valve and the water of today since HAS-322), each with its own failure: the page
  * is whole when one service is down, and says which. Every tile is one call - but the heating tile, which tells the state of
  * the system, its rooms and its silent sensors (three calls, owner's choice of HAS-266): it tells
@@ -199,6 +201,9 @@ export class Overview {
   protected readonly energyStatus = this.energyApi.watchStatus(60_000);
   // HAS-373: tomorrow of the production forecast, a fourth call told in the failures of the tile
   protected readonly energyForecast = this.energyApi.watchForecast();
+  // HAS-496: the work mode of the inverter as the energy service set it - the reserve and the charge, a row of the tile
+  protected readonly energyReserve = this.energyApi.watchReserve(60_000);
+  protected readonly energyCharge = this.energyApi.watchCharge(60_000);
 
   protected readonly ONE_DECIMAL: Intl.NumberFormatOptions = {
     minimumFractionDigits: 1,
@@ -419,9 +424,15 @@ export class Overview {
   protected readonly gridLost = computed(() => gridStateOf(this.energyStatus.value()) === 'lost');
   /** HAS-504: the grid frequency off its band - a generator, likely; red too, only when the service says so. */
   protected readonly gridFrequency = computed(() => gridFrequencyOf(this.energyStatus.value()));
-  protected readonly TWO: Intl.NumberFormatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  protected readonly TWO: Intl.NumberFormatOptions = {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  };
   /** Tomorrow of the forecast: its word and kWh, as much as the answer says. */
   protected readonly energyTomorrow = computed(() => tomorrowOf(this.energyForecast.value()));
+  protected readonly energyWorkMode = computed(() =>
+    workModeOf(this.energyCharge.value(), this.energyReserve.value()),
+  );
   /** The way the grid flows, by the dead band of the service the diagram uses too; none while not known. */
   protected readonly energyGridLabel = computed(() => {
     const flow = this.energyFlow().gridFlow;

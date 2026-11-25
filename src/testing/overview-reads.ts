@@ -41,6 +41,9 @@ export const OVERVIEW_READS: readonly string[] = [
   '/home/energy/status',
   // HAS-373: tomorrow of the forecast on the energy tile
   '/home/energy/forecast',
+  // HAS-496: the work mode on the energy tile - the reserve and the charge
+  '/home/energy/battery/reserve',
+  '/home/energy/battery/charge',
   // HAS-322: the water tile - the valve and the water of today
   '/home/water/valve',
   '/home/water/consumption',

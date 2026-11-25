@@ -2,6 +2,7 @@ import { HttpRequest } from '@angular/common/http';
 
 import {
   Automation,
+  BatteryReserve,
   ChargeRun,
   ChargeState,
   PlannedOutage,
@@ -15,15 +16,20 @@ import { houseTime } from './house-time';
  * one of the town. The writes change what the next reads answer and are refused as energy-service
  * refuses them (`CHARGE_IN_PROGRESS`, `NOT_FOUND_CHARGE`, `INVALID_AUTOMATION`,
  * `NOT_FOUND_PLANNED_OUTAGE`). Invented values only; `resetCharge()` for a unit test.
+ * HAS-496: the battery reserve - off at 80 %, never written; a write is stored whole and answered `sent`, refused
+ * with `INVALID_RESERVE` as `ReserveRules` refuses it (the level 10 - 100 by 5, `until` only for a reserve on, ahead
+ * and at most 7 days).
  */
 interface ChargeMock {
   run: ChargeRun | undefined;
   runs: ChargeRun[];
   automation: Automation;
   skipped: Set<number>;
+  reserve: BatteryReserve;
 }
 
 const SOC = 62;
+const RESERVE_NEVER_WRITTEN: BatteryReserve = { enabled: false, level: 80, writeState: 'none' };
 
 function initial(): ChargeMock {
   return {
@@ -52,6 +58,7 @@ function initial(): ChargeMock {
     ],
     automation: { chargeBeforeOutage: false, targetSoc: 100, chargePowerKw: 5, marginMinutes: 60 },
     skipped: new Set(),
+    reserve: RESERVE_NEVER_WRITTEN,
   };
 }
 
@@ -194,4 +201,37 @@ export function skipOutage(id: number, skip: boolean) {
     mock.skipped.delete(id);
   }
   return { status: 200, body: plannedOutages(false).find((outage) => outage.id === id) };
+}
+
+export function reserveState(fresh: boolean): BatteryReserve {
+  return fresh ? RESERVE_NEVER_WRITTEN : mock.reserve;
+}
+
+export function saveReserve(request: HttpRequest<unknown>, now: Date = new Date()) {
+  const body = (request.body ?? {}) as { enabled?: unknown; level?: unknown; until?: unknown };
+  const level = body.level;
+  if (typeof body.enabled !== 'boolean' || typeof level !== 'number') {
+    return refusal(400, 'INVALID_RESERVE', 'enabled and level are required');
+  }
+  if (!Number.isInteger(level) || level < 10 || level > 100 || level % 5 !== 0) {
+    return refusal(400, 'INVALID_RESERVE', 'level must be between 10 and 100 in steps of 5');
+  }
+  const until = typeof body.until === 'string' ? body.until : undefined;
+  if (until !== undefined) {
+    const nowWall = houseTime(now, 0);
+    const latest = houseTime(now, -7 * 24 * 3600);
+    if (!body.enabled || until <= nowWall || until > latest) {
+      return refusal(400, 'INVALID_RESERVE', 'until must be after now and at most 7 days ahead');
+    }
+  }
+  const at = houseTime(now, 0);
+  mock.reserve = {
+    enabled: body.enabled,
+    level,
+    ...(until === undefined ? {} : { until }),
+    updatedAt: at,
+    writeState: 'sent',
+    writeAttemptedAt: at,
+  };
+  return { status: 200, body: mock.reserve };
 }

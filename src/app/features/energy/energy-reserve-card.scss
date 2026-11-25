@@ -1,0 +1,145 @@
+@use '../../shared/domain-tile/tile-content';
+
+// The battery reserve (HAS-496): a card of the control section of the energy page - the state the service says, the
+// form (the switch, the level on a slider, how long it holds) and the commands in the bottom right corner, as the
+// charge and the automation beside it.
+:host {
+  display: block;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+app-domain-tile {
+  height: 100%;
+}
+
+.reserve__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-large);
+}
+
+.reserve__until {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 0;
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
+.form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.reserve__level {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reserve__label {
+  flex: none;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.reserve__slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.reserve__value {
+  flex: none;
+  min-width: 3.5em;
+  text-align: right;
+  font: var(--mat-sys-title-medium);
+}
+
+.reserve__end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  // a fieldset for the group of the ends (Sonar S6819), drawn as nothing
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reserve__date {
+  flex: 1 1 200px;
+}
+
+// on a phone the three ends do not fit the bar of one line (the review of HAS-496: "Until a time" was cut off at
+// 375 px) - one under another, the bar as wide as the card
+@container (max-width: 460px) {
+  .reserve__end .segments {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border-radius: var(--mat-sys-corner-medium);
+  }
+
+  .reserve__end .segment {
+    justify-content: center;
+    border-left: 0;
+    border-top: 1px solid var(--mat-sys-outline);
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+}
+
+.reserve__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+.form__problems {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-error-container);
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-error-container);
+}
+
+// the commands in the bottom right corner of the card, as the charge (owner, 2026-11-11)
+.commands {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+}

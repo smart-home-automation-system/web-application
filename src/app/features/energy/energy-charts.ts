@@ -19,7 +19,7 @@ interface LineSpec {
 }
 
 /** A level drawn across the chart as a dashed line, never in the numbers under it. */
-interface ThresholdSpec {
+export interface ThresholdSpec {
   readonly key: string;
   readonly value: number;
   readonly name: MessageKey;
@@ -154,7 +154,12 @@ export interface EnergyChartView extends CombinedHistory {
  * The chart of `spec`: a history per line, all for the period of the page - the rules of
  * `weatherChart`. Call in an injection context: the polling lives as long as the caller.
  */
-export function energyChart(spec: EnergyChartSpec, period: HistoryPeriod): EnergyChartView {
+export function energyChart(
+  spec: EnergyChartSpec,
+  period: HistoryPeriod,
+  /** Dashed lines that follow a value of the page (HAS-496: the level of the battery reserve while it holds). */
+  more?: Signal<readonly ThresholdSpec[]>,
+): EnergyChartView {
   const api = inject(EnergyApi);
   const transloco = inject(TranslocoService);
   const language = inject(LanguageStore).language;
@@ -191,7 +196,7 @@ export function energyChart(spec: EnergyChartSpec, period: HistoryPeriod): Energ
       // the language is read by measured() above
       return [
         ...drawn,
-        ...(spec.thresholds ?? []).map((threshold): ChartLine => ({
+        ...[...(spec.thresholds ?? []), ...(more?.() ?? [])].map((threshold): ChartLine => ({
           key: threshold.key,
           name: transloco.translate(threshold.name),
           color: threshold.color,

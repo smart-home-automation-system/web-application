@@ -28,7 +28,13 @@ import { PollingResource } from '../../core/api/polling-resource';
 import { APP_CONFIG } from '../../core/config/app-config';
 import { houseDay } from '../../core/time/house-date-time';
 import { Ticker } from '../../core/time/ticker';
-import { ChargeRun, EnergyApi, PlannedOutage } from '../../data-access/energy/energy-api';
+import {
+  BatteryReserve,
+  ChargeRun,
+  ChargeState,
+  EnergyApi,
+  PlannedOutage,
+} from '../../data-access/energy/energy-api';
 import { MessageKey } from '../../i18n/messages';
 import { DisplayTextPipe } from '../../shared/display-text/display-text.pipe';
 import { DomainTile } from '../../shared/domain-tile/domain-tile';
@@ -59,6 +65,7 @@ import {
 } from './energy-charge';
 import { shiftDay } from './energy-days';
 import { describeEnergyError } from './energy-errors';
+import { EnergyReserveCard } from './energy-reserve-card';
 import { numberOf } from './energy-views';
 import { PowerValue } from './power-value';
 
@@ -80,6 +87,7 @@ interface Failure {
  * - **The charges** of the last 30 days.
  * - **The automation**: its switch, target, power and margin, written whole and read back.
  * - **The planned outages** of Tauron with the planned start of the charge and its skip.
+ * - **The battery reserve** (HAS-496, `EnergyReserveCard`), beside the charge.
  *
  * **No optimistic state**: a write is sent, then the cards are read again at once and once more
  * 2.5 s later (the pattern of the lights) - only those answers move what is on screen. One write at
@@ -99,6 +107,7 @@ interface Failure {
     ApiErrorStrip,
     DisplayTextPipe,
     DomainTile,
+    EnergyReserveCard,
     HouseDateTimePipe,
     LocalNumberPipe,
     PowerValue,
@@ -118,7 +127,8 @@ export class EnergyControl {
   private readonly ticker = inject(Ticker);
   private readonly dialog = inject(MatDialog);
 
-  protected readonly charge = this.api.watchCharge();
+  /** The charge going on, polled by the page - the card of the mode of the inverter reads it too (HAS-496). */
+  readonly charge = input.required<PollingResource<ChargeState | null>>();
 
   /** The charges of the last 30 days: from the midnight 30 days back to the midnight after today. */
   private readonly runsRange = computed(
@@ -141,13 +151,19 @@ export class EnergyControl {
    * that cannot start anything is not offered).
    */
   readonly frequencyOff = input(false);
+  /**
+   * HAS-496: the battery reserve, polled by the page - its card stands in this section, the battery chart draws its
+   * level. The end of a charge writes it again, so a charge reads it back too.
+   */
+  readonly reserve = input.required<PollingResource<BatteryReserve | null>>();
 
   private readonly readBack = lightReadBack(async () => {
     await Promise.all([
-      this.charge.refresh(),
+      this.charge().refresh(),
       this.runs.refresh(),
       this.planned().refresh(),
       this.automation.refresh(),
+      this.reserve().refresh(),
     ]);
   });
 
@@ -167,7 +183,7 @@ export class EnergyControl {
 
   // the charge
   protected readonly run = computed(() => {
-    const state = this.charge.value();
+    const state = this.charge().value();
     return state?.active === true ? state.run : undefined;
   });
   protected readonly goingOn = computed(() => runGoingOn(this.run()));
@@ -254,7 +270,12 @@ export class EnergyControl {
   /** The form checked first; a valid charge asked about in the window, sent only for yes. */
   protected start(): void {
     this.chargeTried.set(true);
-    if (!this.targetValid() || this.untilValue() === 'invalid' || this.chargeBusy() || this.frequencyOff()) {
+    if (
+      !this.targetValid() ||
+      this.untilValue() === 'invalid' ||
+      this.chargeBusy() ||
+      this.frequencyOff()
+    ) {
       return;
     }
     this.ask('start', () => this.sendStart());

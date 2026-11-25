@@ -750,10 +750,10 @@
         gridLost()
           ? t('energy.gridState.lost')
           : gridFrequency().off === true
-          ? gridFrequency().hz === undefined
-            ? t('energy.gridState.frequencyOffNoValue')
-            : t('energy.gridState.frequencyOff', { hz: gridFrequency().hz | localNumber: TWO })
-          : undefined
+            ? gridFrequency().hz === undefined
+              ? t('energy.gridState.frequencyOffNoValue')
+              : t('energy.gridState.frequencyOff', { hz: gridFrequency().hz | localNumber: TWO })
+            : undefined
       "
       data-testid="tile-energy"
     >
@@ -794,6 +794,29 @@
               }}</strong>
             </dd>
           </div>
+          <!-- HAS-496 (owner 2026-11-25): the work mode the energy service set - the reserve level in the words of Back Up -->
+          @let mode = energyWorkMode();
+          <div class="tile__row" data-energy="workMode" [attr.data-mode]="mode.kind">
+            <dt>{{ t('overview.energy.workMode') }}</dt>
+            <dd>
+              <strong>
+                @switch (mode.kind) {
+                  @case ('charging') {
+                    {{ t('energy.workMode.charging', { target: mode.target ?? '?' }) }}
+                  }
+                  @case ('backUp') {
+                    {{ t('energy.workMode.backUp', { level: mode.level ?? '?' }) }}
+                  }
+                  @case ('selfUse') {
+                    {{ t('energy.workMode.selfUse') }}
+                  }
+                  @default {
+                    {{ t('energy.notKnown') }}
+                  }
+                }
+              </strong>
+            </dd>
+          </div>
         </dl>
       } @else if (!energyFlows.error()) {
         <p class="tile__detail">{{ t('energy.cards.none') }}</p>
@@ -818,6 +841,8 @@
         <app-api-error-strip [error]="energyBattery.error()" />
         <app-api-error-strip [error]="energyStatus.error()" />
         <app-api-error-strip [error]="energyForecast.error()" />
+        <app-api-error-strip [error]="energyReserve.error()" />
+        <app-api-error-strip [error]="energyCharge.error()" />
       </div>
     </app-domain-tile>
     <!-- HAS-469: the fire detectors - how many there are and how many not fully known; an alarm or a detector that needs a
@@ -847,12 +872,16 @@
           <dl class="tile__rows">
             <div class="tile__row">
               <dt>{{ t('overview.safety.detectors') }}</dt>
-              <dd><strong data-testid="safety-count">{{ summary.total }}</strong></dd>
+              <dd>
+                <strong data-testid="safety-count">{{ summary.total }}</strong>
+              </dd>
             </div>
             @if (summary.unknown > 0) {
               <div class="tile__row" data-state="unknown">
                 <dt>{{ t('overview.safety.notKnown') }}</dt>
-                <dd><strong class="tile__quiet">{{ summary.unknown }}</strong></dd>
+                <dd>
+                  <strong class="tile__quiet">{{ summary.unknown }}</strong>
+                </dd>
               </div>
             }
           </dl>

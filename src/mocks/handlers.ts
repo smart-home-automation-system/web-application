@@ -91,7 +91,9 @@ import {
   chargeRuns,
   chargeState,
   plannedOutages,
+  reserveState,
   saveAutomation,
+  saveReserve,
   skipOutage,
   startCharge,
 } from './charge.fixtures';
@@ -1042,6 +1044,17 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     method: 'GET',
     path: '/home/energy/battery/charge/runs',
     reply: (_, fresh) => ({ status: 200, body: chargeRuns(fresh) }),
+  },
+  // the battery reserve (HAS-496)
+  {
+    method: 'GET',
+    path: '/home/energy/battery/reserve',
+    reply: (_, fresh) => ({ status: 200, body: reserveState(fresh) }),
+  },
+  {
+    method: 'PUT',
+    path: '/home/energy/battery/reserve',
+    reply: (request) => saveReserve(request),
   },
   {
     method: 'GET',

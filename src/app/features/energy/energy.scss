@@ -115,7 +115,7 @@ app-energy-sources-strip {
 // the alarms take the rest of the height, so that the column ends where the flow does (owner 2026-11-13)
 .live__side {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: $gap;
   min-width: 0;
 }
