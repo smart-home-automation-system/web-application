@@ -52,6 +52,8 @@ const EVENTS_AT_THE_START: readonly StoredEvent[] = [
     event: { kind: 'unlock', door: 1, unlockType: 'HOUSEHOLDER', screen: '10010110001' },
   },
   { secondsAgo: 3 * HOUR + 30, event: { kind: 'ring', button: '10010100000' } },
+  // HAS-499: an opening from a wall panel - the entrance or the hall one, one source
+  { secondsAgo: 5 * HOUR, event: { kind: 'command', source: 'panel', outcome: 'opened' } },
   { secondsAgo: DAY + 600, event: { kind: 'dismissed' } },
   { secondsAgo: DAY + 660, event: { kind: 'ring', button: '10010100000' } },
   {

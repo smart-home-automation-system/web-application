@@ -14,6 +14,19 @@ mat-card-content {
   gap: 12px;
 }
 
+// the command of the driveway gate in the bottom right corner of its card, as on the energy and the water page
+// (owner, 2026-11-25): the content fills the card as a column and the actions take the bottom
+.driveway {
+  display: flex;
+  flex-direction: column;
+
+  mat-card-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+}
+
 .facts {
   display: grid;
   gap: 6px;
@@ -38,7 +51,8 @@ mat-card-content {
 
 .actions {
   display: flex;
-  justify-content: flex-start;
+  justify-content: flex-end;
+  margin-top: auto;
 }
 
 .note {
@@ -105,11 +119,12 @@ mat-card-content {
   color: var(--mat-sys-on-surface-variant);
 }
 
+// an alert in the shape of a garage gate row beside it, its level and its gate on one line and its words on the next
 .alert {
   display: grid;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: var(--mat-sys-error-container);
   color: var(--mat-sys-on-error-container);
 
@@ -125,8 +140,13 @@ mat-card-content {
   letter-spacing: 0.04em;
 }
 
-.alert__since {
-  font: var(--mat-sys-body-small);
+// one run of text - the level, a dash, the gate - so the space on either side of the dash is the same word space
+.alert__head {
+  font: var(--mat-sys-title-small);
+}
+
+.alert__what {
+  font: var(--mat-sys-body-medium);
 }
 
 // one grid for the whole list: the time, the description and who pressed each start at the same line in every row

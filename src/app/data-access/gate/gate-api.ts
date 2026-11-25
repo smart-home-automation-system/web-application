@@ -32,7 +32,8 @@ export interface GateRing {
 
 /**
  * The last opening of the driveway gate: `screen` (the indoor screen), `dashboard` - with who opened it there - or
- * `panel` (the entrance panel at the door, gate-service >= 0.11.0, HAS-482).
+ * `panel` (a wall panel - the entrance panel at the door or the hall panel upstairs, one source for both;
+ * gate-service >= 0.11.0, HAS-482, HAS-499).
  */
 export interface GateOpening {
   readonly at?: string;

@@ -150,7 +150,7 @@ function commandLine(event: GateEvent, gate: string | undefined): EventLine {
   };
 }
 
-// the screen (the unlock of the door station) and the entrance panel (HAS-482) open the driveway gate with no member:
+// the screen (the unlock of the door station) and a wall panel (HAS-482, HAS-499) open the driveway gate with no member:
 // their own words
 function commandKey(event: GateEvent): MessageKey | undefined {
   if (event.source === 'screen' && event.outcome === 'opened') {
@@ -175,8 +175,8 @@ function garageLine(event: GateEvent, gate: string | undefined): EventLine {
 }
 
 /**
- * Where an opening of the driveway gate came from: the indoor screen, the dashboard, the entrance panel at the door
- * (gate-service >= 0.11.0, HAS-482), or a word not known.
+ * Where an opening of the driveway gate came from: the indoor screen, the dashboard, a wall panel - the entrance or
+ * the hall one (gate-service >= 0.11.0, HAS-482, HAS-499) -, or a word not known.
  */
 export function openingSourceText(source: string | undefined): DisplayText {
   if (source === 'screen') {

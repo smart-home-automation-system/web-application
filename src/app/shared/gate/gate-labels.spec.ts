@@ -124,7 +124,7 @@ describe('gate labels', () => {
       expect(eventLine({ kind: 'command', source: 'screen', outcome: 'opened' }, names)).toEqual({
         what: { key: 'gate.event.openedScreen' },
       });
-      // HAS-482: the entrance panel opens with no member, in its own words
+      // HAS-482, HAS-499: a wall panel opens with no member, in its own words
       expect(eventLine({ kind: 'command', source: 'panel', outcome: 'opened' }, names)).toEqual({
         what: { key: 'gate.event.openedPanel' },
       });
