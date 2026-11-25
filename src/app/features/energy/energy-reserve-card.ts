@@ -40,8 +40,11 @@ import { lightReadBack } from '../../shared/lights/light-read-back';
 import { describeEnergyError } from './energy-errors';
 import {
   RESERVE_DEFAULT_LEVEL,
+  RESERVE_ENDS,
+  RESERVE_END_LABELS,
   RESERVE_LEVEL,
   RESERVE_LONGEST_UNTIL_DAYS,
+  RESERVE_PROBLEM_LABELS,
   ReserveEnd,
   houseNow,
   needsQuestion,
@@ -108,6 +111,9 @@ export class EnergyReserveCard {
 
   protected readonly LEVEL = RESERVE_LEVEL;
   protected readonly LONGEST = RESERVE_LONGEST_UNTIL_DAYS;
+  protected readonly ENDS = RESERVE_ENDS;
+  protected readonly END_LABELS = RESERVE_END_LABELS;
+  protected readonly PROBLEM_LABELS = RESERVE_PROBLEM_LABELS;
   protected readonly describe = describeEnergyError;
   protected readonly writeStateLabel = writeStateLabel;
 

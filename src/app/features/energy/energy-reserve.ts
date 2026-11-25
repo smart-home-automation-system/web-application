@@ -20,8 +20,23 @@ export const RESERVE_TOMORROW_AT = '18:00';
 /** How long the reserve holds: until switched off, until tomorrow evening, or until a time of the owner's choice. */
 export type ReserveEnd = 'none' | 'tomorrow' | 'date';
 
+/** The three ends in the order of the card, each with its words - whole keys, as the check of the texts reads them. */
+export const RESERVE_ENDS: readonly ReserveEnd[] = ['none', 'tomorrow', 'date'];
+export const RESERVE_END_LABELS: Readonly<Record<ReserveEnd, MessageKey>> = {
+  none: 'energy.reserve.end.none',
+  tomorrow: 'energy.reserve.end.tomorrow',
+  date: 'energy.reserve.end.date',
+};
+
 /** Why a body would be refused - one at a time, in the order of `ReserveRules.check`. */
 export type ReserveProblem = 'level' | 'untilMissing' | 'untilPast' | 'untilTooFar';
+
+export const RESERVE_PROBLEM_LABELS: Readonly<Record<ReserveProblem, MessageKey>> = {
+  level: 'energy.reserve.problem.level',
+  untilMissing: 'energy.reserve.problem.untilMissing',
+  untilPast: 'energy.reserve.problem.untilPast',
+  untilTooFar: 'energy.reserve.problem.untilTooFar',
+};
 
 export function levelValid(level: number): boolean {
   return (

@@ -80,6 +80,11 @@ app-domain-tile {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  // a fieldset for the group of the ends (Sonar S6819), drawn as nothing
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .reserve__date {

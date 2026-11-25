@@ -71,9 +71,10 @@
           <strong class="reserve__value" data-testid="reserve-level-value">{{ level() }} %</strong>
         </div>
 
-        <div class="reserve__end" role="group" [attr.aria-label]="t('energy.reserve.endLabel')">
+        <fieldset class="reserve__end">
+          <legend class="visually-hidden">{{ t('energy.reserve.endLabel') }}</legend>
           <span class="segments">
-            @for (choice of ['none', 'tomorrow', 'date']; track choice) {
+            @for (choice of ENDS; track choice) {
               <button
                 class="segment"
                 type="button"
@@ -81,9 +82,9 @@
                 [attr.aria-pressed]="end() === choice"
                 [attr.data-testid]="'reserve-end-' + choice"
                 [disabled]="busy() || !on()"
-                (click)="chooseEnd($any(choice))"
+                (click)="chooseEnd(choice)"
               >
-                {{ t('energy.reserve.end.' + choice) }}
+                {{ t(END_LABELS[choice]) }}
               </button>
             }
           </span>
@@ -101,7 +102,7 @@
               />
             </mat-form-field>
           }
-        </div>
+        </fieldset>
 
         @if (on()) {
           <p class="tile__detail" data-testid="reserve-explain">
@@ -117,7 +118,7 @@
         @if (tried() && problem(); as p) {
           <p class="form__problems" data-testid="reserve-problem">
             {{
-              t('energy.reserve.problem.' + p, {
+              t(PROBLEM_LABELS[p], {
                 min: LEVEL.min,
                 max: LEVEL.max,
                 step: LEVEL.step,
