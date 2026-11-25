@@ -20,9 +20,12 @@ test('tells the driveway gate, the garage gates with one button each, the alarm 
   await expect(left.getByTestId('garage-pulse')).toHaveText('Open');
   await expect(right.getByTestId('garage-state')).toHaveText('Open for 35 min');
   await expect(right.getByTestId('garage-pulse')).toHaveText('Close');
-  await expect(page.getByTestId('gate-alert')).toContainText('Right: Open for long');
+  await expect(page.getByTestId('gate-alert-gate')).toHaveText('– Right');
+  await expect(page.getByTestId('gate-alert')).toContainText('Open for long');
   // a month is more than a page: the newest twenty first
   await expect(page.locator('.event')).toHaveCount(20);
+  // HAS-499: both wall panels open under one source, in neutral words
+  await expect(page.locator('.event').filter({ hasText: 'opened from a wall panel' })).toHaveCount(1);
 });
 
 // owner, 2026-11-16: no question - the gate opens at once; a second press within 15 s is refused by the service

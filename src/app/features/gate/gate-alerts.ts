@@ -36,15 +36,18 @@ import { HouseDateTimePipe } from '../../shared/house-date-time/house-date-time.
                     data-testid="gate-alert"
                     [attr.data-level]="isWarning(alert) ? 'warning' : 'alarm'"
                   >
-                    <span class="alert__level">{{
-                      t(isWarning(alert) ? 'gate.alert.warning' : 'gate.alert.alarm')
-                    }}</span>
-                    <span class="alert__what"
-                      >{{ nameOf(alert) }}: {{ alertText(alert) | displayText }}</span
-                    >
-                    <span class="alert__since">
+                    <span class="alert__head">
+                      <span class="alert__level">{{
+                        t(isWarning(alert) ? 'gate.alert.warning' : 'gate.alert.alarm')
+                      }}</span
+                      >&ngsp;<span class="alert__gate" data-testid="gate-alert-gate"
+                        >– {{ nameOf(alert) }}</span
+                      >
+                    </span>
+                    <span class="alert__what">
+                      {{ alertText(alert) | displayText }}
                       @if (alert.openSince; as since) {
-                        {{ t('gate.alert.openSince') }}&ngsp;{{ since | houseDateTime }}
+                        &ngsp;· {{ t('gate.alert.openSince') }}&ngsp;{{ since | houseDateTime }}
                       }
                       @if (alert.reminders !== undefined && alert.reminders > 0) {
                         &ngsp;· {{ t('gate.alert.reminders', { count: alert.reminders }) }}

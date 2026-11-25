@@ -258,10 +258,13 @@ describe('GatePage', () => {
 
     const listed = [...page().querySelectorAll('[data-testid="gate-alert"]')];
     expect(listed.map((one) => one.getAttribute('data-level'))).toEqual(['alarm', 'warning']);
-    expect(words(listed[0])).toContain('Right: Open in the cold');
+    // the level and the gate on one line, the words of the alarm on the next (HAS-499)
+    expect(words(listed[0])).toContain('Alarm – Right');
+    expect(words(listed[0])).toContain('Open in the cold');
     expect(words(listed[0])).toContain('repeated 2×');
     // a gate the alarm left unnamed is named from the garage gates
-    expect(words(listed[1])).toContain('Right: Open for long');
+    expect(words(listed[1])).toContain('Warning – Right');
+    expect(words(listed[1])).toContain('Open for long');
   });
 
   // owner, 2026-11-19: a month is hundreds of items - twenty at first, twenty more with every "Show more"

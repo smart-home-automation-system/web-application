@@ -1059,6 +1059,10 @@ e2e/              # Playwright tests
   - **One button per garage gate whose label follows the state** (`GARAGE_BUTTON_LABELS`): Open when closed, Close when
     open, Run the gate when not known; **a state the gate does not send, or a word this version does not know, is not
     known** (`garageStateOf`), never closed. "Open for" is counted by the clock of the page from `since`.
+  - **The look of the cards** (owner, 2026-11-25, with HAS-499): "Open the gate" in the bottom right corner of the
+    driveway card (`.driveway` a column, `.actions` with `margin-top: auto`), the outcome of the press above it so the
+    button never moves; an alert is "WARNING – <gate>" on one line and its words with "open since" on the next, in
+    the shape of a garage gate row.
   - **The alarms are judged by the service** (`GET /gate/garage/alerts`, the episodes of HAS-475): nothing here judges
     a gate from its state - the thresholds stay in `gate-service`.
   - **The timeline shows the newest twenty, twenty more with every "Show more"** (owner, 2026-11-19: a month is
@@ -1069,9 +1073,10 @@ e2e/              # Playwright tests
     row of three columns shared by the tile - the name, how long an open gate stands open, the state at the right
     edge, the column as wide as the longest word of a state, so the time never moves (the owner on the preview); the
     last opening of the driveway gate quieter at the bottom of the tile (`domain-tile--column`, `margin-top: auto`).
-  - **The entrance panel at the door** (HAS-482, epic HAS-479, `gate-service` >= 0.11.0): the source `panel` is "from
-    the entrance panel" / "z panelu w wejściu" in the last opening (`openingSourceText`) and "Driveway gate opened from
-    the entrance panel" on the timeline (`commandKey`, no member - as the screen); the Polish screen is "z panelu w domu"
+  - **A wall panel** (HAS-482, epic HAS-479, `gate-service` >= 0.11.0; the words since HAS-499, epic HAS-497 - the
+    entrance panel at the door and the hall panel upstairs open under one source, owner 2026-11-24): the source `panel`
+    is "from a wall panel" / "z panelu ściennego" in the last opening (`openingSourceText`) and "Driveway gate opened
+    from a wall panel" on the timeline (`commandKey`, no member - as the screen); the Polish screen is "z panelu w domu"
     there too since, so the two panels are never one word. A source this version does not know is printed as it came.
   - **The domain colour `gate`** (the slate of anthracite steel, `--app-domain-gate`) and the photo `gate` (the front of
     a house with its sliding gate and two garage doors, tones `50-255`). The error codes of `GateError` are worded in

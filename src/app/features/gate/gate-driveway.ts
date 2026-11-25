@@ -89,6 +89,17 @@ const BRIDGE_LABELS: Readonly<Record<'online' | 'offline' | 'unknown', MessageKe
               <p class="warning" data-testid="gate-not-safe">{{ t('gate.driveway.notSafe') }}</p>
             }
           }
+          @if (command(); as state) {
+            @if (state.error) {
+              <p class="failure" role="alert" data-testid="gate-open-failure">
+                {{ gateFailureOf(state) | displayText }}
+              </p>
+            } @else if (state.sent) {
+              <p class="note" role="status" data-testid="gate-open-sent">
+                {{ t('gate.driveway.sent') }}
+              </p>
+            }
+          }
           <div class="actions">
             <button
               mat-flat-button
@@ -101,17 +112,6 @@ const BRIDGE_LABELS: Readonly<Record<'online' | 'offline' | 'unknown', MessageKe
               {{ t('gate.driveway.open') }}
             </button>
           </div>
-          @if (command(); as state) {
-            @if (state.error) {
-              <p class="failure" role="alert" data-testid="gate-open-failure">
-                {{ gateFailureOf(state) | displayText }}
-              </p>
-            } @else if (state.sent) {
-              <p class="note" role="status" data-testid="gate-open-sent">
-                {{ t('gate.driveway.sent') }}
-              </p>
-            }
-          }
         </mat-card-content>
       </mat-card>
     </ng-container>
