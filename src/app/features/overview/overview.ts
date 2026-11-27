@@ -55,7 +55,7 @@ import {
   toFlowView,
 } from '../energy/energy-views';
 import { tomorrowOf } from '../energy/energy-forecast-views';
-import { workModeOf } from '../energy/energy-reserve';
+import { floorBelow, shownModeOf } from '../energy/energy-reserve';
 import { PowerValue } from '../energy/power-value';
 import { stateOf } from '../../shared/lights/light-labels';
 import { describeWaterError } from '../hot-water/water-errors';
@@ -430,9 +430,16 @@ export class Overview {
   };
   /** Tomorrow of the forecast: its word and kWh, as much as the answer says. */
   protected readonly energyTomorrow = computed(() => tomorrowOf(this.energyForecast.value()));
+  /** HAS-519: what the SOLAX runs, read from its dongle - the mode the service wrote only while it is not read. */
   protected readonly energyWorkMode = computed(() =>
-    workModeOf(this.energyCharge.value(), this.energyReserve.value()),
+    shownModeOf(
+      this.energyCharge.value(),
+      this.energyReserve.value(),
+      this.energyStatus.value()?.inverter,
+    ),
   );
+  /** HAS-519: the reserve the inverter holds only down to a lower Min SoC - the blinking light of the tile too. */
+  protected readonly energyFloorBelow = computed(() => floorBelow(this.energyReserve.value()));
   /** The way the grid flows, by the dead band of the service the diagram uses too; none while not known. */
   protected readonly energyGridLabel = computed(() => {
     const flow = this.energyFlow().gridFlow;

@@ -129,6 +129,11 @@ export class EnergyControl {
 
   /** The charge going on, polled by the page - the card of the mode of the inverter reads it too (HAS-496). */
   readonly charge = input.required<PollingResource<ChargeState | null>>();
+  /**
+   * The level the inverter tops the battery up to from the grid by itself while the reserve holds (HAS-519) - not a
+   * charge of the service, so the card says it beside "no charge commanded"; `undefined` while it does not.
+   */
+  readonly toppingUp = input<number | '?' | undefined>(undefined);
 
   /** The charges of the last 30 days: from the midnight 30 days back to the midnight after today. */
   private readonly runsRange = computed(

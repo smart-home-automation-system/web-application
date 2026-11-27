@@ -146,7 +146,10 @@ describe('EnergyControl', () => {
     answer(charge, { active: false, plannedStart: '2026-11-12T03:55:00' });
     await settle();
 
-    expect(words(byId('charge-none'))).toBe('The battery is not charging from the grid.');
+    expect(words(byId('charge-none'))).toBe(
+      'No charge from the grid commanded by the service - the card shows the charges of the service only.',
+    );
+    expect(byId('charge-topping-up')).toBeNull();
     expect(words(byId('charge-planned'))).toContain('The automation would start a charge at');
     type('charge-target', '80');
     type('charge-until', '18:30');
@@ -227,6 +230,21 @@ describe('EnergyControl', () => {
     byId('charge-start').click();
     await settle();
     expect(api.startCharge).not.toHaveBeenCalled();
+  });
+
+  // HAS-519: the inverter topping up to the reserve is not a charge of the service - said beside "none"
+  it('says the inverter tops the battery up to the reserve by itself', async () => {
+    answer(charge, { active: false });
+    fixture.componentRef.setInput('toppingUp', 80);
+    await settle();
+    expect(words(byId('charge-topping-up'))).toBe(
+      'battery_charging_full The inverter is topping the battery up from the grid to the reserve of 80 %.',
+    );
+    expect(byId('charge-none')).not.toBeNull();
+
+    fixture.componentRef.setInput('toppingUp', undefined);
+    await settle();
+    expect(byId('charge-topping-up')).toBeNull();
   });
 
   it('shows the charge going on with the battery now, and stops it at once', async () => {

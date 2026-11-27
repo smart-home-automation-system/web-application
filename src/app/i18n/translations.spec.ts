@@ -110,6 +110,8 @@ describe('translations', () => {
       'safety.state.alarm',
       'safety.detector.model',
       'safety.base.wifi',
+      // the name of a work mode of the SOLAX and of its setting, the same in both languages (HAS-519)
+      'energy.workMode.real.backUp',
     ];
     const untranslated = Object.keys(texts['en']).filter(
       (key) => texts['en'][key] === texts['pl'][key] && !sameOnPurpose.includes(key),

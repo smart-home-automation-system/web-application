@@ -26,7 +26,7 @@ import { LocalNumberPipe } from '../../shared/local-number/local-number.pipe';
 import { EnergyChartCard } from './energy-chart-card';
 import { EnergyControl } from './energy-control';
 import { ENERGY_CHARTS, ThresholdSpec, energyChart } from './energy-charts';
-import { WorkMode, heldLevel, workModeOf } from './energy-reserve';
+import { ShownMode, heldLevel, shownModeOf, toppingUpTo } from './energy-reserve';
 import { EnergyDays, shiftDay } from './energy-days';
 import { EnergyOperator } from './energy-operator';
 import { describeEnergyError } from './energy-errors';
@@ -138,15 +138,22 @@ export class Energy {
   protected readonly reserve = this.api.watchReserve();
   /** The charge going on - the control section and the mode of the inverter beside the flow, one call (HAS-496). */
   protected readonly charge = this.api.watchCharge();
+  /** HAS-519: what the SOLAX runs, read from its dongle - the mode the service wrote only while it is not read. */
   protected readonly workMode = computed(() =>
-    workModeOf(this.charge.value(), this.reserve.value()),
+    shownModeOf(this.charge.value(), this.reserve.value(), this.status.value()?.inverter),
   );
-  protected readonly workModeIcon: Readonly<Record<WorkMode['kind'], string>> = {
+  protected readonly workModeIcon: Readonly<Record<ShownMode['kind'], string>> = {
     charging: 'battery_charging_full',
     backUp: 'battery_saver',
     selfUse: 'solar_power',
+    feedIn: 'upload',
+    other: 'settings_power',
     notKnown: 'help',
   };
+  /** The level the inverter tops the battery up to from the grid by itself, for the charge card (HAS-519). */
+  protected readonly toppingUp = computed(() =>
+    toppingUpTo(this.reserve.value(), this.charge.value(), this.battery.value(), this.grid.value()),
+  );
   private readonly reserveLine = computed((): readonly ThresholdSpec[] => {
     const level = heldLevel(this.reserve.value());
     return level === undefined

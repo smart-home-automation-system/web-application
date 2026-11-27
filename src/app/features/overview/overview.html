@@ -753,7 +753,12 @@
             ? gridFrequency().hz === undefined
               ? t('energy.gridState.frequencyOffNoValue')
               : t('energy.gridState.frequencyOff', { hz: gridFrequency().hz | localNumber: TWO })
-            : undefined
+            : energyFloorBelow()
+              ? t('energy.reserve.floorBelow', {
+                  minSoc: energyFloorBelow()!.minSoc,
+                  level: energyFloorBelow()!.level,
+                })
+              : undefined
       "
       data-testid="tile-energy"
     >
@@ -794,27 +799,28 @@
               }}</strong>
             </dd>
           </div>
-          <!-- HAS-496 (owner 2026-11-25): the work mode the energy service set - the reserve level in the words of Back Up -->
+          <!-- HAS-519: what the SOLAX runs, read from its dongle; the mode the service wrote only while it is not read,
+               labelled as such (HAS-496 showed only that) -->
           @let mode = energyWorkMode();
-          <div class="tile__row" data-energy="workMode" [attr.data-mode]="mode.kind">
+          <div
+            class="tile__row"
+            data-energy="workMode"
+            [attr.data-mode]="mode.kind"
+            [attr.data-real]="mode.real"
+          >
             <dt>{{ t('overview.energy.workMode') }}</dt>
             <dd>
-              <strong>
-                @switch (mode.kind) {
-                  @case ('charging') {
-                    {{ t('energy.workMode.charging', { target: mode.target ?? '?' }) }}
-                  }
-                  @case ('backUp') {
-                    {{ t('energy.workMode.backUp', { level: mode.level ?? '?' }) }}
-                  }
-                  @case ('selfUse') {
-                    {{ t('energy.workMode.selfUse') }}
-                  }
-                  @default {
-                    {{ t('energy.notKnown') }}
-                  }
-                }
-              </strong>
+              @if (!mode.real && mode.kind !== 'notKnown') {
+                <span data-testid="energy-mode-written">{{
+                  t('energy.workMode.writtenShort')
+                }}</span>
+              }
+              <!-- a charge from the grid going on is what the tile tells first, as before HAS-519 -->
+              <strong>{{
+                mode.charging === undefined
+                  ? (mode.text | displayText)
+                  : t('energy.workMode.charging', { target: mode.charging })
+              }}</strong>
             </dd>
           </div>
         </dl>

@@ -160,8 +160,8 @@
         }
       </app-domain-tile>
 
-      <!-- HAS-496 (owner 2026-11-25): the mode of the inverter - the work mode the energy service set (the cloud reads
-           none back) and the run mode the SOLAX reads -->
+      <!-- HAS-519: the mode of the inverter - what the SOLAX runs, read from its dongle; the mode the energy service wrote
+           only while the inverter is not read, labelled as such; and the run mode the SOLAX reads -->
       <app-domain-tile
         heading="energy.cards.workMode"
         icon="settings_power"
@@ -173,31 +173,47 @@
       >
         @if (reserve.value() !== undefined) {
           @let mode = workMode();
-          <p class="tile__lead" data-testid="work-mode" [attr.data-mode]="mode.kind">
+          <p
+            class="tile__lead"
+            data-testid="work-mode"
+            [attr.data-mode]="mode.kind"
+            [attr.data-real]="mode.real"
+          >
             <mat-icon aria-hidden="true">{{ workModeIcon[mode.kind] }}</mat-icon>
-            <span>
-              @switch (mode.kind) {
-                @case ('charging') {
-                  {{ t('energy.workMode.charging', { target: mode.target ?? '?' }) }}
-                }
-                @case ('backUp') {
-                  {{ t('energy.workMode.backUp', { level: mode.level ?? '?' }) }}
-                }
-                @case ('selfUse') {
-                  {{ t('energy.workMode.selfUse') }}
-                }
-                @default {
-                  {{ t('energy.notKnown') }}
-                }
-              }
-            </span>
+            <span>{{ mode.text | displayText }}</span>
           </p>
-          @if (mode.kind === 'backUp' && mode.until) {
+          @if (!mode.real && mode.kind !== 'notKnown') {
+            <p class="tile__detail" data-testid="work-mode-written">
+              {{ t('energy.workMode.written') }}
+            </p>
+          }
+          @if (mode.until) {
             <p class="tile__detail">
               {{ t('energy.reserve.until') }} {{ mode.until | houseDateTime }}
             </p>
           }
+          @if (mode.charging !== undefined) {
+            <p class="tile__detail" data-testid="work-mode-charging">
+              {{ t('energy.workMode.chargingNow', { target: mode.charging }) }}
+            </p>
+          }
           <dl class="tile__rows">
+            @if (mode.real && mode.kind === 'backUp') {
+              <div class="tile__row" data-field="chargeTo">
+                <dt>{{ t('energy.workMode.chargeTo') }}</dt>
+                <dd>
+                  <strong>{{
+                    mode.chargeTo === undefined ? t('energy.notKnown') : mode.chargeTo + ' %'
+                  }}</strong>
+                </dd>
+              </div>
+            }
+            @if (mode.readAt; as at) {
+              <div class="tile__row" data-field="readAt">
+                <dt>{{ t('energy.workMode.readAt') }}</dt>
+                <dd data-testid="work-mode-read-at">{{ at | houseDateTime }}</dd>
+              </div>
+            }
             <div class="tile__row" data-field="runMode">
               <dt>{{ t('energy.inverter.runMode') }}</dt>
               <dd>
@@ -215,7 +231,9 @@
               </dd>
             </div>
           </dl>
-          <p class="tile__detail">{{ t('energy.workMode.note') }}</p>
+          <p class="tile__detail" data-testid="work-mode-note">
+            {{ t(mode.real ? 'energy.workMode.realNote' : 'energy.workMode.writtenNote') }}
+          </p>
         }
         <div tileFailures>
           <app-api-error-strip [error]="charge.error()" [describeWith]="describe" />
@@ -249,6 +267,7 @@
       [frequencyOff]="gridFrequency().off === true && !status.error()"
       [reserve]="reserve"
       [charge]="charge"
+      [toppingUp]="toppingUp()"
     />
   </section>
 

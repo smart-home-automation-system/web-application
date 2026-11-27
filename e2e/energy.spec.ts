@@ -297,18 +297,66 @@ test('holds a battery reserve after a question and tells it everywhere', async (
 
   await expect(card.getByTestId('reserve-state')).toContainText('Held at 80 %');
   await expect(card.getByTestId('reserve-write')).toContainText('sent to the inverter');
-  await expect(page.getByTestId('work-mode')).toContainText('Back Up - reserve 80 %');
+  // HAS-519: the mode as the inverter reads it - the mock SOLAX holds its old Min SoC of 75 %, below the level
+  await expect(page.getByTestId('work-mode')).toContainText('Back Up - Min SoC 75 %');
+  await expect(page.getByTestId('work-mode')).toHaveAttribute('data-real', 'true');
+  await expect(card.getByTestId('reserve-min-soc')).toHaveText('75 %');
+  await expect(card.getByTestId('reserve-charge-to')).toHaveText('80 %');
+  await expect(card.getByTestId('reserve-floor-below')).toContainText(
+    'The inverter holds only 75 %, the reserve is 80 %.',
+  );
+  await expect(card.getByTestId('reserve-floor-note')).toHaveCount(0);
   await expect(page.getByTestId('chart-battery')).toContainText('Reserve');
 
-  // lowering it is sent at once
+  // lowering it is sent at once - to the floor the inverter holds, so the warning goes
   await card.getByTestId('reserve-level').focus();
   await page.keyboard.press('ArrowLeft');
   await card.getByTestId('reserve-send').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(card.getByTestId('reserve-state')).toContainText('Held at 75 %');
+  await expect(card.getByTestId('reserve-floor-below')).toHaveCount(0);
+  await expect(card.getByTestId('reserve-floor-note')).toBeVisible();
 
   await page.getByRole('link', { name: 'Overview' }).first().click();
-  await expect(page.getByTestId('tile-energy').locator('[data-energy="workMode"]')).toContainText(
-    'Back Up - reserve 75 %',
+  const energy = page.getByTestId('tile-energy');
+  await expect(energy.locator('[data-energy="workMode"]')).toContainText('Back Up - Min SoC 75 %');
+  await expect(energy.getByTestId('tile-signal')).toHaveCount(0);
+});
+
+// HAS-519: a reserve the inverter holds only down to a lower Min SoC - the warning with both numbers on the card, the
+// blinking light of the energy tile on the overview
+test('tells a reserve the inverter does not hold, on the card and the overview', async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.setItem('mock-inverter', 'floor'));
+  await page.goto('/energy');
+  const card = page.getByTestId('card-reserve');
+  await expect(card.getByTestId('reserve-floor-below')).toContainText(
+    'The inverter holds only 75 %, the reserve is 80 %.',
   );
+  await expect(card.getByTestId('reserve-floor-below')).toContainText(
+    'Set Min SoC to 80 % by hand',
+  );
+  await expect(page.getByTestId('work-mode-read-at')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Overview' }).first().click();
+  await expect(page.getByTestId('tile-energy').getByTestId('tile-signal')).toHaveAttribute(
+    'aria-label',
+    // the per cent sign follows a no-break space
+    /^The inverter holds only 75\s%, the reserve is 80\s%\.$/,
+  );
+});
+
+// HAS-519: the dongle not read - the mode the service wrote, labelled as such; nothing of the inverter on the reserve
+test('tells the mode the service wrote while the inverter is not read', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('mock-inverter', 'unread'));
+  await page.goto('/energy');
+  await expect(page.getByTestId('work-mode')).toContainText('Self Use');
+  await expect(page.getByTestId('work-mode')).toHaveAttribute('data-real', 'false');
+  await expect(page.getByTestId('work-mode-written')).toContainText('the inverter not read yet');
+  await expect(page.getByTestId('work-mode-read-at')).toHaveCount(0);
+  await expect(page.getByTestId('card-reserve').getByTestId('reserve-min-soc')).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Overview' }).first().click();
+  await expect(page.getByTestId('energy-mode-written')).toHaveText('set:');
 });

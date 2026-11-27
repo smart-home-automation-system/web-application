@@ -36,7 +36,36 @@
             · {{ at | houseDateTime }}
           }
         </dd>
+        <!-- HAS-519: what the inverter really has, read from its dongle - left out while it is not read -->
+        @if (storedOn() && held?.inverter; as inverter) {
+          <dt>{{ t('energy.reserve.minSoc') }}</dt>
+          <dd data-testid="reserve-min-soc">
+            {{ inverter.minSoc === undefined ? t('energy.notKnown') : inverter.minSoc + ' %' }}
+          </dd>
+          <dt>{{ t('energy.reserve.chargeTo') }}</dt>
+          <dd data-testid="reserve-charge-to">
+            {{ inverter.chargeTo === undefined ? t('energy.notKnown') : inverter.chargeTo + ' %' }}
+          </dd>
+          @if (inverter.readAt; as at) {
+            <dt>{{ t('energy.reserve.readAt') }}</dt>
+            <dd data-testid="reserve-read-at">{{ at | houseDateTime }}</dd>
+          }
+        }
       </dl>
+      <!-- HAS-519: the inverter holds the reserve only down to an older, lower floor - the SolaX cloud takes no Min SoC,
+           so it is set by hand; the warning goes once the read says the floor is at the level -->
+      @if (floor(); as below) {
+        <!-- a standing state read every 10 s, not news to announce: no live region (Sonar S6819) -->
+        <div class="tile__detail--alert reserve__warning" data-testid="reserve-floor-below">
+          <mat-icon aria-hidden="true">warning</mat-icon>
+          <div>
+            <p>
+              {{ t('energy.reserve.floorBelow', { minSoc: below.minSoc, level: below.level }) }}
+            </p>
+            <p>{{ t('energy.reserve.floorFix', { level: below.level }) }}</p>
+          </div>
+        </div>
+      }
 
       <form class="form" data-testid="reserve-form" (submit)="$event.preventDefault(); send()">
         <mat-slide-toggle
@@ -108,7 +137,10 @@
           <p class="tile__detail" data-testid="reserve-explain">
             {{ t('energy.reserve.explain') }}
           </p>
-          <!-- the SolaX cloud takes the work mode and the level to charge to, never the floor (2026-11-24) -->
+        }
+        <!-- the SolaX cloud takes the work mode and the level to charge to, never the floor (2026-11-24); a plain note
+             while the inverter is not seen to hold less - the warning above says it then -->
+        @if (on() && !floor()) {
           <p class="tile__detail reserve__note" data-testid="reserve-floor-note">
             <mat-icon aria-hidden="true">info</mat-icon>
             <span>{{ t('energy.reserve.floorNote', { level: level() }) }}</span>

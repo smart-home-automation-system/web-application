@@ -1,12 +1,15 @@
 import {
   RESERVE_LEVEL,
+  floorBelow,
   heldLevel,
   houseNow,
   levelValid,
   needsQuestion,
   reserveBody,
   reserveProblem,
+  shownModeOf,
   tomorrowEvening,
+  toppingUpTo,
   untilFor,
   workModeOf,
   writeStateLabel,
@@ -116,5 +119,145 @@ describe('what the card tells of the reserve', () => {
     });
     expect(workModeOf(undefined, undefined)).toEqual({ kind: 'notKnown' });
     expect(workModeOf(undefined, {})).toEqual({ kind: 'notKnown' });
+  });
+});
+
+// HAS-519: what the inverter runs, read from its dongle - the mode the service wrote only while it is not read
+describe('the mode of the inverter as the page tells it', () => {
+  const read = { minSoc: 75, chargeTo: 80, readAt: '2026-11-27T18:28:00' };
+
+  it('tells the mode the inverter reads, Back Up with its floor and the level it charges to', () => {
+    const reserve = { enabled: true, level: 80, inverter: { workMode: 'back up', ...read } };
+    expect(shownModeOf(undefined, reserve)).toEqual({
+      kind: 'backUp',
+      text: { key: 'energy.workMode.real.backUp', params: { minSoc: 75 } },
+      real: true,
+      readAt: '2026-11-27T18:28:00',
+      chargeTo: 80,
+      charging: undefined,
+    });
+  });
+
+  it('words every mode of the service and prints one it does not know as it came', () => {
+    const mode = (workMode: string) =>
+      shownModeOf(undefined, { enabled: false, inverter: { workMode, ...read } });
+    expect(mode('self use')).toMatchObject({
+      kind: 'selfUse',
+      text: { key: 'energy.workMode.selfUse' },
+      chargeTo: undefined,
+    });
+    expect(mode('feed-in priority')).toMatchObject({
+      kind: 'feedIn',
+      text: { key: 'energy.workMode.real.feedIn' },
+    });
+    expect(mode('other')).toMatchObject({
+      kind: 'other',
+      text: { key: 'energy.workMode.real.other' },
+    });
+    expect(mode('peak shaving')).toMatchObject({
+      kind: 'other',
+      text: { literal: 'peak shaving' },
+    });
+    // a Back Up without its floor read
+    expect(shownModeOf(undefined, { inverter: { workMode: 'back up' } }).text).toEqual({
+      key: 'energy.workMode.real.backUp',
+      params: { minSoc: '?' },
+    });
+  });
+
+  it('tells a charge from the grid going on beside the mode the inverter reads', () => {
+    const charge = { active: true, run: { state: 'charging', targetSoc: 90 } };
+    const reserve = { enabled: false, inverter: { workMode: 'self use' } };
+    expect(shownModeOf(charge, reserve)).toMatchObject({
+      kind: 'selfUse',
+      real: true,
+      charging: 90,
+    });
+    expect(shownModeOf({ active: true, run: { state: 'requested' } }, reserve).charging).toBe('?');
+  });
+
+  it('reads the settings of /status while the reserve carries none', () => {
+    expect(shownModeOf(undefined, { enabled: false }, { workMode: 'self use' })).toMatchObject({
+      kind: 'selfUse',
+      real: true,
+    });
+  });
+
+  it('falls back to the mode the service wrote, labelled as not read', () => {
+    expect(
+      shownModeOf(undefined, { enabled: true, level: 80, until: '2026-11-28T18:00:00' }),
+    ).toEqual({
+      kind: 'backUp',
+      text: { key: 'energy.workMode.backUp', params: { level: 80 } },
+      real: false,
+      until: '2026-11-28T18:00:00',
+    });
+    expect(
+      shownModeOf({ active: true, run: { state: 'charging', targetSoc: 90 } }, { enabled: false }),
+    ).toEqual({
+      kind: 'charging',
+      text: { key: 'energy.workMode.charging', params: { target: 90 } },
+      real: false,
+    });
+    expect(shownModeOf(undefined, { enabled: false })).toEqual({
+      kind: 'selfUse',
+      text: { key: 'energy.workMode.selfUse' },
+      real: false,
+    });
+    expect(shownModeOf(undefined, undefined)).toEqual({
+      kind: 'notKnown',
+      text: { key: 'energy.notKnown' },
+      real: false,
+    });
+  });
+});
+
+describe('the reserve the inverter does not hold', () => {
+  it('gives both numbers while the service says the floor is below the level', () => {
+    expect(
+      floorBelow({ enabled: true, level: 80, floorBelowLevel: true, inverter: { minSoc: 75 } }),
+    ).toEqual({ minSoc: 75, level: 80 });
+    expect(floorBelow({ enabled: true, floorBelowLevel: true })).toEqual({
+      minSoc: '?',
+      level: '?',
+    });
+  });
+
+  it('says nothing while the floor is held, not known, or no reserve holds', () => {
+    expect(floorBelow({ enabled: true, level: 80, floorBelowLevel: false })).toBeUndefined();
+    expect(floorBelow({ enabled: true, level: 80, floorBelowLevel: null })).toBeUndefined();
+    expect(floorBelow({ enabled: true, level: 80 })).toBeUndefined();
+    expect(floorBelow({ enabled: false, level: 80, floorBelowLevel: true })).toBeUndefined();
+    expect(floorBelow(undefined)).toBeUndefined();
+  });
+});
+
+describe('the inverter topping the battery up to the reserve', () => {
+  const reserve = { enabled: true, level: 80 };
+  const charging = { direction: 'charging' };
+  const importing = { direction: 'import' };
+
+  it('tells the level while the reserve holds, the battery charges and the grid imports', () => {
+    expect(toppingUpTo(reserve, { active: false }, charging, importing)).toBe(80);
+    expect(toppingUpTo({ enabled: true }, undefined, charging, importing)).toBe('?');
+  });
+
+  it('says nothing for a charge of the service, without a reserve, or with anything not known', () => {
+    const run = { active: true, run: { state: 'charging', targetSoc: 90 } };
+    expect(toppingUpTo(reserve, run, charging, importing)).toBeUndefined();
+    expect(
+      toppingUpTo({ enabled: false, level: 80 }, undefined, charging, importing),
+    ).toBeUndefined();
+    expect(toppingUpTo(reserve, undefined, { direction: 'idle' }, importing)).toBeUndefined();
+    expect(toppingUpTo(reserve, undefined, charging, { direction: 'export' })).toBeUndefined();
+    expect(toppingUpTo(reserve, undefined, undefined, importing)).toBeUndefined();
+    expect(toppingUpTo(reserve, undefined, charging, undefined)).toBeUndefined();
+    // a reading the service marks stale says nothing of now
+    expect(
+      toppingUpTo(reserve, undefined, { ...charging, stale: true }, importing),
+    ).toBeUndefined();
+    expect(
+      toppingUpTo(reserve, undefined, charging, { ...importing, stale: true }),
+    ).toBeUndefined();
   });
 });

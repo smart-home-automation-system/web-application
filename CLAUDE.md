@@ -1551,17 +1551,32 @@ e2e/              # Playwright tests
     - **The SolaX cloud never takes the floor** (`minSoc` - Self Use kept 10, Back Up 30 for a sent 80, 2026-11-24): while
       the reserve is on, the card says Min SoC is set in SolaxCloud by hand. A word of `writeState` this version does not
       know is printed as it came.
+    - **What the inverter really has** (HAS-519, energy-service >= 0.23.0 - `inverter` of the reserve and of `/status`, read
+      from the dongle, left out while not read or older than 15 min): while the reserve holds, the card shows its Min SoC,
+      Charge Battery To and the time of the read. **`floorBelowLevel` true is a warning with both numbers** ("The inverter
+      holds only 75 %, the reserve is 80 %", `floorBelow`) and the reminder to set Min SoC by hand, in place of the plain
+      note; it goes once the read says the floor is at the level, and lights the signal of the energy tile of the overview
+      (after the lost grid and the frequency). A floor not known is never below.
     - **The mode of the inverter** (owner 2026-11-25, `card-work-mode` between the next planned outage and the open alarms
-      beside the flow; `workModeOf`): the work mode the energy service set - a charge going on, else the reserve (Back Up
-      at its level), else Self Use; not known while the reserve is not - **what the service wrote, not what the inverter
-      reports** (the cloud reads none back; a change made by hand in SolaxCloud is not seen), said under the card - and
-      the run mode the SOLAX reads. The energy tile of the overview has the same work mode as its row "Inverter" (the
-      reserve and the charge once a minute, two more calls of the tile).
+      beside the flow; `shownModeOf`, HAS-519): **what the SOLAX runs, read from its dongle** - `self use`, `back up` (with
+      its Min SoC, Charge Battery To as a row), `feed-in priority`, `other`, a word this version does not know printed as
+      it came - with the time of the read; the settings of the reserve first, those of `/status` while it has none. A
+      charge from the grid going on is told beside it (on the overview tile in its place). **Only while the inverter is
+      not read** the mode the service wrote (`workModeOf`: a charge, else the reserve in Back Up, else Self Use; not known
+      while the reserve is not), labelled "set by the service" (`data-real="false"`, "set:" on the tile). The run mode
+      the SOLAX reads stays a row. The energy tile of the overview has the same mode as its row "Inverter" (the reserve,
+      the charge and `/status` once a minute).
+    - **The charge card shows the charges of the service only** (HAS-519): "No charge from the grid commanded by the
+      service"; while the reserve holds, the battery charges and the grid meter imports - none of them stale - it adds
+      that the inverter tops the battery up to the reserve by itself (`toppingUpTo`, input `toppingUp` of `EnergyControl`).
     - **The control section** (owner 2026-11-25): twelve columns from 1180 px of the page - the charge and the reserve 6 +
       6, then the automation 3 (its three fields narrow, side by side), the planned outages 4 and the charges 5 (a run on
       one line); two columns between 900 and 1180 px with the charges across the last row.
     - The mock (`charge.fixtures.ts`): off at 80 %, never written; a write stored whole and answered `sent`, refused with
-      `INVALID_RESERVE` as the service refuses.
+      `INVALID_RESERVE` as the service refuses. The mock SOLAX (HAS-519): Self Use, Back Up with the reserve, its Min SoC
+      starting at 75 % and pulled down by a write, never up - so a reserve of 80 % is held only down to 75 %.
+      `localStorage['mock-inverter']` = `floor` starts with that reserve on (a page loaded anew too), `unread` - the dongle
+      not read, no `inverter` anywhere.
   - **The production forecast** (HAS-373, `EnergyForecastCard` in `energy-forecast.ts`, `GET /energy/forecast` of
     energy-service >= 0.16.0, every 5 min; its read is in `isOverviewRead` for the tile): **the categories and the bands
     are the service's** - nothing here compares a coverage with a number; the four words are `energy-forecast-views.ts`

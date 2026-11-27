@@ -84,7 +84,14 @@
           </div>
         }
       } @else {
+        <!-- HAS-519: the card shows the charges of the service only; the inverter topping up to the reserve is not one -->
         <p class="tile__detail" data-testid="charge-none">{{ t('energy.charge.none') }}</p>
+        @if (toppingUp(); as level) {
+          <p class="tile__detail charge__topping" data-testid="charge-topping-up">
+            <mat-icon aria-hidden="true">battery_charging_full</mat-icon>
+            <span>{{ t('energy.charge.toppingUp', { level }) }}</span>
+          </p>
+        }
         <!-- above the form: the commands keep the bottom right corner of the card -->
         <ng-container [ngTemplateOutlet]="plannedStart" />
         <form class="form" data-testid="charge-form" (submit)="$event.preventDefault(); start()">
