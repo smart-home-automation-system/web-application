@@ -55,11 +55,8 @@
       <!-- HAS-519: the inverter holds the reserve only down to an older, lower floor - the SolaX cloud takes no Min SoC,
            so it is set by hand; the warning goes once the read says the floor is at the level -->
       @if (floor(); as below) {
-        <div
-          class="tile__detail--alert reserve__warning"
-          role="status"
-          data-testid="reserve-floor-below"
-        >
+        <!-- a standing state read every 10 s, not news to announce: no live region (Sonar S6819) -->
+        <div class="tile__detail--alert reserve__warning" data-testid="reserve-floor-below">
           <mat-icon aria-hidden="true">warning</mat-icon>
           <div>
             <p>
