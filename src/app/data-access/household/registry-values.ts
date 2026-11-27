@@ -35,7 +35,7 @@ export const ROOM_NAMES: readonly string[] = [
 
 export const MEMBER_ROLES = ['admin', 'resident'] as const satisfies readonly MemberRole[];
 
-export const MEMBER_PERMISSIONS = ['heating_switch'] as const satisfies readonly MemberPermission[];
+export const MEMBER_PERMISSIONS = ['heating_switch', 'amplifier_unlock'] as const satisfies readonly MemberPermission[];
 
 /**
  * The values of the device registry (`DeviceKind`, `LightKind`, `BlindsPlacement`,

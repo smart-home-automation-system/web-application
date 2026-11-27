@@ -30,6 +30,8 @@ export const en = {
     houseHeating: 'House heating',
     requestsShort: 'Requests',
     houseHeatingShort: 'Heating',
+    media: 'Media',
+    mediaShort: 'Media',
     household: 'Household',
     devices: 'Devices',
     more: 'More',
@@ -2911,6 +2913,7 @@ export const en = {
     },
     permission: {
       heatingSwitch: 'May switch the heating of the whole house',
+      amplifierUnlock: 'May unlock the amplifier',
     },
     device: {
       name: 'Name of the device',
@@ -2943,6 +2946,33 @@ export const en = {
       deviceExists:
         'This MAC address is already registered, or the member already has a device of this name.',
       deviceNotFound: 'This device is no longer in the registry.',
+    },
+  },
+  // HAS-517: the unlock of the amplifier, on its own page for a member with amplifier_unlock
+  amplifier: {
+    title: 'Amplifier',
+    lead: 'After a power cut the amplifier hangs and answers neither its remote nor its buttons. The unlock sends it the file that brings it back.',
+    unlock: 'Unlock the amplifier',
+    sending: 'Unlocking the amplifier…',
+    question: 'Send the amplifier the file that unhangs it? Do it only when the amplifier does not answer.',
+    confirm: 'Unlock',
+    cancel: 'Do not unlock',
+    at: 'Pressed: {{ time }}',
+    sent: 'The amplifier took the file - it should answer again in a moment.',
+    noAnswer:
+      'No answer from the house - the unlock may have been carried out. Check the amplifier before you try again.',
+    error: {
+      refused: 'The amplifier did not take the file. Try again in a minute.',
+      unavailable:
+        'The amplifier cannot be reached - it may be off, or still starting after the power cut. Try again in a minute.',
+      timeout:
+        'The amplifier did not answer in time - it may have taken the file. Check it before you try again.',
+      inProgress: 'Another unlock of the amplifier is on its way - wait for it to finish.',
+      unknownMember:
+        'The person of this profile is not a household member any more. Open your personal link again.',
+      notPermitted: 'This profile may not unlock the amplifier any more.',
+      registryUnavailable:
+        'The household registry cannot be read now, so nothing was sent to the amplifier. Try again in a minute.',
     },
   },
   settings: {

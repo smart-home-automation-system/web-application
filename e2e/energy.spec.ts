@@ -136,29 +136,33 @@ test('lays the charts of the grid out in a row of three', async ({ page }, testI
     await page.setViewportSize({ width: 1700, height: 1000 });
   }
   await page.goto('/energy');
-  const topOf = async (key: string) => {
-    const card = page.getByTestId(`chart-${key}`);
-    await expect(card).toBeAttached();
-    return Math.round((await card.boundingBox())!.y);
-  };
-  const [power, battery, voltage, current, frequency] = [
-    await topOf('power'),
-    await topOf('battery'),
-    await topOf('voltage'),
-    await topOf('current'),
-    await topOf('frequency'),
-  ];
+  for (const key of ['power', 'battery', 'voltage', 'current', 'frequency']) {
+    await expect(page.getByTestId(`chart-${key}`)).toBeAttached();
+  }
+  // the five tops read at one moment: the cards above the charts grow as their answers come and move the charts down for
+  // most of a second, so tops read one after the other could stand on two sides of a move (HAS-517)
+  const tops = () =>
+    page.evaluate(() =>
+      ['power', 'battery', 'voltage', 'current', 'frequency'].map((key) =>
+        Math.round(
+          document.querySelector(`[data-testid="chart-${key}"]`)?.getBoundingClientRect().top ??
+            NaN,
+        ),
+      ),
+    );
 
   if (phone) {
-    expect([power, battery, voltage, current, frequency]).toEqual(
-      [power, battery, voltage, current, frequency].toSorted((a, b) => a - b),
-    );
-    expect(new Set([power, battery, voltage, current, frequency]).size).toBe(5);
+    const shown = await tops();
+    expect(shown).toEqual(shown.toSorted((a, b) => a - b));
+    expect(new Set(shown).size).toBe(5);
   } else {
-    expect(battery).toBe(power);
-    expect(voltage).toBeGreaterThan(power);
-    expect(current).toBe(voltage);
-    expect(frequency).toBe(voltage);
+    // asked again until the page stops growing: a layout that is wrong never passes
+    await expect
+      .poll(async () => {
+        const [power, battery, voltage, current, frequency] = await tops();
+        return battery === power && voltage > power && current === voltage && frequency === voltage;
+      })
+      .toBe(true);
   }
 });
 

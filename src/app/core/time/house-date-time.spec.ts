@@ -1,5 +1,6 @@
 import {
   formatHouseDateTime,
+  houseDateTimeAt,
   houseInstant,
   houseWeekMinute,
   parseHouseDateTime,
@@ -129,5 +130,21 @@ describe('houseInstant', () => {
 
     // two hours on the clock, one hour of time
     expect(after - before).toBe(3_600_000);
+  });
+});
+
+// HAS-517: a moment of this browser shown with the pipes of the times of the house
+describe('houseDateTimeAt', () => {
+  it('tells what the clocks of the house show at the instant, in summer and in winter time', () => {
+    expect(houseDateTimeAt(Date.parse('2026-10-08T12:30:59Z'), 'Europe/Warsaw')).toBe(
+      '2026-10-08T14:30:59',
+    );
+    expect(houseDateTimeAt(Date.parse('2026-11-27T08:45:12Z'), 'Europe/Warsaw')).toBe(
+      '2026-11-27T09:45:12',
+    );
+    // past midnight of the house, still the day before in UTC
+    expect(houseDateTimeAt(Date.parse('2026-11-27T23:30:00Z'), 'Europe/Warsaw')).toBe(
+      '2026-11-28T00:30:00',
+    );
   });
 });

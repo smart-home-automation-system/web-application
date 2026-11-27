@@ -23,9 +23,11 @@ test('lists everybody the registry holds, switched off or not', async ({ page })
   await expect(celina).toContainText('Resident');
   await expect(celina.getByTestId('phone')).toHaveText('+48500100103');
   await expect(celina.getByTestId('rooms')).toHaveText('bedroom wardrobe');
-  await expect(celina.getByTestId('permissions')).toHaveText(
+  await expect(celina.getByTestId('permissions')).toContainText(
     'May switch the heating of the whole house',
   );
+  // HAS-517
+  await expect(celina.getByTestId('permissions')).toContainText('May unlock the amplifier');
   await expect(celina.getByTestId('device')).toContainText('Phone 02:00:00:00:c3:01');
 
   await expect(member(page, 'Damian').getByTestId('rooms')).toHaveText('None');

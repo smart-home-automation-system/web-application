@@ -101,6 +101,14 @@ export function houseDay(instant: number, timeZone: string): string {
 }
 
 /**
+ * What the clocks of the house show at the instant, as a house date-time of the backend (`2026-10-08T09:45:12`) - for
+ * showing a moment of this browser (when an outcome came) with the pipes made for the times of the house.
+ */
+export function houseDateTimeAt(instant: number, timeZone: string): string {
+  return new Date(wallClockIn(timeZone, instant)).toISOString().slice(0, 19);
+}
+
+/**
  * Where in its week the house is at the instant: the day, Monday being 0, and the minutes since
  * its midnight. For placing "now" on a weekly schedule, which is written in the wall-clock times
  * of the house.

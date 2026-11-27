@@ -490,8 +490,8 @@ describe('profiles in the application', () => {
 
   describe('a resident', () => {
     // the guard, not the navigation: these are addresses typed by hand
-    // HAS-438: the heating of the house asks for a permission Borys was not granted
-    it.each(['/', '/overview', '/house-heating', '/about', '/profiles', '/no/such/page'])(
+    // HAS-438: the heating of the house asks for a permission Borys was not granted; HAS-517 the media page too
+    it.each(['/', '/overview', '/house-heating', '/media', '/about', '/profiles', '/no/such/page'])(
       'is led from %s to their room',
       async (address) => {
         await start(BORYS);
@@ -548,6 +548,24 @@ describe('profiles in the application', () => {
       ]);
       // six entries: the bar shows four and "More" (HAS-454)
       expect(page().querySelectorAll('.shell__bottom-nav a')).toHaveLength(4);
+    });
+
+    // HAS-517: the media page with the unlock of the amplifier, for a member granted amplifier_unlock alone
+    it('is offered the media page with its permission, and opens it', async () => {
+      await start({ ...BORYS, permissions: ['amplifier_unlock'] });
+      await harness.navigateByUrl('/media');
+      await settle();
+
+      expect(url()).toBe('/media');
+      expect(sideNavigation()).toEqual([
+        'My room',
+        'Gate',
+        'Appliances',
+        'Requests',
+        'Media',
+        'Settings',
+      ]);
+      expect(page().querySelector('[data-testid="amplifier"]')).toBeTruthy();
     });
 
     it('sees the weather in the panel', async () => {

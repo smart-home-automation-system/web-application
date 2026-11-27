@@ -441,6 +441,7 @@ for (const language of ['en', 'pl'] as const) {
           ['/requests', 'resident-requests', 'my-requests'],
           ['/settings', 'resident-settings', 'device-notifications'],
           ['/house-heating', 'resident-house-heating', 'heating-switch'],
+          ['/media', 'resident-media', 'amplifier'],
         ]) {
           test(name, async ({ page }, testInfo) => {
             await page.clock.setFixedTime(new Date('2026-10-08T12:30:00Z'));

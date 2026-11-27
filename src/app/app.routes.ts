@@ -130,6 +130,14 @@ const pages: Page[] = [
       import('./features/house-heating/house-heating-page').then((m) => m.HouseHeatingPage),
   },
   {
+    // HAS-517: the audio and video equipment of media-service - today the unlock of the amplifier, for a member
+    // granted it alone (the pattern of the heating of the house)
+    path: 'media',
+    title: 'nav.media',
+    data: { access: 'member', permission: 'amplifier_unlock', background: 'media' },
+    loadComponent: () => import('./features/media/media-page').then((m) => m.MediaPage),
+  },
+  {
     // the editor of the rule of a room (HAS-267): one page per room, the room named by the address
     path: 'lights/rooms/:room/rules',
     title: 'lights.editor.title',

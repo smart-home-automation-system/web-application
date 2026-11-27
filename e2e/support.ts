@@ -26,14 +26,20 @@ export async function startIn(page: Page, language: Language): Promise<void> {
  * profile: the administrator, and residents with one room, two rooms and none.
  */
 export const PROFILES = {
-  admin: { name: 'Aurelia', role: 'admin', rooms: ['office', 'living room'] },
+  // as the mock registry has her - a remembered profile that differs is reconciled after the first answer (HAS-517)
+  admin: {
+    name: 'Aurelia',
+    role: 'admin',
+    rooms: ['office', 'living room'],
+    permissions: ['amplifier_unlock'],
+  },
   resident: { name: 'Borys', role: 'resident', rooms: ['loft'] },
   'resident-two-rooms': {
     name: 'Celina',
     role: 'resident',
     rooms: ['bedroom', 'wardrobe'],
-    // the one member who may switch the heating of the whole house from "My room"
-    permissions: ['heating_switch'],
+    // the one member who may switch the heating of the whole house from "My room", and unlock the amplifier
+    permissions: ['heating_switch', 'amplifier_unlock'],
   },
   'resident-no-room': { name: 'Damian', role: 'resident', rooms: [] },
   // two the registry no longer agrees with: a member it no longer answers with - switched off
