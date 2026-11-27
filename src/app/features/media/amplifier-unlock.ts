@@ -17,6 +17,7 @@ import { DeviceCommands } from '../../core/api/device-commands';
 import { APP_CONFIG } from '../../core/config/app-config';
 import { ProfileStore } from '../../core/profile/profile-store';
 import { houseDateTimeAt } from '../../core/time/house-date-time';
+import { Ticker } from '../../core/time/ticker';
 import { MediaApi } from '../../data-access/media/media-api';
 import { ApiErrorStrip } from '../../shared/api-error/api-error-strip';
 import {
@@ -29,6 +30,13 @@ import { describeUnlockError } from './amplifier-labels';
 
 /** The one key of the commands of the card. */
 const AMPLIFIER = 'amplifier';
+
+/**
+ * How long the outcome of an unlock is told (owner, 2026-11-27): "the amplifier took the file" left on the card would
+ * mislead whoever opens the page for the next unlock, days later. The shared clock ticks every 5 s, so it goes within
+ * 65 s.
+ */
+export const AMPLIFIER_OUTCOME_SHOWN_MS = 60_000;
 
 /**
  * The unlock of the amplifier (HAS-517, epic HAS-508), as a card in the look of the switch of the heating of the
@@ -62,30 +70,34 @@ const AMPLIFIER = 'amplifier';
         <mat-card-content>
           <p class="amplifier__detail">{{ t('amplifier.lead') }}</p>
 
-          @if (sending()) {
-            <mat-progress-bar
-              class="amplifier__progress"
-              mode="indeterminate"
-              data-testid="amplifier-sending"
-              [attr.aria-label]="t('amplifier.sending')"
+          <!-- the place of the outcome is reserved (owner, 2026-11-27: the card grew when an unlock was told), so the card
+               keeps its height before, during and after an unlock -->
+          <div class="amplifier__outcome">
+            @if (sending()) {
+              <mat-progress-bar
+                class="amplifier__progress"
+                mode="indeterminate"
+                data-testid="amplifier-sending"
+                [attr.aria-label]="t('amplifier.sending')"
+              />
+            } @else if (sent()) {
+              <p class="amplifier__state" role="status" data-testid="amplifier-sent">
+                <mat-icon>check_circle</mat-icon>
+                {{ t('amplifier.sent') }}
+              </p>
+            }
+            <app-api-error-strip
+              data-testid="amplifier-failure"
+              [error]="failure()"
+              [describeWith]="describeUnlockError"
             />
-          } @else if (sent()) {
-            <p class="amplifier__state" role="status" data-testid="amplifier-sent">
-              <mat-icon>check_circle</mat-icon>
-              {{ t('amplifier.sent') }}
-            </p>
-          }
-          <app-api-error-strip
-            data-testid="amplifier-failure"
-            [error]="failure()"
-            [describeWith]="describeUnlockError"
-          />
-          <!-- when it was pressed: an outcome left on an open page for days is never read as news -->
-          @if (outcomeAt(); as at) {
-            <p class="amplifier__when" data-testid="amplifier-when">
-              {{ t('amplifier.at', { time: at | houseDateTime }) }}
-            </p>
-          }
+            <!-- when it was pressed: an outcome left on an open page for days is never read as news -->
+            @if (outcomeAt(); as at) {
+              <p class="amplifier__when" data-testid="amplifier-when">
+                {{ t('amplifier.at', { time: at | houseDateTime }) }}
+              </p>
+            }
+          </div>
 
           <!-- the command in the bottom right corner, as the switch of the heating; disabled and still focusable
                while its question is open or the unlock is on its way -->
@@ -129,6 +141,16 @@ const AMPLIFIER = 'amplifier';
       padding: 8px 12px 12px;
     }
 
+    // as tall as the longest outcome (measured 2026-11-27 in Polish: 57 - 79 px on a card 480 px wide, 68 - 94 px on a
+    // phone): the card has its height from the start and keeps it - a longer text added later changes these numbers
+    .amplifier__outcome {
+      min-height: 80px;
+
+      @media (max-width: 599.98px) {
+        min-height: 96px;
+      }
+    }
+
     .amplifier__detail {
       margin: 4px 0 0;
       font: var(--mat-sys-body-medium);
@@ -168,6 +190,7 @@ export class AmplifierUnlock {
   private readonly profile = inject(ProfileStore).profile;
   private readonly dialog = inject(MatDialog);
   private readonly timeZone = inject(APP_CONFIG).houseTimeZone;
+  private readonly now = inject(Ticker).now;
   private readonly commands = new DeviceCommands<string>();
   private questionDialog?: MatDialogRef<ConfirmDialog, boolean>;
   private destroyed = false;
@@ -176,11 +199,18 @@ export class AmplifierUnlock {
   protected readonly member = computed(() => this.profile()?.name);
   private readonly state = computed(() => this.commands.stateOf(AMPLIFIER));
   protected readonly sending = computed(() => this.state()?.sending === true);
-  protected readonly sent = computed(() => this.state()?.sent === true);
-  protected readonly failure = computed(() => this.state()?.error);
+  /** The outcome of the last unlock while it is told - a minute after it came, it is gone. */
+  private readonly told = computed(() => {
+    const state = this.state();
+    return state?.at !== undefined && this.now() - state.at < AMPLIFIER_OUTCOME_SHOWN_MS
+      ? state
+      : undefined;
+  });
+  protected readonly sent = computed(() => this.told()?.sent === true);
+  protected readonly failure = computed(() => this.told()?.error);
   /** When the last unlock came to its outcome, as a time of the house; `undefined` before one or while it is sent. */
   protected readonly outcomeAt = computed(() => {
-    const at = this.state()?.at;
+    const at = this.told()?.at;
     return at === undefined || this.sending() ? undefined : houseDateTimeAt(at, this.timeZone);
   });
 

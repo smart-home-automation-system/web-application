@@ -217,6 +217,24 @@ describe('redirectFor', () => {
     expect(redirectFor('chooser', resident)).toBe('/room');
   });
 
+  // HAS-517: the media page - the administrator always, a member granted the permission too, nobody else
+  it('opens a page of the administrator to a member granted the permission that opens it', () => {
+    const granted: Profile = { ...resident, permissions: ['amplifier_unlock'] };
+
+    expect(redirectFor('admin', admin, undefined, 'amplifier_unlock')).toBeUndefined();
+    expect(redirectFor('admin', granted, undefined, 'amplifier_unlock')).toBeUndefined();
+    expect(redirectFor('admin', resident, undefined, 'amplifier_unlock')).toBe('/room');
+    expect(
+      redirectFor(
+        'admin',
+        { ...resident, permissions: ['heating_switch'] },
+        undefined,
+        'amplifier_unlock',
+      ),
+    ).toBe('/room');
+    expect(redirectFor('admin', undefined, undefined, 'amplifier_unlock')).toBe('/profiles');
+  });
+
   it('sends somebody without a profile to the picker', () => {
     expect(redirectFor('admin', undefined)).toBe('/profiles');
     expect(redirectFor('member', undefined)).toBe('/profiles');

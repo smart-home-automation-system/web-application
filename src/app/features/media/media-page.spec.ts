@@ -15,8 +15,8 @@ const granted: Profile = {
   permissions: ['amplifier_unlock'],
 };
 
-// HAS-517 (owner, 2026-11-27): the page of media-service, built as the heating of the house - the unlock of the
-// amplifier for a member the registry granted amplifier_unlock, whatever the role
+// HAS-517 (owner, 2026-11-27): the page of media-service - the administrator's, with every card; a member the registry
+// granted amplifier_unlock sees the unlock of the amplifier alone
 describe('MediaPage', () => {
   let profile: WritableSignal<Profile | undefined>;
   let fixture: ComponentFixture<MediaPage> | undefined;
@@ -57,10 +57,16 @@ describe('MediaPage', () => {
     expect(await card()).toBeTruthy();
   });
 
-  // a member without the permission sees no card (a DoD item of HAS-517) - the administrator neither
+  // the administrator sees it without any permission - the backend blocks nothing by one
+  it('shows the unlock to the administrator without the permission', async () => {
+    profile.set({ name: 'Aurelia', role: 'admin', rooms: ['office'] });
+
+    expect(await card()).toBeTruthy();
+  });
+
+  // a member without the permission sees no card (a DoD item of HAS-517)
   it.each<Profile>([
     { name: 'Borys', role: 'resident', rooms: ['loft'] },
-    { name: 'Aurelia', role: 'admin', rooms: ['office'] },
     { name: 'Celina', role: 'resident', rooms: ['bedroom'], permissions: ['heating_switch'] },
     { name: 'Emil', role: 'resident', rooms: [], permissions: ['everything'] },
   ])('shows no card to $name without the permission', async (without) => {

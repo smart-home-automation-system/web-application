@@ -8,10 +8,10 @@ import { AmplifierUnlock } from './amplifier-unlock';
 /**
  * The audio and video equipment of the house - the page of `media-service` (HAS-517, owner 2026-11-27: a page of its
  * own, built as the heating of the house, `HouseHeatingPage`, and named after the service, since the televisions and
- * the other equipment of that kind are to come to it). Today it holds the unlock of the amplifier alone, for a member
- * the registry granted `amplifier_unlock` - the route and the navigation entry ask for that permission, so nobody else
- * reaches the page, the administrator neither without it. A card for the administrator added later changes who may
- * open the page (`data.access` of the route and its entry) together with it.
+ * the other equipment of that kind are to come to it). **The administrator's page** (owner, 2026-11-27, the pattern of
+ * the heating: the administrator has all of it, a resident one thing): `data.openedBy` of the route opens it to a member
+ * granted `amplifier_unlock`, who sees the unlock of the amplifier alone. A card added later for the administrator is
+ * rendered for the role alone; the backend blocks nothing by either.
  *
  * Every card is still rendered only under what it needs, so a permission taken away under the open page leaves
  * nothing to press while the shell leads away.
@@ -41,7 +41,8 @@ import { AmplifierUnlock } from './amplifier-unlock';
 export class MediaPage {
   private readonly profile = inject(ProfileStore).profile;
 
-  protected readonly unlocksAmplifier = computed(() =>
-    hasPermission(this.profile(), 'amplifier_unlock'),
+  /** The administrator sees every card; a member granted amplifier_unlock the unlock of the amplifier alone. */
+  protected readonly unlocksAmplifier = computed(
+    () => this.profile()?.role === 'admin' || hasPermission(this.profile(), 'amplifier_unlock'),
   );
 }

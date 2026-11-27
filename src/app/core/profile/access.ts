@@ -27,13 +27,18 @@ export const RESIDENT_HOME_PATH = '/room';
  * member granted it opens the page, whatever the role - the administrator too is sent to their
  * room without it, as on the page the permission was first given for.
  *
+ * A page of the administrator may also be **opened** by a permission (`data.openedBy` of its route, `openedBy` of its
+ * navigation entry - HAS-517: the media page): the administrator always opens it, and a member granted the permission
+ * opens it too - and sees there only what the permission is for.
+ *
  * This is navigation, not access control: it decides what the interface offers. The backend
- * answers every caller alike until the gateway validates tokens (phase 2).
+ * answers every caller alike (owner, 2026-11-27: it never blocks by a role or a permission).
  */
 export function redirectFor(
   access: Access,
   profile: Profile | undefined,
   permission?: MemberPermission,
+  openedBy?: MemberPermission,
 ): string | undefined {
   if (access === 'anyone') {
     return undefined;
@@ -43,6 +48,9 @@ export function redirectFor(
   }
   if (permission !== undefined && !hasPermission(profile, permission)) {
     return RESIDENT_HOME_PATH;
+  }
+  if (openedBy !== undefined && hasPermission(profile, openedBy)) {
+    return undefined;
   }
   if (profile.role === 'admin' || access === 'member') {
     return undefined;
@@ -58,8 +66,16 @@ export function accessOf(route: ActivatedRouteSnapshot): Access {
 
 /** The permission the page a route leads to asks for, if any - of its innermost route. */
 export function permissionOf(route: ActivatedRouteSnapshot): MemberPermission | undefined {
-  const permission = pageOf(route).data['permission'];
-  return permission === 'heating_switch' || permission === 'amplifier_unlock' ? permission : undefined;
+  return memberPermission(pageOf(route).data['permission']);
+}
+
+/** The permission that opens the page of the administrator a route leads to to a member, if any (HAS-517). */
+export function openedByOf(route: ActivatedRouteSnapshot): MemberPermission | undefined {
+  return memberPermission(pageOf(route).data['openedBy']);
+}
+
+function memberPermission(value: unknown): MemberPermission | undefined {
+  return value === 'heating_switch' || value === 'amplifier_unlock' ? value : undefined;
 }
 
 function pageOf(route: ActivatedRouteSnapshot): ActivatedRouteSnapshot {

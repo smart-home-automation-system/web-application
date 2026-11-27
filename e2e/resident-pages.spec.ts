@@ -87,7 +87,9 @@ test.describe('a resident granted the switch of the house', () => {
 
   // a sixth entry since the gate (HAS-454), the media page a seventh (HAS-517): the bottom bar of a phone shows four
   // and "More"
-  test('is offered the heating of the house and the media page beside their own pages', async ({ page }) => {
+  test('is offered the heating of the house and the media page beside their own pages', async ({
+    page,
+  }) => {
     await page.goto('/room');
 
     await expect(entries(page)).toHaveText([
@@ -155,6 +157,17 @@ test.describe('the administrator', () => {
     await page.goto('/settings');
 
     await expect(page.getByTestId('palette')).toBeVisible();
+  });
+
+  // HAS-517 (owner, 2026-11-27): the media page is the administrator's, permission or not
+  test('unlocks the amplifier on the media page without the permission', async ({ page }) => {
+    await page.goto('/media');
+
+    await expect(page).toHaveURL(/\/media$/);
+    await page.getByTestId('amplifier-unlock').click();
+    await page.getByRole('dialog').getByTestId('confirm-yes').click();
+
+    await expect(page.getByTestId('amplifier-sent')).toContainText('The amplifier took the file');
   });
 
   // not the role decides: the administrator switches the heating on its dashboard

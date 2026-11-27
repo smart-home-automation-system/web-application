@@ -2938,7 +2938,6 @@ export const pl: Messages = {
         'Wzmacniacz nie odpowiedział na czas - mógł przyjąć plik. Sprawdź go, zanim spróbujesz ponownie.',
       inProgress: 'Trwa już inne odblokowanie wzmacniacza - poczekaj, aż się skończy.',
       unknownMember: 'Osoba tego profilu nie jest już domownikiem. Otwórz ponownie swój osobisty link.',
-      notPermitted: 'Ten profil nie może już odblokowywać wzmacniacza.',
       registryUnavailable:
         'Nie można teraz odczytać rejestru domowników, więc nic nie zostało wysłane do wzmacniacza. Spróbuj ponownie za minutę.',
     },

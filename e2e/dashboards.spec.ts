@@ -995,7 +995,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Lights/,
         /Appliances/,
         /Requests/,
-        // HAS-517: the mock administrator holds amplifier_unlock
+        // HAS-517: the media page is the administrator's
         /Media/,
         /Heating/,
         /Water/,
@@ -1027,7 +1027,7 @@ test.describe('the navigation with more destinations than a phone has room for',
         /Lights/,
         /Appliances/,
         /Requests/,
-        // HAS-517: the mock administrator holds amplifier_unlock
+        // HAS-517: the media page is the administrator's
         /Media/,
         /Heating/,
         /Water/,
