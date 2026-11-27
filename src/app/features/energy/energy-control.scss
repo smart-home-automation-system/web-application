@@ -169,3 +169,17 @@ $gap: 12px;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+// HAS-519: the inverter topping the battery up to the reserve - a sentence with its icon, not a charge of the service
+.charge__topping {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}

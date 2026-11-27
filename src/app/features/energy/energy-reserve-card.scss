@@ -125,6 +125,27 @@ app-domain-tile {
   }
 }
 
+// HAS-519: the inverter holds less than the reserve - both numbers and the reminder, on the tinted strip of an error
+.reserve__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  font: var(--mat-sys-body-medium);
+
+  .mat-icon {
+    flex: none;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  p + p {
+    margin-top: 4px;
+  }
+}
+
 .form__problems {
   margin: 0;
   padding: 8px 12px;

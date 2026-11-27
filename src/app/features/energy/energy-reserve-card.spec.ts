@@ -86,6 +86,57 @@ describe('EnergyReserveCard', () => {
     expect(words(byId('reserve-floor-note'))).toContain('set Min SoC to 80 %');
   });
 
+  // HAS-519: what the inverter really has, and the warning while it holds less than the reserve
+  it('tells the floor the inverter holds and warns while it is below the level', async () => {
+    answer(reserve, {
+      enabled: true,
+      level: 80,
+      writeState: 'taken',
+      inverter: { workMode: 'back up', minSoc: 75, chargeTo: 80, readAt: '2026-11-24T23:07:00' },
+      floorBelowLevel: true,
+    });
+    await settle();
+
+    expect(words(byId('reserve-min-soc'))).toBe('75 %');
+    expect(words(byId('reserve-charge-to'))).toBe('80 %');
+    expect(words(byId('reserve-read-at'))).toBe('24 Nov 2026, 23:07');
+    expect(words(byId('reserve-floor-below'))).toBe(
+      'warning The inverter holds only 75 %, the reserve is 80 %. ' +
+        'Set Min SoC to 80 % by hand in the SolaX app or SolaxCloud - the cloud does not take it from the service.',
+    );
+    // the warning says it: no plain note beside it
+    expect(byId('reserve-floor-note')).toBeNull();
+
+    answer(reserve, {
+      enabled: true,
+      level: 80,
+      writeState: 'taken',
+      inverter: { workMode: 'back up', minSoc: 80, chargeTo: 80 },
+      floorBelowLevel: false,
+    });
+    await settle();
+    expect(byId('reserve-floor-below')).toBeNull();
+    expect(byId('reserve-read-at')).toBeNull();
+    expect(words(byId('reserve-floor-note'))).toContain('set Min SoC to 80 %');
+  });
+
+  it('shows nothing of the inverter while it is not read, a value it leaves out as not known', async () => {
+    answer(reserve, { enabled: true, level: 80, writeState: 'taken' });
+    await settle();
+    expect(byId('reserve-min-soc')).toBeNull();
+    expect(byId('reserve-floor-below')).toBeNull();
+
+    answer(reserve, { enabled: true, level: 80, inverter: { workMode: 'self use' } });
+    await settle();
+    expect(words(byId('reserve-min-soc'))).toBe('not known');
+    expect(words(byId('reserve-charge-to'))).toBe('not known');
+
+    // the settings of Back Up mean nothing while no reserve holds
+    answer(reserve, { enabled: false, level: 80, inverter: { workMode: 'self use', minSoc: 10 } });
+    await settle();
+    expect(byId('reserve-min-soc')).toBeNull();
+  });
+
   it('tells a reserve switched off and never written, and a state it does not know as it came', async () => {
     answer(reserve, { enabled: false, level: 80, writeState: 'lost' });
     await settle();

@@ -777,17 +777,54 @@ describe('Overview', () => {
       ).toBeUndefined();
     });
 
-    // HAS-496 (owner 2026-11-25): the work mode the energy service set - a charge, the reserve in Back Up, Self Use
-    it('tells the work mode of the inverter, and not known before the reserve is', async () => {
+    // HAS-496 (owner 2026-11-25): the work mode the energy service set - a charge, the reserve in Back Up, Self Use;
+    // since HAS-519 only while the inverter is not read, labelled as such
+    it('tells the work mode the service wrote while the inverter is not read, and not known before the reserve is', async () => {
       answer(energyFlows, { production: 0 });
       expect(await row('workMode')).toBe('Inverter not known');
 
       answer(energyReserve, { enabled: false, level: 80, writeState: 'none' });
-      expect(await row('workMode')).toBe('Inverter Self Use');
+      expect(await row('workMode')).toBe('Inverter set: Self Use');
 
       answer(energyReserve, { enabled: true, level: 80, writeState: 'sent' });
-      expect(await row('workMode')).toBe('Inverter Back Up - reserve 80 %');
+      expect(await row('workMode')).toBe('Inverter set: Back Up - reserve 80 %');
 
+      answer(energyCharge, { active: true, run: { state: 'charging', targetSoc: 90 } });
+      expect(await row('workMode')).toBe('Inverter set: Charging from the grid to 90 %');
+    });
+
+    // HAS-519: what the SOLAX runs, read from its dongle; a reserve it does not hold lights the signal
+    it('tells the mode the inverter reads and lights the signal for a reserve it does not hold', async () => {
+      answer(energyFlows, { production: 0 });
+      answer(energyReserve, {
+        enabled: true,
+        level: 80,
+        inverter: { workMode: 'back up', minSoc: 75, chargeTo: 80 },
+        floorBelowLevel: true,
+      });
+      expect(await row('workMode')).toBe('Inverter Back Up - Min SoC 75 %');
+      const signal = async () =>
+        (await tile('energy'))
+          .querySelector('mat-card-title [data-testid="tile-signal"]')
+          ?.getAttribute('aria-label')
+          // the per cent sign follows a no-break space
+          ?.replaceAll(' ', ' ');
+      expect(await signal()).toBe('The inverter holds only 75 %, the reserve is 80 %.');
+
+      answer(energyReserve, {
+        enabled: true,
+        level: 80,
+        inverter: { workMode: 'back up', minSoc: 80, chargeTo: 80 },
+        floorBelowLevel: false,
+      });
+      expect(await signal()).toBeUndefined();
+
+      // the settings of /status while the reserve carries none
+      answer(energyReserve, { enabled: false, level: 80 });
+      answer(energyStatus, { grid: { state: 'present' }, inverter: { workMode: 'self use' } });
+      expect(await row('workMode')).toBe('Inverter Self Use');
+
+      // a charge from the grid going on is told first, whatever mode the inverter reads
       answer(energyCharge, { active: true, run: { state: 'charging', targetSoc: 90 } });
       expect(await row('workMode')).toBe('Inverter Charging from the grid to 90 %');
     });

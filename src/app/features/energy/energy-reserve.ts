@@ -1,5 +1,12 @@
 import { houseDay, houseWeekMinute } from '../../core/time/house-date-time';
-import { BatteryReserve, ChargeState, ReserveBody } from '../../data-access/energy/energy-api';
+import {
+  Battery,
+  BatteryReserve,
+  ChargeState,
+  GridReading,
+  InverterSettings,
+  ReserveBody,
+} from '../../data-access/energy/energy-api';
 import { DisplayText, MessageKey } from '../../i18n/messages';
 import { runGoingOn } from './energy-charge';
 import { shiftDay } from './energy-days';
@@ -150,11 +157,145 @@ export function writeStateLabel(reserve: BatteryReserve | null | undefined): Dis
   return key ? { key } : { literal: state };
 }
 
+/** The work modes the SOLAX reports (`WorkMode.wireName` of energy-service), each with the words of the card. */
+const REAL_MODES: Readonly<Record<string, RealModeKind>> = {
+  'self use': 'selfUse',
+  'back up': 'backUp',
+  'feed-in priority': 'feedIn',
+  other: 'other',
+};
+
+type RealModeKind = 'selfUse' | 'backUp' | 'feedIn' | 'other';
+
+const REAL_MODE_LABELS: Readonly<Record<Exclude<RealModeKind, 'backUp'>, MessageKey>> = {
+  selfUse: 'energy.workMode.selfUse',
+  feedIn: 'energy.workMode.real.feedIn',
+  other: 'energy.workMode.real.other',
+};
+
+/**
+ * The mode of the inverter as the card and the overview tell it (HAS-519): **what the SOLAX runs**, read from its dongle
+ * (energy-service >= 0.23.0) - the work mode, for Back Up its Min SoC and Charge Battery To, and when it was read; a
+ * charge from the grid going on is told beside it. Only while the inverter is not read (an older service, a dongle not
+ * answering for 15 min) the mode the service wrote, labelled as such (`real: false`) - never the other way round.
+ */
+export interface ShownMode {
+  readonly kind: RealModeKind | WorkMode['kind'];
+  readonly text: DisplayText;
+  /** Read from the inverter; `false` for the mode the service wrote. */
+  readonly real: boolean;
+  readonly readAt?: string;
+  /** Charge Battery To of Back Up, %. */
+  readonly chargeTo?: number;
+  /** The end of a reserve the service wrote. */
+  readonly until?: string;
+  /** The target of a charge from the grid going on, `'?'` while not told; `undefined` without a charge. */
+  readonly charging?: number | '?';
+}
+
+/**
+ * The mode to show: the settings in the reserve first (the page and the overview poll it), those of `/status` while the
+ * reserve says none, the mode the service wrote last.
+ */
+export function shownModeOf(
+  charge: ChargeState | null | undefined,
+  reserve: BatteryReserve | null | undefined,
+  status?: InverterSettings | null,
+): ShownMode {
+  const inverter = reserve?.inverter ?? status ?? undefined;
+  const wire = inverter?.workMode;
+  const run = charge?.active === true ? charge.run : undefined;
+  const charging = runGoingOn(run) ? (numberOf(run?.targetSoc) ?? '?') : undefined;
+  if (typeof wire === 'string') {
+    const kind = Object.hasOwn(REAL_MODES, wire) ? REAL_MODES[wire] : undefined;
+    const minSoc = numberOf(inverter?.minSoc);
+    let text: DisplayText;
+    if (kind === undefined) {
+      text = { literal: wire };
+    } else if (kind === 'backUp') {
+      text = { key: 'energy.workMode.real.backUp', params: { minSoc: minSoc ?? '?' } };
+    } else {
+      text = { key: REAL_MODE_LABELS[kind] };
+    }
+    return {
+      kind: kind ?? 'other',
+      text,
+      real: true,
+      readAt: inverter?.readAt,
+      chargeTo: kind === 'backUp' ? numberOf(inverter?.chargeTo) : undefined,
+      charging,
+    };
+  }
+  const written = workModeOf(charge, reserve);
+  switch (written.kind) {
+    case 'charging':
+      return {
+        kind: 'charging',
+        text: { key: 'energy.workMode.charging', params: { target: written.target ?? '?' } },
+        real: false,
+      };
+    case 'backUp':
+      return {
+        kind: 'backUp',
+        text: { key: 'energy.workMode.backUp', params: { level: written.level ?? '?' } },
+        real: false,
+        until: written.until,
+      };
+    case 'selfUse':
+      return { kind: 'selfUse', text: { key: 'energy.workMode.selfUse' }, real: false };
+    default:
+      return { kind: 'notKnown', text: { key: 'energy.notKnown' }, real: false };
+  }
+}
+
+/**
+ * The reserve the inverter does not hold (HAS-519): the reserve on, and the Min SoC read from the inverter below its
+ * level (`floorBelowLevel` of the service) - both numbers for the warning, `'?'` for one not told. `undefined` while the
+ * service does not say so - a floor not known is never below.
+ */
+export function floorBelow(
+  reserve: BatteryReserve | null | undefined,
+): { readonly minSoc: number | '?'; readonly level: number | '?' } | undefined {
+  if (reserve?.enabled !== true || reserve.floorBelowLevel !== true) {
+    return undefined;
+  }
+  return {
+    minSoc: numberOf(reserve.inverter?.minSoc) ?? '?',
+    level: numberOf(reserve.level) ?? '?',
+  };
+}
+
+/**
+ * The level the inverter tops the battery up to from the grid by itself (HAS-519): the reserve on, no charge of the
+ * service going on, the battery charging and the grid meter importing - each as the service words it. `undefined`
+ * otherwise, and while any of them is not known.
+ */
+export function toppingUpTo(
+  reserve: BatteryReserve | null | undefined,
+  charge: ChargeState | null | undefined,
+  battery: Battery | null | undefined,
+  grid: GridReading | null | undefined,
+): number | '?' | undefined {
+  const run = charge?.active === true ? charge.run : undefined;
+  if (
+    reserve?.enabled !== true ||
+    runGoingOn(run) ||
+    battery?.direction !== 'charging' ||
+    battery.stale === true ||
+    grid?.direction !== 'import' ||
+    grid.stale === true
+  ) {
+    return undefined;
+  }
+  return numberOf(reserve.level) ?? '?';
+}
+
 /**
  * The work mode of the SOLAX as the energy service set it (HAS-496, owner 2026-11-25) - the SolaX cloud reads none of
  * the settings back, so this is what the service wrote, not what the inverter reports: a charge from the grid going on
  * (Self Use with a charge window, to its target), else the battery reserve (Back Up at its level), else the baseline
- * (Self Use). Not known while the reserve is not known and no charge is told.
+ * (Self Use). Not known while the reserve is not known and no charge is told. Since HAS-519 only the fallback of
+ * `shownModeOf`, while the inverter is not read.
  */
 export type WorkMode =
   | { readonly kind: 'charging'; readonly target?: number }

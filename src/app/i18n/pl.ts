@@ -829,7 +829,8 @@ export const pl: Messages = {
       workMode: 'Tryb falownika',
     },
     charge: {
-      none: 'Magazyn nie ładuje się z sieci.',
+      none: 'Serwis nie zlecił ładowania z sieci - karta pokazuje tylko ładowania serwisu.',
+      toppingUp: 'Falownik sam doładowuje magazyn z sieci do rezerwy {{ level }}\u00a0%.',
       frequencyOff:
         'Częstotliwość sieci jest poza normą - falownik nie przyłącza się do takiej sieci, więc ładowanie z sieci teraz nie ruszy.',
       start: 'Ładuj z sieci',
@@ -894,7 +895,19 @@ export const pl: Messages = {
       charging: 'Ładowanie z sieci do {{ target }}\u00a0%',
       backUp: 'Back Up - rezerwa {{ level }}\u00a0%',
       selfUse: 'Autokonsumpcja (Self Use)',
-      note: 'Tryb pracy ustawiony przez serwis energii - chmura SolaX nie oddaje go z powrotem; stan pracy jest odczytany z SOLAX-a.',
+      real: {
+        backUp: 'Back Up - Min SoC {{ minSoc }}\u00a0%',
+        feedIn: 'Priorytet oddawania (Feed-in Priority)',
+        other: 'Tryb nieznany serwisowi energii',
+      },
+      written: 'Tryb ustawiony przez serwis energii - falownik jeszcze nie odczytany.',
+      writtenShort: 'ustawiony:',
+      chargingNow: 'Trwa ładowanie z sieci do {{ target }}\u00a0%.',
+      chargeTo: 'Ładuje do (Charge Battery To)',
+      readAt: 'Odczyt z falownika',
+      realNote: 'Tryb pracy odczytany z SOLAX-a przez jego dongle.',
+      writtenNote:
+        'Chmura SolaX nie oddaje trybu pracy - dopóki falownik nie zostanie odczytany, widać to, co zapisał serwis energii.',
     },
     reserve: {
       title: 'Rezerwa baterii',
@@ -923,6 +936,12 @@ export const pl: Messages = {
         'Przy sieci dom nie bierze z baterii poniżej poziomu, sieć ją do niego doładowuje, a panele powyżej; przy zaniku sieci bateria jest używana.',
       floorNote:
         'Chmura SolaX nie przyjmuje dna: ustaw w trybie pracy SolaxCloud ręcznie Min SoC na {{ level }}\u00a0%.',
+      minSoc: 'Min SoC w falowniku',
+      chargeTo: 'Ładuje do (Charge Battery To)',
+      readAt: 'Odczyt z falownika',
+      floorBelow: 'Falownik trzyma tylko {{ minSoc }}\u00a0%, rezerwa to {{ level }}\u00a0%.',
+      floorFix:
+        'Ustaw ręcznie Min SoC na {{ level }}\u00a0% w aplikacji SolaX albo w SolaxCloud - chmura nie przyjmuje go od serwisu.',
       problem: {
         level: 'Poziom to od {{ min }} do {{ max }} % co {{ step }}.',
         untilMissing: 'Wybierz datę i godzinę, do której rezerwa ma trzymać.',
@@ -2923,7 +2942,8 @@ export const pl: Messages = {
     lead: 'Po zaniku prądu wzmacniacz zawiesza się i nie reaguje ani na pilota, ani na przyciski. Odblokowanie wysyła mu plik, który przywraca go do działania.',
     unlock: 'Odblokuj wzmacniacz',
     sending: 'Odblokowuję wzmacniacz…',
-    question: 'Wysłać wzmacniaczowi plik, który go odwiesza? Rób to tylko wtedy, gdy wzmacniacz nie reaguje.',
+    question:
+      'Wysłać wzmacniaczowi plik, który go odwiesza? Rób to tylko wtedy, gdy wzmacniacz nie reaguje.',
     confirm: 'Odblokuj',
     cancel: 'Nie odblokowuj',
     at: 'Naciśnięto: {{ time }}',
@@ -2937,7 +2957,8 @@ export const pl: Messages = {
       timeout:
         'Wzmacniacz nie odpowiedział na czas - mógł przyjąć plik. Sprawdź go, zanim spróbujesz ponownie.',
       inProgress: 'Trwa już inne odblokowanie wzmacniacza - poczekaj, aż się skończy.',
-      unknownMember: 'Osoba tego profilu nie jest już domownikiem. Otwórz ponownie swój osobisty link.',
+      unknownMember:
+        'Osoba tego profilu nie jest już domownikiem. Otwórz ponownie swój osobisty link.',
       registryUnavailable:
         'Nie można teraz odczytać rejestru domowników, więc nic nie zostało wysłane do wzmacniacza. Spróbuj ponownie za minutę.',
     },

@@ -837,7 +837,9 @@ export const en = {
       workMode: 'Inverter mode',
     },
     charge: {
-      none: 'The battery is not charging from the grid.',
+      none: 'No charge from the grid commanded by the service - the card shows the charges of the service only.',
+      toppingUp:
+        'The inverter is topping the battery up from the grid to the reserve of {{ level }}\u00a0%.',
       frequencyOff:
         'The grid frequency is off the band - the inverter does not connect to such a grid, so a charge from the grid cannot run now.',
       start: 'Charge from the grid',
@@ -902,7 +904,19 @@ export const en = {
       charging: 'Charging from the grid to {{ target }}\u00a0%',
       backUp: 'Back Up - reserve {{ level }}\u00a0%',
       selfUse: 'Self Use',
-      note: 'The work mode the energy service set - the SolaX cloud reads none back; the run mode is read from the SOLAX.',
+      real: {
+        backUp: 'Back Up - Min SoC {{ minSoc }}\u00a0%',
+        feedIn: 'Feed-in Priority',
+        other: 'A mode the energy service does not know',
+      },
+      written: 'The mode the energy service set - the inverter not read yet.',
+      writtenShort: 'set:',
+      chargingNow: 'Charging from the grid to {{ target }}\u00a0% now.',
+      chargeTo: 'Charge Battery To',
+      readAt: 'Read from the inverter',
+      realNote: 'The work mode read from the SOLAX by its dongle.',
+      writtenNote:
+        'The SolaX cloud reads no work mode back - until the inverter is read, this is what the energy service wrote.',
     },
     reserve: {
       title: 'Battery reserve',
@@ -931,6 +945,12 @@ export const en = {
         'While the grid is there the house does not take the battery below the level, the grid charges it up to it and the panels above it; in an outage the battery is used.',
       floorNote:
         'The SolaX cloud does not take the floor: set Min SoC to {{ level }}\u00a0% in the work mode of SolaxCloud by hand.',
+      minSoc: 'Min SoC in the inverter',
+      chargeTo: 'Charge Battery To',
+      readAt: 'Read from the inverter',
+      floorBelow: 'The inverter holds only {{ minSoc }}\u00a0%, the reserve is {{ level }}\u00a0%.',
+      floorFix:
+        'Set Min SoC to {{ level }}\u00a0% by hand in the SolaX app or SolaxCloud - the cloud does not take it from the service.',
       problem: {
         level: 'The level is from {{ min }} to {{ max }} % in steps of {{ step }}.',
         untilMissing: 'Choose the date and the time the reserve holds until.',
@@ -2954,7 +2974,8 @@ export const en = {
     lead: 'After a power cut the amplifier hangs and answers neither its remote nor its buttons. The unlock sends it the file that brings it back.',
     unlock: 'Unlock the amplifier',
     sending: 'Unlocking the amplifier…',
-    question: 'Send the amplifier the file that unhangs it? Do it only when the amplifier does not answer.',
+    question:
+      'Send the amplifier the file that unhangs it? Do it only when the amplifier does not answer.',
     confirm: 'Unlock',
     cancel: 'Do not unlock',
     at: 'Pressed: {{ time }}',

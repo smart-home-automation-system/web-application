@@ -22,6 +22,20 @@ export interface EnergySource {
   readonly lastReadingAt?: string;
 }
 
+/**
+ * The settings of the SOLAX read from its dongle (energy-service >= 0.23.0, HAS-518), in `GET /energy/status` and
+ * `GET /energy/battery/reserve`: `workMode` - `self use`, `back up`, `feed-in priority`, or `other` for a mode the
+ * service does not know (a word this version does not know is printed as it came) -, `minSoc` and `chargeTo` of the
+ * Back Up mode (%, one not known left out) and `readAt`. The object is left out while not read or read more than 15 min
+ * ago.
+ */
+export interface InverterSettings {
+  readonly workMode?: string;
+  readonly minSoc?: number;
+  readonly chargeTo?: number;
+  readonly readAt?: string;
+}
+
 /** `GET /energy/status` (energy-service >= 0.4.0): the sources and the grid as the SOLAX sees it. */
 export interface EnergyStatus {
   readonly sources?: readonly EnergySource[];
@@ -37,6 +51,8 @@ export interface EnergyStatus {
     readonly frequency?: number;
     readonly frequencyOff?: boolean | null;
   };
+  /** What the SOLAX runs, read from its dongle (energy-service >= 0.23.0, HAS-518). */
+  readonly inverter?: InverterSettings;
 }
 
 /** One phase of the grid meter or of an inverter: V, A, W (signed), VA, the power factor, Hz. */
@@ -377,6 +393,10 @@ export interface Automation {
  * reserve - `enabled` (always written, false until switched on), `level` (%), `until` (left out for a reserve that
  * holds until switched off), `updatedAt` (left out before the first change), `writeState` - what became of the last
  * write to the inverter: `none`, `pending`, `sent`, `taken`, `failed` - and `writeAttemptedAt`. Replaced whole by `PUT`.
+ * Since energy-service 0.23.0 (HAS-518) `inverter` - what the inverter really has - and `floorBelowLevel`: `true` while
+ * the reserve holds and the Min SoC read from the inverter is below its level (set by hand in the SolaX application or
+ * SolaxCloud), `false` while it is not or no reserve holds, left out while the Min SoC is not known. Since 0.24.0
+ * (HAS-495) `held` - the battery at the level less 5 % or above; left out without a reserve or a known SOC.
  */
 export interface BatteryReserve {
   readonly enabled?: boolean;
@@ -385,6 +405,9 @@ export interface BatteryReserve {
   readonly updatedAt?: string;
   readonly writeState?: string;
   readonly writeAttemptedAt?: string;
+  readonly inverter?: InverterSettings;
+  readonly floorBelowLevel?: boolean | null;
+  readonly held?: boolean;
 }
 
 /** The body of `PUT /energy/battery/reserve`: the switch and the level always, `until` only for a reserve switched on. */

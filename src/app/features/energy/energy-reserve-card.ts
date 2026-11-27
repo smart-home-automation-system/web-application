@@ -46,6 +46,7 @@ import {
   RESERVE_LONGEST_UNTIL_DAYS,
   RESERVE_PROBLEM_LABELS,
   ReserveEnd,
+  floorBelow,
   houseNow,
   needsQuestion,
   reserveBody,
@@ -120,6 +121,8 @@ export class EnergyReserveCard {
   protected readonly stored = computed(() => this.reserve().value() ?? undefined);
   protected readonly storedOn = computed(() => this.stored()?.enabled === true);
   protected readonly storedLevel = computed(() => numberOf(this.stored()?.level));
+  /** The reserve the inverter holds only down to a lower Min SoC (HAS-519), with both numbers. */
+  protected readonly floor = computed(() => floorBelow(this.stored()));
 
   // the form
   protected readonly on = signal(false);

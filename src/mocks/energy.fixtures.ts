@@ -14,6 +14,7 @@ import {
   Inverter,
 } from '../app/data-access/energy/energy-api';
 import { readText } from '../app/core/storage/browser-storage';
+import { inverterSettings } from './charge.fixtures';
 import { houseTime } from './house-time';
 import type { MockReply } from './handlers';
 
@@ -43,6 +44,7 @@ export function energyStatus(fresh: boolean, now: Date = new Date()): EnergyStat
       grid: { state: null, frequencyOff: null },
     };
   }
+  const inverter = inverterSettings(false, now);
   return {
     sources: [
       { source: 'meter', reachable: true, lastReadingAt: at(now, 4) },
@@ -56,6 +58,8 @@ export function energyStatus(fresh: boolean, now: Date = new Date()): EnergyStat
       frequency: onGenerator() ? 51.02 : 50.01,
       frequencyOff: onGenerator(),
     },
+    // HAS-518: the settings of the SOLAX, as in the reserve; left out while the dongle is not read
+    ...(inverter === undefined ? {} : { inverter }),
   };
 }
 
@@ -214,7 +218,9 @@ export function energyAlerts(fresh: boolean, now: Date = new Date()): EnergyAler
   return [
     { source: 'sofar', kind: 'alarm', openedAt: at(now, 2 * 3_600 + 5), detail: 'GridOVP' },
     { source: 'phase b', kind: 'overload', openedAt: at(now, 7 * 60 + 5) },
-    ...(onGenerator() ? [{ source: 'meter', kind: 'frequency', openedAt: at(now, 3 * 3_600 + 5) }] : []),
+    ...(onGenerator()
+      ? [{ source: 'meter', kind: 'frequency', openedAt: at(now, 3 * 3_600 + 5) }]
+      : []),
   ];
 }
 
