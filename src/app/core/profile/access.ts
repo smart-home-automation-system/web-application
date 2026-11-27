@@ -59,7 +59,7 @@ export function accessOf(route: ActivatedRouteSnapshot): Access {
 /** The permission the page a route leads to asks for, if any - of its innermost route. */
 export function permissionOf(route: ActivatedRouteSnapshot): MemberPermission | undefined {
   const permission = pageOf(route).data['permission'];
-  return permission === 'heating_switch' ? permission : undefined;
+  return permission === 'heating_switch' || permission === 'amplifier_unlock' ? permission : undefined;
 }
 
 function pageOf(route: ActivatedRouteSnapshot): ActivatedRouteSnapshot {

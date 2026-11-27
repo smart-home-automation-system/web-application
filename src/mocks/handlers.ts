@@ -29,6 +29,7 @@ import { pushConfig, removePushSubscription, storePushSubscription } from './pus
 import { addRequest, markRequestDone, memberRequests, removeRequest } from './requests.fixtures';
 import { blindsByRoom, moveBlind, moveBlindTo, moveRoom, pauseBlind } from './blinds.fixtures';
 import { calendarDays } from './calendar.fixtures';
+import { unlockAmplifier } from './media.fixtures';
 import { BOILER_STATUS_BEFORE_FIRST_LOOK, boilerStatus } from './boiler.fixtures';
 import {
   addDevice as addRegisteredDevice,
@@ -617,6 +618,12 @@ export const MOCK_HANDLERS: readonly MockHandler[] = [
     path: /^\/home\/gate\/garage\/(\d+)\/pulse$/,
     reply: (request, _fresh, [id]) =>
       pulseGarage(id, request.params.get('source'), request.params.get('member')),
+  },
+  // HAS-517: the unlock of the amplifier of media-service - nothing to read
+  {
+    method: 'POST',
+    path: '/home/media/amplifier/unlock',
+    reply: (request) => unlockAmplifier(request.params.get('source'), request.params.get('member')),
   },
   // HAS-469: the fire detectors of safety-service - the detectors, the monitor, the alarms, the switches, the commands
   {

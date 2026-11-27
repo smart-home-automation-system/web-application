@@ -381,7 +381,7 @@ describe('mock API', () => {
         phone: '+48500100199',
         role: 'resident',
         rooms: ['bedroom', 'wardrobe'],
-        permissions: ['heating_switch'],
+        permissions: ['heating_switch', 'amplifier_unlock'],
       });
     });
 

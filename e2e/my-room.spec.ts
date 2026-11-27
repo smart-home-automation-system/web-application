@@ -68,6 +68,8 @@ test.describe('a resident with one room', () => {
       '/presence',
       // HAS-438: the heating of the whole house asks for a permission Borys was not granted
       '/house-heating',
+      // HAS-517: the media page asks for amplifier_unlock, which Borys was not granted
+      '/media',
       '/about',
       '/profiles',
       '/no/such/page',

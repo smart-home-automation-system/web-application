@@ -84,6 +84,7 @@ describe('routes', () => {
       ['gate', 'member'],
       ['requests', 'member'],
       ['house-heating', 'member'],
+      ['media', 'member'],
       ['room', 'member'],
       ['settings', 'member'],
       ['profiles', 'chooser'],
@@ -104,13 +105,16 @@ describe('routes', () => {
     }
   });
 
-  // HAS-438: a permission of the registry beyond the access is asked by one page alone so far
-  it('ask for a permission on the heating of the whole house alone', () => {
+  // HAS-438: a permission of the registry beyond the access - the heating of the whole house; HAS-517: the media page
+  it('ask for a permission on the heating of the whole house and the media page alone', () => {
     const asking = (shell.children ?? [])
       .filter((route) => route.data?.['permission'] !== undefined)
       .map((route) => [route.path, route.data?.['permission']]);
 
-    expect(asking).toEqual([['house-heating', 'heating_switch']]);
+    expect(asking).toEqual([
+      ['house-heating', 'heating_switch'],
+      ['media', 'amplifier_unlock'],
+    ]);
   });
 
   it('give every page a title', () => {

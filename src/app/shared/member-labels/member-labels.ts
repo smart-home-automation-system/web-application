@@ -14,6 +14,7 @@ export const ROLE_LABELS: Readonly<Record<MemberRole, MessageKey>> = {
 
 export const PERMISSION_LABELS: Readonly<Record<MemberPermission, MessageKey>> = {
   heating_switch: 'household.permission.heatingSwitch',
+  amplifier_unlock: 'household.permission.amplifierUnlock',
 };
 
 /**

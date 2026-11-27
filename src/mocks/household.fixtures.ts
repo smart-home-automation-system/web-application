@@ -37,7 +37,8 @@ const AT_THE_START: readonly StoredMember[] = [
     active: true,
     role: 'admin',
     rooms: ['office', 'living room'],
-    permissions: [],
+    // the owner unlocks the amplifier on the media page (HAS-517)
+    permissions: ['amplifier_unlock'],
     devices: [
       { name: 'Phone', mac: '02:00:00:00:a1:01' },
       { name: 'Watch', mac: '02:00:00:00:a1:02' },
@@ -53,13 +54,14 @@ const AT_THE_START: readonly StoredMember[] = [
     devices: [{ name: 'Phone', mac: '02:00:00:00:b0:01' }],
   },
   {
-    // the one member the registry lets switch the heating of the whole house from their own page
+    // the one member the registry lets switch the heating of the whole house from their own page, and with the
+    // administrator the one who unlocks the amplifier (HAS-517)
     name: 'Celina',
     phone: '+48500100103',
     active: true,
     role: 'resident',
     rooms: ['bedroom', 'wardrobe'],
-    permissions: ['heating_switch'],
+    permissions: ['heating_switch', 'amplifier_unlock'],
     devices: [{ name: 'Phone', mac: '02:00:00:00:c3:01' }],
   },
   {

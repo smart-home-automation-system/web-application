@@ -151,10 +151,12 @@ $panel-width: 220px;
     display: block;
   }
 
-  // twenty entries of the administrator since the safety page (HAS-469): on a screen 900 px tall the weather and the
-  // profile at the foot of the column were pushed below it - a little tighter there, the full height on taller ones
-  @media (min-width: $wide) and (max-height: 959.98px) {
-    --mat-list-list-item-one-line-container-height: 38px;
+  // twenty entries of the administrator since the safety page (HAS-469), twenty-one with the media page of an
+  // administrator granted amplifier_unlock (HAS-517): on a screen 900 px tall the weather and the profile at the foot
+  // of the column were pushed below it - a little tighter there, the full height on taller ones (the twenty-one entries
+  // take 1032 px at the full height: below 1040 px the column would scroll)
+  @media (min-width: $wide) and (max-height: 1039.98px) {
+    --mat-list-list-item-one-line-container-height: 36px;
   }
 
   // a class of our own, set by the router - not one of Material's

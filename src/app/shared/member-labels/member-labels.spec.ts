@@ -6,6 +6,7 @@ describe('the words for roles and permissions', () => {
     expect(roleLabel('admin')).toBe('profiles.role.admin');
     expect(roleLabel('resident')).toBe('profiles.role.resident');
     expect(permissionLabel('heating_switch')).toBe('household.permission.heatingSwitch');
+    expect(permissionLabel('amplifier_unlock')).toBe('household.permission.amplifierUnlock');
   });
 
   // The compiler makes sure every role and permission has a word; nothing makes sure the form

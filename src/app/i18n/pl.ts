@@ -29,6 +29,8 @@ export const pl: Messages = {
     houseHeating: 'Ogrzewanie domu',
     requestsShort: 'Prośby',
     houseHeatingShort: 'Ogrzewanie',
+    media: 'Multimedia',
+    mediaShort: 'Multimedia',
     household: 'Domownicy',
     devices: 'Urządzenia',
     more: 'Więcej',
@@ -2882,6 +2884,7 @@ export const pl: Messages = {
     },
     permission: {
       heatingSwitch: 'Może włączać i wyłączać ogrzewanie całego domu',
+      amplifierUnlock: 'Może odblokować wzmacniacz',
     },
     device: {
       name: 'Nazwa urządzenia',
@@ -2913,6 +2916,31 @@ export const pl: Messages = {
       deviceExists:
         'Ten adres MAC jest już zarejestrowany albo domownik ma już urządzenie o tej nazwie.',
       deviceNotFound: 'Tego urządzenia nie ma już w rejestrze.',
+    },
+  },
+  amplifier: {
+    title: 'Wzmacniacz',
+    lead: 'Po zaniku prądu wzmacniacz zawiesza się i nie reaguje ani na pilota, ani na przyciski. Odblokowanie wysyła mu plik, który przywraca go do działania.',
+    unlock: 'Odblokuj wzmacniacz',
+    sending: 'Odblokowuję wzmacniacz…',
+    question: 'Wysłać wzmacniaczowi plik, który go odwiesza? Rób to tylko wtedy, gdy wzmacniacz nie reaguje.',
+    confirm: 'Odblokuj',
+    cancel: 'Nie odblokowuj',
+    at: 'Naciśnięto: {{ time }}',
+    sent: 'Wzmacniacz przyjął plik - za chwilę powinien znowu działać.',
+    noAnswer:
+      'Brak odpowiedzi z domu - odblokowanie mogło się udać. Sprawdź wzmacniacz, zanim spróbujesz ponownie.',
+    error: {
+      refused: 'Wzmacniacz nie przyjął pliku. Spróbuj ponownie za minutę.',
+      unavailable:
+        'Nie można połączyć się ze wzmacniaczem - może być wyłączony albo jeszcze się uruchamia po zaniku prądu. Spróbuj ponownie za minutę.',
+      timeout:
+        'Wzmacniacz nie odpowiedział na czas - mógł przyjąć plik. Sprawdź go, zanim spróbujesz ponownie.',
+      inProgress: 'Trwa już inne odblokowanie wzmacniacza - poczekaj, aż się skończy.',
+      unknownMember: 'Osoba tego profilu nie jest już domownikiem. Otwórz ponownie swój osobisty link.',
+      notPermitted: 'Ten profil nie może już odblokowywać wzmacniacza.',
+      registryUnavailable:
+        'Nie można teraz odczytać rejestru domowników, więc nic nie zostało wysłane do wzmacniacza. Spróbuj ponownie za minutę.',
     },
   },
   settings: {

@@ -5,9 +5,9 @@ export type MemberRole = 'admin' | 'resident';
 /**
  * Something the registry lets one member do beyond what their role gives them
  * (`MemberPermission` of `smart-home-sdk`). `heating_switch`: the switch of the heating of the
- * whole house on their own page.
+ * whole house on their own page; `amplifier_unlock` (HAS-517): the unlock of the amplifier on the media page.
  */
-export type MemberPermission = 'heating_switch';
+export type MemberPermission = 'heating_switch' | 'amplifier_unlock';
 
 /**
  * Who is using the application in this browser: a member of the household, with the role and

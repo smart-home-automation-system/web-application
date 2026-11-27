@@ -85,8 +85,9 @@ test.describe('a resident', () => {
 test.describe('a resident granted the switch of the house', () => {
   test.use({ profile: 'resident-two-rooms' });
 
-  // a sixth entry since the gate (HAS-454): the bottom bar of a phone shows four and "More"
-  test('is offered the heating of the house as a sixth entry', async ({ page }) => {
+  // a sixth entry since the gate (HAS-454), the media page a seventh (HAS-517): the bottom bar of a phone shows four
+  // and "More"
+  test('is offered the heating of the house and the media page beside their own pages', async ({ page }) => {
     await page.goto('/room');
 
     await expect(entries(page)).toHaveText([
@@ -95,6 +96,7 @@ test.describe('a resident granted the switch of the house', () => {
       'Appliances',
       'Requests',
       'House heating',
+      'Media',
       'Settings',
     ]);
   });
@@ -112,6 +114,29 @@ test.describe('a resident granted the switch of the house', () => {
     await page.getByRole('dialog').getByTestId('confirm-yes').click();
 
     await expect(page.getByTestId('heating-state')).toContainText('Disabled');
+  });
+
+  // HAS-517: the unlock of the amplifier on the media page, after a question, told from the answer itself
+  test('unlocks the amplifier on the media page, after a question', async ({ page }) => {
+    await page.goto('/media');
+    const card = page.getByTestId('amplifier');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Media' })).toBeVisible();
+    await card.getByRole('button', { name: 'Unlock the amplifier' }).click();
+    const question = page.getByRole('dialog');
+    await expect(question.getByTestId('confirm-cancel')).toBeFocused();
+    await question.getByTestId('confirm-yes').click();
+
+    await expect(card.getByTestId('amplifier-sent')).toContainText('The amplifier took the file');
+  });
+
+  test('tells an amplifier that cannot be reached', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('mock-amplifier', 'off'));
+    await page.goto('/media');
+    await page.getByTestId('amplifier-unlock').click();
+    await page.getByRole('dialog').getByTestId('confirm-yes').click();
+
+    await expect(page.getByRole('alert')).toContainText('The amplifier cannot be reached');
   });
 });
 

@@ -159,7 +159,9 @@ e2e/              # Playwright tests
   behind "More" marks the button as the open entry.
   **A resident has at most five entries** (HAS-438, owner 2026-11-13): My room, Appliances, Requests,
   Settings, and House heating with its permission - all on the bottom bar, no "More". A page offered to
-  members goes after the appliances, so the first places of the administrator stay as they are.
+  members goes after the appliances, so the first places of the administrator stay as they are. (The gate of
+  HAS-454 made it six, the media page of HAS-517 seven for a member with both permissions: the bar of a phone
+  then shows four and "More".)
 - **Layout**: the shell renders both navigations and CSS shows one (side list from 840 px, bottom
   bar below). Use the `--mat-sys-*` variables for every colour and font — never a literal — so
   themes can change them. Global building blocks (`.page-header`, `.message-page`) are in
@@ -173,7 +175,8 @@ e2e/              # Playwright tests
   test compares them), and `app.routes.spec.ts` lists every page open to others: add to that
   list deliberately. **A page may also ask for a permission of the registry** (HAS-438):
   `data.permission` of the route and `permission` of its entry (a test compares them too) - `redirectFor`
-  sends anybody without it to their room, the administrator included; one page does so far, House heating.
+  sends anybody without it to their room, the administrator included; two pages do so far, House heating
+  (`heating_switch`) and Media (`amplifier_unlock`, HAS-517).
 - **The browser's storage goes through `core/storage/browser-storage.ts`** (`readText` /
   `writeText` / `readJson` / `writeJson` / `watchKey`), never through `localStorage` directly:
   it throws in private mode, holds whatever an older version wrote, and changes under the page
@@ -563,7 +566,9 @@ e2e/              # Playwright tests
     profile, a pulse never disabled after a press (the gate page of every member); and since HAS-469 the fire
     detectors - the mute and the self test of a detector after a question (the safety page; the mute also on the
     banner for the administrator and on My room for every member in the rooms of their profile) and the switches of
-    the reactions to an alarm (the safety page). (The blinds page adds the
+    the reactions to an alarm (the safety page); and since HAS-517 the unlock of the amplifier (`POST
+    /home/media/amplifier/unlock?source=dashboard&member=`, after a question, the media page - a member with
+    `amplifier_unlock` alone). (The blinds page adds the
     switch of a schedule of the blinds, and its editor - HAS-253 - makes, changes and removes
     the schedules.)
 - **The blinds** (HAS-252, `features/blinds/`, the administrator's; route `/blinds`, after the
@@ -1045,6 +1050,27 @@ e2e/              # Playwright tests
   - The mock (`aircon.fixtures.ts`): the sanctum keeps its room below 25 °C with the frost protection on, the office has a
     rule that does not keep it cool; the power cycle is refused while an indoor unit is on and done at once otherwise;
     the plugs draw by the units that are on; the samples have a gap of an hour.
+- **The media page** (HAS-517, epic HAS-508, `features/media/`, route `/media` - "Media" / "Multimedia"; owner
+  2026-11-27: a page of its own built as House heating, named after `media-service`, whose televisions and other audio
+  and video equipment are to come to it; photo `media` - a living room full of audio and video equipment, tones
+  `26-255`; from `media-service` >= 0.2.0 behind the gateway >= 0.14.0). What to keep:
+  - **Who reaches it is the permission `amplifier_unlock`**, the pattern of `heating_switch`: `data.permission` of the
+    route and `permission` of its entry (after House heating), the administrator without it sent to their room; the
+    card is still rendered under `hasPermission`. **A card for the administrator added later changes the access of the
+    page together with it** - today it opens to nobody but the permission.
+  - **The unlock** (`AmplifierUnlock`, in the look of `HeatingSwitch` - the badge, the measures, the command in the
+    bottom right corner): "Unlock the amplifier" asks first (`ConfirmDialog`, testId `amplifier-question`, "Do not
+    unlock" focused), then `MediaApi.unlockAmplifier` sends the `POST` once with the member of the profile - a
+    question asked for one member is never sent for another the profile changed to meanwhile. One `DeviceCommands`
+    key: the button is disabled (`disabledInteractive`) while the question is open and the unlock on its way.
+  - **The outcome is the answer of the `POST` itself** - a documented exception to "the answer of a write is never
+    used": the amplifier has no state anyone can read (HAS-515), so nothing is polled, read back or dated. 202 is "it
+    took the file"; no answer "may have been carried out". **Never a status, a detection or an automatic unlock.**
+  - The codes of `AmplifierError` (`AMPLIFIER_REFUSED`, `AMPLIFIER_UNAVAILABLE`, `AMPLIFIER_TIMEOUT`, `UNLOCK_IN_PROGRESS`,
+    `UNKNOWN_MEMBER`, `NOT_PERMITTED`, `REGISTRY_UNAVAILABLE`) have texts in `AMPLIFIER_ERROR_TEXTS` (its spec lists them).
+  - Mock (`media.fixtures.ts`): Aurelia and Celina hold `amplifier_unlock`; the service's checks of the source, the member
+    and the permission; `localStorage['mock-amplifier']` = `off` | `refused` | `slow` | `busy` answers 503 / 502 / 504 /
+    409 with its code.
 - **The gate page** (HAS-454, `features/gate/`, route `/gate` of every member - owner 2026-11-19: a page in the menu
   of everyone right after My room, not a card on My room, whose cards belong to the room; the target of the push of a
   ring; from `gate-service` >= 0.10.0). Three calls in the strip of sources (`GET /gate`, `/gate/garage` every 5 s,
