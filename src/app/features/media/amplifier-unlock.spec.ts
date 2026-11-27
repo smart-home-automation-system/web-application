@@ -154,6 +154,10 @@ describe('AmplifierUnlock', () => {
     await fixture.whenStable();
 
     http.expectNone(UNLOCK);
+    // the question is gone, nothing is on its way and nothing is told
+    expect(await inWindow('amplifier-question')).toBeNull();
+    expect((await card()).querySelector('[data-testid="amplifier-sending"]')).toBeNull();
+    expect((await card()).querySelector('[data-testid="amplifier-sent"]')).toBeNull();
   });
 
   it('closes its question with the card', async () => {
