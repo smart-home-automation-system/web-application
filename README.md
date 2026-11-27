@@ -315,7 +315,7 @@ dashboards:
   conditioner and the mute of a smoke detector are the only controls of a room.
 - **A resident's own pages** (HAS-438, owner 2026-11-13): besides My room, every member is offered
   **Gate** (since HAS-454, above), **Appliances**, **Requests** and **Settings** - and **House heating** with the
-  permission `heating_switch`, **Media** with the permission `amplifier_unlock` (HAS-517). Five entries stand on the
+  permission `heating_switch`, **Media** with the permission `amplifier_unlock` (HAS-517, the unlock alone). Five entries stand on the
   bottom bar of a phone; with more - the heating of the house, the media page - it shows the first four and "More".
   - **Appliances** (`/appliances`): for every member **the appliances of the household** (HAS-282) - the
     washing machine, the dryer and the dishwasher with their state, running since or finished at, and
@@ -328,11 +328,13 @@ dashboards:
     dashboard, for a member the household registry granted `heating_switch` and nobody else - the
     administrator included, who switches the heating on its dashboard. Without the permission the address
     leads to My room and nothing is read.
-  - **Media** (`/media`, "Multimedia" in Polish, HAS-517): the audio and video equipment of `media-service`, built as
-    House heating - today **the unlock of the amplifier** that hangs after every loss of the grid, for a member the
-    registry granted `amplifier_unlock` and nobody else. "Unlock the amplifier" asks first, then sends the unlock
+  - **Media** (`/media`, "Multimedia" in Polish, HAS-517): the audio and video equipment of `media-service`, a page of
+    the administrator - today **the unlock of the amplifier** that hangs after every loss of the grid - which the
+    permission `amplifier_unlock` opens to a member too, with the unlock alone (as House heating gives a resident the
+    switch of the heating). "Unlock the amplifier" asks first, then sends the unlock
     once with the member of the profile; what it came to is the answer of that call - the amplifier has no state to
-    read, so nothing is shown of it otherwise. Needs `media-service` 0.2.0 and the gateway 0.14.0 or later.
+    read, so nothing is shown of it otherwise. Needs `media-service` 0.3.0 (which checks no role or permission) and
+    the gateway 0.14.0 or later.
 - **The fire alarm** (HAS-469): above every page, for every member with a profile, a red strip for each detector in
   alarm - the room and the detector, "muted" once it is - with no close: it goes when the service no longer reports
   the alarm. The administrator alone gets **Mute** on it, after a question, and a strip for a base station of the
@@ -492,9 +494,11 @@ that - the administrator has fourteen - it shows the first four and **More**, wh
 Next to the role the registry can grant a member a **permission** - one thing beyond what the
 role gives. There are two so far: `heating_switch`, the switch of the heating of the whole house
 on a tab of its own, House heating (on My room until HAS-438); and `amplifier_unlock` (HAS-517), the unlock of the
-amplifier on the Media page. The administrator grants and withdraws it on the Household
-page (`PUT /home/household/member/{name}/permissions` of `database-service`). Without it there is no such tab, for a resident
-and for the administrator alike - the administrator switches the heating on its dashboard. A
+amplifier on the Media page, which is the administrator's and opens to such a member with the unlock alone. The
+administrator grants and withdraws them on the Household page (`PUT /home/household/member/{name}/permissions` of
+`database-service`). Without `heating_switch` there is no House heating tab, for a resident and for the administrator
+alike - the administrator switches the heating on its dashboard. No service checks a role or a permission (owner,
+2026-11-27). A
 permission, like a role, decides what is offered and is no access control.
 
 A resident's profile is left only by opening another personal link. Where there is no address
@@ -670,7 +674,7 @@ Endpoints used today:
 | `GET` | `/home/gate/garage/alerts` | The open alarms and warnings of the garage gates (gate), polled every 30 s and right after a pulse. Needs `gate-service` 0.10.0 or later |
 | `GET` | `/home/gate/events?from=&to=` | The rings, calls, unlocks, commands and garage moves of 7 or 30 days, the newest first (gate), asked when the period changes, then every 30 s |
 | `GET` | `/home/safety` | Every fire detector with its flags (alarm, online, battery, end of life, fault, muted, self test), model, firmware, last heard and whether its last command was confirmed, and the base stations (the banner of every page, the safety page, the overview, my room), polled every 30 s and right after a command. Needs `safety-service` 0.1.0 and `api-gateway-service` 0.13.0 or later |
-| `POST` | `/home/media/amplifier/unlock?source=dashboard&member=` | Unlocks the amplifier, after a question, the member of the profile with it (the media page, `amplifier_unlock` only); sent once, **its answer is the outcome** - 202 the amplifier took the file - since the amplifier has no state to read back. The seven codes of `AmplifierError` worded. Needs `media-service` 0.2.0 and the gateway 0.14.0 or later |
+| `POST` | `/home/media/amplifier/unlock?source=dashboard&member=` | Unlocks the amplifier, after a question, the member of the profile with it (the media page - the administrator, or a member with `amplifier_unlock`); sent once, **its answer is the outcome** - 202 the amplifier took the file - since the amplifier has no state to read back. The six codes of `AmplifierError` worded. Needs `media-service` 0.3.0 and the gateway 0.14.0 or later |
 | `POST` | `/home/safety/{id}/mute?source=dashboard`, `/home/safety/{id}/self-test?source=dashboard` | Mutes a detector or starts its self test, after a question (the safety page; the mute also on the banner for the administrator and on my room); the detectors are read back at once and 2.5 s later, the answer is not used. `NOT_FOUND_DETECTOR`, `COMMAND_TOO_SOON` worded. Needs `safety-service` 0.4.0 or later |
 | `GET` | `/home/safety/status` | The technical monitor - the bases (reachable, last heard, signal, silent) and the open alerts (the safety page, the banner of the administrator), polled every 30 s for the administrator alone. Needs `safety-service` 0.3.0 or later |
 | `GET` | `/home/safety/alarms?from=&to=` | The alarm episodes of 7 or 30 days, the newest first (safety), asked when the period changes, then every minute; `INVALID_RANGE` worded. Needs `safety-service` 0.2.0 or later |
