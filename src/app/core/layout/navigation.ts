@@ -22,6 +22,11 @@ export interface NavItem {
    * the entry, the administrator included (HAS-438).
    */
   readonly permission?: MemberPermission;
+  /**
+   * The permission that opens an entry of the administrator to a member too - the same as `data.openedBy` of its route
+   * (a test compares them); the administrator is always offered it (HAS-517, the media page).
+   */
+  readonly openedBy?: MemberPermission;
 }
 
 /**
@@ -79,8 +84,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: 'nav.media',
     shortLabel: 'nav.mediaShort',
     icon: 'speaker_group',
-    access: 'member',
-    permission: 'amplifier_unlock',
+    access: 'admin',
+    openedBy: 'amplifier_unlock',
   },
   { path: '/heating', label: 'nav.heating', icon: 'mode_heat', access: 'admin' },
   { path: '/water', label: 'nav.water', icon: 'water_drop', access: 'admin' },

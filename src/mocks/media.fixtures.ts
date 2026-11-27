@@ -4,8 +4,8 @@ import { householdProfiles } from './household.fixtures';
 
 /**
  * The unlock of the amplifier of `media-service` (HAS-517): answered as the service answers - `source` must be
- * `dashboard`, the member a switched-on member of the household (`400 UNKNOWN_MEMBER`) granted `amplifier_unlock`
- * (`403 NOT_PERMITTED`), then 202 with no body. Nothing is kept: the amplifier has no state to read.
+ * `dashboard`, the member a switched-on member of the household (`400 UNKNOWN_MEMBER`) - no role and no permission is
+ * checked (media-service >= 0.3.0) -, then 202 with no body. Nothing is kept: the amplifier has no state to read.
  *
  * `localStorage['mock-amplifier']` puts the amplifier in trouble: `off` - it cannot be reached (`503
  * AMPLIFIER_UNAVAILABLE`), `refused` - it did not take the file (`502 AMPLIFIER_REFUSED`), `slow` - no answer in time
@@ -35,9 +35,6 @@ export function unlockAmplifier(source: string | null, member: string | null): M
   );
   if (profile === undefined) {
     return refusal(400, 'Unknown household member', 'UNKNOWN_MEMBER');
-  }
-  if (!(profile.permissions ?? []).includes('amplifier_unlock')) {
-    return refusal(403, 'Not permitted to unlock the amplifier', 'NOT_PERMITTED');
   }
   const trouble = readText('mock-amplifier');
   if (trouble !== undefined && Object.hasOwn(TROUBLE, trouble)) {

@@ -2970,7 +2970,6 @@ export const en = {
       inProgress: 'Another unlock of the amplifier is on its way - wait for it to finish.',
       unknownMember:
         'The person of this profile is not a household member any more. Open your personal link again.',
-      notPermitted: 'This profile may not unlock the amplifier any more.',
       registryUnavailable:
         'The household registry cannot be read now, so nothing was sent to the amplifier. Try again in a minute.',
     },

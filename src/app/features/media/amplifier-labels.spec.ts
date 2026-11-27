@@ -10,7 +10,6 @@ describe('amplifier labels', () => {
       'AMPLIFIER_TIMEOUT',
       'UNLOCK_IN_PROGRESS',
       'UNKNOWN_MEMBER',
-      'NOT_PERMITTED',
       'REGISTRY_UNAVAILABLE',
     ]);
     expect(
@@ -22,9 +21,11 @@ describe('amplifier labels', () => {
     ).toEqual({ key: 'amplifier.error.unavailable' });
     expect(
       describeUnlockError(
-        new ApiError('client', 403, [{ message: 'Not permitted', code: 'NOT_PERMITTED' }]),
+        new ApiError('client', 400, [
+          { message: 'Unknown household member', code: 'UNKNOWN_MEMBER' },
+        ]),
       ),
-    ).toEqual({ key: 'amplifier.error.notPermitted' });
+    ).toEqual({ key: 'amplifier.error.unknownMember' });
   });
 
   // an unlock that got no answer may have been carried out all the same

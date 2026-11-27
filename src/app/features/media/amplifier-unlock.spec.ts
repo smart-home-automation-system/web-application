@@ -7,7 +7,8 @@ import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { provideI18nTesting } from '../../../testing/i18n';
 import { Profile } from '../../core/profile/profile';
 import { ProfileStore } from '../../core/profile/profile-store';
-import { AmplifierUnlock } from './amplifier-unlock';
+import { Ticker } from '../../core/time/ticker';
+import { AMPLIFIER_OUTCOME_SHOWN_MS, AmplifierUnlock } from './amplifier-unlock';
 
 const CELINA: Profile = {
   name: 'Celina',
@@ -20,11 +21,14 @@ const UNLOCK = '/home/media/amplifier/unlock';
 // HAS-517: the unlock of the amplifier - one press after a question is one POST, told from its own answer
 describe('AmplifierUnlock', () => {
   let profile: WritableSignal<Profile | undefined>;
+  /** The shared clock, moved by hand. */
+  let now: WritableSignal<number>;
   let http: HttpTestingController;
   let fixture: ComponentFixture<AmplifierUnlock>;
 
   beforeEach(() => {
     profile = signal<Profile | undefined>(CELINA);
+    now = signal(Date.now());
     TestBed.configureTestingModule({
       providers: [
         provideI18nTesting(),
@@ -32,6 +36,7 @@ describe('AmplifierUnlock', () => {
         provideHttpClientTesting(),
         { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         { provide: ProfileStore, useValue: { profile, members: signal(undefined) } },
+        { provide: Ticker, useValue: { now } },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -116,6 +121,32 @@ describe('AmplifierUnlock', () => {
     expect(words((await card()).querySelector('[data-testid="amplifier-when"]'))).toMatch(
       /^Pressed: /,
     );
+  });
+
+  // owner, 2026-11-27: an outcome left on the card would mislead whoever comes for the next unlock
+  it('tells the outcome for a minute, then leaves the card as before the press', async () => {
+    await confirmUnlock();
+    http
+      .expectOne((call) => call.url === UNLOCK)
+      .flush(null, { status: 202, statusText: 'Accepted' });
+    expect((await card()).querySelector('[data-testid="amplifier-sent"]')).toBeTruthy();
+
+    now.set(Date.now() + AMPLIFIER_OUTCOME_SHOWN_MS - 5_000);
+    expect((await card()).querySelector('[data-testid="amplifier-sent"]')).toBeTruthy();
+
+    now.set(Date.now() + AMPLIFIER_OUTCOME_SHOWN_MS + 1_000);
+    expect((await card()).querySelector('[data-testid="amplifier-sent"]')).toBeNull();
+    expect((await card()).querySelector('[data-testid="amplifier-when"]')).toBeNull();
+    expect((await button()).getAttribute('aria-disabled')).not.toBe('true');
+  });
+
+  it('lets a failure go after a minute too', async () => {
+    await confirmUnlock();
+    http.expectOne((call) => call.url === UNLOCK).error(new ProgressEvent('error'));
+    expect((await card()).querySelector('[role="alert"]')).toBeTruthy();
+
+    now.set(Date.now() + AMPLIFIER_OUTCOME_SHOWN_MS + 1_000);
+    expect((await card()).querySelector('[role="alert"]')).toBeNull();
   });
 
   it('words a refusal of the service by its code', async () => {

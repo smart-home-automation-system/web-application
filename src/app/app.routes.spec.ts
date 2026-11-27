@@ -84,7 +84,6 @@ describe('routes', () => {
       ['gate', 'member'],
       ['requests', 'member'],
       ['house-heating', 'member'],
-      ['media', 'member'],
       ['room', 'member'],
       ['settings', 'member'],
       ['profiles', 'chooser'],
@@ -102,19 +101,26 @@ describe('routes', () => {
 
       expect(route?.data?.['access'] ?? 'admin', item.path).toBe(item.access);
       expect(route?.data?.['permission'], item.path).toBe(item.permission);
+      expect(route?.data?.['openedBy'], item.path).toBe(item.openedBy);
     }
   });
 
-  // HAS-438: a permission of the registry beyond the access - the heating of the whole house; HAS-517: the media page
-  it('ask for a permission on the heating of the whole house and the media page alone', () => {
+  // HAS-438: a permission of the registry beyond the access is asked by one page alone so far
+  it('ask for a permission on the heating of the whole house alone', () => {
     const asking = (shell.children ?? [])
       .filter((route) => route.data?.['permission'] !== undefined)
       .map((route) => [route.path, route.data?.['permission']]);
 
-    expect(asking).toEqual([
-      ['house-heating', 'heating_switch'],
-      ['media', 'amplifier_unlock'],
-    ]);
+    expect(asking).toEqual([['house-heating', 'heating_switch']]);
+  });
+
+  // HAS-517 (owner, 2026-11-27): a page of the administrator a permission opens to a member too - the media page
+  it('open a page of the administrator by a permission on the media page alone', () => {
+    const opened = (shell.children ?? [])
+      .filter((route) => route.data?.['openedBy'] !== undefined)
+      .map((route) => [route.path, route.data?.['access'] ?? 'admin', route.data?.['openedBy']]);
+
+    expect(opened).toEqual([['media', 'admin', 'amplifier_unlock']]);
   });
 
   it('give every page a title', () => {

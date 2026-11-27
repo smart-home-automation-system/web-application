@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateChildFn, Router } from '@angular/router';
 
-import { accessOf, permissionOf, redirectFor } from './access';
+import { accessOf, openedByOf, permissionOf, redirectFor } from './access';
 import { ProfileStore } from './profile-store';
 
 /**
@@ -18,6 +18,11 @@ import { ProfileStore } from './profile-store';
  * carries a token, the guard is where an expired one is turned away.
  */
 export const profileGuard: CanActivateChildFn = (route) => {
-  const target = redirectFor(accessOf(route), inject(ProfileStore).profile(), permissionOf(route));
+  const target = redirectFor(
+    accessOf(route),
+    inject(ProfileStore).profile(),
+    permissionOf(route),
+    openedByOf(route),
+  );
   return target === undefined ? true : inject(Router).parseUrl(target);
 };

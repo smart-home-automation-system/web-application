@@ -12,7 +12,6 @@ export const AMPLIFIER_ERROR_TEXTS: Readonly<Record<string, MessageKey>> = {
   AMPLIFIER_TIMEOUT: 'amplifier.error.timeout',
   UNLOCK_IN_PROGRESS: 'amplifier.error.inProgress',
   UNKNOWN_MEMBER: 'amplifier.error.unknownMember',
-  NOT_PERMITTED: 'amplifier.error.notPermitted',
   REGISTRY_UNAVAILABLE: 'amplifier.error.registryUnavailable',
 };
 
